@@ -4,11 +4,25 @@
  */
 const express = require('express');
 const Joi = require('joi');
+const rateLimit = require('express-rate-limit');
 const xacThucController = require('../controllers/xacThucController');
 const batLoiAsync = require('../middlewares/batLoiAsync');
 const kiemTraDuLieu = require('../middlewares/kiemTraDuLieu');
 
 const router = express.Router();
+
+// Giới hạn tần suất gọi API đăng nhập để chống brute-force (10 lần / 15 phút trên mỗi IP)
+// Trong môi trường kiểm thử (test), nâng giới hạn để không gây nghẽn test tự động
+const gioiHanDangNhap = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'test' ? 1000 : 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau 15 phút.'
+  }
+});
 
 // Schema kiểm tra dữ liệu đăng ký
 const luatDangKy = Joi.object({
@@ -129,6 +143,6 @@ router.post('/register', kiemTraDuLieu(luatDangKy), batLoiAsync(xacThucControlle
  *       403:
  *         description: Tài khoản đã bị khóa
  */
-router.post('/login', kiemTraDuLieu(luatDangNhap), batLoiAsync(xacThucController.xuLyDangNhap));
+router.post('/login', gioiHanDangNhap, kiemTraDuLieu(luatDangNhap), batLoiAsync(xacThucController.xuLyDangNhap));
 
 module.exports = router;

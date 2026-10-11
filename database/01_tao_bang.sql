@@ -1,7 +1,7 @@
 -- ====================================================================================
 -- DỰ ÁN: BookNest - Website Quản lý & Bán Sách Trực Tuyến
 -- TỆP: database/01_tao_bang.sql
--- MỤC TIÊU: Tạo 9 bảng chuẩn 3NF, ràng buộc toàn vẹn, khóa ngoại NO ACTION và 10 index
+-- MỤC TIÊU: Tạo 9 bảng chuẩn 3NF, ràng buộc toàn vẹn, khóa ngoại NO ACTION và 14 index (gồm Covering Indexes)
 -- HỆ QUẢN TRỊ: Microsoft SQL Server 2022 Express
 -- ====================================================================================
 
@@ -207,7 +207,7 @@ CREATE TABLE dbo.LichSuTrangThaiDonHang (
 GO
 
 -- ====================================================================================
--- PHẦN 3: TẠO 10 CHỈ MỤC (INDEX) TỐI ƯU HÓA TRUY VẤN
+-- PHẦN 3: TẠO 14 CHỈ MỤC (INDEX) TỐI ƯU HÓA TRUY VẤN DỮ LIỆU LỚN
 -- ====================================================================================
 
 -- 1. Index lọc sách theo danh mục
@@ -225,37 +225,63 @@ CREATE NONCLUSTERED INDEX IX_Sach_TenSach
     ON dbo.Sach (TenSach);
 GO
 
--- 4. Index khách hàng xem lịch sử đơn hàng của mình (mới nhất xếp trước)
+-- 4. Index tối ưu danh sách sách trang chủ và quản lý: lọc DaAn = 0 và sắp xếp NgayTao DESC (F12)
+CREATE NONCLUSTERED INDEX IX_Sach_DaAn_NgayTao 
+    ON dbo.Sach (DaAn, NgayTao DESC);
+GO
+
+-- 5. Index khách hàng xem lịch sử đơn hàng của mình (mới nhất xếp trước)
 CREATE NONCLUSTERED INDEX IX_DonHang_MaNguoiDung_NgayDat 
     ON dbo.DonHang (MaNguoiDung, NgayDat DESC);
 GO
 
--- 5. Index nhân viên lọc đơn theo trạng thái và ngày đặt; phục vụ thống kê
+-- 6. Index nhân viên lọc đơn theo trạng thái và ngày đặt; phục vụ thống kê
 CREATE NONCLUSTERED INDEX IX_DonHang_TrangThai_NgayDat 
     ON dbo.DonHang (TrangThai, NgayDat DESC);
 GO
 
--- 6. Index thống kê top sách bán chạy nhất
+-- 7. Index danh sách đơn hàng toàn hệ thống sắp xếp theo ngày đặt (F12)
+CREATE NONCLUSTERED INDEX IX_DonHang_NgayDat 
+    ON dbo.DonHang (NgayDat DESC);
+GO
+
+-- 8. Index thống kê top sách bán chạy nhất
 CREATE NONCLUSTERED INDEX IX_ChiTietDonHang_MaSach 
     ON dbo.ChiTietDonHang (MaSach);
 GO
 
--- 7. Index tính số sao trung bình và danh sách đánh giá của từng cuốn sách
+-- 9. Index tính số sao trung bình và lượt đánh giá phủ (Covering Index INCLUDE SoSao) (F12)
 CREATE NONCLUSTERED INDEX IX_DanhGia_MaSach 
-    ON dbo.DanhGia (MaSach);
+    ON dbo.DanhGia (MaSach) 
+    INCLUDE (SoSao);
 GO
 
--- 8. Index xem lịch sử nhập kho của từng cuốn sách
+-- 10. Index xem lịch sử nhập kho của từng cuốn sách
 CREATE NONCLUSTERED INDEX IX_LichSuNhapKho_MaSach_NgayNhap 
     ON dbo.LichSuNhapKho (MaSach, NgayNhap DESC);
 GO
 
--- 9. Index truy vấn dòng thời gian lịch sử trạng thái của từng đơn hàng
+-- 11. Index truy vấn dòng thời gian lịch sử trạng thái của từng đơn hàng
 CREATE NONCLUSTERED INDEX IX_LichSuTrangThai_MaDonHang 
     ON dbo.LichSuTrangThaiDonHang (MaDonHang);
 GO
 
--- 10. Index thống kê doanh thu theo ngày giao hàng thành công (DELIVERED)
+-- 12. Index thống kê doanh thu theo ngày giao hàng phủ (Covering Index INCLUDE MaDonHang) (F12)
 CREATE NONCLUSTERED INDEX IX_LichSuTrangThai_TrangThaiMoi_NgayThayDoi 
-    ON dbo.LichSuTrangThaiDonHang (TrangThaiMoi, NgayThayDoi DESC);
+    ON dbo.LichSuTrangThaiDonHang (TrangThaiMoi, NgayThayDoi DESC) 
+    INCLUDE (MaDonHang);
+GO
+
+-- 13. Index hỗ trợ khóa ngoại Giỏ hàng
+CREATE NONCLUSTERED INDEX IX_GioHang_MaSach 
+    ON dbo.GioHang (MaSach);
+GO
+
+-- 14. Index hỗ trợ khóa ngoại Lịch sử nhập kho và trạng thái đơn hàng (F12)
+CREATE NONCLUSTERED INDEX IX_LichSuNhapKho_MaNguoiNhap 
+    ON dbo.LichSuNhapKho (MaNguoiNhap);
+GO
+
+CREATE NONCLUSTERED INDEX IX_LichSuTrangThai_MaNguoiThucHien 
+    ON dbo.LichSuTrangThaiDonHang (MaNguoiThucHien);
 GO

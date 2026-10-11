@@ -11,21 +11,21 @@
 **BookNest** là hệ thống quản lý kho sách và sàn thương mại điện tử chuyên ngành sách được xây dựng theo chuẩn kiến trúc phân tầng doanh nghiệp **SERN Stack** (SQL Server, Express.js, React, Node.js). 
 
 Dự án chú trọng đặc biệt vào:
-- **Chuẩn hóa Cơ sở dữ liệu 3NF:** 9 bảng quan hệ chặt chẽ, 12 khóa ngoại `ON DELETE NO ACTION`, bảng mã `Vietnamese_CI_AI` hỗ trợ tiếng Việt toàn diện, 10 chỉ mục (Index) tối ưu hiệu năng.
-- **Bảo mật & Phân quyền RBAC:** Xác thực JWT Stateless kết hợp kiểm soát truy cập dựa trên vai trò (4 vai trò: `customer`, `librarian`, `order_staff`, `admin`), mã hóa mật khẩu Bcrypt với salt rounds 10, chống lộ thông tin với IDOR Guard.
-- **Toàn vẹn Dữ liệu & Xử lý Đồng thời:** Giao dịch đặt hàng nguyên tử (Database Transaction) với điều kiện cập nhật chống bán âm kho (Race Condition Prevention), máy trạng thái luân chuyển đơn hàng 1 chiều.
-- **Tài liệu hóa API & Kiểm thử tự động:** Swagger UI OpenAPI 3.0 tại `/api-docs`, 100% kiểm thử tự động với Jest & Supertest (9 test suites, **110/110 tests passed**).
+- **Chuẩn hóa Cơ sở dữ liệu 3NF:** 9 bảng quan hệ chặt chẽ, 12 khóa ngoại `ON DELETE NO ACTION`, bảng mã tiếng Việt, 14 chỉ mục (Index) tối ưu hiệu năng (gồm các Covering Indexes tối ưu tính sao và doanh thu).
+- **Bảo mật & Phân quyền RBAC:** Xác thực JWT Stateless kết hợp kiểm soát truy cập dựa trên vai trò (4 vai trò: `customer`, `librarian`, `order_staff`, `admin`), mã hóa mật khẩu Bcrypt với salt rounds 10, chống lộ thông tin với IDOR Guard, bảo vệ HTTP Headers với **Helmet**, chống brute-force đăng nhập với **express-rate-limit**.
+- **Toàn vẹn Dữ liệu & Xử lý Đồng thời:** Giao dịch đặt hàng nguyên tử (Database Transaction với khóa cập nhật `t.LOCK.UPDATE`) chống bán âm kho (Race Condition Prevention), thuật toán sắp xếp khóa dòng `MaSach ASC` chống Deadlock 1205, máy trạng thái luân chuyển đơn hàng 1 chiều.
+- **Tài liệu hóa API & Kiểm thử tự động:** Swagger UI OpenAPI 3.0 tại `/api-docs` mô tả đầy đủ **29 routes API**, hỗ trợ cả kiểm thử đơn vị thuần an toàn (Pure Unit Tests 24/24 pass) và kiểm thử tích hợp (Integration Tests).
 
 ---
 
 ## 2. Công Nghệ Sử Dụng
-- **Database Engine:** Microsoft SQL Server 2022 Express Edition (Cổng 1433, Collation: `Vietnamese_CI_AI`).
+- **Database Engine:** Microsoft SQL Server 2022 Express Edition (Cổng 1433, Collation: `SQL_Latin1_General_CP1_CI_AS` / `Vietnamese_CI_AI`).
 - **Backend Framework:** Node.js (v20+) & Express.js 5.x.
+- **Bảo mật:** `helmet`, `express-rate-limit`, `cors`, `jsonwebtoken`, `bcryptjs`.
 - **ORM & Database Driver:** Sequelize 6.x & Tedious 20.x.
-- **Xác thực & Mã hóa:** JSON Web Token (`jsonwebtoken`), `bcryptjs`.
 - **Validation:** Joi validator.
-- **API Documentation:** Swagger UI Express & Swagger JSDoc.
-- **Automated Testing:** Jest & Supertest.
+- **API Documentation:** Swagger UI Express & Swagger JSDoc (29 routes API).
+- **Automated Testing:** Jest & Supertest (Kiểm thử logic thuần & tích hợp).
 - **Frontend SPA:** React 19, Vite, React Router DOM, Axios, Lucide Icons, Custom Warm Paper Design System (Hỗ trợ 2 chế độ: Sáng Giấy Ngà `#FBF9F5` và Tối Dịu Mắt `#18181B`).
 
 ---
@@ -34,19 +34,23 @@ Dự án chú trọng đặc biệt vào:
 ```text
 Project_MonBE/
 ├── database/                   # Kịch bản DDL và dữ liệu mẫu SQL Server
-│   ├── 01_tao_bang.sql         # Tạo 9 bảng chuẩn 3NF, 12 FK, 10 Index
-│   └── 02_du_lieu_mau.sql      # Seed 36 cuốn sách, 8 tài khoản, đơn hàng demo
+│   ├── 01_tao_bang.sql         # Tạo 9 bảng chuẩn 3NF, 12 FK, 14 Index tối ưu
+│   ├── 02_du_lieu_mau.sql      # Seed 36 cuốn sách, 8 tài khoản, đơn hàng demo tuần tự
+│   ├── 03_don_dep_du_lieu_rac.sql # Kịch bản khôi phục và dọn dẹp CSDL về trạng thái sạch
+│   └── 04_cau_hinh_va_toi_uu_index.sql # Kịch bản cấu hình RCSI, AUTO_CLOSE và index phủ
 ├── backend/                    # Mã nguồn máy chủ Node.js / Express
 │   ├── src/
-│   │   ├── config/             # Cấu hình CSDL, JWT, Swagger OpenAPI
+│   │   ├── config/             # Cấu hình CSDL, JWT, Swagger OpenAPI (29 routes)
 │   │   ├── controllers/        # Điều phối HTTP request/response
 │   │   ├── services/           # Nghiệp vụ cốt lõi & giao dịch Transaction
 │   │   ├── models/             # Định nghĩa 9 Models Sequelize quan hệ
-│   │   ├── middlewares/        # Xác thực JWT, RBAC, IDOR Guard, Xử lý lỗi
-│   │   ├── routes/             # Định tuyến API theo phân hệ
-│   │   ├── app.js              # Express Application & Routing
+│   │   ├── middlewares/        # Xác thực JWT, RBAC, IDOR Guard, Rate Limiter, Xử lý lỗi
+│   │   ├── routes/             # Định tuyến API theo phân hệ (7 router files)
+│   │   ├── app.js              # Express Application, Helmet & Routing
 │   │   └── server.js           # Khởi động máy chủ cổng 5000
-│   └── tests/                  # 9 Test Suites tự động Jest (110 tests)
+│   └── tests/                  # Bộ kiểm thử tự động Jest & Supertest
+│       ├── unit_pure_logic.test.js # 24 pure unit tests (chạy an toàn, không đụng DB)
+│       └── ...                 # 8 integration test suites
 ├── frontend/                   # Ứng dụng giao diện khách hàng & quản trị (Vite React)
 │   ├── src/
 │   │   ├── components/         # Navbar, Footer, Route Guards, Star Rating
@@ -65,8 +69,9 @@ Project_MonBE/
 ### Bước 1: Chuẩn bị Cơ sở dữ liệu MS SQL Server
 1. Mở **SQL Server Configuration Manager**, đảm bảo dịch vụ **SQL Server (SQLEXPRESS)** đang chạy và giao thức **TCP/IP** đã được `Enabled` ở cổng **1433**.
 2. Mở **SQL Server Management Studio (SSMS)** hoặc công cụ dòng lệnh:
-   - Chạy tập lệnh [`database/01_tao_bang.sql`](./database/01_tao_bang.sql) để tạo cơ sở dữ liệu `BookNestDB` và 9 bảng.
+   - Chạy tập lệnh [`database/01_tao_bang.sql`](./database/01_tao_bang.sql) để tạo cơ sở dữ liệu `BookNestDB` và 9 bảng cùng 14 chỉ mục tối ưu.
    - Chạy tập lệnh [`database/02_du_lieu_mau.sql`](./database/02_du_lieu_mau.sql) để nạp 36 cuốn sách và các tài khoản demo.
+   - *(Tùy chọn nâng cao)*: Chạy [`database/04_cau_hinh_va_toi_uu_index.sql`](./database/04_cau_hinh_va_toi_uu_index.sql) để kích hoạt RCSI (`READ_COMMITTED_SNAPSHOT`) và tắt `AUTO_CLOSE`.
 
 ### Bước 2: Cấu hình Môi trường Backend
 1. Di chuyển vào thư mục `backend`:
@@ -84,11 +89,17 @@ Project_MonBE/
    ```bash
    npm install
    ```
-4. Chạy kiểm thử tự động đảm bảo toàn bộ hệ thống hoạt động chính xác:
-   ```bash
-   npm test
-   # Kết quả: 9 suites passed, 110 tests passed 100%
-   ```
+4. Chạy kiểm thử tự động:
+   - **Chế độ kiểm thử thuần (Khuyên dùng khi dev - An toàn, không chạm DB):**
+     ```bash
+     npx jest tests/unit_pure_logic.test.js
+     # Kết quả: 24/24 tests passed (State Machine, RBAC, IDOR, Bcrypt, Deadlock Sort, Helmet, Rate Limit, Swagger)
+     ```
+   - **Chế độ kiểm thử tích hợp (Yêu cầu CSDL thật đã nạp seed):**
+     ```bash
+     npm test
+     # Chạy toàn bộ 9 suites kiểm thử tích hợp (đã trang bị tự hoàn kho và dọn dẹp)
+     ```
 5. Khởi động máy chủ backend:
    ```bash
    npm run dev

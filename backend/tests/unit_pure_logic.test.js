@@ -316,5 +316,43 @@ describe('Task T20: Unit Test các Logic Nghiệp Vụ Cốt Lõi (Pure Unit Tes
       }
     });
   });
+
+  // =========================================================================
+  // 11. KIỂM THỬ BẢO MẬT BACKEND (F08): HELMET VÀ RATE LIMITING
+  // =========================================================================
+  describe('11. Kiểm thử Bảo mật HTTP Headers & Rate Limiting (F08)', () => {
+    const request = require('supertest');
+    const app = require('../src/app');
+
+    it('Helmet tự động gắn các HTTP Security Headers an toàn (X-Content-Type-Options, X-Frame-Options...)', async () => {
+      const phanHoi = await request(app).get('/api/suc-khoe');
+      expect(phanHoi.status).toBe(200);
+
+      // Kiểm tra các headers an ninh quan trọng do Helmet thiết lập
+      expect(phanHoi.headers['x-content-type-options']).toBe('nosniff');
+      expect(phanHoi.headers['x-frame-options']).toBe('SAMEORIGIN');
+      expect(phanHoi.headers['x-dns-prefetch-control']).toBe('off');
+    });
+
+    it('Tuyến đường /api/auth/login có tích hợp Rate Limiting và trả về RateLimit headers', async () => {
+      const phanHoi = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'rate_test@booknest.vn', matKhau: 'SaiMatKhau123' });
+
+      // Cả trường hợp thành công hay thất bại, rate limiter đều trả về header ratelimit
+      expect(phanHoi.headers['ratelimit-limit'] || phanHoi.headers['x-ratelimit-limit']).toBeDefined();
+    });
+  });
+
+  afterAll(async () => {
+    try {
+      const { sequelize } = require('../src/models');
+      if (sequelize) {
+        await sequelize.close();
+      }
+    } catch {
+      // Bỏ qua lỗi đóng kết nối nếu chưa kết nối
+    }
+  });
 });
 

@@ -4,6 +4,7 @@
  */
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const { phanHoiThanhCong } = require('./middlewares/phanHoi');
 const xuLy404 = require('./middlewares/xuLy404');
 const xuLyLoi = require('./middlewares/xuLyLoi');
@@ -20,6 +21,15 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 
 const app = express();
+
+// Middleware bảo mật HTTP headers (Helmet)
+// Tắt CSP nghiêm ngặt để Swagger UI hiển thị tài liệu API trơn tru
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
+  })
+);
 
 // Middleware giải mã JSON body và form urlencoded để xử lý dữ liệu gửi lên
 app.use(express.json());
