@@ -450,6 +450,47 @@ describe('Task T20: Unit Test các Logic Nghiệp Vụ Cốt Lõi (Pure Unit Tes
     });
   });
 
+  // =========================================================================
+  // 15. TÌM KIẾM KHÔNG DẤU (Latin1_General_CI_AI)
+  // =========================================================================
+  describe('15. Tìm kiếm tiếng Việt không dấu', () => {
+    const { Op } = require('sequelize');
+    const { chuaTuKhoa, thoatKyTuLike } = require('../src/utils/timKiem');
+
+    it('thoatKyTuLike bọc các ký tự đặc biệt của LIKE để gõ % _ [ vẫn là chữ thường', () => {
+      expect(thoatKyTuLike('50%_[a')).toBe('50[%][_][[]a');
+      expect(thoatKyTuLike('so do')).toBe('so do');
+    });
+
+    it('chuaTuKhoa sinh SQL ép collation Latin1_General_CI_AI cho cột tìm kiếm', async () => {
+      const { sequelize, Sach } = require('../src/models');
+      const spyTruyVan = jest.spyOn(sequelize, 'query').mockResolvedValue([]);
+
+      try {
+        await Sach.findAll({ where: chuaTuKhoa('[Sach].[TenSach]', 'so do'), attributes: ['MaSach'] });
+        const cauSql = String(spyTruyVan.mock.calls[0][0].query || spyTruyVan.mock.calls[0][0]);
+        expect(cauSql).toContain("[Sach].[TenSach] COLLATE Latin1_General_CI_AI LIKE N'%so do%'");
+      } finally {
+        spyTruyVan.mockRestore();
+      }
+    });
+
+    it('layDanhSachSach tìm theo cả TenSach lẫn TacGia bằng điều kiện không dấu', async () => {
+      const { Sach } = require('../src/models');
+      const { layDanhSachSach } = require('../src/services/sachService');
+      const spyTim = jest.spyOn(Sach, 'findAndCountAll').mockResolvedValue({ rows: [], count: 0 });
+
+      try {
+        await layDanhSachSach({ search: 'dac nhan' });
+        const dieuKienOr = spyTim.mock.calls[0][0].where[Op.or];
+        expect(dieuKienOr).toHaveLength(2);
+        dieuKienOr.forEach((dk) => expect(dk.constructor.name).toBe('Where'));
+      } finally {
+        spyTim.mockRestore();
+      }
+    });
+  });
+
   afterAll(async () => {
     try {
       const { sequelize } = require('../src/models');

@@ -19,7 +19,7 @@ Dự án chú trọng đặc biệt vào:
 ---
 
 ## 2. Công Nghệ Sử Dụng
-- **Database Engine:** Microsoft SQL Server 2022 Express Edition (Cổng 1433, Collation CSDL mặc định: `SQL_Latin1_General_CP1_CI_AS`, Collation cột chữ tiếng Việt `TenSach` & `TacGia`: `Vietnamese_CI_AI`).
+- **Database Engine:** Microsoft SQL Server 2022 Express Edition (Cổng 1433, Collation `Vietnamese_CI_AI` cho cột `TenSach` & `TacGia`; tìm kiếm không dấu ép so sánh bằng `Latin1_General_CI_AI`).
 - **Backend Framework:** Node.js (v20+) & Express.js 5.x.
 - **Bảo mật:** `helmet`, `express-rate-limit`, `cors`, `jsonwebtoken`, `bcryptjs`.
 - **ORM & Database Driver:** Sequelize 6.x & Tedious 20.x.
@@ -69,7 +69,8 @@ Project_MonBE/
 ### Bước 1: Chuẩn bị Cơ sở dữ liệu MS SQL Server
 1. Mở **SQL Server Configuration Manager**, đảm bảo dịch vụ **SQL Server (SQLEXPRESS)** đang chạy và giao thức **TCP/IP** đã được `Enabled` ở cổng **1433**.
 2. Mở **SQL Server Management Studio (SSMS)** hoặc công cụ dòng lệnh:
-   - Chạy tập lệnh [`database/01_tao_bang.sql`](./database/01_tao_bang.sql) để tạo cơ sở dữ liệu `BookNestDB` và 9 bảng cùng 15 chỉ mục tối ưu.
+   - Tạo trước một CSDL trống (script không tự tạo CSDL): `CREATE DATABASE BookNestDB COLLATE Vietnamese_CI_AI;`
+   - Chạy tập lệnh [`database/01_tao_bang.sql`](./database/01_tao_bang.sql) để tạo 9 bảng cùng 15 chỉ mục tối ưu trong `BookNestDB`.
    - Chạy tập lệnh [`database/02_du_lieu_mau.sql`](./database/02_du_lieu_mau.sql) để nạp 36 cuốn sách và các tài khoản demo.
    - *(Tùy chọn nâng cao)*: Chạy [`database/04_cau_hinh_va_toi_uu_index.sql`](./database/04_cau_hinh_va_toi_uu_index.sql) để kích hoạt RCSI (`READ_COMMITTED_SNAPSHOT`) và tắt `AUTO_CLOSE`.
 

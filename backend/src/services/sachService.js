@@ -4,6 +4,7 @@
 const { Op } = require('sequelize');
 const { sequelize, Sach, DanhMuc, LichSuNhapKho, NguoiDung } = require('../models');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
+const { chuaTuKhoa } = require('../utils/timKiem');
 
 // Lấy danh sách sách công khai (tìm kiếm, lọc giá, lọc danh mục, phân trang)
 async function layDanhSachSach({
@@ -28,8 +29,8 @@ async function layDanhSachSach({
   if (search && search.trim().length > 0) {
     const tuKhoa = search.trim();
     dieuKien[Op.or] = [
-      { TenSach: { [Op.like]: `%${tuKhoa}%` } },
-      { TacGia: { [Op.like]: `%${tuKhoa}%` } }
+      chuaTuKhoa('[Sach].[TenSach]', tuKhoa),
+      chuaTuKhoa('[Sach].[TacGia]', tuKhoa)
     ];
   }
 

@@ -5,6 +5,7 @@ const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
 const { NguoiDung } = require('../models');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
+const { chuaTuKhoa } = require('../utils/timKiem');
 
 // Lấy thông tin hồ sơ cá nhân của người dùng hiện tại
 async function layThongTinHoSo(maNguoiDung) {
@@ -71,7 +72,7 @@ async function adminLayDanhSachNguoiDung({ page = 1, limit = 10, role, search })
   if (search && search.trim().length > 0) {
     const tuKhoa = search.trim();
     dieuKien[Op.or] = [
-      { HoTen: { [Op.like]: `%${tuKhoa}%` } },
+      chuaTuKhoa('[NguoiDung].[HoTen]', tuKhoa),
       { Email: { [Op.like]: `%${tuKhoa}%` } }
     ];
   }
