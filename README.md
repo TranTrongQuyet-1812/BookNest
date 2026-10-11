@@ -54,7 +54,6 @@ Project_MonBE/
 │   │   ├── pages/              # Storefront (Trang chủ, Chi tiết sách, Giỏ hàng, Đơn hàng)
 │   │   └── pages/admin/        # Back-Office (Dashboard thống kê, Sách, Kho, Đơn hàng, Nhân sự)
 │   └── vite.config.js          # Proxy /api sang backend port 5000
-├── PROMPT_LOG.md               # Nhật ký 12 prompt điều hướng và phản biện AI (T24)
 └── README.md                   # Hướng dẫn cài đặt và sử dụng hệ thống
 ```
 
@@ -119,8 +118,3 @@ Tất cả các tài khoản demo đều dùng chung mật khẩu: **`BookNest@1
 - Địa chỉ truy cập tài liệu tương tác: **`http://localhost:5000/api-docs`**
 - Hỗ trợ nút **Authorize** với Bearer JWT để thử nghiệm trực tiếp mọi endpoint có phân quyền trên trình duyệt.
 - Cung cấp đặc tả OpenAPI 3.0 chuẩn hóa, mô tả mọi endpoint và không có route alias dư thừa.
-
----
-
-## 7. Tài Liệu Hỗ Trợ Đồ Án
-- [`PROMPT_LOG.md`](./PROMPT_LOG.md): Nhật ký 12 prompt điều hướng và phản biện AI chuẩn cấu trúc Context – Task – Constraint.
