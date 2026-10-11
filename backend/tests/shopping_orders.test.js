@@ -60,8 +60,15 @@ describe('Kiểm thử Giai đoạn GĐ5: Mua Hàng (T12 - T16)', () => {
   });
 
   afterAll(async () => {
-    // Dọn dẹp dữ liệu test phát sinh
+    // Dọn dẹp dữ liệu test phát sinh và bảo toàn tồn kho CSDL
     if (maDonHangTest) {
+      const don = await DonHang.findByPk(maDonHangTest);
+      if (don && don.TrangThai !== 'CANCELLED') {
+        const chiTiets = await ChiTietDonHang.findAll({ where: { MaDonHang: maDonHangTest } });
+        for (const ct of chiTiets) {
+          await Sach.increment('SoLuongTon', { by: ct.SoLuong, where: { MaSach: ct.MaSach } });
+        }
+      }
       await LichSuTrangThaiDonHang.destroy({ where: { MaDonHang: maDonHangTest } });
       await ChiTietDonHang.destroy({ where: { MaDonHang: maDonHangTest } });
       await DonHang.destroy({ where: { MaDonHang: maDonHangTest } });
@@ -386,6 +393,8 @@ describe('Kiểm thử Giai đoạn GĐ5: Mua Hàng (T12 - T16)', () => {
 
     afterAll(async () => {
       if (maDonNhanVienTest) {
+        // Đơn maDonNhanVienTest đã trừ 1 cuốn maSachBanChay lúc tạo đơn, cần hoàn lại tồn kho trước khi xóa
+        await Sach.increment('SoLuongTon', { by: 1, where: { MaSach: maSachBanChay } });
         await LichSuTrangThaiDonHang.destroy({ where: { MaDonHang: maDonNhanVienTest } });
         await ChiTietDonHang.destroy({ where: { MaDonHang: maDonNhanVienTest } });
         await DonHang.destroy({ where: { MaDonHang: maDonNhanVienTest } });

@@ -4,13 +4,17 @@
 const request = require('supertest');
 const express = require('express');
 const app = require('../src/app');
-const { sequelize } = require('../src/models');
+const { sequelize, NguoiDung } = require('../src/models');
 const xacThucToken = require('../src/middlewares/xacThucToken');
 const phanQuyen = require('../src/middlewares/phanQuyen');
 const { phanHoiThanhCong } = require('../src/middlewares/phanHoi');
 
 describe('Kiểm thử Xác thực (T07) & Phân quyền RBAC (T08)', () => {
   afterAll(async () => {
+    // Dọn dẹp tài khoản test đã tạo để tránh làm bẩn CSDL
+    if (emailMoi) {
+      await NguoiDung.destroy({ where: { Email: emailMoi } });
+    }
     await sequelize.close();
   });
 

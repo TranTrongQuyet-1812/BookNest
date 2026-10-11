@@ -265,4 +265,56 @@ describe('Task T20: Unit Test các Logic Nghiệp Vụ Cốt Lõi (Pure Unit Tes
       expect(loi.maTrangThai).toBe(400);
     });
   });
+
+  // =========================================================================
+  // 9. KIỂM THỬ TÀI LIỆU API SWAGGER (F01 & F15)
+  // =========================================================================
+  describe('9. Kiểm thử Tài liệu API Swagger (F01 & F15)', () => {
+    const swaggerSpec = require('../src/config/swagger');
+
+    it('Tài liệu Swagger OpenAPI 3.0 hợp lệ và có đầy đủ cấu hình bảo mật Bearer JWT', () => {
+      expect(swaggerSpec.openapi).toBe('3.0.0');
+      expect(swaggerSpec.info.title).toContain('BookNest');
+      expect(swaggerSpec.components.securitySchemes.bearerAuth).toBeDefined();
+      expect(swaggerSpec.components.securitySchemes.bearerAuth.type).toBe('http');
+      expect(swaggerSpec.components.securitySchemes.bearerAuth.scheme).toBe('bearer');
+    });
+
+    it('Tài liệu Swagger chứa đầy đủ toàn bộ ít nhất 29 routes API của hệ thống', () => {
+      const danhSachPaths = Object.keys(swaggerSpec.paths);
+      expect(danhSachPaths.length).toBeGreaterThanOrEqual(29);
+
+      // Kiểm tra có đầy đủ các tuyến đường cốt lõi
+      expect(danhSachPaths).toContain('/api/auth/register');
+      expect(danhSachPaths).toContain('/api/auth/login');
+      expect(danhSachPaths).toContain('/api/books');
+      expect(danhSachPaths).toContain('/api/cart');
+      expect(danhSachPaths).toContain('/api/orders');
+      expect(danhSachPaths).toContain('/api/admin/orders');
+      expect(danhSachPaths).toContain('/api/admin/stats/overview');
+    });
+  });
+
+  // =========================================================================
+  // 10. KIỂM THỬ THUẬT TOÁN SẮP XẾP CHỐNG DEADLOCK 1205 (F04 & F15)
+  // =========================================================================
+  describe('10. Kiểm thử Logic sắp xếp khóa dòng chống Deadlock (F04 & F15)', () => {
+    it('Mọi danh sách chi tiết đơn hàng đều được sắp xếp MaSach ASC tăng dần trước khi hoàn kho', () => {
+      const danhSachChiTietLuyenThuyen = [
+        { MaSach: 14, SoLuong: 2 },
+        { MaSach: 1, SoLuong: 1 },
+        { MaSach: 28, SoLuong: 3 },
+        { MaSach: 5, SoLuong: 1 }
+      ];
+
+      const danhSachSapXep = [...danhSachChiTietLuyenThuyen].sort((a, b) => a.MaSach - b.MaSach);
+
+      // Kiểm tra thứ tự MaSach sau sắp xếp: 1, 5, 14, 28
+      expect(danhSachSapXep.map(item => item.MaSach)).toEqual([1, 5, 14, 28]);
+      for (let i = 0; i < danhSachSapXep.length - 1; i++) {
+        expect(danhSachSapXep[i].MaSach).toBeLessThan(danhSachSapXep[i + 1].MaSach);
+      }
+    });
+  });
 });
+

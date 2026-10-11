@@ -227,43 +227,94 @@ GO
 
 INSERT INTO dbo.LichSuTrangThaiDonHang (MaLichSu, MaDonHang, TrangThaiCu, TrangThaiMoi, MaNguoiThucHien, GhiChu, NgayThayDoi)
 VALUES 
+-- Đơn 1: PENDING
 (1, 1, NULL, 'PENDING', 4, N'Khách hàng đặt đơn trực tuyến tại BookNest Storefront', DATEADD(MINUTE, -120, SYSDATETIME())),
+
+-- Đơn 2: PENDING -> CONFIRMED
 (2, 2, NULL, 'PENDING', 5, N'Khách hàng tạo đơn hàng', DATEADD(HOUR, -5, SYSDATETIME())),
 (3, 2, 'PENDING', 'CONFIRMED', 3, N'Nhân viên đơn hàng xác nhận đủ tồn kho và duyệt đơn', DATEADD(HOUR, -4, SYSDATETIME())),
+
+-- Đơn 3: PENDING -> CONFIRMED -> SHIPPING
 (4, 3, NULL, 'PENDING', 6, N'Khách hàng tạo đơn hàng', DATEADD(DAY, -1, SYSDATETIME())),
 (5, 3, 'PENDING', 'CONFIRMED', 3, N'Nhân viên duyệt đơn và đóng gói sách', DATEADD(HOUR, -20, SYSDATETIME())),
 (6, 3, 'CONFIRMED', 'SHIPPING', 3, N'Đã bàn giao đơn hàng cho đơn vị vận chuyển Viettel Post', DATEADD(HOUR, -16, SYSDATETIME())),
+
+-- Đơn 4: PENDING -> CONFIRMED -> SHIPPING -> DELIVERED
 (7, 4, NULL, 'PENDING', 4, N'Khách hàng tạo đơn hàng', DATEADD(DAY, -3, SYSDATETIME())),
 (8, 4, 'PENDING', 'CONFIRMED', 3, N'Nhân viên duyệt đơn hàng', DATEADD(HOUR, -68, SYSDATETIME())),
 (9, 4, 'CONFIRMED', 'SHIPPING', 3, N'Đã giao bưu tá vận chuyển', DATEADD(HOUR, -60, SYSDATETIME())),
 (10, 4, 'SHIPPING', 'DELIVERED', 3, N'Giao hàng thành công, khách đã ký nhận và thanh toán', DATEADD(DAY, -2, SYSDATETIME())),
+
+-- Đơn 5: PENDING -> CANCELLED
 (11, 5, NULL, 'PENDING', 7, N'Khách hàng tạo đơn hàng', DATEADD(DAY, -2, SYSDATETIME())),
 (12, 5, 'PENDING', 'CANCELLED', 7, N'Khách đổi ý muốn mua sách phiên bản tiếng Anh thay thế', DATEADD(HOUR, -40, SYSDATETIME())),
+
+-- Đơn 6: PENDING -> CONFIRMED -> SHIPPING -> DELIVERED (Tuần tự chuẩn State Machine)
 (13, 6, NULL, 'PENDING', 5, N'Khách hàng tạo đơn hàng', DATEADD(DAY, -10, SYSDATETIME())),
-(14, 6, 'PENDING', 'DELIVERED', 3, N'Giao hàng thành công', DATEADD(DAY, -8, SYSDATETIME())),
-(15, 7, NULL, 'PENDING', 6, N'Khách hàng tạo đơn hàng', DATEADD(DAY, -7, SYSDATETIME())),
-(16, 7, 'PENDING', 'DELIVERED', 3, N'Giao hàng thành công', DATEADD(DAY, -5, SYSDATETIME())),
-(17, 8, NULL, 'PENDING', 7, N'Khách hàng tạo đơn hàng', DATEADD(DAY, -5, SYSDATETIME())),
-(18, 8, 'PENDING', 'DELIVERED', 3, N'Giao hàng thành công', DATEADD(DAY, -3, SYSDATETIME()));
+(14, 6, 'PENDING', 'CONFIRMED', 3, N'Nhân viên đơn hàng xác nhận đủ sách', DATEADD(HOUR, -238, SYSDATETIME())),
+(15, 6, 'CONFIRMED', 'SHIPPING', 3, N'Đã giao bưu tá Viettel Post', DATEADD(DAY, -9, SYSDATETIME())),
+(16, 6, 'SHIPPING', 'DELIVERED', 3, N'Giao hàng thành công, khách đã ký nhận', DATEADD(DAY, -8, SYSDATETIME())),
+
+-- Đơn 7: PENDING -> CONFIRMED -> SHIPPING -> DELIVERED (Tuần tự chuẩn State Machine)
+(17, 7, NULL, 'PENDING', 6, N'Khách hàng tạo đơn hàng', DATEADD(DAY, -7, SYSDATETIME())),
+(18, 7, 'PENDING', 'CONFIRMED', 3, N'Nhân viên đơn hàng xác nhận đủ sách', DATEADD(HOUR, -166, SYSDATETIME())),
+(19, 7, 'CONFIRMED', 'SHIPPING', 3, N'Đã giao bưu tá Viettel Post', DATEADD(DAY, -6, SYSDATETIME())),
+(20, 7, 'SHIPPING', 'DELIVERED', 3, N'Giao hàng thành công, khách đã ký nhận', DATEADD(DAY, -5, SYSDATETIME())),
+
+-- Đơn 8: PENDING -> CONFIRMED -> SHIPPING -> DELIVERED (Tuần tự chuẩn State Machine)
+(21, 8, NULL, 'PENDING', 7, N'Khách hàng tạo đơn hàng', DATEADD(DAY, -5, SYSDATETIME())),
+(22, 8, 'PENDING', 'CONFIRMED', 3, N'Nhân viên đơn hàng xác nhận đủ sách', DATEADD(HOUR, -118, SYSDATETIME())),
+(23, 8, 'CONFIRMED', 'SHIPPING', 3, N'Đã giao bưu tá Viettel Post', DATEADD(DAY, -4, SYSDATETIME())),
+(24, 8, 'SHIPPING', 'DELIVERED', 3, N'Giao hàng thành công, khách đã ký nhận', DATEADD(DAY, -3, SYSDATETIME()));
 GO
 
 SET IDENTITY_INSERT dbo.LichSuTrangThaiDonHang OFF;
 GO
 
 -- ====================================================================================
--- PHẦN 8: CHÈN DỮ LIỆU BẢNG LICHSUNHAPKHO
+-- PHẦN 8: CHÈN DỮ LIỆU BẢNG LICHSUNHAPKHO (ĐẦY ĐỦ 36 ĐẦU SÁCH KHỚP SỔ SÁCH TỒN KHO)
 -- ====================================================================================
 SET IDENTITY_INSERT dbo.LichSuNhapKho ON;
 GO
 
 INSERT INTO dbo.LichSuNhapKho (MaNhapKho, MaSach, SoLuongNhap, MaNguoiNhap, GhiChu, NgayNhap)
 VALUES 
-(1, 1, 50, 2, N'Nhập lô sách đợt đầu từ Nhà Xuất Bản Văn Học', DATEADD(DAY, -30, SYSDATETIME())),
-(2, 9, 40, 2, N'Nhập lô sách đầu tư từ NXB Trẻ', DATEADD(DAY, -25, SYSDATETIME())),
-(3, 14, 70, 2, N'Nhập đợt mới từ NXB Kim Đồng phục vụ mùa tựu trường', DATEADD(DAY, -20, SYSDATETIME())),
-(4, 18, 100, 2, N'Nhập tái bản sách Đắc Nhân Tâm từ First News', DATEADD(DAY, -15, SYSDATETIME())),
-(5, 25, 20, 1, N'Quản trị viên bổ sung thêm đầu sách Clean Code từ Alpha Books', DATEADD(DAY, -10, SYSDATETIME())),
-(6, 28, 40, 2, N'Nhập bổ sung Sapiens từ NXB Tri Thức', DATEADD(DAY, -5, SYSDATETIME()));
+(1, 1, 46, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (Nhà Xuất Bản Văn Học)', DATEADD(DAY, -30, SYSDATETIME())),
+(2, 2, 81, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Kim Đồng)', DATEADD(DAY, -30, SYSDATETIME())),
+(3, 3, 35, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Văn Học)', DATEADD(DAY, -30, SYSDATETIME())),
+(4, 4, 20, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Quân Đội Nhân Dân)', DATEADD(DAY, -30, SYSDATETIME())),
+(5, 5, 51, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Trẻ)', DATEADD(DAY, -30, SYSDATETIME())),
+(6, 6, 3, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Trẻ)', DATEADD(DAY, -30, SYSDATETIME())),
+(7, 7, 0, 2, N'Ghi nhận đầu sách (Tạm hết hàng)', DATEADD(DAY, -30, SYSDATETIME())),
+(8, 8, 15, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Trẻ)', DATEADD(DAY, -30, SYSDATETIME())),
+(9, 9, 41, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Trẻ)', DATEADD(DAY, -30, SYSDATETIME())),
+(10, 10, 60, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Trẻ)', DATEADD(DAY, -30, SYSDATETIME())),
+(11, 11, 25, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Lao Động - Xã Hội)', DATEADD(DAY, -30, SYSDATETIME())),
+(12, 12, 30, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Thế Giới)', DATEADD(DAY, -30, SYSDATETIME())),
+(13, 13, 2, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Tổng Hợp TP.HCM)', DATEADD(DAY, -30, SYSDATETIME())),
+(14, 14, 73, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Kim Đồng)', DATEADD(DAY, -30, SYSDATETIME())),
+(15, 15, 55, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Hội Nhà Văn)', DATEADD(DAY, -30, SYSDATETIME())),
+(16, 16, 40, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Trẻ)', DATEADD(DAY, -30, SYSDATETIME())),
+(17, 17, 35, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Hội Nhà Văn)', DATEADD(DAY, -30, SYSDATETIME())),
+(18, 18, 92, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (First News)', DATEADD(DAY, -30, SYSDATETIME())),
+(19, 19, 50, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (First News)', DATEADD(DAY, -30, SYSDATETIME())),
+(20, 20, 45, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (First News)', DATEADD(DAY, -30, SYSDATETIME())),
+(21, 21, 65, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Hội Nhà Văn)', DATEADD(DAY, -30, SYSDATETIME())),
+(22, 22, 0, 2, N'Ghi nhận đầu sách (Tạm hết hàng)', DATEADD(DAY, -30, SYSDATETIME())),
+(23, 23, 35, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Trẻ)', DATEADD(DAY, -30, SYSDATETIME())),
+(24, 24, 20, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Trẻ)', DATEADD(DAY, -30, SYSDATETIME())),
+(25, 25, 18, 1, N'Quản trị viên nhập kho ban đầu (Alpha Books)', DATEADD(DAY, -30, SYSDATETIME())),
+(26, 26, 4, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Thế Giới)', DATEADD(DAY, -30, SYSDATETIME())),
+(27, 27, 12, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Bách Khoa Hà Nội)', DATEADD(DAY, -30, SYSDATETIME())),
+(28, 28, 42, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Tri Thức)', DATEADD(DAY, -30, SYSDATETIME())),
+(29, 29, 30, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Tri Thức)', DATEADD(DAY, -30, SYSDATETIME())),
+(30, 30, 15, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Khoa Học Xã Hội)', DATEADD(DAY, -30, SYSDATETIME())),
+(31, 31, 22, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Văn Hóa Thông Tin)', DATEADD(DAY, -30, SYSDATETIME())),
+(32, 32, 40, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Thế Giới)', DATEADD(DAY, -30, SYSDATETIME())),
+(33, 33, 28, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Thế Giới)', DATEADD(DAY, -30, SYSDATETIME())),
+(34, 34, 35, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Lao Động)', DATEADD(DAY, -30, SYSDATETIME())),
+(35, 35, 50, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (Cambridge University Press)', DATEADD(DAY, -30, SYSDATETIME())),
+(36, 36, 30, 2, N'Nhập kho ban đầu khi khởi tạo hệ thống (NXB Dân Trí)', DATEADD(DAY, -30, SYSDATETIME()));
 GO
 
 SET IDENTITY_INSERT dbo.LichSuNhapKho OFF;
