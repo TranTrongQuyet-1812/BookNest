@@ -1,0 +1,65 @@
+/**
+ * Quản lý cấu hình Express Application cho dự án BookNest.
+ * Tách biệt app và server để phục vụ viết Unit Test / Integration Test với Supertest.
+ */
+const express = require('express');
+const cors = require('cors');
+const { phanHoiThanhCong } = require('./middlewares/phanHoi');
+const xuLy404 = require('./middlewares/xuLy404');
+const xuLyLoi = require('./middlewares/xuLyLoi');
+
+// Nạp các Router phân hệ
+const xacThucRoutes = require('./routes/xacThucRoutes');
+const nguoiDungRoutes = require('./routes/nguoiDungRoutes');
+const danhMucRoutes = require('./routes/danhMucRoutes');
+const sachRoutes = require('./routes/sachRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const gioHangRoutes = require('./routes/gioHangRoutes');
+const donHangRoutes = require('./routes/donHangRoutes');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
+
+const app = express();
+
+// Middleware giải mã JSON body và form urlencoded để xử lý dữ liệu gửi lên
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Cho phép gọi API chéo domain (CORS) từ giao diện Storefront và Back-Office
+app.use(cors());
+
+// Tuyến đường kiểm tra tình trạng dịch vụ gốc (Root Health Check)
+app.get('/', (req, res) => {
+  return phanHoiThanhCong(res, {
+    thongDiep: 'BookNest API đang hoạt động ổn định',
+    duLieu: { thoiGian: new Date().toISOString() }
+  });
+});
+
+// Tuyến đường kiểm tra sức khỏe hệ thống (API Health Check theo đặc tả T04)
+app.get('/api/suc-khoe', (req, res) => {
+  return phanHoiThanhCong(res, {
+    thongDiep: 'Hệ thống BookNest Backend hoạt động bình thường',
+    duLieu: { phienBan: '1.0.0', thoiGian: new Date().toISOString() }
+  });
+});
+
+// Gắn các tuyến đường API
+app.use('/api/auth', xacThucRoutes);
+app.use('/api/users', nguoiDungRoutes);
+app.use('/api/categories', danhMucRoutes);
+app.use('/api/books', sachRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/cart', gioHangRoutes);
+app.use('/api/orders', donHangRoutes);
+
+// Tuyến đường tài liệu Swagger UI (T19)
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Middleware bắt route không tồn tại (404)
+app.use(xuLy404);
+
+// Middleware bắt và xử lý lỗi tập trung (Error Handler)
+app.use(xuLyLoi);
+
+module.exports = app;

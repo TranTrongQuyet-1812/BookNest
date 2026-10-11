@@ -1,0 +1,61 @@
+/**
+ * Model Sequelize ánh xạ bảng Sach trong cơ sở dữ liệu BookNestDB.
+ * Quản lý thông tin sách, tác giả, giá bán, tồn kho và trạng thái ẩn/hiện.
+ */
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/ketNoiDb');
+
+const Sach = sequelize.define('Sach', {
+  MaSach: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    allowNull: false
+  },
+  TenSach: {
+    type: DataTypes.STRING(255),
+    allowNull: false
+  },
+  TacGia: {
+    type: DataTypes.STRING(150),
+    allowNull: false
+  },
+  MoTa: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  GiaBan: {
+    type: DataTypes.DECIMAL(12, 2),
+    allowNull: false
+  },
+  SoLuongTon: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
+  },
+  NguongCanhBao: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 5
+  },
+  AnhBia: {
+    type: DataTypes.STRING(500),
+    allowNull: true
+  },
+  MaDanhMuc: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  DaAn: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false
+  }
+}, {
+  tableName: 'Sach',
+  freezeTableName: true,
+  createdAt: 'NgayTao',
+  updatedAt: 'NgayCapNhat'
+});
+
+module.exports = Sach;
