@@ -25,11 +25,11 @@ export const ChiTietDonHang = () => {
     let daHuy = false;
     const napChiTiet = async () => {
       try {
-        const res = await api.get(`/orders/${id}`);
+        const res = await api.get(`/orders/my-orders/${id}`);
         if (daHuy) return;
         setDonHang(res.data.data);
       } catch (err) {
-        if (!daHuy) setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Không tìm thấy thông tin đơn hàng này (IDOR Protected)');
+        if (!daHuy) setLoi(err.response?.data?.message || 'Không tìm thấy thông tin đơn hàng này (IDOR Protected)');
       } finally {
         if (!daHuy) setDangTai(false);
       }

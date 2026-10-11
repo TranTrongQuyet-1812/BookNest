@@ -45,7 +45,7 @@ export const QuanLyNhanSu = () => {
       const ds = res.data.data?.danhSach || res.data.data || [];
       setNguoiDungList(Array.isArray(ds) ? ds : []);
     } catch (err) {
-      setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Không thể tải danh sách tài khoản');
+      setLoi(err.response?.data?.message || 'Không thể tải danh sách tài khoản');
     } finally {
       setDangTai(false);
     }
@@ -100,7 +100,7 @@ export const QuanLyNhanSu = () => {
       taiNguoiDung();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.message || err.response?.data?.thongDiep || 'Lỗi khi cập nhật trạng thái người dùng');
+      alert(err.response?.data?.message || 'Lỗi khi cập nhật trạng thái người dùng');
     }
   };
 
@@ -130,7 +130,7 @@ export const QuanLyNhanSu = () => {
       taiNguoiDung();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.message || err.response?.data?.thongDiep || 'Lỗi khi tạo tài khoản nhân sự');
+      alert(err.response?.data?.message || 'Lỗi khi tạo tài khoản nhân sự');
     } finally {
       setDangTao(false);
     }

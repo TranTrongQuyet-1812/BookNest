@@ -37,7 +37,7 @@ export const QuanLyDonHang = () => {
         setPhanTrang(res.data.data.phanTrang);
       }
     } catch (err) {
-      setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Không thể tải danh sách đơn hàng');
+      setLoi(err.response?.data?.message || 'Không thể tải danh sách đơn hàng');
     } finally {
       setDangTai(false);
     }
@@ -82,7 +82,7 @@ export const QuanLyDonHang = () => {
       taiDonHang();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.message || err.response?.data?.thongDiep || 'Chuyển trạng thái thất bại');
+      alert(err.response?.data?.message || 'Chuyển trạng thái thất bại');
     }
   };
 
@@ -101,7 +101,7 @@ export const QuanLyDonHang = () => {
       taiDonHang();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.message || err.response?.data?.thongDiep || 'Không thể hủy đơn hàng này');
+      alert(err.response?.data?.message || 'Không thể hủy đơn hàng này');
     }
   };
 

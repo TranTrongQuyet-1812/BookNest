@@ -65,7 +65,7 @@ export const ThanhToan = () => {
       alert('Chúc mừng! Đơn hàng của bạn đã được khởi tạo thành công.');
       navigate(`/orders/${maDonHang}`);
     } catch (err) {
-      setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Đặt hàng thất bại. Vui lòng kiểm tra lại');
+      setLoi(err.response?.data?.message || 'Đặt hàng thất bại. Vui lòng kiểm tra lại');
     } finally {
       setDangDatHang(false);
     }

@@ -323,6 +323,22 @@ describe('Task T20: Unit Test các Logic Nghiệp Vụ Cốt Lõi (Pure Unit Tes
   describe('11. Kiểm thử Bảo mật HTTP Headers & Rate Limiting (F08)', () => {
     const request = require('supertest');
     const app = require('../src/app');
+    const xacThucService = require('../src/services/xacThucService');
+
+    let dangNhapSpy;
+
+    beforeAll(() => {
+      // Mock xacThucService.dangNhap để bảo đảm unit test thuần 100% không chạm CSDL thật
+      dangNhapSpy = jest.spyOn(xacThucService, 'dangNhap').mockImplementation(async () => {
+        throw new LoiNghiepVu('Email hoặc mật khẩu không chính xác', 401);
+      });
+    });
+
+    afterAll(() => {
+      if (dangNhapSpy) {
+        dangNhapSpy.mockRestore();
+      }
+    });
 
     it('Helmet tự động gắn các HTTP Security Headers an toàn (X-Content-Type-Options, X-Frame-Options...)', async () => {
       const phanHoi = await request(app).get('/api/suc-khoe');
@@ -341,6 +357,33 @@ describe('Task T20: Unit Test các Logic Nghiệp Vụ Cốt Lõi (Pure Unit Tes
 
       // Cả trường hợp thành công hay thất bại, rate limiter đều trả về header ratelimit
       expect(phanHoi.headers['ratelimit-limit'] || phanHoi.headers['x-ratelimit-limit']).toBeDefined();
+    });
+  });
+
+  // =========================================================================
+  // 12. KIỂM THỬ KHÓA DÒNG MSSQL VỚI UPDLOCK (F02)
+  // =========================================================================
+  describe('12. Kiểm thử Khóa dòng MSSQL WITH (UPDLOCK) (F02)', () => {
+    const { Sequelize, TableHints } = require('sequelize');
+
+    it('Cú pháp tableHint: TableHints.UPDLOCK sinh câu lệnh SELECT chứa WITH (UPDLOCK) trên dialect mssql', () => {
+      // Khởi tạo instance Sequelize với dialect mssql độc lập (không cần kết nối server)
+      const mockSequelize = new Sequelize('mock_db', 'sa', 'Password123!', {
+        dialect: 'mssql',
+        logging: false
+      });
+
+      // Định nghĩa model GioHang đại diện
+      const MockGioHang = mockSequelize.define('GioHang', {}, { tableName: 'GioHang', timestamps: false });
+
+      // Sinh câu truy vấn SELECT với tableHint UPDLOCK
+      const cauQuerySql = mockSequelize.dialect.queryGenerator.selectQuery(MockGioHang.tableName, {
+        tableHint: TableHints.UPDLOCK,
+        where: { MaNguoiDung: 1 }
+      });
+
+      // Xác nhận câu truy vấn SQL chứa chỉ dẫn khóa độc quyền dòng cập nhật WITH (UPDLOCK)
+      expect(cauQuerySql).toContain('WITH (UPDLOCK)');
     });
   });
 

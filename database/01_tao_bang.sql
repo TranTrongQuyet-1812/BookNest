@@ -1,7 +1,7 @@
 -- ====================================================================================
 -- DỰ ÁN: BookNest - Website Quản lý & Bán Sách Trực Tuyến
 -- TỆP: database/01_tao_bang.sql
--- MỤC TIÊU: Tạo 9 bảng chuẩn 3NF, ràng buộc toàn vẹn, khóa ngoại NO ACTION và 14 index (gồm Covering Indexes)
+-- MỤC TIÊU: Tạo 9 bảng chuẩn 3NF, ràng buộc toàn vẹn, khóa ngoại NO ACTION và 15 index (gồm Covering Indexes)
 -- HỆ QUẢN TRỊ: Microsoft SQL Server 2022 Express
 -- ====================================================================================
 
@@ -207,7 +207,7 @@ CREATE TABLE dbo.LichSuTrangThaiDonHang (
 GO
 
 -- ====================================================================================
--- PHẦN 3: TẠO 14 CHỈ MỤC (INDEX) TỐI ƯU HÓA TRUY VẤN DỮ LIỆU LỚN
+-- PHẦN 3: TẠO 15 CHỈ MỤC (INDEX) TỐI ƯU HÓA TRUY VẤN DỮ LIỆU LỚN
 -- ====================================================================================
 
 -- 1. Index lọc sách theo danh mục

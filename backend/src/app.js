@@ -22,6 +22,9 @@ const swaggerSpec = require('./config/swagger');
 
 const app = express();
 
+// Tin cậy reverse proxy (Nginx / Cloudflare) để rate limiting nhận đúng IP của Client
+app.set('trust proxy', 1);
+
 // Middleware bảo mật HTTP headers (Helmet)
 // Tắt CSP nghiêm ngặt để Swagger UI hiển thị tài liệu API trơn tru
 app.use(

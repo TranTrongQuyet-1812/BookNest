@@ -23,7 +23,7 @@ export const KhongCoQuyen = () => {
           Từ Chối Quyền Truy Cập (403)
         </h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.925rem', marginBottom: '1.5rem' }}>
-          Tài khoản của bạn ({user?.email || 'Khách'}) mang vai trò <strong>{user?.vaiTro || 'Chưa xác thực'}</strong>, không có thẩm quyền truy cập vào phân hệ này.
+          Tài khoản của bạn ({user?.email || 'Khách'}) mang vai trò <strong>{user?.role || 'Chưa xác thực'}</strong>, không có thẩm quyền truy cập vào phân hệ này.
         </p>
 
         <div className="flex justify-center gap-3">

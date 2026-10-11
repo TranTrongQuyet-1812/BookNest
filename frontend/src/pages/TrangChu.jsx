@@ -96,7 +96,7 @@ export const TrangChu = () => {
       return;
     }
     try {
-      await api.post('/cart', { maSach, soLuong: 1 });
+      await api.post('/cart/items', { maSach, soLuong: 1 });
       setThongBaoThem(`Đã thêm "${tieuDe}" vào giỏ hàng`);
       window.dispatchEvent(new CustomEvent('booknest_cart_updated'));
       setTimeout(() => setThongBaoThem(''), 3000);

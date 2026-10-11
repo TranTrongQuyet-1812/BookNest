@@ -50,7 +50,7 @@ export const QuanLySach = () => {
       setSachList(Array.isArray(dsSach) ? dsSach : []);
       setDanhMucList(Array.isArray(dsDanhMuc) ? dsDanhMuc : []);
     } catch (err) {
-      setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Không thể tải dữ liệu sách');
+      setLoi(err.response?.data?.message || 'Không thể tải dữ liệu sách');
     } finally {
       setDangTai(false);
     }
@@ -138,7 +138,7 @@ export const QuanLySach = () => {
       taiDuLieu();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.message || err.response?.data?.thongDiep || 'Lỗi khi lưu sách');
+      alert(err.response?.data?.message || 'Lỗi khi lưu sách');
     }
   };
 
@@ -157,7 +157,7 @@ export const QuanLySach = () => {
       taiDuLieu();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.message || err.response?.data?.thongDiep || 'Lỗi khi thay đổi trạng thái sách');
+      alert(err.response?.data?.message || 'Lỗi khi thay đổi trạng thái sách');
     }
   };
 
@@ -172,7 +172,7 @@ export const QuanLySach = () => {
       taiDuLieu();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.message || err.response?.data?.thongDiep || 'Lỗi khi tạo thể loại');
+      alert(err.response?.data?.message || 'Lỗi khi tạo thể loại');
     }
   };
 

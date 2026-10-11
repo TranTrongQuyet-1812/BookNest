@@ -2,7 +2,7 @@
  * Tầng Service quản lý vòng đời đơn hàng, trừ kho có điều kiện (chống bán âm),
  * hoàn kho khi hủy, máy trạng thái chuyển đổi và dòng thời gian lịch sử đơn hàng.
  */
-const { Op } = require('sequelize');
+const { Op, TableHints } = require('sequelize');
 const {
   sequelize,
   DonHang,
@@ -29,13 +29,14 @@ async function datHang(maNguoiDung, thongTinGiaoHang) {
   const t = await sequelize.transaction();
 
   try {
-    // Đọc giỏ hàng BÊN TRONG transaction có khóa dòng t.LOCK.UPDATE
-    // Nếu khách hàng bấm đúp, request thứ hai sẽ phải chờ request thứ nhất commit và thấy giỏ hàng đã trống
+    // Đọc giỏ hàng BÊN TRONG transaction có khóa dòng TableHints.UPDLOCK
+    // Trên SQL Server, lock: t.LOCK.UPDATE bị bỏ qua; TableHints.UPDLOCK sinh WITH (UPDLOCK) thật sự.
+    // Nếu khách hàng bấm đúp, request thứ hai sẽ bị khóa chờ request thứ nhất commit và thấy giỏ hàng đã trống.
     const cacMonTrongGio = await GioHang.findAll({
       where: { MaNguoiDung: maNguoiDung },
       include: [{ model: Sach, as: 'sach' }],
-      transaction: t,
-      lock: t.LOCK.UPDATE
+      tableHint: TableHints.UPDLOCK,
+      transaction: t
     });
 
     if (!cacMonTrongGio || cacMonTrongGio.length === 0) {
@@ -66,10 +67,10 @@ async function datHang(maNguoiDung, thongTinGiaoHang) {
         transaction: t
       });
 
-      // Với MSSQL trong Sequelize, ketQua trả về [[rows, affectedCount]]
-      const soDongCapNhat = (Array.isArray(ketQua) && Array.isArray(ketQua[0]))
-        ? (typeof ketQua[0][1] === 'number' ? ketQua[0][1] : (ketQua[0][0] ? ketQua[0][0].length : 0))
-        : 0;
+      // Với MSSQL trong Sequelize, ketQua trả về mảng [[rows, affectedCount]]
+      const soDongCapNhat = Array.isArray(ketQua?.[0])
+        ? (typeof ketQua[0][1] === 'number' ? ketQua[0][1] : (ketQua[0][0]?.length ?? 0))
+        : (ketQua?.[1] ?? 0);
 
       if (soDongCapNhat === 0) {
         // Đọc lại số lượng tồn kho mới nhất trong DB để báo lỗi chính xác

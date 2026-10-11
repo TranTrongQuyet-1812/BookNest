@@ -153,7 +153,6 @@ router.get('/my-orders', kiemTraDuLieu(luatTruyVanDonKhach, 'query'), batLoiAsyn
  *         description: Không tìm thấy đơn hàng (hoặc không phải đơn của người dùng - chống dò ID)
  */
 router.get('/my-orders/:id', kiemTraChuDon, batLoiAsync(donHangController.xuLyLayChiTietDonCuaKhach));
-router.get('/:id', kiemTraChuDon, batLoiAsync(donHangController.xuLyLayChiTietDonCuaKhach));
 
 /**
  * @swagger

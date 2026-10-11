@@ -90,7 +90,6 @@ router.get('/', batLoiAsync(gioHangController.xuLyLayGioHang));
  *       409:
  *         description: Số lượng yêu cầu vượt quá tồn kho
  */
-router.post('/', kiemTraDuLieu(luatThemVaoGio), batLoiAsync(gioHangController.xuLyThemVaoGio));
 router.post('/items', kiemTraDuLieu(luatThemVaoGio), batLoiAsync(gioHangController.xuLyThemVaoGio));
 
 /**
@@ -131,7 +130,6 @@ router.post('/items', kiemTraDuLieu(luatThemVaoGio), batLoiAsync(gioHangControll
  *       409:
  *         description: Vượt quá tồn kho hiện có
  */
-router.put('/:bookId', kiemTraDuLieu(luatCapNhatSoLuong), batLoiAsync(gioHangController.xuLyCapNhatSoLuong));
 router.put('/items/:bookId', kiemTraDuLieu(luatCapNhatSoLuong), batLoiAsync(gioHangController.xuLyCapNhatSoLuong));
 
 /**
@@ -175,7 +173,6 @@ router.delete('/', batLoiAsync(gioHangController.xuLyXoaToanBoGioHang));
  *             schema:
  *               $ref: '#/components/schemas/PhanHoiThanhCong'
  */
-router.delete('/:bookId', batLoiAsync(gioHangController.xuLyXoaKhoiGio));
 router.delete('/items/:bookId', batLoiAsync(gioHangController.xuLyXoaKhoiGio));
 
 module.exports = router;

@@ -32,7 +32,7 @@ const cauHinh = {
     matKhau: process.env.DB_PASSWORD || ''
   },
   jwt: {
-    biMat: process.env.JWT_SECRET || 'booknest_jwt_secret_key_2026',
+    biMat: process.env.JWT_SECRET,
     hanDung: process.env.JWT_EXPIRES_IN || '7d'
   }
 };

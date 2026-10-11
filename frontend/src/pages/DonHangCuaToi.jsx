@@ -29,7 +29,7 @@ export const DonHangCuaToi = () => {
       const ds = res.data.data?.danhSach || res.data.data || [];
       setDonHangList(Array.isArray(ds) ? ds : []);
     } catch (err) {
-      setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Không thể tải danh sách đơn hàng');
+      setLoi(err.response?.data?.message || 'Không thể tải danh sách đơn hàng');
     } finally {
       setDangTai(false);
     }
@@ -70,7 +70,7 @@ export const DonHangCuaToi = () => {
       alert('Đã hủy đơn hàng thành công. Số lượng sách đã được hoàn trả lại vào kho.');
       taiDonHang();
     } catch (err) {
-      alert(err.response?.data?.message || err.response?.data?.thongDiep || 'Không thể hủy đơn hàng này');
+      alert(err.response?.data?.message || 'Không thể hủy đơn hàng này');
     }
   };
 

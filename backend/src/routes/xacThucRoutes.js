@@ -16,11 +16,12 @@ const router = express.Router();
 const gioiHanDangNhap = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.NODE_ENV === 'test' ? 1000 : 10,
+  skipSuccessfulRequests: true, // Không tính các lần đăng nhập thành công vào giới hạn
   standardHeaders: true,
   legacyHeaders: false,
   message: {
     success: false,
-    message: 'Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau 15 phút.'
+    message: 'Bạn đã thử đăng nhập thất bại quá nhiều lần. Vui lòng thử lại sau 15 phút.'
   }
 });
 

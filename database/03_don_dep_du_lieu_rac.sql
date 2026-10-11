@@ -94,22 +94,22 @@ BEGIN TRY
 
     -- 6. Xóa lịch sử nhập kho của sách test
     DELETE FROM dbo.LichSuNhapKho
-    WHERE MaSach IN (SELECT MaSach FROM dbo.Sach WHERE TenSach LIKE N'%Test%' OR MaSach = 50);
+    WHERE MaSach IN (SELECT MaSach FROM dbo.Sach WHERE TenSach IN (N'Sach Test', N'Sách Test') OR MaSach = 50);
 
     -- 7. Xóa sách test
     DELETE FROM dbo.Sach
-    WHERE TenSach LIKE N'%Test%' OR MaSach = 50;
+    WHERE TenSach IN (N'Sach Test', N'Sách Test') OR MaSach = 50;
 
     -- 8. Xóa danh mục test
     DELETE FROM dbo.DanhMuc
-    WHERE TenDanhMuc LIKE N'%Test%' OR MaDanhMuc = 22;
+    WHERE TenDanhMuc IN (N'Kinh Te Test', N'Kinh Tế Test') OR MaDanhMuc = 22;
 
     -- 9. Cuối cùng, xóa các tài khoản rác trong bảng NguoiDung
     DELETE FROM dbo.NguoiDung
     WHERE MaNguoiDung IN (SELECT MaNguoiDung FROM @DanhSachNguoiDungRac);
 
-    -- 10. Cân đối lại tồn kho cuốn "Số Đỏ" (MaSach = 1) về mức chuẩn 45
-    -- (Do trước đây các lần chạy test đã làm trừ kho mà không hoàn lại)
+    -- 10. Cân đối lại tồn kho cuốn "Số Đỏ" (MaSach = 1) về mức chuẩn theo seed ban đầu
+    -- Khuyến nghị tốt nhất cho buổi demo/chấm đồ án: Chạy lại 01_tao_bang.sql và 02_du_lieu_mau.sql để CSDL mới 100%
     UPDATE dbo.Sach
     SET SoLuongTon = 45
     WHERE MaSach = 1 AND SoLuongTon < 45;

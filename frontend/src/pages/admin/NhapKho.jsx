@@ -37,7 +37,7 @@ export const NhapKho = () => {
       setSachList(Array.isArray(dsSach) ? dsSach : []);
       setLichSuNhap(Array.isArray(dsLichSu) ? dsLichSu : []);
     } catch (err) {
-      setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Không thể tải dữ liệu nhập kho');
+      setLoi(err.response?.data?.message || 'Không thể tải dữ liệu nhập kho');
     } finally {
       setDangTai(false);
     }
@@ -75,10 +75,8 @@ export const NhapKho = () => {
     setDangNhapKho(true);
 
     try {
-      await api.post('/books/inventory/import', {
-        maSach: parseInt(formNhap.maSach),
+      await api.post(`/books/${formNhap.maSach}/stock-in`, {
         soLuongNhap: parseInt(formNhap.soLuongNhap),
-        giaNhap: formNhap.giaNhap ? parseFloat(formNhap.giaNhap) : undefined,
         ghiChu: formNhap.ghiChu || undefined
       });
 
@@ -86,7 +84,7 @@ export const NhapKho = () => {
       setFormNhap({ maSach: '', soLuongNhap: 10, giaNhap: '', ghiChu: '' });
       taiDuLieu();
     } catch (err) {
-      setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Nhập kho thất bại');
+      setLoi(err.response?.data?.message || 'Nhập kho thất bại');
     } finally {
       setDangNhapKho(false);
     }

@@ -164,23 +164,31 @@ router.get(
   batLoiAsync(sachController.xuLySapHetHang)
 );
 
-// Tuyến đường quản lý nhập kho dành cho Back-Office
+/**
+ * @swagger
+ * /api/books/inventory/history:
+ *   get:
+ *     summary: Xem toàn bộ lịch sử các đợt nhập kho gần đây trong hệ thống (Admin, Librarian)
+ *     tags: [Sách & Kho (Books)]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Danh sách các đợt nhập kho gần đây
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Không có quyền truy cập
+ */
 router.get(
   '/inventory/history',
   xacThucToken,
   phanQuyen('admin', 'librarian'),
   batLoiAsync(sachController.xuLyTatCaLichSuNhapKho)
-);
-
-router.post(
-  '/inventory/import',
-  xacThucToken,
-  phanQuyen('admin', 'librarian'),
-  kiemTraDuLieu(luatNhapKho.keys({
-    maSach: Joi.number().integer().positive().required(),
-    giaNhap: Joi.number().min(0).allow(null, '')
-  })),
-  batLoiAsync(sachController.xuLyNhapKho)
 );
 
 /**

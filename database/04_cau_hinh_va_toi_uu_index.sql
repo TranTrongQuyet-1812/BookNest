@@ -3,7 +3,7 @@
 -- TỆP: database/04_cau_hinh_va_toi_uu_index.sql
 -- MỤC TIÊU: 
 --   1. Cấu hình hiệu năng & tính nhất quán (READ_COMMITTED_SNAPSHOT ON, AUTO_CLOSE OFF)
---   2. Bổ sung các chỉ mục (Covering Indexes) tối ưu cho truy vấn dữ liệu lớn (F11, F12)
+--   2. Bổ sung các chỉ mục phủ (Covering Indexes) cho cơ sở dữ liệu hiện hữu (F11, F12)
 --   3. Hướng dẫn thiết lập tài khoản phân quyền tối thiểu (Least Privilege Principle)
 -- HỆ QUẢN TRỊ: Microsoft SQL Server 2022 Express
 -- ====================================================================================
@@ -12,13 +12,13 @@ USE BookNestDB;
 GO
 
 -- ====================================================================================
--- PHẦN 1: CẤU HÌNH DATABASE (F11)
+-- PHẦN 1: CẤU HÌNH DATABASE HIỆU NĂNG CAO (F11)
 -- ====================================================================================
 
 -- 1. Bật READ_COMMITTED_SNAPSHOT (RCSI)
 -- Ý nghĩa: Cho phép các câu truy vấn SELECT (đọc) đọc dữ liệu từ snapshot phiên bản dòng (version store)
 -- mà không bị block bởi các Transaction ghi (UPDATE kho, INSERT đơn hàng), đồng thời giao dịch ghi
--- cũng không block người duyệt sách. Giảm thiểu 100% tình trạng nghẽn trang chủ khi đông người đặt hàng.
+-- cũng không block người duyệt sách. Giảm thiểu tranh chấp khóa giữa các giao dịch đọc và ghi.
 IF (SELECT is_read_committed_snapshot_on FROM sys.databases WHERE name = 'BookNestDB') = 0
 BEGIN
     PRINT N'==> Đang bật READ_COMMITTED_SNAPSHOT cho BookNestDB...';
@@ -48,10 +48,10 @@ GO
 
 -- ====================================================================================
 -- PHẦN 2: CHỈ MỤC TỐI ƯU HÓA TRUY VẤN DỮ LIỆU LỚN (F12)
+-- (Tên chỉ mục chuẩn hóa đồng nhất 100% với DATABASE_SCHEMA.md và 01_tao_bang.sql)
 -- ====================================================================================
 
 -- 1. Tối ưu trang chủ & danh mục sách mặc định: WHERE DaAn = 0 ORDER BY NgayTao DESC
--- Giúp SQL Server quét Index Seek trực tiếp các sách đang kinh doanh, không cần sắp xếp Sort toàn bảng.
 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Sach_DaAn_NgayTao' AND object_id = OBJECT_ID('dbo.Sach'))
 BEGIN
     CREATE NONCLUSTERED INDEX IX_Sach_DaAn_NgayTao 
@@ -60,21 +60,20 @@ BEGIN
 END
 GO
 
--- 2. Tối ưu tính Sao Trung Bình và Số Lượt Đánh Giá (Covering Index)
--- Thêm INCLUDE (SoSao) để câu lệnh SELECT AVG(CAST(SoSao AS FLOAT)) tính trực tiếp từ Index lá,
--- không cần tra ngược (Key Lookup) vào bảng chính DanhGia.
+-- 2. Tối ưu tính Sao Trung Bình và Số Lượt Đánh Giá (Covering Index INCLUDE SoSao)
+-- Giữ nguyên tên chuẩn IX_DanhGia_MaSach theo đúng DATABASE_SCHEMA.md
 IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_DanhGia_MaSach' AND object_id = OBJECT_ID('dbo.DanhGia'))
 BEGIN
     DROP INDEX IX_DanhGia_MaSach ON dbo.DanhGia;
 END
 GO
 
-IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_DanhGia_MaSach_Include_SoSao' AND object_id = OBJECT_ID('dbo.DanhGia'))
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_DanhGia_MaSach' AND object_id = OBJECT_ID('dbo.DanhGia'))
 BEGIN
-    CREATE NONCLUSTERED INDEX IX_DanhGia_MaSach_Include_SoSao 
+    CREATE NONCLUSTERED INDEX IX_DanhGia_MaSach 
         ON dbo.DanhGia (MaSach) 
         INCLUDE (SoSao);
-    PRINT N'==> Đã tạo chỉ mục phủ IX_DanhGia_MaSach_Include_SoSao.';
+    PRINT N'==> Đã tạo chỉ mục phủ IX_DanhGia_MaSach (INCLUDE SoSao).';
 END
 GO
 
@@ -87,25 +86,24 @@ BEGIN
 END
 GO
 
--- 4. Tối ưu thống kê doanh thu theo ngày giao hàng thành công (DELIVERED)
--- Thêm INCLUDE (MaDonHang) để JOIN nhanh sang bảng DonHang mà không phát sinh Bookmark Lookup.
+-- 4. Tối ưu thống kê doanh thu theo ngày giao hàng thành công (Covering Index INCLUDE MaDonHang)
+-- Giữ nguyên tên chuẩn IX_LichSuTrangThai_TrangThaiMoi_NgayThayDoi theo đúng DATABASE_SCHEMA.md
 IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_LichSuTrangThai_TrangThaiMoi_NgayThayDoi' AND object_id = OBJECT_ID('dbo.LichSuTrangThaiDonHang'))
 BEGIN
     DROP INDEX IX_LichSuTrangThai_TrangThaiMoi_NgayThayDoi ON dbo.LichSuTrangThaiDonHang;
 END
 GO
 
-IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_LichSuTrangThai_TrangThaiMoi_NgayThayDoi_Include_MaDonHang' AND object_id = OBJECT_ID('dbo.LichSuTrangThaiDonHang'))
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_LichSuTrangThai_TrangThaiMoi_NgayThayDoi' AND object_id = OBJECT_ID('dbo.LichSuTrangThaiDonHang'))
 BEGIN
-    CREATE NONCLUSTERED INDEX IX_LichSuTrangThai_TrangThaiMoi_NgayThayDoi_Include_MaDonHang 
+    CREATE NONCLUSTERED INDEX IX_LichSuTrangThai_TrangThaiMoi_NgayThayDoi 
         ON dbo.LichSuTrangThaiDonHang (TrangThaiMoi, NgayThayDoi DESC) 
         INCLUDE (MaDonHang);
-    PRINT N'==> Đã tạo chỉ mục phủ IX_LichSuTrangThai_TrangThaiMoi_NgayThayDoi_Include_MaDonHang.';
+    PRINT N'==> Đã tạo chỉ mục phủ IX_LichSuTrangThai_TrangThaiMoi_NgayThayDoi (INCLUDE MaDonHang).';
 END
 GO
 
--- 5. Bổ sung các chỉ mục cho Khóa ngoại (Foreign Key) còn thiếu
--- Giúp tăng tốc xóa/kiểm tra ràng buộc quan hệ toàn vẹn dữ liệu
+-- 5. Bổ sung các chỉ mục cho Khóa ngoại (Foreign Key)
 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_GioHang_MaSach' AND object_id = OBJECT_ID('dbo.GioHang'))
 BEGIN
     CREATE NONCLUSTERED INDEX IX_GioHang_MaSach 
@@ -141,7 +139,7 @@ USE master;
 GO
 IF NOT EXISTS (SELECT * FROM sys.server_principals WHERE name = 'BookNestAppUser')
 BEGIN
-    CREATE LOGIN BookNestAppUser WITH PASSWORD = 'MatKhauUngDungBaoMat123!', CHECK_POLICY = ON;
+    CREATE LOGIN BookNestAppUser WITH PASSWORD = '<STRONG_APPLICATION_PASSWORD>', CHECK_POLICY = ON;
 END
 GO
 

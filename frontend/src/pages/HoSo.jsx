@@ -41,7 +41,7 @@ export const HoSo = () => {
       capNhatUser(res.data.data);
       setThongBaoProfile('Đã cập nhật thông tin cá nhân thành công!');
     } catch (err) {
-      setLoiProfile(err.response?.data?.message || err.response?.data?.thongDiep || 'Cập nhật thông tin thất bại');
+      setLoiProfile(err.response?.data?.message || 'Cập nhật thông tin thất bại');
     } finally {
       setDangLuuProfile(false);
     }
@@ -65,7 +65,7 @@ export const HoSo = () => {
       setThongBaoPass('Đổi mật khẩu thành công! Mật khẩu mới đã có hiệu lực');
       setFormPassword({ matKhauCu: '', matKhauMoi: '', xacNhanMatKhau: '' });
     } catch (err) {
-      setLoiPass(err.response?.data?.message || err.response?.data?.thongDiep || 'Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ');
+      setLoiPass(err.response?.data?.message || 'Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ');
     } finally {
       setDangLuuPass(false);
     }
@@ -90,7 +90,7 @@ export const HoSo = () => {
           <div className="mb-3" style={{ fontSize: '0.875rem' }}>
             <span style={{ color: 'var(--text-muted)' }}>Email: </span>
             <strong>{user?.email}</strong>
-            <span className="badge badge-role" style={{ marginLeft: '8px' }}>{user?.role || user?.vaiTro}</span>
+            <span className="badge badge-role" style={{ marginLeft: '8px' }}>{user?.role}</span>
           </div>
 
           {thongBaoProfile && (

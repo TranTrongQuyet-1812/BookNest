@@ -61,7 +61,7 @@ async function xuLyXoa(req, res) {
 
 // Nhập kho sách
 async function xuLyNhapKho(req, res) {
-  const maSach = req.params.id || req.body.maSach;
+  const maSach = req.params.id;
   const sach = await sachService.nhapKho(maSach, req.body, req.user.id);
   return phanHoiThanhCong(res, {
     duLieu: sach,

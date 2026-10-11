@@ -47,7 +47,7 @@ export const DangKy = () => {
         navigate('/login');
       }, 2000);
     } catch (err) {
-      setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Đăng ký tài khoản không thành công');
+      setLoi(err.response?.data?.message || 'Đăng ký tài khoản không thành công');
     } finally {
       setDangXuLy(false);
     }

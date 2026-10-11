@@ -20,7 +20,7 @@ export const Navbar = () => {
 
   // Tải số lượng mặt hàng trong giỏ nếu đã đăng nhập và là khách hàng
   useEffect(() => {
-    const isCustomer = user?.role === 'customer' || user?.vaiTro === 'customer';
+    const isCustomer = user?.role === 'customer';
     if (!daDangNhap || !isCustomer) {
       return;
     }

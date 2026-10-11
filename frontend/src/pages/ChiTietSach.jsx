@@ -97,7 +97,7 @@ export const ChiTietSach = () => {
     try {
       const maSachHienTai = sach?.MaSach ?? sach?.maSach;
       const tenSachHienTai = sach?.TenSach ?? sach?.tieuDe;
-      await api.post('/cart', { maSach: maSachHienTai, soLuong });
+      await api.post('/cart/items', { maSach: maSachHienTai, soLuong });
       setThongBao(`Đã thêm ${soLuong} cuốn "${tenSachHienTai}" vào giỏ hàng thành công!`);
       window.dispatchEvent(new CustomEvent('booknest_cart_updated'));
       setTimeout(() => setThongBao(''), 3500);
