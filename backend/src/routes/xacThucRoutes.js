@@ -50,8 +50,85 @@ const luatDangNhap = Joi.object({
   })
 });
 
-// Tuyến đường công khai
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Đăng ký tài khoản khách hàng mới
+ *     tags: [Xác thực (Auth)]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [hoTen, email, matKhau]
+ *             properties:
+ *               hoTen:
+ *                 type: string
+ *                 example: Nguyễn Văn A
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: nguyenvana@example.com
+ *               matKhau:
+ *                 type: string
+ *                 example: MatKhau123
+ *               soDienThoai:
+ *                 type: string
+ *                 example: "0901234567"
+ *               diaChiMacDinh:
+ *                 type: string
+ *                 example: 123 Đường Sách, Q.1, TP.HCM
+ *     responses:
+ *       201:
+ *         description: Đăng ký thành công, trả về token JWT
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       400:
+ *         description: Dữ liệu gửi lên không hợp lệ
+ *       409:
+ *         description: Email đã được sử dụng
+ */
 router.post('/register', kiemTraDuLieu(luatDangKy), batLoiAsync(xacThucController.xuLyDangKy));
+
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Đăng nhập tài khoản lấy JWT
+ *     tags: [Xác thực (Auth)]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, matKhau]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: nguyenvana@example.com
+ *               matKhau:
+ *                 type: string
+ *                 example: MatKhau123
+ *     responses:
+ *       200:
+ *         description: Đăng nhập thành công, trả về token JWT và thông tin tài khoản
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       400:
+ *         description: Dữ liệu gửi lên không hợp lệ
+ *       401:
+ *         description: Email hoặc mật khẩu không chính xác
+ *       403:
+ *         description: Tài khoản đã bị khóa
+ */
 router.post('/login', kiemTraDuLieu(luatDangNhap), batLoiAsync(xacThucController.xuLyDangNhap));
 
 module.exports = router;

@@ -34,21 +34,147 @@ const luatCapNhatSoLuong = Joi.object({
   })
 });
 
-// 1. GET /api/cart: Xem giỏ hàng cá nhân
+/**
+ * @swagger
+ * /api/cart:
+ *   get:
+ *     summary: Xem giỏ hàng cá nhân của khách hàng
+ *     tags: [Giỏ hàng (Cart)]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Thông tin giỏ hàng và danh sách sách đã chọn
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Chỉ dành cho khách hàng (Customer)
+ */
 router.get('/', batLoiAsync(gioHangController.xuLyLayGioHang));
 
-// 2. POST /api/cart hoặc /api/cart/items: Thêm sách vào giỏ
+/**
+ * @swagger
+ * /api/cart/items:
+ *   post:
+ *     summary: Thêm sách vào giỏ hàng
+ *     tags: [Giỏ hàng (Cart)]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [maSach]
+ *             properties:
+ *               maSach:
+ *                 type: integer
+ *                 example: 1
+ *               soLuong:
+ *                 type: integer
+ *                 example: 2
+ *     responses:
+ *       200:
+ *         description: Thêm vào giỏ thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       400:
+ *         description: Dữ liệu không hợp lệ hoặc sách không tồn tại / đã ẩn
+ *       409:
+ *         description: Số lượng yêu cầu vượt quá tồn kho
+ */
 router.post('/', kiemTraDuLieu(luatThemVaoGio), batLoiAsync(gioHangController.xuLyThemVaoGio));
 router.post('/items', kiemTraDuLieu(luatThemVaoGio), batLoiAsync(gioHangController.xuLyThemVaoGio));
 
-// 3. PUT /api/cart/items/:bookId hoặc /api/cart/:bookId: Cập nhật số lượng
+/**
+ * @swagger
+ * /api/cart/items/{bookId}:
+ *   put:
+ *     summary: Cập nhật số lượng cuốn sách trong giỏ hàng
+ *     tags: [Giỏ hàng (Cart)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bookId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Mã sách
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [soLuong]
+ *             properties:
+ *               soLuong:
+ *                 type: integer
+ *                 example: 3
+ *     responses:
+ *       200:
+ *         description: Cập nhật số lượng thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       400:
+ *         description: Số lượng không hợp lệ
+ *       409:
+ *         description: Vượt quá tồn kho hiện có
+ */
 router.put('/:bookId', kiemTraDuLieu(luatCapNhatSoLuong), batLoiAsync(gioHangController.xuLyCapNhatSoLuong));
 router.put('/items/:bookId', kiemTraDuLieu(luatCapNhatSoLuong), batLoiAsync(gioHangController.xuLyCapNhatSoLuong));
 
-// 4. DELETE /api/cart: Dọn sạch toàn bộ giỏ hàng
+/**
+ * @swagger
+ * /api/cart:
+ *   delete:
+ *     summary: Xóa sạch toàn bộ giỏ hàng
+ *     tags: [Giỏ hàng (Cart)]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Làm trống giỏ hàng thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ */
 router.delete('/', batLoiAsync(gioHangController.xuLyXoaToanBoGioHang));
 
-// 5. DELETE /api/cart/items/:bookId hoặc /api/cart/:bookId: Xóa khỏi giỏ
+/**
+ * @swagger
+ * /api/cart/items/{bookId}:
+ *   delete:
+ *     summary: Xóa một cuốn sách khỏi giỏ hàng
+ *     tags: [Giỏ hàng (Cart)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bookId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Mã sách cần xóa khỏi giỏ
+ *     responses:
+ *       200:
+ *         description: Đã xóa cuốn sách khỏi giỏ hàng
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ */
 router.delete('/:bookId', batLoiAsync(gioHangController.xuLyXoaKhoiGio));
 router.delete('/items/:bookId', batLoiAsync(gioHangController.xuLyXoaKhoiGio));
 

@@ -27,6 +27,45 @@ const luatTruyVanAdminSach = Joi.object({
   sort: Joi.string().valid('price_asc', 'price_desc', 'newest').default('newest')
 });
 
+/**
+ * @swagger
+ * /api/admin/books:
+ *   get:
+ *     summary: Xem toàn bộ sách phía Back-Office kể cả sách đã bị ẩn (Admin/Librarian)
+ *     tags: [Sách & Kho (Books)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: categoryId
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Danh sách toàn bộ sách trong hệ thống
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Không có quyền truy cập
+ */
 router.get(
   '/books',
   xacThucToken,
@@ -66,7 +105,52 @@ const luatAdminHuyDon = Joi.object({
   })
 });
 
-// GET /api/admin/orders - Danh sách đơn hàng toàn hệ thống
+/**
+ * @swagger
+ * /api/admin/orders:
+ *   get:
+ *     summary: Xem danh sách toàn bộ đơn hàng của hệ thống (Admin/Order Staff)
+ *     tags: [Quản trị đơn hàng (Admin Orders)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [PENDING, CONFIRMED, SHIPPING, DELIVERED, CANCELLED]
+ *       - in: query
+ *         name: tuNgay
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: denNgay
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *     responses:
+ *       200:
+ *         description: Danh sách đơn hàng toàn hệ thống
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Không có quyền truy cập
+ */
 router.get(
   '/orders',
   xacThucToken,
@@ -75,7 +159,31 @@ router.get(
   batLoiAsync(donHangController.xuLyAdminLayDanhSachDon)
 );
 
-// GET /api/admin/orders/:id - Chi tiết đơn hàng
+/**
+ * @swagger
+ * /api/admin/orders/{id}:
+ *   get:
+ *     summary: Xem chi tiết bất kỳ đơn hàng nào trong hệ thống (Admin/Order Staff)
+ *     tags: [Quản trị đơn hàng (Admin Orders)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Mã đơn hàng
+ *     responses:
+ *       200:
+ *         description: Chi tiết đơn hàng và lịch sử luân chuyển
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       404:
+ *         description: Không tìm thấy đơn hàng
+ */
 router.get(
   '/orders/:id',
   xacThucToken,
@@ -83,7 +191,48 @@ router.get(
   batLoiAsync(donHangController.xuLyAdminLayChiTietDon)
 );
 
-// PUT /api/admin/orders/:id/status - Chuyển trạng thái đơn hàng (tuân thủ State Machine)
+/**
+ * @swagger
+ * /api/admin/orders/{id}/status:
+ *   put:
+ *     summary: Chuyển trạng thái đơn hàng theo State Machine (PENDING -> CONFIRMED -> SHIPPING -> DELIVERED)
+ *     tags: [Quản trị đơn hàng (Admin Orders)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Mã đơn hàng
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [trangThaiMoi]
+ *             properties:
+ *               trangThaiMoi:
+ *                 type: string
+ *                 enum: [CONFIRMED, SHIPPING, DELIVERED]
+ *                 example: CONFIRMED
+ *               ghiChu:
+ *                 type: string
+ *                 example: Đã xác nhận đơn hàng với khách
+ *     responses:
+ *       200:
+ *         description: Chuyển trạng thái thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       400:
+ *         description: Trạng thái không hợp lệ
+ *       409:
+ *         description: Chuyển trạng thái trái quy trình State Machine hoặc xung đột khóa lạc quan
+ */
 router.put(
   '/orders/:id/status',
   xacThucToken,
@@ -92,7 +241,44 @@ router.put(
   batLoiAsync(donHangController.xuLyAdminCapNhatTrangThai)
 );
 
-// PUT /api/admin/orders/:id/cancel - Hủy đơn hàng và hoàn kho
+/**
+ * @swagger
+ * /api/admin/orders/{id}/cancel:
+ *   put:
+ *     summary: Hủy đơn hàng và tự động hoàn lại tồn kho (Admin/Order Staff - khi đơn PENDING hoặc CONFIRMED)
+ *     tags: [Quản trị đơn hàng (Admin Orders)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Mã đơn hàng
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [lyDo]
+ *             properties:
+ *               lyDo:
+ *                 type: string
+ *                 example: Không thể liên hệ được với người nhận sau 3 lần gọi
+ *     responses:
+ *       200:
+ *         description: Hủy đơn và hoàn kho thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       400:
+ *         description: Lý do hủy không hợp lệ
+ *       409:
+ *         description: Đơn hàng không ở trạng thái PENDING hoặc CONFIRMED
+ */
 router.put(
   '/orders/:id/cancel',
   xacThucToken,
@@ -143,7 +329,46 @@ const luatCapNhatTrangThaiKhoa = Joi.object({
   })
 });
 
-// GET /api/admin/users - Xem danh sách mọi tài khoản
+/**
+ * @swagger
+ * /api/admin/users:
+ *   get:
+ *     summary: Xem danh sách mọi tài khoản trong hệ thống có phân trang và lọc vai trò (Admin)
+ *     tags: [Quản trị nhân sự (Admin Users)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *           enum: [admin, librarian, order_staff, customer]
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Danh sách người dùng
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Chỉ dành cho Admin
+ */
 router.get(
   '/users',
   xacThucToken,
@@ -152,7 +377,58 @@ router.get(
   batLoiAsync(nguoiDungController.xuLyAdminLayDanhSach)
 );
 
-// POST /api/admin/users - Tạo tài khoản nhân sự
+/**
+ * @swagger
+ * /api/admin/users:
+ *   post:
+ *     summary: Tạo tài khoản nhân sự mới và chỉ định vai trò (librarian hoặc order_staff) (Admin)
+ *     tags: [Quản trị nhân sự (Admin Users)]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, matKhau, hoTen, vaiTro]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: thuthu_moi@booknest.vn
+ *               matKhau:
+ *                 type: string
+ *                 example: MatKhau123
+ *               hoTen:
+ *                 type: string
+ *                 example: Lê Thủ Thư
+ *               vaiTro:
+ *                 type: string
+ *                 enum: [librarian, order_staff]
+ *                 example: librarian
+ *               soDienThoai:
+ *                 type: string
+ *                 example: "0902222333"
+ *               diaChiMacDinh:
+ *                 type: string
+ *                 example: Văn phòng BookNest
+ *     responses:
+ *       201:
+ *         description: Tạo nhân sự thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       400:
+ *         description: Dữ liệu không hợp lệ
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Chỉ dành cho Admin
+ *       409:
+ *         description: Email đã tồn tại
+ */
 router.post(
   '/users',
   xacThucToken,
@@ -161,7 +437,48 @@ router.post(
   batLoiAsync(nguoiDungController.xuLyAdminTaoNhanVien)
 );
 
-// PUT /api/admin/users/:id/status - Khóa / mở khóa tài khoản
+/**
+ * @swagger
+ * /api/admin/users/{id}/status:
+ *   put:
+ *     summary: Khóa hoặc kích hoạt lại tài khoản người dùng (chống tự khóa tài khoản Admin chính mình)
+ *     tags: [Quản trị nhân sự (Admin Users)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Mã người dùng
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [dangHoatDong]
+ *             properties:
+ *               dangHoatDong:
+ *                 type: boolean
+ *                 example: false
+ *     responses:
+ *       200:
+ *         description: Cập nhật trạng thái tài khoản thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       400:
+ *         description: Không thể tự khóa tài khoản của chính mình
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Chỉ dành cho Admin
+ *       404:
+ *         description: Không tìm thấy tài khoản
+ */
 router.put(
   '/users/:id/status',
   xacThucToken,
@@ -182,7 +499,37 @@ const luatTruyVanTopSach = Joi.object({
   limit: Joi.number().integer().min(1).max(50).default(10)
 });
 
-// GET /api/admin/stats/overview - Tổng quan doanh thu
+/**
+ * @swagger
+ * /api/admin/stats/overview:
+ *   get:
+ *     summary: Thống kê tổng quan tình hình kinh doanh (Tổng doanh thu, số đơn DELIVERED, số sách đã bán) (Admin)
+ *     tags: [Thống kê báo cáo (Admin Stats)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: tuNgay
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: denNgay
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *     responses:
+ *       200:
+ *         description: Số liệu báo cáo tổng quan
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Chỉ dành cho Admin
+ */
 router.get(
   '/stats/overview',
   xacThucToken,
@@ -191,7 +538,33 @@ router.get(
   batLoiAsync(thongKeController.xuLyLayTongQuan)
 );
 
-// GET /api/admin/stats/top-books - Top sách bán chạy
+/**
+ * @swagger
+ * /api/admin/stats/top-books:
+ *   get:
+ *     summary: Xem danh sách những cuốn sách bán chạy nhất hệ thống (Admin)
+ *     tags: [Thống kê báo cáo (Admin Stats)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Số lượng sách trong top
+ *     responses:
+ *       200:
+ *         description: Danh sách sách bán chạy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Chỉ dành cho Admin
+ */
 router.get(
   '/stats/top-books',
   xacThucToken,
@@ -200,7 +573,26 @@ router.get(
   batLoiAsync(thongKeController.xuLyLayTopSach)
 );
 
-// GET /api/admin/stats/order-rates - Tỷ lệ các trạng thái đơn hàng
+/**
+ * @swagger
+ * /api/admin/stats/order-rates:
+ *   get:
+ *     summary: Thống kê tỷ lệ các trạng thái đơn hàng (tỷ lệ hoàn thành, hủy đơn) (Admin)
+ *     tags: [Thống kê báo cáo (Admin Stats)]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Bảng tỷ lệ phần trăm theo từng trạng thái
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Chỉ dành cho Admin
+ */
 router.get(
   '/stats/order-rates',
   xacThucToken,

@@ -81,10 +81,82 @@ const luatNhapKho = Joi.object({
   ghiChu: Joi.string().trim().max(500).allow(null, '')
 });
 
-// 1. Tuyến đường công khai
+/**
+ * @swagger
+ * /api/books:
+ *   get:
+ *     summary: Xem danh sách sách (tìm kiếm tiếng Việt không dấu, lọc giá, thể loại, phân trang)
+ *     tags: [Sách & Kho (Books)]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Trang hiện tại
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Số sách mỗi trang
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Từ khóa tìm kiếm theo tên sách hoặc tác giả
+ *       - in: query
+ *         name: categoryId
+ *         schema:
+ *           type: integer
+ *         description: Lọc theo mã danh mục
+ *       - in: query
+ *         name: minPrice
+ *         schema:
+ *           type: number
+ *         description: Giá bán thấp nhất
+ *       - in: query
+ *         name: maxPrice
+ *         schema:
+ *           type: number
+ *         description: Giá bán cao nhất
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           enum: [price_asc, price_desc, newest]
+ *           default: newest
+ *         description: Tiêu chí sắp xếp
+ *     responses:
+ *       200:
+ *         description: Danh sách sách và thông tin phân trang
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ */
 router.get('/', kiemTraDuLieu(luatTruyVanSach, 'query'), batLoiAsync(sachController.xuLyLayDanhSach));
 
-// 2. Chú ý thứ tự: low-stock phải đứng trước :id
+/**
+ * @swagger
+ * /api/books/low-stock:
+ *   get:
+ *     summary: Xem danh sách sách sắp hết hàng (tồn kho <= ngưỡng cảnh báo) (Admin/Librarian)
+ *     tags: [Sách & Kho (Books)]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Danh sách sách có nguy cơ đứt hàng
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Không có quyền truy cập
+ */
 router.get(
   '/low-stock',
   xacThucToken,
@@ -92,9 +164,85 @@ router.get(
   batLoiAsync(sachController.xuLySapHetHang)
 );
 
+/**
+ * @swagger
+ * /api/books/{id}:
+ *   get:
+ *     summary: Xem chi tiết cuốn sách kèm số sao đánh giá trung bình
+ *     tags: [Sách & Kho (Books)]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Mã sách
+ *     responses:
+ *       200:
+ *         description: Thông tin chi tiết cuốn sách
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       404:
+ *         description: Không tìm thấy sách
+ */
 router.get('/:id', xacThucTuyChon, batLoiAsync(sachController.xuLyLayChiTiet));
 
-// 3. Tuyến đường quản lý dành cho Admin & Librarian
+/**
+ * @swagger
+ * /api/books:
+ *   post:
+ *     summary: Thêm sách mới vào kho (Admin/Librarian)
+ *     tags: [Sách & Kho (Books)]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [tenSach, tacGia, giaBan, maDanhMuc]
+ *             properties:
+ *               tenSach:
+ *                 type: string
+ *                 example: Lập trình Node.js nâng cao
+ *               tacGia:
+ *                 type: string
+ *                 example: Nhiều tác giả
+ *               moTa:
+ *                 type: string
+ *                 example: Sách chuyên sâu về kiến trúc Node.js
+ *               giaBan:
+ *                 type: number
+ *                 example: 150000
+ *               soLuongTon:
+ *                 type: integer
+ *                 example: 50
+ *               nguongCanhBao:
+ *                 type: integer
+ *                 example: 10
+ *               anhBia:
+ *                 type: string
+ *                 example: https://images.unsplash.com/...
+ *               maDanhMuc:
+ *                 type: integer
+ *                 example: 1
+ *     responses:
+ *       201:
+ *         description: Thêm sách thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       400:
+ *         description: Dữ liệu không hợp lệ
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Không có quyền truy cập
+ */
 router.post(
   '/',
   xacThucToken,
@@ -103,6 +251,60 @@ router.post(
   batLoiAsync(sachController.xuLyTao)
 );
 
+/**
+ * @swagger
+ * /api/books/{id}:
+ *   put:
+ *     summary: Cập nhật thông tin cuốn sách (Admin/Librarian)
+ *     tags: [Sách & Kho (Books)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Mã sách
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               tenSach:
+ *                 type: string
+ *               tacGia:
+ *                 type: string
+ *               moTa:
+ *                 type: string
+ *               giaBan:
+ *                 type: number
+ *               nguongCanhBao:
+ *                 type: integer
+ *               anhBia:
+ *                 type: string
+ *               maDanhMuc:
+ *                 type: integer
+ *               daAn:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Cập nhật thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       400:
+ *         description: Dữ liệu không hợp lệ
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Không có quyền truy cập
+ *       404:
+ *         description: Không tìm thấy sách
+ */
 router.put(
   '/:id',
   xacThucToken,
@@ -111,6 +313,35 @@ router.put(
   batLoiAsync(sachController.xuLyCapNhat)
 );
 
+/**
+ * @swagger
+ * /api/books/{id}:
+ *   delete:
+ *     summary: Xóa mềm (ẩn) cuốn sách khỏi danh mục kinh doanh (Admin/Librarian)
+ *     tags: [Sách & Kho (Books)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Mã sách
+ *     responses:
+ *       200:
+ *         description: Ẩn sách thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Không có quyền truy cập
+ *       404:
+ *         description: Không tìm thấy sách
+ */
 router.delete(
   '/:id',
   xacThucToken,
@@ -118,7 +349,51 @@ router.delete(
   batLoiAsync(sachController.xuLyXoa)
 );
 
-// 4. Tuyến đường nhập kho (T11)
+/**
+ * @swagger
+ * /api/books/{id}/stock-in:
+ *   post:
+ *     summary: Nhập thêm số lượng tồn kho cho sách (Admin/Librarian)
+ *     tags: [Sách & Kho (Books)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Mã sách
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [soLuongNhap]
+ *             properties:
+ *               soLuongNhap:
+ *                 type: integer
+ *                 example: 20
+ *               ghiChu:
+ *                 type: string
+ *                 example: Nhập bổ sung đợt tái bản mới
+ *     responses:
+ *       200:
+ *         description: Nhập kho thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       400:
+ *         description: Dữ liệu không hợp lệ hoặc sách đã bị ẩn
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Không có quyền truy cập
+ *       404:
+ *         description: Không tìm thấy sách
+ */
 router.post(
   '/:id/stock-in',
   xacThucToken,
@@ -127,6 +402,35 @@ router.post(
   batLoiAsync(sachController.xuLyNhapKho)
 );
 
+/**
+ * @swagger
+ * /api/books/{id}/stock-in-history:
+ *   get:
+ *     summary: Xem lịch sử các lần nhập kho của cuốn sách (Admin/Librarian)
+ *     tags: [Sách & Kho (Books)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Mã sách
+ *     responses:
+ *       200:
+ *         description: Danh sách các lần nhập kho
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Không có quyền truy cập
+ *       404:
+ *         description: Không tìm thấy sách
+ */
 router.get(
   '/:id/stock-in-history',
   xacThucToken,
@@ -146,10 +450,78 @@ const luatDanhGia = Joi.object({
   })
 });
 
-// GET /api/books/:id/reviews - Xem đánh giá sách công khai
+/**
+ * @swagger
+ * /api/books/{id}/reviews:
+ *   get:
+ *     summary: Xem danh sách đánh giá và số sao trung bình của một cuốn sách
+ *     tags: [Đánh giá sách (Reviews)]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Mã sách
+ *     responses:
+ *       200:
+ *         description: Danh sách đánh giá của bạn đọc
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       404:
+ *         description: Không tìm thấy cuốn sách
+ */
 router.get('/:id/reviews', batLoiAsync(danhGiaController.xuLyLayDanhSachDanhGia));
 
-// POST /api/books/:id/reviews - Khách hàng viết hoặc sửa đánh giá
+/**
+ * @swagger
+ * /api/books/{id}/reviews:
+ *   post:
+ *     summary: Đánh giá sách (Chỉ dành cho khách hàng đã mua và nhận đơn thành công - Verified Buyer)
+ *     tags: [Đánh giá sách (Reviews)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Mã sách
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [soSao]
+ *             properties:
+ *               soSao:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *                 example: 5
+ *               noiDung:
+ *                 type: string
+ *                 example: Sách in đẹp, nội dung sâu sắc và rất đáng đọc!
+ *     responses:
+ *       200:
+ *         description: Đánh giá sách thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       400:
+ *         description: Số sao không hợp lệ (phải từ 1 đến 5 sao)
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Chưa mua sách này hoặc đơn hàng chưa giao thành công (DELIVERED)
+ *       404:
+ *         description: Không tìm thấy sách
+ */
 router.post(
   '/:id/reviews',
   xacThucToken,

@@ -129,7 +129,7 @@ async function taoSach(duLieu, maNguoiTao) {
         MoTa: duLieu.moTa || null,
         GiaBan: duLieu.giaBan,
         SoLuongTon: tonKhoBanDau,
-        NguongCanhBao: duLieu.nguongCanhBao || 5,
+        NguongCanhBao: duLieu.nguongCanhBao ?? 5,
         AnhBia: duLieu.anhBia || null,
         MaDanhMuc: duLieu.maDanhMuc,
         DaAn: false
@@ -211,11 +211,12 @@ async function nhapKho(maSach, { soLuongNhap, ghiChu }, maNguoiNhap) {
   const t = await sequelize.transaction();
 
   try {
-    // Cộng dồn nguyên tử ngay trong câu lệnh SQL để chống xung đột cập nhật đồng thời
-    await Sach.update(
-      { SoLuongTon: sequelize.literal(`SoLuongTon + ${soLuong}`) },
-      { where: { MaSach: maSach }, transaction: t }
-    );
+    // Cộng dồn nguyên tử bằng API increment của Sequelize để chống xung đột và an toàn ORM
+    await Sach.increment('SoLuongTon', {
+      by: soLuong,
+      where: { MaSach: maSach },
+      transaction: t
+    });
 
     await LichSuNhapKho.create(
       {

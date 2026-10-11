@@ -41,8 +41,98 @@ const luatDoiMatKhau = Joi.object({
 // Tất cả các tuyến đường này đều bắt buộc đăng nhập (xacThucToken)
 router.use(xacThucToken);
 
+/**
+ * @swagger
+ * /api/users/profile:
+ *   get:
+ *     summary: Xem thông tin hồ sơ cá nhân của người dùng hiện tại
+ *     tags: [Người dùng (Users)]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Thông tin hồ sơ cá nhân
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       401:
+ *         description: Chưa đăng nhập hoặc token không hợp lệ
+ */
 router.get('/profile', batLoiAsync(nguoiDungController.xuLyLayHoSo));
+
+/**
+ * @swagger
+ * /api/users/profile:
+ *   put:
+ *     summary: Cập nhật thông tin hồ sơ cá nhân
+ *     tags: [Người dùng (Users)]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               hoTen:
+ *                 type: string
+ *                 example: Nguyễn Văn B
+ *               soDienThoai:
+ *                 type: string
+ *                 example: "0987654321"
+ *               diaChiMacDinh:
+ *                 type: string
+ *                 example: 456 Nguyễn Huệ, Q.1, TP.HCM
+ *     responses:
+ *       200:
+ *         description: Cập nhật thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       400:
+ *         description: Dữ liệu gửi lên không hợp lệ
+ *       401:
+ *         description: Chưa đăng nhập hoặc token không hợp lệ
+ */
 router.put('/profile', kiemTraDuLieu(luatCapNhatHoSo), batLoiAsync(nguoiDungController.xuLyCapNhatHoSo));
+
+/**
+ * @swagger
+ * /api/users/change-password:
+ *   put:
+ *     summary: Đổi mật khẩu tài khoản
+ *     tags: [Người dùng (Users)]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [matKhauCu, matKhauMoi]
+ *             properties:
+ *               matKhauCu:
+ *                 type: string
+ *                 example: MatKhau123
+ *               matKhauMoi:
+ *                 type: string
+ *                 example: MatKhau456
+ *     responses:
+ *       200:
+ *         description: Đổi mật khẩu thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       400:
+ *         description: Dữ liệu gửi lên không hợp lệ hoặc mật khẩu cũ không đúng
+ *       401:
+ *         description: Chưa đăng nhập hoặc token không hợp lệ
+ */
 router.put('/change-password', kiemTraDuLieu(luatDoiMatKhau), batLoiAsync(nguoiDungController.xuLyDoiMatKhau));
 
 module.exports = router;
