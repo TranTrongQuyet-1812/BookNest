@@ -39,7 +39,7 @@ export const DangKy = () => {
         email: form.email,
         matKhau: form.matKhau,
         soDienThoai: form.soDienThoai || undefined,
-        diaChi: form.diaChi || undefined
+        diaChiMacDinh: form.diaChi || undefined
       });
 
       setThanhCong(true);
@@ -47,7 +47,7 @@ export const DangKy = () => {
         navigate('/login');
       }, 2000);
     } catch (err) {
-      setLoi(err.response?.data?.thongDiep || 'Đăng ký tài khoản không thành công');
+      setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Đăng ký tài khoản không thành công');
     } finally {
       setDangXuLy(false);
     }
@@ -112,7 +112,7 @@ export const DangKy = () => {
                 name="matKhau"
                 required
                 className="form-input"
-                placeholder="Ít nhất 6 ký tự"
+                placeholder="Tối thiểu 8 ký tự (chữ & số)"
                 value={form.matKhau}
                 onChange={handleChange}
               />

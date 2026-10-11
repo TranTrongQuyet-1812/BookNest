@@ -8,9 +8,9 @@ export const HoSo = () => {
 
   // State cập nhật thông tin
   const [formProfile, setFormProfile] = useState({
-    hoTen: user?.hoTen || '',
+    hoTen: user?.fullName || user?.hoTen || '',
     soDienThoai: user?.soDienThoai || '',
-    diaChi: user?.diaChi || ''
+    diaChi: user?.diaChiMacDinh || user?.diaChi || ''
   });
   const [thongBaoProfile, setThongBaoProfile] = useState('');
   const [loiProfile, setLoiProfile] = useState('');
@@ -33,11 +33,15 @@ export const HoSo = () => {
     setDangLuuProfile(true);
 
     try {
-      const res = await api.put('/users/profile', formProfile);
-      capNhatUser(res.data.duLieu);
+      const res = await api.put('/users/profile', {
+        hoTen: formProfile.hoTen,
+        soDienThoai: formProfile.soDienThoai || undefined,
+        diaChiMacDinh: formProfile.diaChi || undefined
+      });
+      capNhatUser(res.data.data);
       setThongBaoProfile('Đã cập nhật thông tin cá nhân thành công!');
     } catch (err) {
-      setLoiProfile(err.response?.data?.thongDiep || 'Cập nhật thông tin thất bại');
+      setLoiProfile(err.response?.data?.message || err.response?.data?.thongDiep || 'Cập nhật thông tin thất bại');
     } finally {
       setDangLuuProfile(false);
     }
@@ -55,13 +59,13 @@ export const HoSo = () => {
     setDangLuuPass(true);
     try {
       await api.put('/users/change-password', {
-        matKhauHienTai: formPassword.matKhauCu,
+        matKhauCu: formPassword.matKhauCu,
         matKhauMoi: formPassword.matKhauMoi
       });
       setThongBaoPass('Đổi mật khẩu thành công! Mật khẩu mới đã có hiệu lực');
       setFormPassword({ matKhauCu: '', matKhauMoi: '', xacNhanMatKhau: '' });
     } catch (err) {
-      setLoiPass(err.response?.data?.thongDiep || 'Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ');
+      setLoiPass(err.response?.data?.message || err.response?.data?.thongDiep || 'Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ');
     } finally {
       setDangLuuPass(false);
     }
@@ -86,7 +90,7 @@ export const HoSo = () => {
           <div className="mb-3" style={{ fontSize: '0.875rem' }}>
             <span style={{ color: 'var(--text-muted)' }}>Email: </span>
             <strong>{user?.email}</strong>
-            <span className="badge badge-role" style={{ marginLeft: '8px' }}>{user?.vaiTro}</span>
+            <span className="badge badge-role" style={{ marginLeft: '8px' }}>{user?.role || user?.vaiTro}</span>
           </div>
 
           {thongBaoProfile && (
@@ -182,7 +186,7 @@ export const HoSo = () => {
                 type="password"
                 required
                 className="form-input"
-                placeholder="Tối thiểu 6 ký tự"
+                placeholder="Tối thiểu 8 ký tự (chữ & số)"
                 value={formPassword.matKhauMoi}
                 onChange={(e) => setFormPassword({ ...formPassword, matKhauMoi: e.target.value })}
               />

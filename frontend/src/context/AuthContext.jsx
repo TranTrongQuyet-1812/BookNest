@@ -52,17 +52,7 @@ export const AuthProvider = ({ children }) => {
   // Hàm đăng nhập
   const dangNhap = async (email, matKhau) => {
     const res = await api.post('/auth/login', { email, matKhau });
-    const userPayload = res.data.duLieu || res.data.data;
-    const { token: jwtToken, user: nguoiDungTho } = userPayload;
-
-    const nguoiDung = {
-      ...nguoiDungTho,
-      vaiTro: nguoiDungTho.vaiTro || nguoiDungTho.role,
-      role: nguoiDungTho.role || nguoiDungTho.vaiTro,
-      hoTen: nguoiDungTho.hoTen || nguoiDungTho.fullName,
-      fullName: nguoiDungTho.fullName || nguoiDungTho.hoTen,
-      maNguoiDung: nguoiDungTho.maNguoiDung || nguoiDungTho.id
-    };
+    const { token: jwtToken, user: nguoiDung } = res.data.data;
 
     localStorage.setItem('booknest_token', jwtToken);
     localStorage.setItem('booknest_user', JSON.stringify(nguoiDung));

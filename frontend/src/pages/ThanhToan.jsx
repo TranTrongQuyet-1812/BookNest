@@ -24,7 +24,7 @@ export const ThanhToan = () => {
 
   // Form thông tin nhận hàng - điền sẵn từ hồ sơ
   const [form, setForm] = useState({
-    tenNguoiNhan: user?.hoTen || '',
+    tenNguoiNhan: user?.fullName || user?.hoTen || '',
     soDienThoaiNhan: user?.soDienThoai || '',
     diaChiGiaoHang: user?.diaChi || '',
     ghiChu: ''
@@ -34,7 +34,7 @@ export const ThanhToan = () => {
     const taiGioHang = async () => {
       try {
         const res = await api.get('/cart');
-        setGioHang(res.data.duLieu);
+        setGioHang(res.data.data);
       } catch (err) {
         setLoi('Không thể tải thông tin giỏ hàng');
       } finally {
@@ -64,11 +64,11 @@ export const ThanhToan = () => {
       // Bắn sự kiện cập nhật giỏ hàng trên navbar về 0
       window.dispatchEvent(new CustomEvent('booknest_cart_updated'));
 
-      const maDonHang = res.data.duLieu?.maDonHang;
+      const maDonHang = res.data.data?.MaDonHang || res.data.data?.maDonHang;
       alert('Chúc mừng! Đơn hàng của bạn đã được khởi tạo thành công.');
       navigate(`/orders/${maDonHang}`);
     } catch (err) {
-      setLoi(err.response?.data?.thongDiep || 'Đặt hàng thất bại. Vui lòng kiểm tra lại');
+      setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Đặt hàng thất bại. Vui lòng kiểm tra lại');
     } finally {
       setDangDatHang(false);
     }
@@ -86,7 +86,7 @@ export const ThanhToan = () => {
     );
   }
 
-  const items = gioHang?.chiTiet || [];
+  const items = gioHang?.cacMon || [];
   if (items.length === 0) {
     return (
       <div className="container py-12 text-center">
@@ -219,10 +219,10 @@ export const ThanhToan = () => {
                 paddingBottom: '0.5rem'
               }}>
                 {items.map((item) => (
-                  <div key={item.maChiTietGioHang} className="flex justify-between items-center py-2" style={{ fontSize: '0.875rem' }}>
+                  <div key={item.maSach || item.maChiTietGioHang} className="flex justify-between items-center py-2" style={{ fontSize: '0.875rem' }}>
                     <div style={{ maxWidth: '65%' }}>
                       <p style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {item.sach?.tieuDe}
+                        {item.sach?.tenSach || item.sach?.tieuDe}
                       </p>
                       <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
                         {dinhDangTien(item.donGia)} × {item.soLuong}

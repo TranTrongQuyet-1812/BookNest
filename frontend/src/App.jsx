@@ -42,9 +42,9 @@ const StorefrontLayout = ({ children }) => {
 const AdminIndexRedirect = () => {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (user.vaiTro === 'admin') return <Navigate to="/admin/dashboard" replace />;
-  if (user.vaiTro === 'librarian') return <Navigate to="/admin/books" replace />;
-  if (user.vaiTro === 'order_staff') return <Navigate to="/admin/orders" replace />;
+  if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+  if (user.role === 'librarian') return <Navigate to="/admin/books" replace />;
+  if (user.role === 'order_staff') return <Navigate to="/admin/orders" replace />;
   return <Navigate to="/unauthorized" replace />;
 };
 

@@ -23,12 +23,14 @@ export const Navbar = () => {
 
   // Tải số lượng mặt hàng trong giỏ nếu đã đăng nhập và là khách hàng
   useEffect(() => {
-    if (daDangNhap && user?.vaiTro === 'customer') {
+    const isCustomer = user?.role === 'customer' || user?.vaiTro === 'customer';
+    if (daDangNhap && isCustomer) {
       const laySoLuongGio = async () => {
         try {
           const res = await api.get('/cart');
-          const tongSo = (res.data.duLieu?.chiTiet || []).reduce(
-            (sum, item) => sum + item.soLuong, 
+          const cartData = res.data.data;
+          const tongSo = cartData?.tongSoLuong ?? (cartData?.cacMon || []).reduce(
+            (sum, item) => sum + (item.soLuong || 0), 
             0
           );
           setSoLuongGio(tongSo);
@@ -52,7 +54,7 @@ export const Navbar = () => {
     navigate('/login');
   };
 
-  const laNhanSu = user && ['admin', 'librarian', 'order_staff'].includes(user.vaiTro);
+  const laNhanSu = user && ['admin', 'librarian', 'order_staff'].includes(user.role);
 
   return (
     <header style={{
@@ -120,7 +122,7 @@ export const Navbar = () => {
           </button>
 
           {/* Giỏ Hàng (Dành cho khách hàng) */}
-          {(!user || user.vaiTro === 'customer') && (
+          {(!user || user.role === 'customer') && (
             <Link
               to="/cart"
               className="btn btn-outline"
@@ -158,7 +160,7 @@ export const Navbar = () => {
                 style={{ padding: '0.45rem 0.75rem', fontSize: '0.85rem' }}
               >
                 <User size={16} />
-                <span>{user.hoTen}</span>
+                <span>{user.fullName}</span>
               </Link>
               
               <Link

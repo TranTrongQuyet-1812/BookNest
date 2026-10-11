@@ -32,15 +32,16 @@ export const QuanLyDonHang = () => {
         page: phanTrang.page,
         limit: 15
       };
-      if (trangThaiLoc) params.trangThai = trangThaiLoc;
+      if (trangThaiLoc) params.status = trangThaiLoc;
 
       const res = await api.get('/admin/orders', { params });
-      setDonHangList(res.data.duLieu || []);
-      if (res.data.phanTrang) {
-        setPhanTrang(res.data.phanTrang);
+      const ds = res.data.data?.danhSach || res.data.data || [];
+      setDonHangList(Array.isArray(ds) ? ds : []);
+      if (res.data.data?.phanTrang) {
+        setPhanTrang(res.data.data.phanTrang);
       }
     } catch (err) {
-      setLoi(err.response?.data?.thongDiep || 'Không thể tải danh sách đơn hàng');
+      setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Không thể tải danh sách đơn hàng');
     } finally {
       setDangTai(false);
     }
@@ -55,12 +56,12 @@ export const QuanLyDonHang = () => {
     if (!window.confirm(`Xác nhận ${tenHanhDong} cho đơn hàng #${maDonHang}?`)) return;
 
     try {
-      await api.put(`/admin/orders/${maDonHang}/status`, { trangThai: trangThaiMoi });
+      await api.put(`/admin/orders/${maDonHang}/status`, { trangThaiMoi });
       setThongBao(`Đã chuyển đơn hàng #${maDonHang} sang trạng thái: ${trangThaiMoi}`);
       taiDonHang();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.thongDiep || 'Chuyển trạng thái thất bại');
+      alert(err.response?.data?.message || err.response?.data?.thongDiep || 'Chuyển trạng thái thất bại');
     }
   };
 
@@ -74,12 +75,12 @@ export const QuanLyDonHang = () => {
     }
 
     try {
-      await api.put(`/admin/orders/${maDonHang}/cancel`, { lyDoHuy: lyDo.trim() });
+      await api.put(`/admin/orders/${maDonHang}/cancel`, { lyDo: lyDo.trim() });
       setThongBao(`Đã hủy đơn hàng #${maDonHang} và hoàn lại sách vào kho.`);
       taiDonHang();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.thongDiep || 'Không thể hủy đơn hàng này');
+      alert(err.response?.data?.message || err.response?.data?.thongDiep || 'Không thể hủy đơn hàng này');
     }
   };
 
@@ -173,68 +174,78 @@ export const QuanLyDonHang = () => {
               </tr>
             </thead>
             <tbody>
-              {donHangList.map((don) => (
-                <tr key={don.maDonHang}>
-                  <td style={{ fontWeight: 700, color: 'var(--primary)' }}>#{don.maDonHang}</td>
-                  <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    {new Date(don.ngayTao).toLocaleString('vi-VN')}
-                  </td>
-                  <td>
-                    <div style={{ fontWeight: 600 }}>{don.tenNguoiNhan}</div>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      {don.soDienThoaiNhan} • {don.diaChiGiaoHang}
-                    </span>
-                  </td>
-                  <td style={{ fontWeight: 700, color: 'var(--text-main)' }}>
-                    {dinhDangTien(don.tongTien)}
-                  </td>
-                  <td>{layBadgeTrangThai(don.trangThai)}</td>
-                  <td style={{ textAlign: 'right' }}>
-                    <div className="inline-flex gap-2">
-                      {/* Nút chuyển tiến theo State Machine */}
-                      {don.trangThai === 'PENDING' && (
-                        <button
-                          onClick={() => handleChuyenTrangThai(don.maDonHang, 'CONFIRMED', 'Xác nhận đơn')}
-                          className="btn btn-primary btn-sm"
-                        >
-                          Duyệt Đơn
-                        </button>
-                      )}
+              {donHangList.map((don) => {
+                const maDon = don.MaDonHang ?? don.maDonHang;
+                const ngay = don.NgayDat ?? don.ngayTao ?? don.createdAt;
+                const nguoiNhan = don.TenNguoiNhan ?? don.tenNguoiNhan;
+                const sdt = don.SoDienThoaiNhan ?? don.soDienThoaiNhan;
+                const diaChi = don.DiaChiGiaoHang ?? don.diaChiGiaoHang;
+                const tongTien = don.TongTien ?? don.tongTien;
+                const trangThai = don.TrangThai ?? don.trangThai;
 
-                      {don.trangThai === 'CONFIRMED' && (
-                        <button
-                          onClick={() => handleChuyenTrangThai(don.maDonHang, 'SHIPPING', 'Giao hàng')}
-                          className="btn btn-primary btn-sm"
-                        >
-                          Giao Hàng
-                        </button>
-                      )}
+                return (
+                  <tr key={maDon}>
+                    <td style={{ fontWeight: 700, color: 'var(--primary)' }}>#{maDon}</td>
+                    <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                      {ngay ? new Date(ngay).toLocaleString('vi-VN') : '—'}
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{nguoiNhan}</div>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        {sdt} • {diaChi}
+                      </span>
+                    </td>
+                    <td style={{ fontWeight: 700, color: 'var(--text-main)' }}>
+                      {dinhDangTien(tongTien)}
+                    </td>
+                    <td>{layBadgeTrangThai(trangThai)}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className="inline-flex gap-2">
+                        {/* Nút chuyển tiến theo State Machine */}
+                        {trangThai === 'PENDING' && (
+                          <button
+                            onClick={() => handleChuyenTrangThai(maDon, 'CONFIRMED', 'Xác nhận đơn')}
+                            className="btn btn-primary btn-sm"
+                          >
+                            Duyệt Đơn
+                          </button>
+                        )}
 
-                      {don.trangThai === 'SHIPPING' && (
-                        <button
-                          onClick={() => handleChuyenTrangThai(don.maDonHang, 'DELIVERED', 'Hoàn tất giao')}
-                          className="btn btn-sm"
-                          style={{ backgroundColor: 'var(--accent)', color: '#FFF' }}
-                        >
-                          Hoàn Tất
-                        </button>
-                      )}
+                        {trangThai === 'CONFIRMED' && (
+                          <button
+                            onClick={() => handleChuyenTrangThai(maDon, 'SHIPPING', 'Giao hàng')}
+                            className="btn btn-primary btn-sm"
+                          >
+                            Giao Hàng
+                          </button>
+                        )}
 
-                      {/* Nút hủy đơn (Áp dụng cho PENDING, CONFIRMED, SHIPPING) */}
-                      {!['DELIVERED', 'CANCELLED'].includes(don.trangThai) && (
-                        <button
-                          onClick={() => handleHuyDon(don.maDonHang)}
-                          className="btn btn-outline btn-sm"
-                          style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
-                          title="Hủy đơn hàng và hoàn kho"
-                        >
-                          <Ban size={14} /> Hủy
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {trangThai === 'SHIPPING' && (
+                          <button
+                            onClick={() => handleChuyenTrangThai(maDon, 'DELIVERED', 'Hoàn tất giao')}
+                            className="btn btn-sm"
+                            style={{ backgroundColor: 'var(--accent)', color: '#FFF' }}
+                          >
+                            Hoàn Tất
+                          </button>
+                        )}
+
+                        {/* Nút hủy đơn (Áp dụng cho PENDING, CONFIRMED, SHIPPING) */}
+                        {!['DELIVERED', 'CANCELLED'].includes(trangThai) && (
+                          <button
+                            onClick={() => handleHuyDon(maDon)}
+                            className="btn btn-outline btn-sm"
+                            style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                            title="Hủy đơn hàng và hoàn kho"
+                          >
+                            <Ban size={14} /> Hủy
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

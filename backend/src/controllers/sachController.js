@@ -61,7 +61,8 @@ async function xuLyXoa(req, res) {
 
 // Nhập kho sách
 async function xuLyNhapKho(req, res) {
-  const sach = await sachService.nhapKho(req.params.id, req.body, req.user.id);
+  const maSach = req.params.id || req.body.maSach;
+  const sach = await sachService.nhapKho(maSach, req.body, req.user.id);
   return phanHoiThanhCong(res, {
     duLieu: sach,
     thongDiep: 'Nhập kho thành công'
@@ -74,6 +75,15 @@ async function xuLyLichSuNhapKho(req, res) {
   return phanHoiThanhCong(res, {
     duLieu: lichSu,
     thongDiep: 'Lấy lịch sử nhập kho thành công'
+  });
+}
+
+// Lấy toàn bộ lịch sử các đợt nhập kho gần đây cho Back-Office
+async function xuLyTatCaLichSuNhapKho(req, res) {
+  const lichSu = await sachService.layTatCaLichSuNhapKho();
+  return phanHoiThanhCong(res, {
+    duLieu: lichSu,
+    thongDiep: 'Lấy toàn bộ lịch sử nhập kho thành công'
   });
 }
 
@@ -95,5 +105,6 @@ module.exports = {
   xuLyXoa,
   xuLyNhapKho,
   xuLyLichSuNhapKho,
+  xuLyTatCaLichSuNhapKho,
   xuLySapHetHang
 };

@@ -40,13 +40,14 @@ export const QuanLyNhanSu = () => {
     setDangTai(true);
     try {
       const params = { limit: 50 };
-      if (vaiTroLoc) params.vaiTro = vaiTroLoc;
-      if (timKiem.trim()) params.q = timKiem.trim();
+      if (vaiTroLoc) params.role = vaiTroLoc;
+      if (timKiem.trim()) params.search = timKiem.trim();
 
       const res = await api.get('/admin/users', { params });
-      setNguoiDungList(res.data.duLieu || []);
+      const ds = res.data.data?.danhSach || res.data.data || [];
+      setNguoiDungList(Array.isArray(ds) ? ds : []);
     } catch (err) {
-      setLoi(err.response?.data?.thongDiep || 'Không thể tải danh sách tài khoản');
+      setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Không thể tải danh sách tài khoản');
     } finally {
       setDangTai(false);
     }
@@ -63,22 +64,26 @@ export const QuanLyNhanSu = () => {
 
   // Khóa hoặc mở khóa tài khoản
   const handleToggleKhoa = async (u) => {
-    if (u.maNguoiDung === adminHienTai?.maNguoiDung) {
+    const userId = u.MaNguoiDung ?? u.maNguoiDung ?? u.id;
+    const myId = adminHienTai?.id ?? adminHienTai?.MaNguoiDung ?? adminHienTai?.maNguoiDung;
+    if (userId === myId) {
       alert('Bạn không thể tự khóa tài khoản quản trị của chính mình!');
       return;
     }
 
-    const hanhDong = u.dangHoatDong ? 'khóa' : 'mở khóa';
-    if (!window.confirm(`Bạn có chắc muốn ${hanhDong} tài khoản "${u.email}"?`)) return;
+    const dangHoatDong = u.DangHoatDong ?? u.dangHoatDong;
+    const email = u.Email ?? u.email;
+    const hanhDong = dangHoatDong ? 'khóa' : 'mở khóa';
+    if (!window.confirm(`Bạn có chắc muốn ${hanhDong} tài khoản "${email}"?`)) return;
 
     try {
-      const trangThaiMoi = !u.dangHoatDong;
-      await api.put(`/admin/users/${u.maNguoiDung}/status`, { dangHoatDong: trangThaiMoi });
-      setThongBao(`Đã ${hanhDong} tài khoản ${u.email} thành công`);
+      const trangThaiMoi = !dangHoatDong;
+      await api.put(`/admin/users/${userId}/status`, { dangHoatDong: trangThaiMoi });
+      setThongBao(`Đã ${hanhDong} tài khoản ${email} thành công`);
       taiNguoiDung();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.thongDiep || 'Lỗi khi cập nhật trạng thái người dùng');
+      alert(err.response?.data?.message || err.response?.data?.thongDiep || 'Lỗi khi cập nhật trạng thái người dùng');
     }
   };
 
@@ -87,7 +92,14 @@ export const QuanLyNhanSu = () => {
     e.preventDefault();
     setDangTao(true);
     try {
-      await api.post('/admin/users', formNhanSu);
+      await api.post('/admin/users', {
+        hoTen: formNhanSu.hoTen,
+        email: formNhanSu.email,
+        matKhau: formNhanSu.matKhau,
+        vaiTro: formNhanSu.vaiTro,
+        soDienThoai: formNhanSu.soDienThoai || undefined,
+        diaChiMacDinh: formNhanSu.diaChi || undefined
+      });
       setThongBao(`Đã khởi tạo tài khoản nhân sự thành công: ${formNhanSu.email}`);
       setModalMo(false);
       setFormNhanSu({
@@ -101,7 +113,7 @@ export const QuanLyNhanSu = () => {
       taiNguoiDung();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.thongDiep || 'Lỗi khi tạo tài khoản nhân sự');
+      alert(err.response?.data?.message || err.response?.data?.thongDiep || 'Lỗi khi tạo tài khoản nhân sự');
     } finally {
       setDangTao(false);
     }
@@ -207,19 +219,26 @@ export const QuanLyNhanSu = () => {
             </thead>
             <tbody>
               {nguoiDungList.map((u) => {
-                const laChinhMinh = u.maNguoiDung === adminHienTai?.maNguoiDung;
+                const userId = u.MaNguoiDung ?? u.maNguoiDung ?? u.id;
+                const hoTen = u.HoTen ?? u.hoTen ?? u.fullName;
+                const email = u.Email ?? u.email;
+                const vaiTro = u.VaiTro ?? u.vaiTro ?? u.role;
+                const sdt = u.SoDienThoai ?? u.soDienThoai;
+                const dangHoatDong = u.DangHoatDong ?? u.dangHoatDong;
+                const myId = adminHienTai?.id ?? adminHienTai?.MaNguoiDung ?? adminHienTai?.maNguoiDung;
+                const laChinhMinh = userId === myId;
 
                 return (
-                  <tr key={u.maNguoiDung}>
-                    <td style={{ fontWeight: 600, color: 'var(--text-muted)' }}>#{u.maNguoiDung}</td>
+                  <tr key={userId}>
+                    <td style={{ fontWeight: 600, color: 'var(--text-muted)' }}>#{userId}</td>
                     <td>
-                      <div style={{ fontWeight: 600 }}>{u.hoTen}</div>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{u.email}</span>
+                      <div style={{ fontWeight: 600 }}>{hoTen}</div>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{email}</span>
                     </td>
-                    <td>{layBadgeVaiTro(u.vaiTro)}</td>
-                    <td style={{ fontSize: '0.875rem' }}>{u.soDienThoai || '—'}</td>
+                    <td>{layBadgeVaiTro(vaiTro)}</td>
+                    <td style={{ fontSize: '0.875rem' }}>{sdt || '—'}</td>
                     <td>
-                      {u.dangHoatDong ? (
+                      {dangHoatDong ? (
                         <span className="badge badge-delivered">Hoạt động</span>
                       ) : (
                         <span className="badge badge-cancelled">Đã khóa</span>
@@ -233,13 +252,13 @@ export const QuanLyNhanSu = () => {
                           onClick={() => handleToggleKhoa(u)}
                           className="btn btn-outline btn-sm"
                           style={{
-                            color: u.dangHoatDong ? 'var(--danger)' : 'var(--accent)',
-                            borderColor: u.dangHoatDong ? 'var(--danger)' : 'var(--accent)'
+                            color: dangHoatDong ? 'var(--danger)' : 'var(--accent)',
+                            borderColor: dangHoatDong ? 'var(--danger)' : 'var(--accent)'
                           }}
-                          title={u.dangHoatDong ? 'Khóa tài khoản' : 'Mở khóa'}
+                          title={dangHoatDong ? 'Khóa tài khoản' : 'Mở khóa'}
                         >
-                          {u.dangHoatDong ? <Lock size={14} /> : <Unlock size={14} />}
-                          {u.dangHoatDong ? 'Khóa' : 'Mở Khóa'}
+                          {dangHoatDong ? <Lock size={14} /> : <Unlock size={14} />}
+                          {dangHoatDong ? 'Khóa' : 'Mở Khóa'}
                         </button>
                       )}
                     </td>
@@ -295,7 +314,7 @@ export const QuanLyNhanSu = () => {
                   <input
                     type="password"
                     required
-                    placeholder="Tối thiểu 6 ký tự"
+                    placeholder="Tối thiểu 8 ký tự (chữ & số)"
                     className="form-input"
                     value={formNhanSu.matKhau}
                     onChange={(e) => setFormNhanSu({ ...formNhanSu, matKhau: e.target.value })}

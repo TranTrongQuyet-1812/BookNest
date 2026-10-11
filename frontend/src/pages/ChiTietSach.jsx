@@ -39,16 +39,19 @@ export const ChiTietSach = () => {
     try {
       // 1. Chi tiết sách
       const resSach = await api.get(`/books/${id}`);
-      setSach(resSach.data.duLieu);
+      setSach(resSach.data.data);
 
       // 2. Danh sách đánh giá
       const resDanhGia = await api.get(`/books/${id}/reviews`);
-      setDanhGiaList(resDanhGia.data.duLieu || []);
-      if (resDanhGia.data.thongKe) {
+      const dgData = resDanhGia.data.data;
+      setDanhGiaList(dgData?.danhSach || (Array.isArray(dgData) ? dgData : []));
+      if (dgData?.thongKe) {
+        setThongKeSao(dgData.thongKe);
+      } else if (resDanhGia.data.thongKe) {
         setThongKeSao(resDanhGia.data.thongKe);
       }
     } catch (err) {
-      setLoi(err.response?.data?.thongDiep || 'Không thể tải thông tin cuốn sách này');
+      setLoi(err.response?.data?.message || 'Không thể tải thông tin cuốn sách này');
     } finally {
       setDangTai(false);
     }
@@ -67,12 +70,14 @@ export const ChiTietSach = () => {
     setThongBao('');
     setLoi('');
     try {
-      await api.post('/cart', { maSach: sach.maSach, soLuong });
-      setThongBao(`Đã thêm ${soLuong} cuốn "${sach.tieuDe}" vào giỏ hàng thành công!`);
+      const maSachHienTai = sach?.MaSach ?? sach?.maSach;
+      const tenSachHienTai = sach?.TenSach ?? sach?.tieuDe;
+      await api.post('/cart', { maSach: maSachHienTai, soLuong });
+      setThongBao(`Đã thêm ${soLuong} cuốn "${tenSachHienTai}" vào giỏ hàng thành công!`);
       window.dispatchEvent(new CustomEvent('booknest_cart_updated'));
       setTimeout(() => setThongBao(''), 3500);
     } catch (err) {
-      setLoi(err.response?.data?.thongDiep || 'Lỗi khi thêm sách vào giỏ hàng');
+      setLoi(err.response?.data?.message || 'Lỗi khi thêm sách vào giỏ hàng');
     }
   };
 
@@ -86,14 +91,14 @@ export const ChiTietSach = () => {
     try {
       await api.post(`/books/${id}/reviews`, {
         soSao: soSaoDanhGia,
-        nhanXet: nhanXet.trim() || undefined
+        noiDung: nhanXet.trim() || undefined
       });
       setThanhCongDanhGia('Cảm ơn bạn đã gửi đánh giá! Nhận xét đã được lưu');
       setNhanXet('');
       // Tải lại danh sách đánh giá
       taiDuLieu();
     } catch (err) {
-      setLoiDanhGia(err.response?.data?.thongDiep || 'Bạn chỉ có thể đánh giá sách này sau khi đơn hàng được giao thành công');
+      setLoiDanhGia(err.response?.data?.message || 'Bạn chỉ có thể đánh giá sách này sau khi đơn hàng được giao thành công');
     } finally {
       setDangGuiDanhGia(false);
     }
@@ -124,6 +129,15 @@ export const ChiTietSach = () => {
       </div>
     );
   }
+
+  const anhBia = sach.AnhBia || sach.hinhAnh;
+  const tieuDe = sach.TenSach || sach.tieuDe;
+  const tacGia = sach.TacGia || sach.tacGia;
+  const giaBan = sach.GiaBan || sach.gia;
+  const soLuongTon = sach.SoLuongTon ?? sach.soLuongTon ?? 0;
+  const moTa = sach.MoTa || sach.moTa;
+  const daAn = sach.DaAn ?? sach.daAn;
+  const tenDanhMuc = sach.danhMuc?.TenDanhMuc || sach.danhMuc?.tenDanhMuc || 'Chưa phân loại';
 
   return (
     <div className="container py-8">
@@ -160,10 +174,10 @@ export const ChiTietSach = () => {
             justifyContent: 'center',
             overflow: 'hidden'
           }}>
-            {sach.hinhAnh ? (
+            {anhBia ? (
               <img
-                src={sach.hinhAnh}
-                alt={sach.tieuDe}
+                src={anhBia}
+                alt={tieuDe}
                 style={{ width: '100%', height: '100%', objectFit: 'contain' }}
               />
             ) : (
@@ -177,9 +191,9 @@ export const ChiTietSach = () => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="badge badge-role">
-                {sach.danhMuc?.tenDanhMuc || 'Chưa phân loại'}
+                {tenDanhMuc}
               </span>
-              {sach.daAn && (
+              {daAn && (
                 <span className="badge badge-cancelled">
                   Sách đang ẩn (Chỉ nhân sự thấy)
                 </span>
@@ -187,11 +201,11 @@ export const ChiTietSach = () => {
             </div>
 
             <h1 className="font-serif" style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem', lineHeight: 1.25 }}>
-              {sach.tieuDe}
+              {tieuDe}
             </h1>
 
             <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-              Tác giả: <strong>{sach.tacGia}</strong>
+              Tác giả: <strong>{tacGia}</strong>
             </p>
 
             {/* Điểm đánh giá */}
@@ -206,14 +220,14 @@ export const ChiTietSach = () => {
             {/* Giá & Trạng Thái Kho */}
             <div className="flex items-baseline gap-4 mb-4">
               <span style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--primary)' }}>
-                {dinhDangTien(sach.gia)}
+                {dinhDangTien(giaBan)}
               </span>
               <span style={{
                 fontSize: '0.9rem',
-                color: sach.soLuongTon > 0 ? 'var(--accent)' : 'var(--danger)',
+                color: soLuongTon > 0 ? 'var(--accent)' : 'var(--danger)',
                 fontWeight: 600
               }}>
-                {sach.soLuongTon > 0 ? `✓ Còn ${sach.soLuongTon} cuốn trong kho` : '✗ Hết hàng'}
+                {soLuongTon > 0 ? `✓ Còn ${soLuongTon} cuốn trong kho` : '✗ Hết hàng'}
               </span>
             </div>
 
@@ -221,7 +235,7 @@ export const ChiTietSach = () => {
             <div style={{ marginBottom: '1.5rem' }}>
               <h3 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.5rem' }}>Tóm tắt nội dung:</h3>
               <p style={{ color: 'var(--text-muted)', lineHeight: '1.7', fontSize: '0.925rem' }}>
-                {sach.moTa || 'Tác phẩm đang được cập nhật phần giới thiệu chi tiết.'}
+                {moTa || 'Tác phẩm đang được cập nhật phần giới thiệu chi tiết.'}
               </p>
             </div>
           </div>
@@ -346,28 +360,36 @@ export const ChiTietSach = () => {
             </p>
           ) : (
             <div className="flex flex-col gap-4">
-              {danhGiaList.map((dg) => (
-                <div
-                  key={dg.maDanhGia}
-                  style={{
-                    paddingBottom: '1rem',
-                    borderBottom: '1px solid var(--border)'
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span style={{ fontWeight: 600, fontSize: '0.925rem' }}>
-                      {dg.nguoiDung?.hoTen || 'Bạn đọc ẩn danh'}
-                    </span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      {new Date(dg.ngayDanhGia).toLocaleDateString('vi-VN')}
-                    </span>
+              {danhGiaList.map((dg) => {
+                const maDg = dg.MaDanhGia ?? dg.maDanhGia;
+                const nguoiDungTen = dg.nguoiDung?.HoTen ?? dg.nguoiDung?.hoTen ?? 'Bạn đọc ẩn danh';
+                const ngayDg = dg.NgayCapNhat ?? dg.NgayDanhGia ?? dg.ngayDanhGia ?? dg.createdAt;
+                const soSao = dg.SoSao ?? dg.soSao ?? 5;
+                const noiDung = dg.NoiDung ?? dg.noiDung ?? dg.nhanXet;
+
+                return (
+                  <div
+                    key={maDg}
+                    style={{
+                      paddingBottom: '1rem',
+                      borderBottom: '1px solid var(--border)'
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span style={{ fontWeight: 600, fontSize: '0.925rem' }}>
+                        {nguoiDungTen}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {ngayDg ? new Date(ngayDg).toLocaleDateString('vi-VN') : ''}
+                      </span>
+                    </div>
+                    <StarRating rating={soSao} size={14} />
+                    <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--text-main)', lineHeight: '1.6' }}>
+                      {noiDung || 'Người đọc không để lại lời bình.'}
+                    </p>
                   </div>
-                  <StarRating rating={dg.soSao} size={14} />
-                  <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--text-main)', lineHeight: '1.6' }}>
-                    {dg.nhanXet || 'Người đọc không để lại lời bình.'}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

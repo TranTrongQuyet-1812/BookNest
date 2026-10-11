@@ -24,7 +24,7 @@ export const AdminLayout = () => {
     navigate('/login');
   };
 
-  const vaiTro = user?.vaiTro;
+  const vaiTro = user?.role;
   const laAdmin = vaiTro === 'admin';
   const laThuThu = vaiTro === 'librarian' || laAdmin;
   const laNhanVienDon = vaiTro === 'order_staff' || laAdmin;

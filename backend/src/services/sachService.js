@@ -252,6 +252,20 @@ async function layLichSuNhapKho(maSach) {
   return lichSu;
 }
 
+// Lấy toàn bộ lịch sử các đợt nhập kho gần đây cho Back-Office
+async function layTatCaLichSuNhapKho() {
+  const lichSu = await LichSuNhapKho.findAll({
+    include: [
+      { model: Sach, as: 'sach', attributes: ['MaSach', 'TenSach'] },
+      { model: NguoiDung, as: 'nguoiNhap', attributes: ['MaNguoiDung', 'HoTen', 'Email'] }
+    ],
+    order: [['NgayNhap', 'DESC']],
+    limit: 50
+  });
+
+  return lichSu;
+}
+
 // Lấy danh sách sách sắp hết hàng (SoLuongTon <= NguongCanhBao)
 async function layDanhSachSapHetHang() {
   const danhSach = await Sach.findAll({
@@ -274,5 +288,6 @@ module.exports = {
   xoaMemSach,
   nhapKho,
   layLichSuNhapKho,
+  layTatCaLichSuNhapKho,
   layDanhSachSapHetHang
 };

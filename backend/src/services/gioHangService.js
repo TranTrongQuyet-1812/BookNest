@@ -58,11 +58,9 @@ async function layGioHang(maNguoiDung) {
 
   return {
     cacMon: danhSachMon,
-    chiTiet: danhSachMon,
     tongSoMon: danhSachMon.length,
     tongSoLuong,
-    tongTien: tongTienTamTinh,
-    tongTienTamTinh
+    tongTien: tongTienTamTinh
   };
 }
 

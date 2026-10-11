@@ -30,14 +30,14 @@ export const TrangChu = () => {
   const [danhMucChon, setDanhMucChon] = useState('');
   const [giaTu, setGiaTu] = useState('');
   const [giaDen, setGiaDen] = useState('');
-  const [sapXep, setSapXep] = useState('ngayTao_DESC');
+  const [sapXep, setSapXep] = useState('newest');
 
   // Tải danh mục một lần khi mount
   useEffect(() => {
     const taiDanhMuc = async () => {
       try {
         const res = await api.get('/categories');
-        setDanhMucList(res.data.duLieu || []);
+        setDanhMucList(res.data.data || []);
       } catch (err) {
         console.error('Lỗi tải danh mục:', err);
       }
@@ -50,23 +50,22 @@ export const TrangChu = () => {
     const taiSach = async () => {
       setDangTai(true);
       try {
-        const [fieldSapXep, orderSapXep] = sapXep.split('_');
         const params = {
           page: phanTrang.page,
           limit: 12,
-          sapXep: fieldSapXep,
-          thuTu: orderSapXep
+          sort: sapXep === 'gia_ASC' ? 'price_asc' : sapXep === 'gia_DESC' ? 'price_desc' : (sapXep || 'newest')
         };
 
-        if (timKiem.trim()) params.q = timKiem.trim();
-        if (danhMucChon) params.maDanhMuc = danhMucChon;
-        if (giaTu) params.giaTu = giaTu;
-        if (giaDen) params.giaDen = giaDen;
+        if (timKiem.trim()) params.search = timKiem.trim();
+        if (danhMucChon) params.categoryId = Number(danhMucChon);
+        if (giaTu) params.minPrice = Number(giaTu);
+        if (giaDen) params.maxPrice = Number(giaDen);
 
         const res = await api.get('/books', { params });
-        setSachList(res.data.duLieu || []);
-        if (res.data.phanTrang) {
-          setPhanTrang(res.data.phanTrang);
+        const dataPhanHoi = res.data.data;
+        setSachList(dataPhanHoi?.danhSach || (Array.isArray(dataPhanHoi) ? dataPhanHoi : []));
+        if (dataPhanHoi?.phanTrang) {
+          setPhanTrang(dataPhanHoi.phanTrang);
         }
       } catch (err) {
         console.error('Lỗi tải sách:', err);
@@ -83,23 +82,22 @@ export const TrangChu = () => {
     e.preventDefault();
     setPhanTrang((prev) => ({ ...prev, page: 1 }));
     // Kích hoạt reload sách
-    const [fieldSapXep, orderSapXep] = sapXep.split('_');
     const params = {
       page: 1,
       limit: 12,
-      sapXep: fieldSapXep,
-      thuTu: orderSapXep
+      sort: sapXep === 'gia_ASC' ? 'price_asc' : sapXep === 'gia_DESC' ? 'price_desc' : (sapXep || 'newest')
     };
-    if (timKiem.trim()) params.q = timKiem.trim();
-    if (danhMucChon) params.maDanhMuc = danhMucChon;
-    if (giaTu) params.giaTu = giaTu;
-    if (giaDen) params.giaDen = giaDen;
+    if (timKiem.trim()) params.search = timKiem.trim();
+    if (danhMucChon) params.categoryId = Number(danhMucChon);
+    if (giaTu) params.minPrice = Number(giaTu);
+    if (giaDen) params.maxPrice = Number(giaDen);
 
     setDangTai(true);
     api.get('/books', { params })
       .then((res) => {
-        setSachList(res.data.duLieu || []);
-        if (res.data.phanTrang) setPhanTrang(res.data.phanTrang);
+        const dataPhanHoi = res.data.data;
+        setSachList(dataPhanHoi?.danhSach || (Array.isArray(dataPhanHoi) ? dataPhanHoi : []));
+        if (dataPhanHoi?.phanTrang) setPhanTrang(dataPhanHoi.phanTrang);
       })
       .finally(() => setDangTai(false));
   };
@@ -116,7 +114,7 @@ export const TrangChu = () => {
       window.dispatchEvent(new CustomEvent('booknest_cart_updated'));
       setTimeout(() => setThongBaoThem(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.thongDiep || 'Không thể thêm vào giỏ hàng');
+      alert(err.response?.data?.message || 'Không thể thêm vào giỏ hàng');
     }
   };
 
@@ -211,11 +209,15 @@ export const TrangChu = () => {
                 }}
               >
                 <option value="">Tất cả thể loại</option>
-                {danhMucList.map((dm) => (
-                  <option key={dm.maDanhMuc} value={dm.maDanhMuc}>
-                    {dm.tenDanhMuc}
-                  </option>
-                ))}
+                {danhMucList.map((dm) => {
+                  const idDm = dm.MaDanhMuc ?? dm.maDanhMuc;
+                  const tenDm = dm.TenDanhMuc ?? dm.tenDanhMuc;
+                  return (
+                    <option key={idDm} value={idDm}>
+                      {tenDm}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -226,10 +228,9 @@ export const TrangChu = () => {
                 value={sapXep}
                 onChange={(e) => setSapXep(e.target.value)}
               >
-                <option value="ngayTao_DESC">Mới nhất</option>
-                <option value="gia_ASC">Giá tăng dần</option>
-                <option value="gia_DESC">Giá giảm dần</option>
-                <option value="tieuDe_ASC">Tựa đề A - Z</option>
+                <option value="newest">Mới nhất</option>
+                <option value="price_asc">Giá tăng dần</option>
+                <option value="price_desc">Giá giảm dần</option>
               </select>
             </div>
 
@@ -258,106 +259,117 @@ export const TrangChu = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {sachList.map((sach) => (
-              <div key={sach.maSach} className="card flex flex-col justify-between" style={{ padding: '1rem' }}>
-                <div>
-                  {/* Bìa sách tượng trưng */}
-                  <div style={{
-                    height: '200px',
-                    backgroundColor: 'var(--bg-surface)',
-                    borderRadius: 'var(--radius-sm)',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: '0.75rem',
-                    border: '1px solid var(--border)'
-                  }}>
-                    {sach.hinhAnh ? (
-                      <img
-                        src={sach.hinhAnh}
-                        alt={sach.tieuDe}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <BookOpen size={48} style={{ color: 'var(--primary)', opacity: 0.6 }} />
-                    )}
-                  </div>
+            {sachList.map((sach) => {
+              const maSach = sach.MaSach ?? sach.maSach;
+              const tenSach = sach.TenSach ?? sach.tenSach ?? sach.tieuDe;
+              const tacGia = sach.TacGia ?? sach.tacGia;
+              const anhBia = sach.AnhBia ?? sach.anhBia ?? sach.hinhAnh;
+              const tenDanhMuc = sach.danhMuc?.TenDanhMuc ?? sach.danhMuc?.tenDanhMuc ?? 'Sách';
+              const giaBan = sach.GiaBan ?? sach.giaBan ?? sach.gia;
+              const tonKho = sach.SoLuongTon ?? sach.soLuongTon ?? 0;
+              const sao = sach.saoTrungBinh ?? 5;
 
-                  {/* Thể loại */}
-                  <span className="badge badge-role" style={{ fontSize: '0.72rem', marginBottom: '0.4rem' }}>
-                    {sach.danhMuc?.tenDanhMuc || 'Sách'}
-                  </span>
-
-                  {/* Tựa sách */}
-                  <Link to={`/books/${sach.maSach}`}>
-                    <h3 className="font-serif" style={{
-                      fontSize: '1.05rem',
-                      fontWeight: 600,
-                      lineHeight: 1.35,
-                      marginBottom: '0.35rem',
-                      color: 'var(--text-main)',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden'
+              return (
+                <div key={maSach} className="card flex flex-col justify-between" style={{ padding: '1rem' }}>
+                  <div>
+                    {/* Bìa sách tượng trưng */}
+                    <div style={{
+                      height: '200px',
+                      backgroundColor: 'var(--bg-surface)',
+                      borderRadius: 'var(--radius-sm)',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: '0.75rem',
+                      border: '1px solid var(--border)'
                     }}>
-                      {sach.tieuDe}
-                    </h3>
-                  </Link>
+                      {anhBia ? (
+                        <img
+                          src={anhBia}
+                          alt={tenSach}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <BookOpen size={48} style={{ color: 'var(--primary)', opacity: 0.6 }} />
+                      )}
+                    </div>
 
-                  {/* Tác giả */}
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                    Tác giả: {sach.tacGia}
-                  </p>
-
-                  {/* Đánh giá sao */}
-                  <div className="flex items-center gap-1 mb-2">
-                    <StarRating rating={Math.round(sach.saoTrungBinh || 5)} size={14} />
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      ({sach.saoTrungBinh ? sach.saoTrungBinh : '5.0'})
+                    {/* Thể loại */}
+                    <span className="badge badge-role" style={{ fontSize: '0.72rem', marginBottom: '0.4rem' }}>
+                      {tenDanhMuc}
                     </span>
-                  </div>
-                </div>
 
-                <div>
-                  {/* Giá và tồn kho */}
-                  <div className="flex items-center justify-between mb-3" style={{ borderTop: '1px solid var(--border)', paddingTop: '0.5rem' }}>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--primary)' }}>
-                      {dinhDangTien(sach.gia)}
-                    </span>
-                    <span style={{
-                      fontSize: '0.75rem',
-                      color: sach.soLuongTon > 0 ? 'var(--text-muted)' : 'var(--danger)',
-                      fontWeight: sach.soLuongTon > 0 ? 'normal' : '600'
-                    }}>
-                      {sach.soLuongTon > 0 ? `Còn ${sach.soLuongTon} cuốn` : 'Tạm hết hàng'}
-                    </span>
-                  </div>
-
-                  {/* Nút hành động */}
-                  <div className="flex gap-2">
-                    <Link
-                      to={`/books/${sach.maSach}`}
-                      className="btn btn-outline btn-sm flex-1"
-                    >
-                      Chi Tiết
+                    {/* Tựa sách */}
+                    <Link to={`/books/${maSach}`}>
+                      <h3 className="font-serif" style={{
+                        fontSize: '1.05rem',
+                        fontWeight: 600,
+                        lineHeight: 1.35,
+                        marginBottom: '0.35rem',
+                        color: 'var(--text-main)',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden'
+                      }}>
+                        {tenSach}
+                      </h3>
                     </Link>
-                    <button
-                      onClick={() => handleThemVaoGio(sach.maSach, sach.tieuDe)}
-                      disabled={sach.soLuongTon <= 0}
-                      className="btn btn-primary btn-sm"
-                      title="Thêm vào giỏ hàng"
-                    >
-                      <ShoppingCart size={16} />
-                    </button>
+
+                    {/* Tác giả */}
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                      Tác giả: {tacGia}
+                    </p>
+
+                    {/* Đánh giá sao */}
+                    <div className="flex items-center gap-1 mb-2">
+                      <StarRating rating={Math.round(sao || 5)} size={14} />
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        ({sao ? sao : '5.0'})
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    {/* Giá và tồn kho */}
+                    <div className="flex items-center justify-between mb-3" style={{ borderTop: '1px solid var(--border)', paddingTop: '0.5rem' }}>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--primary)' }}>
+                        {dinhDangTien(giaBan)}
+                      </span>
+                      <span style={{
+                        fontSize: '0.75rem',
+                        color: tonKho > 0 ? 'var(--text-muted)' : 'var(--danger)',
+                        fontWeight: tonKho > 0 ? 'normal' : '600'
+                      }}>
+                        {tonKho > 0 ? `Còn ${tonKho} cuốn` : 'Tạm hết hàng'}
+                      </span>
+                    </div>
+
+                    {/* Nút hành động */}
+                    <div className="flex gap-2">
+                      <Link
+                        to={`/books/${maSach}`}
+                        className="btn btn-outline btn-sm flex-1"
+                      >
+                        Chi Tiết
+                      </Link>
+                      <button
+                        onClick={() => handleThemVaoGio(maSach, tenSach)}
+                        disabled={tonKho <= 0}
+                        className="btn btn-primary btn-sm"
+                        title="Thêm vào giỏ hàng"
+                      >
+                        <ShoppingCart size={16} />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

@@ -164,6 +164,25 @@ router.get(
   batLoiAsync(sachController.xuLySapHetHang)
 );
 
+// Tuyến đường quản lý nhập kho dành cho Back-Office
+router.get(
+  '/inventory/history',
+  xacThucToken,
+  phanQuyen('admin', 'librarian'),
+  batLoiAsync(sachController.xuLyTatCaLichSuNhapKho)
+);
+
+router.post(
+  '/inventory/import',
+  xacThucToken,
+  phanQuyen('admin', 'librarian'),
+  kiemTraDuLieu(luatNhapKho.keys({
+    maSach: Joi.number().integer().positive().required(),
+    giaNhap: Joi.number().min(0).allow(null, '')
+  })),
+  batLoiAsync(sachController.xuLyNhapKho)
+);
+
 /**
  * @swagger
  * /api/books/{id}:

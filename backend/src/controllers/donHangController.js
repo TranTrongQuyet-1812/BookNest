@@ -61,11 +61,11 @@ async function xuLyAdminLayChiTietDon(req, res) {
 
 // Back-Office: Cập nhật trạng thái đơn hàng (State machine)
 async function xuLyAdminCapNhatTrangThai(req, res) {
-  const trangThaiMoi = req.body.trangThaiMoi || req.body.trangThai;
+  const { trangThaiMoi, ghiChu } = req.body;
   const donHang = await donHangService.adminCapNhatTrangThai(
     req.params.id,
     trangThaiMoi,
-    req.body.ghiChu,
+    ghiChu,
     req.user.id
   );
   return phanHoiThanhCong(res, {

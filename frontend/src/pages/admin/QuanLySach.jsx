@@ -46,10 +46,12 @@ export const QuanLySach = () => {
         api.get('/books', { params: { limit: 100 } }),
         api.get('/categories')
       ]);
-      setSachList(resSach.data.duLieu || []);
-      setDanhMucList(resDanhMuc.data.duLieu || []);
+      const dsSach = resSach.data.data?.danhSach || resSach.data.data || [];
+      const dsDanhMuc = resDanhMuc.data.data || [];
+      setSachList(Array.isArray(dsSach) ? dsSach : []);
+      setDanhMucList(Array.isArray(dsDanhMuc) ? dsDanhMuc : []);
     } catch (err) {
-      setLoi(err.response?.data?.thongDiep || 'Không thể tải dữ liệu sách');
+      setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Không thể tải dữ liệu sách');
     } finally {
       setDangTai(false);
     }
@@ -61,11 +63,12 @@ export const QuanLySach = () => {
 
   // Mở modal thêm sách mới
   const moModalThemSach = () => {
+    const defaultDm = danhMucList[0]?.MaDanhMuc ?? danhMucList[0]?.maDanhMuc ?? '';
     setSachDangSua(null);
     setFormSach({
       tieuDe: '',
       tacGia: '',
-      maDanhMuc: danhMucList[0]?.maDanhMuc || '',
+      maDanhMuc: defaultDm,
       gia: '',
       soLuongTon: 0,
       moTa: '',
@@ -78,13 +81,13 @@ export const QuanLySach = () => {
   const moModalSuaSach = (sach) => {
     setSachDangSua(sach);
     setFormSach({
-      tieuDe: sach.tieuDe,
-      tacGia: sach.tacGia,
-      maDanhMuc: sach.maDanhMuc,
-      gia: sach.gia,
-      soLuongTon: sach.soLuongTon,
-      moTa: sach.moTa || '',
-      hinhAnh: sach.hinhAnh || ''
+      tieuDe: sach.TenSach ?? sach.tenSach ?? sach.tieuDe ?? '',
+      tacGia: sach.TacGia ?? sach.tacGia ?? '',
+      maDanhMuc: sach.MaDanhMuc ?? sach.maDanhMuc ?? '',
+      gia: sach.GiaBan ?? sach.giaBan ?? sach.gia ?? '',
+      soLuongTon: sach.SoLuongTon ?? sach.soLuongTon ?? 0,
+      moTa: sach.MoTa ?? sach.moTa ?? '',
+      hinhAnh: sach.AnhBia ?? sach.anhBia ?? sach.hinhAnh ?? ''
     });
     setModalSachMo(true);
   };
@@ -93,33 +96,48 @@ export const QuanLySach = () => {
   const handleLuuSach = async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+        tenSach: formSach.tieuDe,
+        tacGia: formSach.tacGia,
+        maDanhMuc: Number(formSach.maDanhMuc),
+        giaBan: Number(formSach.gia),
+        soLuongTon: Number(formSach.soLuongTon || 0),
+        moTa: formSach.moTa || undefined,
+        anhBia: formSach.hinhAnh || undefined
+      };
+
+      const maSach = sachDangSua ? (sachDangSua.MaSach ?? sachDangSua.maSach) : null;
       if (sachDangSua) {
-        await api.put(`/books/${sachDangSua.maSach}`, formSach);
+        await api.put(`/books/${maSach}`, payload);
         setThongBao(`Đã cập nhật cuốn sách "${formSach.tieuDe}"`);
       } else {
-        await api.post('/books', formSach);
+        await api.post('/books', payload);
         setThongBao(`Đã thêm mới cuốn sách "${formSach.tieuDe}" vào kho`);
       }
       setModalSachMo(false);
       taiDuLieu();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.thongDiep || 'Lỗi khi lưu sách');
+      alert(err.response?.data?.message || err.response?.data?.thongDiep || 'Lỗi khi lưu sách');
     }
   };
 
   // Ẩn hoặc Khôi phục sách (Soft delete toggle)
   const handleToggleAnSach = async (sach) => {
-    const hanhDong = sach.daAn ? 'khôi phục' : 'ẩn';
-    if (!window.confirm(`Bạn có chắc muốn ${hanhDong} cuốn sách "${sach.tieuDe}"?`)) return;
+    const maSach = sach.MaSach ?? sach.maSach;
+    const tenSach = sach.TenSach ?? sach.tenSach ?? sach.tieuDe;
+    const daAn = sach.DaAn ?? sach.daAn;
+    const hanhDong = daAn ? 'khôi phục' : 'ẩn';
+
+    if (!window.confirm(`Bạn có chắc muốn ${hanhDong} cuốn sách "${tenSach}"?`)) return;
 
     try {
-      await api.delete(`/books/${sach.maSach}`);
-      setThongBao(`Đã ${hanhDong} thành công cuốn sách "${sach.tieuDe}"`);
+      await api.delete(`/books/${maSach}`);
+      setThongBao(`Đã ${hanhDong} thành công cuốn sách "${tenSach}"`);
       taiDuLieu();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.thongDiep || 'Lỗi khi thay đổi trạng thái sách');
+      alert(err.response?.data?.message || err.response?.data?.thongDiep || 'Lỗi khi thay đổi trạng thái sách');
     }
   };
 
@@ -134,7 +152,7 @@ export const QuanLySach = () => {
       taiDuLieu();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.thongDiep || 'Lỗi khi tạo thể loại');
+      alert(err.response?.data?.message || err.response?.data?.thongDiep || 'Lỗi khi tạo thể loại');
     }
   };
 
@@ -144,7 +162,9 @@ export const QuanLySach = () => {
 
   const sachLoc = sachList.filter((s) => {
     const tuKhoa = timKiem.toLowerCase();
-    return s.tieuDe.toLowerCase().includes(tuKhoa) || s.tacGia.toLowerCase().includes(tuKhoa);
+    const ten = (s.TenSach ?? s.tenSach ?? s.tieuDe ?? '').toLowerCase();
+    const tg = (s.TacGia ?? s.tacGia ?? '').toLowerCase();
+    return ten.includes(tuKhoa) || tg.includes(tuKhoa);
   });
 
   return (
@@ -215,60 +235,70 @@ export const QuanLySach = () => {
               </tr>
             </thead>
             <tbody>
-              {sachLoc.map((sach) => (
-                <tr key={sach.maSach}>
-                  <td style={{ fontWeight: 600, color: 'var(--text-muted)' }}>#{sach.maSach}</td>
-                  <td>
-                    <div style={{ fontWeight: 600 }}>{sach.tieuDe}</div>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      Tác giả: {sach.tacGia}
-                    </span>
-                  </td>
-                  <td>
-                    <span className="badge badge-role">
-                      {sach.danhMuc?.tenDanhMuc || 'Chưa phân loại'}
-                    </span>
-                  </td>
-                  <td style={{ fontWeight: 600, color: 'var(--primary)' }}>
-                    {dinhDangTien(sach.gia)}
-                  </td>
-                  <td>
-                    <span style={{
-                      fontWeight: 600,
-                      color: sach.soLuongTon <= 5 ? 'var(--danger)' : 'var(--text-main)'
-                    }}>
-                      {sach.soLuongTon} cuốn
-                    </span>
-                  </td>
-                  <td>
-                    {sach.daAn ? (
-                      <span className="badge badge-cancelled">Đang ẩn</span>
-                    ) : (
-                      <span className="badge badge-delivered">Đang bán</span>
-                    )}
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <div className="inline-flex gap-2">
-                      <button
-                        onClick={() => moModalSuaSach(sach)}
-                        className="btn btn-outline btn-sm"
-                        title="Chỉnh sửa thông tin"
-                      >
-                        <Edit size={14} /> Sửa
-                      </button>
-                      <button
-                        onClick={() => handleToggleAnSach(sach)}
-                        className={`btn btn-sm ${sach.daAn ? 'btn-outline' : 'btn-outline'}`}
-                        style={{ color: sach.daAn ? 'var(--accent)' : 'var(--danger)' }}
-                        title={sach.daAn ? 'Khôi phục hiển thị' : 'Ẩn sách khỏi khách hàng'}
-                      >
-                        {sach.daAn ? <Eye size={14} /> : <EyeOff size={14} />}
-                        {sach.daAn ? 'Hiện' : 'Ẩn'}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {sachLoc.map((sach) => {
+                const ma = sach.MaSach ?? sach.maSach;
+                const ten = sach.TenSach ?? sach.tenSach ?? sach.tieuDe;
+                const tg = sach.TacGia ?? sach.tacGia;
+                const dm = sach.danhMuc?.TenDanhMuc ?? sach.danhMuc?.tenDanhMuc ?? 'Chưa phân loại';
+                const gia = sach.GiaBan ?? sach.giaBan ?? sach.gia;
+                const ton = sach.SoLuongTon ?? sach.soLuongTon ?? 0;
+                const an = sach.DaAn ?? sach.daAn;
+
+                return (
+                  <tr key={ma}>
+                    <td style={{ fontWeight: 600, color: 'var(--text-muted)' }}>#{ma}</td>
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{ten}</div>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        Tác giả: {tg}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="badge badge-role">
+                        {dm}
+                      </span>
+                    </td>
+                    <td style={{ fontWeight: 600, color: 'var(--primary)' }}>
+                      {dinhDangTien(gia)}
+                    </td>
+                    <td>
+                      <span style={{
+                        fontWeight: 600,
+                        color: ton <= 5 ? 'var(--danger)' : 'var(--text-main)'
+                      }}>
+                        {ton} cuốn
+                      </span>
+                    </td>
+                    <td>
+                      {an ? (
+                        <span className="badge badge-cancelled">Đang ẩn</span>
+                      ) : (
+                        <span className="badge badge-delivered">Đang bán</span>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className="inline-flex gap-2">
+                        <button
+                          onClick={() => moModalSuaSach(sach)}
+                          className="btn btn-outline btn-sm"
+                          title="Chỉnh sửa thông tin"
+                        >
+                          <Edit size={14} /> Sửa
+                        </button>
+                        <button
+                          onClick={() => handleToggleAnSach(sach)}
+                          className="btn btn-outline btn-sm"
+                          style={{ color: an ? 'var(--accent)' : 'var(--danger)' }}
+                          title={an ? 'Khôi phục hiển thị' : 'Ẩn sách khỏi khách hàng'}
+                        >
+                          {an ? <Eye size={14} /> : <EyeOff size={14} />}
+                          {an ? 'Hiện' : 'Ẩn'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -320,11 +350,15 @@ export const QuanLySach = () => {
                     onChange={(e) => setFormSach({ ...formSach, maDanhMuc: e.target.value })}
                   >
                     <option value="">-- Chọn thể loại --</option>
-                    {danhMucList.map((dm) => (
-                      <option key={dm.maDanhMuc} value={dm.maDanhMuc}>
-                        {dm.tenDanhMuc}
-                      </option>
-                    ))}
+                    {danhMucList.map((dm) => {
+                      const idDm = dm.MaDanhMuc ?? dm.maDanhMuc;
+                      const tenDm = dm.TenDanhMuc ?? dm.tenDanhMuc;
+                      return (
+                        <option key={idDm} value={idDm}>
+                          {tenDm}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               </div>

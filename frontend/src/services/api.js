@@ -27,17 +27,9 @@ api.interceptors.request.use(
   }
 );
 
+// Interceptor cho Response: Xử lý lỗi tập trung, phát hiện token hết hạn (401)
 api.interceptors.response.use(
   (response) => {
-    // Chuẩn hóa tự động khế ước dữ liệu giữa Frontend và Backend
-    if (response.data) {
-      if (response.data.data !== undefined && response.data.duLieu === undefined) {
-        response.data.duLieu = response.data.data;
-      }
-      if (response.data.message !== undefined && response.data.thongDiep === undefined) {
-        response.data.thongDiep = response.data.message;
-      }
-    }
     return response;
   },
   (error) => {

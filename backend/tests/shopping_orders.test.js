@@ -81,7 +81,7 @@ describe('Kiểm thử Giai đoạn GĐ5: Mua Hàng (T12 - T16)', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.cacMon).toEqual([]);
-      expect(res.body.data.tongTienTamTinh).toBe(0);
+      expect(res.body.data.tongTien).toBe(0);
     });
 
     it('2. Thủ thư (librarian) hoặc người chưa đăng nhập gọi /api/cart bị chặn (403/401)', async () => {

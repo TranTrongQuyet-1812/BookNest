@@ -25,9 +25,9 @@ export const ChiTietDonHang = () => {
     setDangTai(true);
     try {
       const res = await api.get(`/orders/${id}`);
-      setDonHang(res.data.duLieu);
+      setDonHang(res.data.data);
     } catch (err) {
-      setLoi(err.response?.data?.thongDiep || 'Không tìm thấy thông tin đơn hàng này (IDOR Protected)');
+      setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Không tìm thấy thông tin đơn hàng này (IDOR Protected)');
     } finally {
       setDangTai(false);
     }
@@ -71,8 +71,13 @@ export const ChiTietDonHang = () => {
     { key: 'DELIVERED', label: 'Đã giao', icon: PackageCheck }
   ];
 
-  const laDonHuy = donHang.trangThai === 'CANCELLED';
-  const chiSoHienTai = cacBuoc.findIndex((b) => b.key === donHang.trangThai);
+  const trangThaiDon = donHang.TrangThai ?? donHang.trangThai;
+  const maDonHang = donHang.MaDonHang ?? donHang.maDonHang ?? id;
+  const ngayTaoDon = donHang.NgayDat ?? donHang.ngayTao ?? donHang.createdAt;
+  const danhSachMon = donHang.chiTietDonHang || donHang.chiTiet || [];
+
+  const laDonHuy = trangThaiDon === 'CANCELLED';
+  const chiSoHienTai = cacBuoc.findIndex((b) => b.key === trangThaiDon);
 
   return (
     <div className="container py-8">
@@ -83,10 +88,10 @@ export const ChiTietDonHang = () => {
       <div className="flex items-center justify-between flex-wrap gap-2 mb-6">
         <div>
           <h1 className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700 }}>
-            Chi Tiết Đơn Hàng #{donHang.maDonHang}
+            Chi Tiết Đơn Hàng #{maDonHang}
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-            Đặt vào lúc: {new Date(donHang.ngayTao).toLocaleString('vi-VN')}
+            Đặt vào lúc: {ngayTaoDon ? new Date(ngayTaoDon).toLocaleString('vi-VN') : ''}
           </p>
         </div>
       </div>
@@ -110,7 +115,7 @@ export const ChiTietDonHang = () => {
             <XCircle size={24} />
             <div>
               <strong>Đơn hàng đã bị hủy</strong>
-              <div style={{ fontSize: '0.85rem' }}>Lý do: {donHang.lyDoHuy || 'Không có ghi chú'}</div>
+              <div style={{ fontSize: '0.85rem' }}>Lý do: {donHang.LyDoHuy || donHang.lyDoHuy || 'Không có ghi chú'}</div>
             </div>
           </div>
         ) : (
@@ -157,7 +162,7 @@ export const ChiTietDonHang = () => {
         <div className="lg:col-span-2">
           <div className="card">
             <h3 className="font-serif" style={{ fontSize: '1.15rem', fontWeight: 600, marginBottom: '1rem' }}>
-              Danh Sách Sách ({donHang.chiTiet?.length || 0} mục)
+              Danh Sách Sách ({danhSachMon.length} mục)
             </h3>
 
             <div className="table-container">
@@ -171,28 +176,38 @@ export const ChiTietDonHang = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {donHang.chiTiet?.map((item) => (
-                    <tr key={item.maChiTietDonHang}>
-                      <td>
-                        <div className="flex items-center gap-3">
-                          <BookOpen size={20} style={{ color: 'var(--primary)' }} />
-                          <div>
-                            <Link to={`/books/${item.maSach}`} style={{ fontWeight: 600, color: 'var(--text-main)' }}>
-                              {item.sach?.tieuDe}
-                            </Link>
-                            <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                              Tác giả: {item.sach?.tacGia}
-                            </span>
+                  {danhSachMon.map((item) => {
+                    const maCt = item.MaChiTietDonHang ?? item.maChiTietDonHang ?? item.MaSach ?? item.maSach;
+                    const maSach = item.MaSach ?? item.maSach ?? item.sach?.MaSach ?? item.sach?.maSach;
+                    const tenSach = item.sach?.TenSach ?? item.sach?.tenSach ?? item.sach?.tieuDe;
+                    const tacGia = item.sach?.TacGia ?? item.sach?.tacGia ?? 'Đang cập nhật';
+                    const donGia = parseFloat(item.DonGia ?? item.donGia ?? 0);
+                    const soLuong = item.SoLuong ?? item.soLuong ?? 0;
+                    const thanhTien = item.ThanhTien ?? item.thanhTien ?? (donGia * soLuong);
+
+                    return (
+                      <tr key={maCt}>
+                        <td>
+                          <div className="flex items-center gap-3">
+                            <BookOpen size={20} style={{ color: 'var(--primary)' }} />
+                            <div>
+                              <Link to={`/books/${maSach}`} style={{ fontWeight: 600, color: 'var(--text-main)' }}>
+                                {tenSach}
+                              </Link>
+                              <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                Tác giả: {tacGia}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td>{dinhDangTien(item.donGia)}</td>
-                      <td style={{ fontWeight: 600 }}>{item.soLuong}</td>
-                      <td style={{ fontWeight: 700, color: 'var(--primary)' }}>
-                        {dinhDangTien(item.thanhTien)}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td>{dinhDangTien(donGia)}</td>
+                        <td style={{ fontWeight: 600 }}>{soLuong}</td>
+                        <td style={{ fontWeight: 700, color: 'var(--primary)' }}>
+                          {dinhDangTien(thanhTien)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -201,7 +216,7 @@ export const ChiTietDonHang = () => {
               <div style={{ textAlign: 'right' }}>
                 <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Tổng thanh toán:</span>
                 <span style={{ display: 'block', fontSize: '1.4rem', fontWeight: 700, color: 'var(--primary)' }}>
-                  {dinhDangTien(donHang.tongTien)}
+                  {dinhDangTien(donHang.TongTien ?? donHang.tongTien)}
                 </span>
               </div>
             </div>
@@ -220,7 +235,7 @@ export const ChiTietDonHang = () => {
                 <User size={16} style={{ color: 'var(--primary)', marginTop: '3px' }} />
                 <div>
                   <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Người nhận:</span>
-                  <div style={{ fontWeight: 600 }}>{donHang.tenNguoiNhan}</div>
+                  <div style={{ fontWeight: 600 }}>{donHang.TenNguoiNhan ?? donHang.tenNguoiNhan}</div>
                 </div>
               </div>
 
@@ -228,7 +243,7 @@ export const ChiTietDonHang = () => {
                 <Phone size={16} style={{ color: 'var(--primary)', marginTop: '3px' }} />
                 <div>
                   <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Điện thoại:</span>
-                  <div style={{ fontWeight: 600 }}>{donHang.soDienThoaiNhan}</div>
+                  <div style={{ fontWeight: 600 }}>{donHang.SoDienThoaiNhan ?? donHang.soDienThoaiNhan}</div>
                 </div>
               </div>
 
@@ -236,11 +251,11 @@ export const ChiTietDonHang = () => {
                 <MapPin size={16} style={{ color: 'var(--primary)', marginTop: '3px' }} />
                 <div>
                   <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Địa chỉ nhận:</span>
-                  <div>{donHang.diaChiGiaoHang}</div>
+                  <div>{donHang.DiaChiGiaoHang ?? donHang.diaChiGiaoHang}</div>
                 </div>
               </div>
 
-              {donHang.ghiChu && (
+              {(donHang.GhiChu || donHang.ghiChu) && (
                 <div style={{
                   padding: '0.75rem',
                   backgroundColor: 'var(--bg-surface)',
@@ -248,7 +263,7 @@ export const ChiTietDonHang = () => {
                   fontSize: '0.85rem',
                   marginTop: '0.5rem'
                 }}>
-                  <strong>Ghi chú:</strong> {donHang.ghiChu}
+                  <strong>Ghi chú:</strong> {donHang.GhiChu || donHang.ghiChu}
                 </div>
               )}
             </div>

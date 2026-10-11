@@ -32,7 +32,7 @@ export const ProtectedRoute = ({ children }) => {
 export const RoleGuard = ({ allowedRoles, children }) => {
   const { user } = useAuth();
 
-  if (!user || !allowedRoles.includes(user.vaiTro)) {
+  if (!user || !allowedRoles.includes(user.role)) {
     return <Navigate to="/unauthorized" replace />;
   }
 

@@ -32,10 +32,12 @@ export const NhapKho = () => {
         api.get('/books', { params: { limit: 100 } }),
         api.get('/books/inventory/history')
       ]);
-      setSachList(resSach.data.duLieu || []);
-      setLichSuNhap(resLichSu.data.duLieu || []);
+      const dsSach = resSach.data.data?.danhSach || resSach.data.data || [];
+      const dsLichSu = resLichSu.data.data || [];
+      setSachList(Array.isArray(dsSach) ? dsSach : []);
+      setLichSuNhap(Array.isArray(dsLichSu) ? dsLichSu : []);
     } catch (err) {
-      setLoi(err.response?.data?.thongDiep || 'Không thể tải dữ liệu nhập kho');
+      setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Không thể tải dữ liệu nhập kho');
     } finally {
       setDangTai(false);
     }
@@ -63,7 +65,7 @@ export const NhapKho = () => {
       setFormNhap({ maSach: '', soLuongNhap: 10, giaNhap: '', ghiChu: '' });
       taiDuLieu();
     } catch (err) {
-      setLoi(err.response?.data?.thongDiep || 'Nhập kho thất bại');
+      setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Nhập kho thất bại');
     } finally {
       setDangNhapKho(false);
     }
@@ -74,7 +76,7 @@ export const NhapKho = () => {
   };
 
   // Sách sắp hết hàng (tồn kho <= 5)
-  const sachSapHet = sachList.filter((s) => s.soLuongTon <= 5);
+  const sachSapHet = sachList.filter((s) => (s.SoLuongTon ?? s.soLuongTon ?? 0) <= 5);
 
   return (
     <div>
@@ -110,17 +112,22 @@ export const NhapKho = () => {
             </h3>
           </div>
           <div className="flex flex-wrap gap-2 mt-3">
-            {sachSapHet.map((s) => (
-              <span
-                key={s.maSach}
-                className="badge badge-cancelled"
-                style={{ cursor: 'pointer', padding: '0.35rem 0.65rem' }}
-                onClick={() => setFormNhap((prev) => ({ ...prev, maSach: s.maSach }))}
-                title="Bấm để chọn nhập ngay cuốn này"
-              >
-                {s.tieuDe} (Còn {s.soLuongTon})
-              </span>
-            ))}
+            {sachSapHet.map((s) => {
+              const ma = s.MaSach ?? s.maSach;
+              const ten = s.TenSach ?? s.tenSach ?? s.tieuDe;
+              const ton = s.SoLuongTon ?? s.soLuongTon ?? 0;
+              return (
+                <span
+                  key={ma}
+                  className="badge badge-cancelled"
+                  style={{ cursor: 'pointer', padding: '0.35rem 0.65rem' }}
+                  onClick={() => setFormNhap((prev) => ({ ...prev, maSach: ma }))}
+                  title="Bấm để chọn nhập ngay cuốn này"
+                >
+                  {ten} (Còn {ton})
+                </span>
+              );
+            })}
           </div>
         </div>
       )}
@@ -145,11 +152,16 @@ export const NhapKho = () => {
                 onChange={(e) => setFormNhap({ ...formNhap, maSach: e.target.value })}
               >
                 <option value="">-- Chọn sách --</option>
-                {sachList.map((s) => (
-                  <option key={s.maSach} value={s.maSach}>
-                    #{s.maSach} - {s.tieuDe} (Hiện còn: {s.soLuongTon})
-                  </option>
-                ))}
+                {sachList.map((s) => {
+                  const ma = s.MaSach ?? s.maSach;
+                  const ten = s.TenSach ?? s.tenSach ?? s.tieuDe;
+                  const ton = s.SoLuongTon ?? s.soLuongTon ?? 0;
+                  return (
+                    <option key={ma} value={ma}>
+                      #{ma} - {ten} (Hiện còn: {ton})
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -228,24 +240,33 @@ export const NhapKho = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {lichSuNhap.map((phieu) => (
-                    <tr key={phieu.maPhieuNhap}>
-                      <td style={{ fontWeight: 600 }}>#{phieu.maPhieuNhap}</td>
-                      <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                        {new Date(phieu.ngayNhap).toLocaleString('vi-VN')}
-                      </td>
-                      <td>
-                        <strong>{phieu.sach?.tieuDe || `Sách #${phieu.maSach}`}</strong>
-                      </td>
-                      <td style={{ fontWeight: 700, color: 'var(--accent)' }}>
-                        +{phieu.soLuongNhap} cuốn
-                      </td>
-                      <td>{phieu.giaNhap ? dinhDangTien(phieu.giaNhap) : '—'}</td>
-                      <td style={{ fontSize: '0.85rem' }}>
-                        {phieu.nguoiNhap?.hoTen || 'Thủ thư'}
-                      </td>
-                    </tr>
-                  ))}
+                  {lichSuNhap.map((phieu) => {
+                    const maPhieu = phieu.MaNhapKho ?? phieu.MaPhieuNhap ?? phieu.maPhieuNhap ?? phieu.id;
+                    const ngay = phieu.NgayNhap ?? phieu.ngayNhap;
+                    const tenSach = phieu.sach?.TenSach ?? phieu.sach?.tenSach ?? phieu.sach?.tieuDe ?? (`Sách #${phieu.MaSach ?? phieu.maSach}`);
+                    const sl = phieu.SoLuongNhap ?? phieu.soLuongNhap ?? 0;
+                    const gia = phieu.GiaNhap ?? phieu.giaNhap;
+                    const nguoi = phieu.nguoiNhap?.HoTen ?? phieu.nguoiNhap?.hoTen ?? 'Thủ thư';
+
+                    return (
+                      <tr key={maPhieu}>
+                        <td style={{ fontWeight: 600 }}>#{maPhieu}</td>
+                        <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                          {ngay ? new Date(ngay).toLocaleString('vi-VN') : '—'}
+                        </td>
+                        <td>
+                          <strong>{tenSach}</strong>
+                        </td>
+                        <td style={{ fontWeight: 700, color: 'var(--accent)' }}>
+                          +{sl} cuốn
+                        </td>
+                        <td>{gia ? dinhDangTien(gia) : '—'}</td>
+                        <td style={{ fontSize: '0.85rem' }}>
+                          {nguoi}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

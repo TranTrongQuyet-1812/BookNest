@@ -21,14 +21,14 @@ export const DangNhap = () => {
     try {
       const user = await dangNhap(email, matKhau);
       // Điều hướng tương ứng vai trò
-      if (['admin', 'librarian', 'order_staff'].includes(user.vaiTro)) {
+      if (['admin', 'librarian', 'order_staff'].includes(user.role)) {
         navigate('/admin');
       } else {
         const duongDanCu = location.state?.from?.pathname || '/';
         navigate(duongDanCu);
       }
     } catch (err) {
-      setLoi(err.response?.data?.thongDiep || 'Đăng nhập không thành công. Vui lòng kiểm tra lại');
+      setLoi(err.response?.data?.message || 'Đăng nhập không thành công. Vui lòng kiểm tra lại');
     } finally {
       setDangXuLy(false);
     }

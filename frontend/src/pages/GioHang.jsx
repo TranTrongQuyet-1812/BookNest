@@ -24,9 +24,9 @@ export const GioHang = () => {
     setDangTai(true);
     try {
       const res = await api.get('/cart');
-      setGioHang(res.data.duLieu);
+      setGioHang(res.data.data);
     } catch (err) {
-      setLoi(err.response?.data?.thongDiep || 'Không thể tải giỏ hàng của bạn');
+      setLoi(err.response?.data?.message || 'Không thể tải giỏ hàng của bạn');
     } finally {
       setDangTai(false);
     }
@@ -37,29 +37,29 @@ export const GioHang = () => {
   }, []);
 
   // Thay đổi số lượng mặt hàng trong giỏ
-  const handleCapNhatSoLuong = async (maChiTiet, soLuongMoi) => {
+  const handleCapNhatSoLuong = async (maSach, soLuongMoi) => {
     if (soLuongMoi < 1) return;
     setDangCapNhat(true);
     try {
-      await api.put(`/cart/items/${maChiTiet}`, { soLuong: soLuongMoi });
+      await api.put(`/cart/items/${maSach}`, { soLuong: soLuongMoi });
       await taiGioHang();
       window.dispatchEvent(new CustomEvent('booknest_cart_updated'));
     } catch (err) {
-      alert(err.response?.data?.thongDiep || 'Lỗi khi cập nhật số lượng');
+      alert(err.response?.data?.message || 'Lỗi khi cập nhật số lượng');
     } finally {
       setDangCapNhat(false);
     }
   };
 
   // Xóa một mặt hàng khỏi giỏ
-  const handleXoaMatHang = async (maChiTiet) => {
+  const handleXoaMatHang = async (maSach) => {
     if (!window.confirm('Bạn có chắc muốn xóa cuốn sách này khỏi giỏ hàng?')) return;
     try {
-      await api.delete(`/cart/items/${maChiTiet}`);
+      await api.delete(`/cart/items/${maSach}`);
       await taiGioHang();
       window.dispatchEvent(new CustomEvent('booknest_cart_updated'));
     } catch (err) {
-      alert(err.response?.data?.thongDiep || 'Lỗi khi xóa sản phẩm');
+      alert(err.response?.data?.message || 'Lỗi khi xóa sản phẩm');
     }
   };
 
@@ -71,7 +71,7 @@ export const GioHang = () => {
       await taiGioHang();
       window.dispatchEvent(new CustomEvent('booknest_cart_updated'));
     } catch (err) {
-      alert(err.response?.data?.thongDiep || 'Lỗi khi dọn giỏ hàng');
+      alert(err.response?.data?.message || 'Lỗi khi dọn giỏ hàng');
     }
   };
 
@@ -87,8 +87,8 @@ export const GioHang = () => {
     );
   }
 
-  const items = gioHang?.chiTiet || [];
-  const coSanPhamVuotTon = items.some((item) => item.soLuong > (item.sach?.soLuongTon || 0));
+  const items = gioHang?.cacMon || [];
+  const coSanPhamVuotTon = items.some((item) => item.soLuong > (item.sach?.soLuongTon ?? item.sach?.SoLuongTon ?? 0));
 
   return (
     <div className="container py-8">
@@ -148,11 +148,11 @@ export const GioHang = () => {
                 </thead>
                 <tbody>
                   {items.map((item) => {
-                    const tonKho = item.sach?.soLuongTon ?? 0;
+                    const tonKho = item.sach?.soLuongTon ?? item.sach?.SoLuongTon ?? 0;
                     const vuotTon = item.soLuong > tonKho;
 
                     return (
-                      <tr key={item.maChiTietGioHang}>
+                      <tr key={item.maSach}>
                         {/* Cột thông tin sách */}
                         <td>
                           <div className="flex items-center gap-3">
@@ -167,10 +167,10 @@ export const GioHang = () => {
                               justifyContent: 'center',
                               flexShrink: 0
                             }}>
-                              {item.sach?.hinhAnh ? (
+                              {(item.sach?.anhBia || item.sach?.hinhAnh) ? (
                                 <img
-                                  src={item.sach.hinhAnh}
-                                  alt={item.sach.tieuDe}
+                                  src={item.sach?.anhBia || item.sach?.hinhAnh}
+                                  alt={item.sach?.tenSach || item.sach?.tieuDe}
                                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                 />
                               ) : (
@@ -182,10 +182,10 @@ export const GioHang = () => {
                                 to={`/books/${item.maSach}`}
                                 style={{ fontWeight: 600, color: 'var(--text-main)', display: 'block' }}
                               >
-                                {item.sach?.tieuDe}
+                                {item.sach?.tenSach || item.sach?.tieuDe}
                               </Link>
                               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                Tác giả: {item.sach?.tacGia}
+                                Tác giả: {item.sach?.tacGia || item.sach?.TacGia || 'Đang cập nhật'}
                               </span>
                               {vuotTon && (
                                 <div style={{ fontSize: '0.75rem', color: 'var(--danger)', fontWeight: 600, marginTop: '2px' }}>
@@ -211,7 +211,7 @@ export const GioHang = () => {
                           }}>
                             <button
                               disabled={item.soLuong <= 1 || dangCapNhat}
-                              onClick={() => handleCapNhatSoLuong(item.maChiTietGioHang, item.soLuong - 1)}
+                              onClick={() => handleCapNhatSoLuong(item.maSach, item.soLuong - 1)}
                               style={{ padding: '2px 6px', color: 'var(--text-main)' }}
                             >
                               <Minus size={14} />
@@ -221,7 +221,7 @@ export const GioHang = () => {
                             </span>
                             <button
                               disabled={dangCapNhat}
-                              onClick={() => handleCapNhatSoLuong(item.maChiTietGioHang, item.soLuong + 1)}
+                              onClick={() => handleCapNhatSoLuong(item.maSach, item.soLuong + 1)}
                               style={{ padding: '2px 6px', color: 'var(--text-main)' }}
                             >
                               <Plus size={14} />
@@ -237,7 +237,7 @@ export const GioHang = () => {
                         {/* Cột nút xóa */}
                         <td style={{ textAlign: 'right' }}>
                           <button
-                            onClick={() => handleXoaMatHang(item.maChiTietGioHang)}
+                            onClick={() => handleXoaMatHang(item.maSach)}
                             style={{ color: 'var(--danger)', opacity: 0.8 }}
                             title="Xóa sản phẩm"
                           >

@@ -86,15 +86,11 @@ const luatTruyVanAdminDonHang = Joi.object({
 });
 
 const luatCapNhatTrangThai = Joi.object({
-  trangThaiMoi: Joi.string().valid('CONFIRMED', 'SHIPPING', 'DELIVERED').messages({
-    'any.only': 'Trạng thái mới không hợp lệ'
-  }),
-  trangThai: Joi.string().valid('CONFIRMED', 'SHIPPING', 'DELIVERED').messages({
-    'any.only': 'Trạng thái mới không hợp lệ'
+  trangThaiMoi: Joi.string().valid('CONFIRMED', 'SHIPPING', 'DELIVERED').required().messages({
+    'any.only': 'Trạng thái mới không hợp lệ',
+    'any.required': 'Trạng thái mới là bắt buộc'
   }),
   ghiChu: Joi.string().trim().max(500).allow(null, '')
-}).or('trangThaiMoi', 'trangThai').messages({
-  'object.missing': 'Trạng thái mới là bắt buộc'
 });
 
 const luatAdminHuyDon = Joi.object({

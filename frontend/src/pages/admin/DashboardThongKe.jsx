@@ -29,16 +29,17 @@ export const DashboardThongKe = () => {
 
       // 1. Thống kê tổng quan
       const resTongQuan = await api.get('/admin/stats/overview', { params });
-      setTongQuan(resTongQuan.data.duLieu || {});
+      setTongQuan(resTongQuan.data.data || resTongQuan.data.duLieu || {});
 
       // 2. Top sách bán chạy
       const resTopSach = await api.get('/admin/stats/top-books', { params: { limit: 5 } });
-      setTopSach(resTopSach.data.duLieu || []);
+      setTopSach(resTopSach.data.data || resTopSach.data.duLieu || []);
 
       // 3. Tỷ lệ đơn hàng
       const resTyLe = await api.get('/admin/stats/order-rates');
-      setTyLeDon(resTyLe.data.duLieu || []);
-      setTongDonToanHeThong(resTyLe.data.tongDon || 0);
+      const dataTyLe = resTyLe.data.data || resTyLe.data.duLieu || {};
+      setTyLeDon(dataTyLe.chiTiet || (Array.isArray(dataTyLe) ? dataTyLe : []));
+      setTongDonToanHeThong(dataTyLe.tongSoDon ?? resTyLe.data.tongDon ?? 0);
     } catch (err) {
       console.error('Lỗi tải số liệu thống kê:', err);
     } finally {
@@ -183,16 +184,16 @@ export const DashboardThongKe = () => {
                       {topSach.map((s, idx) => (
                         <tr key={s.maSach || idx}>
                           <td>
-                            <div style={{ fontWeight: 600 }}>{s.tieuDe}</div>
+                            <div style={{ fontWeight: 600 }}>{s.tenSach || s.tieuDe}</div>
                             <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                              Tác giả: {s.tacGia}
+                              Tác giả: {s.tacGia || 'BookNest'}
                             </span>
                           </td>
                           <td style={{ fontWeight: 700, color: 'var(--accent)' }}>
-                            {s.tongSoLuongBan} cuốn
+                            {s.daBan ?? s.tongSoLuongBan ?? 0} cuốn
                           </td>
                           <td style={{ fontWeight: 600 }}>
-                            {dinhDangTien(s.tongDoanhThu)}
+                            {dinhDangTien(s.doanhThu ?? s.tongDoanhThu)}
                           </td>
                         </tr>
                       ))}

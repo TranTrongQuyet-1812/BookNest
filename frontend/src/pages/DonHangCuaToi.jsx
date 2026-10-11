@@ -23,12 +23,13 @@ export const DonHangCuaToi = () => {
     setDangTai(true);
     try {
       const params = {};
-      if (trangThaiLoc) params.trangThai = trangThaiLoc;
+      if (trangThaiLoc) params.status = trangThaiLoc;
 
       const res = await api.get('/orders/my-orders', { params });
-      setDonHangList(res.data.duLieu || []);
+      const ds = res.data.data?.danhSach || res.data.data || [];
+      setDonHangList(Array.isArray(ds) ? ds : []);
     } catch (err) {
-      setLoi(err.response?.data?.thongDiep || 'Không thể tải danh sách đơn hàng');
+      setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Không thể tải danh sách đơn hàng');
     } finally {
       setDangTai(false);
     }
@@ -45,12 +46,12 @@ export const DonHangCuaToi = () => {
 
     try {
       await api.put(`/orders/${maDonHang}/cancel`, {
-        lyDoHuy: lyDo.trim() || 'Khách hàng yêu cầu hủy đơn'
+        lyDo: lyDo.trim() || 'Khách hàng yêu cầu hủy đơn'
       });
       alert('Đã hủy đơn hàng thành công. Số lượng sách đã được hoàn trả lại vào kho.');
       taiDonHang();
     } catch (err) {
-      alert(err.response?.data?.thongDiep || 'Không thể hủy đơn hàng này');
+      alert(err.response?.data?.message || err.response?.data?.thongDiep || 'Không thể hủy đơn hàng này');
     }
   };
 
@@ -130,70 +131,81 @@ export const DonHangCuaToi = () => {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {donHangList.map((don) => (
-            <div key={don.maDonHang} className="card" style={{ padding: '1.25rem' }}>
-              <div className="flex items-center justify-between flex-wrap gap-2 pb-3" style={{ borderBottom: '1px solid var(--border)' }}>
-                <div className="flex items-center gap-3">
-                  <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--primary)' }}>
-                    #{don.maDonHang}
-                  </span>
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                    {new Date(don.ngayTao).toLocaleString('vi-VN')}
-                  </span>
-                </div>
-                <div>{layBadgeTrangThai(don.trangThai)}</div>
-              </div>
+          {donHangList.map((don) => {
+            const maDon = don.MaDonHang ?? don.maDonHang;
+            const ngay = don.NgayDat ?? don.ngayTao ?? don.createdAt;
+            const trangThai = don.TrangThai ?? don.trangThai;
+            const nguoiNhan = don.TenNguoiNhan ?? don.tenNguoiNhan;
+            const sdt = don.SoDienThoaiNhan ?? don.soDienThoaiNhan;
+            const diaChi = don.DiaChiGiaoHang ?? don.diaChiGiaoHang;
+            const tongTien = don.TongTien ?? don.tongTien;
+            const lyDoHuy = don.LyDoHuy ?? don.lyDoHuy;
 
-              <div className="py-3 grid grid-cols-1 md:grid-cols-3 gap-3" style={{ fontSize: '0.9rem' }}>
-                <div>
-                  <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.8rem' }}>Người nhận:</span>
-                  <strong>{don.tenNguoiNhan}</strong> ({don.soDienThoaiNhan})
-                </div>
-
-                <div>
-                  <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.8rem' }}>Địa chỉ:</span>
-                  <span style={{ display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {don.diaChiGiaoHang}
-                  </span>
+            return (
+              <div key={maDon} className="card" style={{ padding: '1.25rem' }}>
+                <div className="flex items-center justify-between flex-wrap gap-2 pb-3" style={{ borderBottom: '1px solid var(--border)' }}>
+                  <div className="flex items-center gap-3">
+                    <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--primary)' }}>
+                      #{maDon}
+                    </span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                      {ngay ? new Date(ngay).toLocaleString('vi-VN') : ''}
+                    </span>
+                  </div>
+                  <div>{layBadgeTrangThai(trangThai)}</div>
                 </div>
 
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.8rem' }}>Tổng thanh toán:</span>
-                  <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--primary)' }}>
-                    {dinhDangTien(don.tongTien)}
-                  </span>
-                </div>
-              </div>
+                <div className="py-3 grid grid-cols-1 md:grid-cols-3 gap-3" style={{ fontSize: '0.9rem' }}>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.8rem' }}>Người nhận:</span>
+                    <strong>{nguoiNhan}</strong> ({sdt})
+                  </div>
 
-              {don.lyDoHuy && (
-                <div style={{
-                  padding: '0.5rem 0.75rem',
-                  backgroundColor: 'var(--danger-light)',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '0.825rem',
-                  color: 'var(--danger)',
-                  marginBottom: '0.75rem'
-                }}>
-                  Lý do hủy: {don.lyDoHuy}
-                </div>
-              )}
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.8rem' }}>Địa chỉ:</span>
+                    <span style={{ display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {diaChi}
+                    </span>
+                  </div>
 
-              <div className="flex justify-end items-center gap-2 pt-2" style={{ borderTop: '1px solid var(--border)' }}>
-                {don.trangThai === 'PENDING' && (
-                  <button
-                    onClick={() => handleHuyDon(don.maDonHang)}
-                    className="btn btn-outline btn-sm"
-                    style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
-                  >
-                    Hủy Đơn Hàng
-                  </button>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.8rem' }}>Tổng thanh toán:</span>
+                    <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--primary)' }}>
+                      {dinhDangTien(tongTien)}
+                    </span>
+                  </div>
+                </div>
+
+                {lyDoHuy && (
+                  <div style={{
+                    padding: '0.5rem 0.75rem',
+                    backgroundColor: 'var(--danger-light)',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '0.825rem',
+                    color: 'var(--danger)',
+                    marginBottom: '0.75rem'
+                  }}>
+                    Lý do hủy: {lyDoHuy}
+                  </div>
                 )}
-                <Link to={`/orders/${don.maDonHang}`} className="btn btn-primary btn-sm">
-                  Xem Chi Tiết <ArrowRight size={14} />
-                </Link>
+
+                <div className="flex justify-end items-center gap-2 pt-2" style={{ borderTop: '1px solid var(--border)' }}>
+                  {trangThai === 'PENDING' && (
+                    <button
+                      onClick={() => handleHuyDon(maDon)}
+                      className="btn btn-outline btn-sm"
+                      style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                    >
+                      Hủy Đơn Hàng
+                    </button>
+                  )}
+                  <Link to={`/orders/${maDon}`} className="btn btn-primary btn-sm">
+                    Xem Chi Tiết <ArrowRight size={14} />
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
