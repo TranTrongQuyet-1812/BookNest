@@ -20,7 +20,6 @@ export const NhapKho = () => {
   const [formNhap, setFormNhap] = useState({
     maSach: '',
     soLuongNhap: 10,
-    giaNhap: '',
     ghiChu: ''
   });
   const [dangNhapKho, setDangNhapKho] = useState(false);
@@ -29,10 +28,10 @@ export const NhapKho = () => {
     setDangTai(true);
     try {
       const [resSach, resLichSu] = await Promise.all([
-        api.get('/books', { params: { limit: 100 } }),
+        api.get('/books', { params: { limit: 50 } }),
         api.get('/books/inventory/history')
       ]);
-      const dsSach = resSach.data.data?.danhSach || resSach.data.data || [];
+      const dsSach = resSach.data.data.danhSach;
       const dsLichSu = resLichSu.data.data || [];
       setSachList(Array.isArray(dsSach) ? dsSach : []);
       setLichSuNhap(Array.isArray(dsLichSu) ? dsLichSu : []);
@@ -48,11 +47,11 @@ export const NhapKho = () => {
     const nap = async () => {
       try {
         const [resSach, resLichSu] = await Promise.all([
-          api.get('/books', { params: { limit: 100 } }),
+          api.get('/books', { params: { limit: 50 } }),
           api.get('/books/inventory/history')
         ]);
         if (daHuy) return;
-        const dsSach = resSach.data.data?.danhSach || resSach.data.data || [];
+        const dsSach = resSach.data.data.danhSach;
         const dsLichSu = resLichSu.data.data || [];
         setSachList(Array.isArray(dsSach) ? dsSach : []);
         setLichSuNhap(Array.isArray(dsLichSu) ? dsLichSu : []);
@@ -81,7 +80,7 @@ export const NhapKho = () => {
       });
 
       setThongBao('Tạo phiếu nhập kho thành công! Số lượng tồn kho đã được cộng dồn.');
-      setFormNhap({ maSach: '', soLuongNhap: 10, giaNhap: '', ghiChu: '' });
+      setFormNhap({ maSach: '', soLuongNhap: 10, ghiChu: '' });
       taiDuLieu();
     } catch (err) {
       setLoi(err.response?.data?.message || 'Nhập kho thất bại');
@@ -90,12 +89,8 @@ export const NhapKho = () => {
     }
   };
 
-  const dinhDangTien = (soTien) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(soTien || 0);
-  };
-
   // Sách sắp hết hàng (tồn kho <= 5)
-  const sachSapHet = sachList.filter((s) => (s.SoLuongTon ?? s.soLuongTon ?? 0) <= 5);
+  const sachSapHet = sachList.filter((s) => (s.SoLuongTon ?? 0) <= 5);
 
   return (
     <div>
@@ -132,9 +127,9 @@ export const NhapKho = () => {
           </div>
           <div className="flex flex-wrap gap-2 mt-3">
             {sachSapHet.map((s) => {
-              const ma = s.MaSach ?? s.maSach;
-              const ten = s.TenSach ?? s.tenSach ?? s.tieuDe;
-              const ton = s.SoLuongTon ?? s.soLuongTon ?? 0;
+              const ma = s.MaSach;
+              const ten = s.TenSach;
+              const ton = s.SoLuongTon ?? 0;
               return (
                 <span
                   key={ma}
@@ -172,9 +167,9 @@ export const NhapKho = () => {
               >
                 <option value="">-- Chọn sách --</option>
                 {sachList.map((s) => {
-                  const ma = s.MaSach ?? s.maSach;
-                  const ten = s.TenSach ?? s.tenSach ?? s.tieuDe;
-                  const ton = s.SoLuongTon ?? s.soLuongTon ?? 0;
+                  const ma = s.MaSach;
+                  const ten = s.TenSach;
+                  const ton = s.SoLuongTon ?? 0;
                   return (
                     <option key={ma} value={ma}>
                       #{ma} - {ten} (Hiện còn: {ton})
@@ -193,18 +188,6 @@ export const NhapKho = () => {
                 className="form-input"
                 value={formNhap.soLuongNhap}
                 onChange={(e) => setFormNhap({ ...formNhap, soLuongNhap: e.target.value })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Giá nhập đơn vị (VND)</label>
-              <input
-                type="number"
-                min="0"
-                className="form-input"
-                placeholder="Ví dụ: 75000"
-                value={formNhap.giaNhap}
-                onChange={(e) => setFormNhap({ ...formNhap, giaNhap: e.target.value })}
               />
             </div>
 
@@ -254,18 +237,16 @@ export const NhapKho = () => {
                     <th>Thời Gian</th>
                     <th>Tác Phẩm</th>
                     <th>SL Nhập</th>
-                    <th>Giá Nhập</th>
                     <th>Người Thực Hiện</th>
                   </tr>
                 </thead>
                 <tbody>
                   {lichSuNhap.map((phieu) => {
-                    const maPhieu = phieu.MaNhapKho ?? phieu.MaPhieuNhap ?? phieu.maPhieuNhap ?? phieu.id;
-                    const ngay = phieu.NgayNhap ?? phieu.ngayNhap;
-                    const tenSach = phieu.sach?.TenSach ?? phieu.sach?.tenSach ?? phieu.sach?.tieuDe ?? (`Sách #${phieu.MaSach ?? phieu.maSach}`);
-                    const sl = phieu.SoLuongNhap ?? phieu.soLuongNhap ?? 0;
-                    const gia = phieu.GiaNhap ?? phieu.giaNhap;
-                    const nguoi = phieu.nguoiNhap?.HoTen ?? phieu.nguoiNhap?.hoTen ?? 'Thủ thư';
+                    const maPhieu = phieu.MaNhapKho;
+                    const ngay = phieu.NgayNhap;
+                    const tenSach = phieu.sach?.TenSach ?? (`Sách #${phieu.MaSach}`);
+                    const sl = phieu.SoLuongNhap ?? 0;
+                    const nguoi = phieu.nguoiNhap?.HoTen ?? 'Thủ thư';
 
                     return (
                       <tr key={maPhieu}>
@@ -279,7 +260,6 @@ export const NhapKho = () => {
                         <td style={{ fontWeight: 700, color: 'var(--accent)' }}>
                           +{sl} cuốn
                         </td>
-                        <td>{gia ? dinhDangTien(gia) : '—'}</td>
                         <td style={{ fontSize: '0.85rem' }}>
                           {nguoi}
                         </td>

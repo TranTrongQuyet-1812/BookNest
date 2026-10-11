@@ -35,7 +35,7 @@ export const DashboardThongKe = () => {
       setTongQuan(resTongQuan.data.data || {});
       setTopSach(resTopSach.data.data || []);
       const dataTyLe = resTyLe.data.data || {};
-      setTyLeDon(dataTyLe.chiTiet || (Array.isArray(dataTyLe) ? dataTyLe : []));
+      setTyLeDon(dataTyLe.chiTiet);
       setTongDonToanHeThong(dataTyLe.tongSoDon ?? 0);
     } catch (err) {
       console.error('Lỗi tải số liệu thống kê:', err);
@@ -58,7 +58,7 @@ export const DashboardThongKe = () => {
         setTongQuan(resTongQuan.data.data || {});
         setTopSach(resTopSach.data.data || []);
         const dataTyLe = resTyLe.data.data || {};
-        setTyLeDon(dataTyLe.chiTiet || (Array.isArray(dataTyLe) ? dataTyLe : []));
+        setTyLeDon(dataTyLe.chiTiet);
         setTongDonToanHeThong(dataTyLe.tongSoDon ?? 0);
       } catch (err) {
         console.error('Lỗi tải số liệu thống kê:', err);
@@ -205,16 +205,16 @@ export const DashboardThongKe = () => {
                       {topSach.map((s, idx) => (
                         <tr key={s.maSach || idx}>
                           <td>
-                            <div style={{ fontWeight: 600 }}>{s.tenSach || s.tieuDe}</div>
+                            <div style={{ fontWeight: 600 }}>{s.tenSach}</div>
                             <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                              Tác giả: {s.tacGia || 'BookNest'}
+                              Danh mục: {s.tenDanhMuc}
                             </span>
                           </td>
                           <td style={{ fontWeight: 700, color: 'var(--accent)' }}>
-                            {s.daBan ?? s.tongSoLuongBan ?? 0} cuốn
+                            {s.daBan} cuốn
                           </td>
                           <td style={{ fontWeight: 600 }}>
-                            {dinhDangTien(s.doanhThu ?? s.tongDoanhThu)}
+                            {dinhDangTien(s.doanhThu)}
                           </td>
                         </tr>
                       ))}

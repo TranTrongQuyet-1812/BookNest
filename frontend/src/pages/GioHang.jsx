@@ -103,7 +103,7 @@ export const GioHang = () => {
   }
 
   const items = gioHang?.cacMon || [];
-  const coSanPhamVuotTon = items.some((item) => item.soLuong > (item.sach?.soLuongTon ?? item.sach?.SoLuongTon ?? 0));
+  const coSanPhamVuotTon = items.some((item) => item.soLuong > (item.sach?.soLuongTon ?? 0));
 
   return (
     <div className="container py-8">
@@ -163,7 +163,7 @@ export const GioHang = () => {
                 </thead>
                 <tbody>
                   {items.map((item) => {
-                    const tonKho = item.sach?.soLuongTon ?? item.sach?.SoLuongTon ?? 0;
+                    const tonKho = item.sach?.soLuongTon ?? 0;
                     const vuotTon = item.soLuong > tonKho;
 
                     return (
@@ -182,10 +182,10 @@ export const GioHang = () => {
                               justifyContent: 'center',
                               flexShrink: 0
                             }}>
-                              {(item.sach?.anhBia || item.sach?.hinhAnh) ? (
+                              {item.sach?.anhBia ? (
                                 <img
-                                  src={item.sach?.anhBia || item.sach?.hinhAnh}
-                                  alt={item.sach?.tenSach || item.sach?.tieuDe}
+                                  src={item.sach.anhBia}
+                                  alt={item.sach.tenSach}
                                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                 />
                               ) : (
@@ -197,10 +197,10 @@ export const GioHang = () => {
                                 to={`/books/${item.maSach}`}
                                 style={{ fontWeight: 600, color: 'var(--text-main)', display: 'block' }}
                               >
-                                {item.sach?.tenSach || item.sach?.tieuDe}
+                                {item.sach?.tenSach}
                               </Link>
                               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                Tác giả: {item.sach?.tacGia || item.sach?.TacGia || 'Đang cập nhật'}
+                                Tác giả: {item.sach?.tacGia || 'Đang cập nhật'}
                               </span>
                               {vuotTon && (
                                 <div style={{ fontSize: '0.75rem', color: 'var(--danger)', fontWeight: 600, marginTop: '2px' }}>

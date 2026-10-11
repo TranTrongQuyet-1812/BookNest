@@ -387,6 +387,69 @@ describe('Task T20: Unit Test các Logic Nghiệp Vụ Cốt Lõi (Pure Unit Tes
     });
   });
 
+  // =========================================================================
+  // 13. DATHANG DÙNG KHÓA UPDLOCK TRONG TRANSACTION (F02)
+  // =========================================================================
+  describe('13. Hàm datHang đọc giỏ hàng trong transaction kèm UPDLOCK (F02)', () => {
+    it('GioHang.findAll được gọi với tableHint UPDLOCK và đúng transaction, giỏ trống thì rollback', async () => {
+      const { TableHints } = require('sequelize');
+      const { sequelize, GioHang } = require('../src/models');
+      const { datHang } = require('../src/services/donHangService');
+
+      // Giả lập transaction và giỏ hàng trống để test không chạm CSDL thật
+      const giaLapTransaction = { commit: jest.fn(), rollback: jest.fn() };
+      const spyTransaction = jest.spyOn(sequelize, 'transaction').mockResolvedValue(giaLapTransaction);
+      const spyTimGio = jest.spyOn(GioHang, 'findAll').mockResolvedValue([]);
+
+      try {
+        await expect(datHang(1, {})).rejects.toThrow('Giỏ hàng đang trống');
+        expect(spyTimGio).toHaveBeenCalledWith(
+          expect.objectContaining({ tableHint: TableHints.UPDLOCK, transaction: giaLapTransaction })
+        );
+        expect(giaLapTransaction.rollback).toHaveBeenCalled();
+      } finally {
+        spyTransaction.mockRestore();
+        spyTimGio.mockRestore();
+      }
+    });
+  });
+
+  // =========================================================================
+  // 14. SWAGGER PHẢI MÔ TẢ ĐỦ MỌI ROUTE ĐÃ ĐĂNG KÝ (F01)
+  // =========================================================================
+  describe('14. Swagger mô tả đầy đủ các route của ứng dụng (F01)', () => {
+    // Tiền tố mount của từng file route, giống khai báo trong app.js
+    const cacRouterVaTienTo = {
+      xacThucRoutes: '/api/auth',
+      nguoiDungRoutes: '/api/users',
+      danhMucRoutes: '/api/categories',
+      sachRoutes: '/api/books',
+      adminRoutes: '/api/admin',
+      gioHangRoutes: '/api/cart',
+      donHangRoutes: '/api/orders'
+    };
+
+    it('Mỗi route Express đều có thao tác tương ứng trong swaggerSpec.paths', () => {
+      const swaggerSpec = require('../src/config/swagger');
+      const thieu = [];
+
+      for (const [tenFile, tienTo] of Object.entries(cacRouterVaTienTo)) {
+        const router = require(`../src/routes/${tenFile}`);
+        for (const lop of router.stack.filter((l) => l.route)) {
+          // Đổi :id thành {id} và bỏ dấu / cuối cho khớp cách viết của OpenAPI
+          const duongDan = (tienTo + lop.route.path).replace(/:(\w+)/g, '{$1}').replace(/(.)\/$/, '$1');
+          for (const phuongThuc of Object.keys(lop.route.methods)) {
+            if (!swaggerSpec.paths[duongDan]?.[phuongThuc]) {
+              thieu.push(`${phuongThuc.toUpperCase()} ${duongDan}`);
+            }
+          }
+        }
+      }
+
+      expect(thieu).toEqual([]);
+    });
+  });
+
   afterAll(async () => {
     try {
       const { sequelize } = require('../src/models');

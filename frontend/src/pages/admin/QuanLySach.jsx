@@ -42,10 +42,10 @@ export const QuanLySach = () => {
     setDangTai(true);
     try {
       const [resSach, resDanhMuc] = await Promise.all([
-        api.get('/books', { params: { limit: 100 } }),
+        api.get('/books', { params: { limit: 50 } }),
         api.get('/categories')
       ]);
-      const dsSach = resSach.data.data?.danhSach || resSach.data.data || [];
+      const dsSach = resSach.data.data.danhSach;
       const dsDanhMuc = resDanhMuc.data.data || [];
       setSachList(Array.isArray(dsSach) ? dsSach : []);
       setDanhMucList(Array.isArray(dsDanhMuc) ? dsDanhMuc : []);
@@ -61,11 +61,11 @@ export const QuanLySach = () => {
     const nap = async () => {
       try {
         const [resSach, resDanhMuc] = await Promise.all([
-          api.get('/books', { params: { limit: 100 } }),
+          api.get('/books', { params: { limit: 50 } }),
           api.get('/categories')
         ]);
         if (daHuy) return;
-        const dsSach = resSach.data.data?.danhSach || resSach.data.data || [];
+        const dsSach = resSach.data.data.danhSach;
         const dsDanhMuc = resDanhMuc.data.data || [];
         setSachList(Array.isArray(dsSach) ? dsSach : []);
         setDanhMucList(Array.isArray(dsDanhMuc) ? dsDanhMuc : []);
@@ -101,13 +101,13 @@ export const QuanLySach = () => {
   const moModalSuaSach = (sach) => {
     setSachDangSua(sach);
     setFormSach({
-      tieuDe: sach.TenSach ?? sach.tenSach ?? sach.tieuDe ?? '',
-      tacGia: sach.TacGia ?? sach.tacGia ?? '',
-      maDanhMuc: sach.MaDanhMuc ?? sach.maDanhMuc ?? '',
-      gia: sach.GiaBan ?? sach.giaBan ?? sach.gia ?? '',
-      soLuongTon: sach.SoLuongTon ?? sach.soLuongTon ?? 0,
-      moTa: sach.MoTa ?? sach.moTa ?? '',
-      hinhAnh: sach.AnhBia ?? sach.anhBia ?? sach.hinhAnh ?? ''
+      tieuDe: sach.TenSach ?? '',
+      tacGia: sach.TacGia ?? '',
+      maDanhMuc: sach.MaDanhMuc ?? '',
+      gia: sach.GiaBan ?? '',
+      soLuongTon: sach.SoLuongTon ?? 0,
+      moTa: sach.MoTa ?? '',
+      hinhAnh: sach.AnhBia ?? ''
     });
     setModalSachMo(true);
   };
@@ -126,7 +126,7 @@ export const QuanLySach = () => {
         anhBia: formSach.hinhAnh || undefined
       };
 
-      const maSach = sachDangSua ? (sachDangSua.MaSach ?? sachDangSua.maSach) : null;
+      const maSach = sachDangSua ? sachDangSua.MaSach : null;
       if (sachDangSua) {
         await api.put(`/books/${maSach}`, payload);
         setThongBao(`Đã cập nhật cuốn sách "${formSach.tieuDe}"`);
@@ -144,9 +144,9 @@ export const QuanLySach = () => {
 
   // Ẩn hoặc Khôi phục sách (Soft delete toggle)
   const handleToggleAnSach = async (sach) => {
-    const maSach = sach.MaSach ?? sach.maSach;
-    const tenSach = sach.TenSach ?? sach.tenSach ?? sach.tieuDe;
-    const daAn = sach.DaAn ?? sach.daAn;
+    const maSach = sach.MaSach;
+    const tenSach = sach.TenSach;
+    const daAn = sach.DaAn;
     const hanhDong = daAn ? 'khôi phục' : 'ẩn';
 
     if (!window.confirm(`Bạn có chắc muốn ${hanhDong} cuốn sách "${tenSach}"?`)) return;
@@ -182,8 +182,8 @@ export const QuanLySach = () => {
 
   const sachLoc = sachList.filter((s) => {
     const tuKhoa = timKiem.toLowerCase();
-    const ten = (s.TenSach ?? s.tenSach ?? s.tieuDe ?? '').toLowerCase();
-    const tg = (s.TacGia ?? s.tacGia ?? '').toLowerCase();
+    const ten = (s.TenSach ?? '').toLowerCase();
+    const tg = (s.TacGia ?? '').toLowerCase();
     return ten.includes(tuKhoa) || tg.includes(tuKhoa);
   });
 
@@ -256,13 +256,13 @@ export const QuanLySach = () => {
             </thead>
             <tbody>
               {sachLoc.map((sach) => {
-                const ma = sach.MaSach ?? sach.maSach;
-                const ten = sach.TenSach ?? sach.tenSach ?? sach.tieuDe;
-                const tg = sach.TacGia ?? sach.tacGia;
-                const dm = sach.danhMuc?.TenDanhMuc ?? sach.danhMuc?.tenDanhMuc ?? 'Chưa phân loại';
-                const gia = sach.GiaBan ?? sach.giaBan ?? sach.gia;
-                const ton = sach.SoLuongTon ?? sach.soLuongTon ?? 0;
-                const an = sach.DaAn ?? sach.daAn;
+                const ma = sach.MaSach;
+                const ten = sach.TenSach;
+                const tg = sach.TacGia;
+                const dm = sach.danhMuc?.TenDanhMuc ?? 'Chưa phân loại';
+                const gia = sach.GiaBan;
+                const ton = sach.SoLuongTon ?? 0;
+                const an = sach.DaAn;
 
                 return (
                   <tr key={ma}>
@@ -371,8 +371,8 @@ export const QuanLySach = () => {
                   >
                     <option value="">-- Chọn thể loại --</option>
                     {danhMucList.map((dm) => {
-                      const idDm = dm.MaDanhMuc ?? dm.maDanhMuc;
-                      const tenDm = dm.TenDanhMuc ?? dm.tenDanhMuc;
+                      const idDm = dm.MaDanhMuc;
+                      const tenDm = dm.TenDanhMuc;
                       return (
                         <option key={idDm} value={idDm}>
                           {tenDm}

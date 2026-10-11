@@ -42,7 +42,7 @@ export const QuanLyNhanSu = () => {
       if (timKiem.trim()) params.search = timKiem.trim();
 
       const res = await api.get('/admin/users', { params });
-      const ds = res.data.data?.danhSach || res.data.data || [];
+      const ds = res.data.data.danhSach;
       setNguoiDungList(Array.isArray(ds) ? ds : []);
     } catch (err) {
       setLoi(err.response?.data?.message || 'Không thể tải danh sách tài khoản');
@@ -60,7 +60,7 @@ export const QuanLyNhanSu = () => {
 
         const res = await api.get('/admin/users', { params });
         if (daHuy) return;
-        const ds = res.data.data?.danhSach || res.data.data || [];
+        const ds = res.data.data.danhSach;
         setNguoiDungList(Array.isArray(ds) ? ds : []);
       } catch (err) {
         if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải danh sách tài khoản');
@@ -81,15 +81,15 @@ export const QuanLyNhanSu = () => {
 
   // Khóa hoặc mở khóa tài khoản
   const handleToggleKhoa = async (u) => {
-    const userId = u.MaNguoiDung ?? u.maNguoiDung ?? u.id;
-    const myId = adminHienTai?.id ?? adminHienTai?.MaNguoiDung ?? adminHienTai?.maNguoiDung;
+    const userId = u.MaNguoiDung;
+    const myId = adminHienTai?.id;
     if (userId === myId) {
       alert('Bạn không thể tự khóa tài khoản quản trị của chính mình!');
       return;
     }
 
-    const dangHoatDong = u.DangHoatDong ?? u.dangHoatDong;
-    const email = u.Email ?? u.email;
+    const dangHoatDong = u.DangHoatDong;
+    const email = u.Email;
     const hanhDong = dangHoatDong ? 'khóa' : 'mở khóa';
     if (!window.confirm(`Bạn có chắc muốn ${hanhDong} tài khoản "${email}"?`)) return;
 
@@ -236,13 +236,13 @@ export const QuanLyNhanSu = () => {
             </thead>
             <tbody>
               {nguoiDungList.map((u) => {
-                const userId = u.MaNguoiDung ?? u.maNguoiDung ?? u.id;
-                const hoTen = u.HoTen ?? u.hoTen ?? u.fullName;
-                const email = u.Email ?? u.email;
-                const vaiTro = u.VaiTro ?? u.vaiTro ?? u.role;
-                const sdt = u.SoDienThoai ?? u.soDienThoai;
-                const dangHoatDong = u.DangHoatDong ?? u.dangHoatDong;
-                const myId = adminHienTai?.id ?? adminHienTai?.MaNguoiDung ?? adminHienTai?.maNguoiDung;
+                const userId = u.MaNguoiDung;
+                const hoTen = u.HoTen;
+                const email = u.Email;
+                const vaiTro = u.VaiTro;
+                const sdt = u.SoDienThoai;
+                const dangHoatDong = u.DangHoatDong;
+                const myId = adminHienTai?.id;
                 const laChinhMinh = userId === myId;
 
                 return (

@@ -74,10 +74,12 @@ export const ChiTietDonHang = () => {
     { key: 'DELIVERED', label: 'Đã giao', icon: PackageCheck }
   ];
 
-  const trangThaiDon = donHang.TrangThai ?? donHang.trangThai;
-  const maDonHang = donHang.MaDonHang ?? donHang.maDonHang ?? id;
-  const ngayTaoDon = donHang.NgayDat ?? donHang.ngayTao ?? donHang.createdAt;
-  const danhSachMon = donHang.chiTietDonHang || donHang.chiTiet || [];
+  const trangThaiDon = donHang.TrangThai;
+  const maDonHang = donHang.MaDonHang ?? id;
+  const ngayTaoDon = donHang.NgayDat;
+  const danhSachMon = donHang.chiTietDonHang;
+  // Lý do hủy nằm trong ghi chú của dòng lịch sử chuyển sang CANCELLED
+  const lyDoHuy = donHang.lichSuTrangThai?.find((ls) => ls.TrangThaiMoi === 'CANCELLED')?.GhiChu;
 
   const laDonHuy = trangThaiDon === 'CANCELLED';
   const chiSoHienTai = cacBuoc.findIndex((b) => b.key === trangThaiDon);
@@ -118,7 +120,7 @@ export const ChiTietDonHang = () => {
             <XCircle size={24} />
             <div>
               <strong>Đơn hàng đã bị hủy</strong>
-              <div style={{ fontSize: '0.85rem' }}>Lý do: {donHang.LyDoHuy || donHang.lyDoHuy || 'Không có ghi chú'}</div>
+              <div style={{ fontSize: '0.85rem' }}>Lý do: {lyDoHuy || 'Không có ghi chú'}</div>
             </div>
           </div>
         ) : (
@@ -180,16 +182,15 @@ export const ChiTietDonHang = () => {
                 </thead>
                 <tbody>
                   {danhSachMon.map((item) => {
-                    const maCt = item.MaChiTietDonHang ?? item.maChiTietDonHang ?? item.MaSach ?? item.maSach;
-                    const maSach = item.MaSach ?? item.maSach ?? item.sach?.MaSach ?? item.sach?.maSach;
-                    const tenSach = item.sach?.TenSach ?? item.sach?.tenSach ?? item.sach?.tieuDe;
-                    const tacGia = item.sach?.TacGia ?? item.sach?.tacGia ?? 'Đang cập nhật';
-                    const donGia = parseFloat(item.DonGia ?? item.donGia ?? 0);
-                    const soLuong = item.SoLuong ?? item.soLuong ?? 0;
-                    const thanhTien = item.ThanhTien ?? item.thanhTien ?? (donGia * soLuong);
+                    const maSach = item.MaSach;
+                    const tenSach = item.sach?.TenSach;
+                    const tacGia = item.sach?.TacGia ?? 'Đang cập nhật';
+                    const donGia = parseFloat(item.DonGia ?? 0);
+                    const soLuong = item.SoLuong ?? 0;
+                    const thanhTien = donGia * soLuong;
 
                     return (
-                      <tr key={maCt}>
+                      <tr key={maSach}>
                         <td>
                           <div className="flex items-center gap-3">
                             <BookOpen size={20} style={{ color: 'var(--primary)' }} />
@@ -219,7 +220,7 @@ export const ChiTietDonHang = () => {
               <div style={{ textAlign: 'right' }}>
                 <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Tổng thanh toán:</span>
                 <span style={{ display: 'block', fontSize: '1.4rem', fontWeight: 700, color: 'var(--primary)' }}>
-                  {dinhDangTien(donHang.TongTien ?? donHang.tongTien)}
+                  {dinhDangTien(donHang.TongTien)}
                 </span>
               </div>
             </div>
@@ -238,7 +239,7 @@ export const ChiTietDonHang = () => {
                 <User size={16} style={{ color: 'var(--primary)', marginTop: '3px' }} />
                 <div>
                   <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Người nhận:</span>
-                  <div style={{ fontWeight: 600 }}>{donHang.TenNguoiNhan ?? donHang.tenNguoiNhan}</div>
+                  <div style={{ fontWeight: 600 }}>{donHang.TenNguoiNhan}</div>
                 </div>
               </div>
 
@@ -246,7 +247,7 @@ export const ChiTietDonHang = () => {
                 <Phone size={16} style={{ color: 'var(--primary)', marginTop: '3px' }} />
                 <div>
                   <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Điện thoại:</span>
-                  <div style={{ fontWeight: 600 }}>{donHang.SoDienThoaiNhan ?? donHang.soDienThoaiNhan}</div>
+                  <div style={{ fontWeight: 600 }}>{donHang.SoDienThoaiNhan}</div>
                 </div>
               </div>
 
@@ -254,11 +255,11 @@ export const ChiTietDonHang = () => {
                 <MapPin size={16} style={{ color: 'var(--primary)', marginTop: '3px' }} />
                 <div>
                   <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Địa chỉ nhận:</span>
-                  <div>{donHang.DiaChiGiaoHang ?? donHang.diaChiGiaoHang}</div>
+                  <div>{donHang.DiaChiGiaoHang}</div>
                 </div>
               </div>
 
-              {(donHang.GhiChu || donHang.ghiChu) && (
+              {donHang.GhiChu && (
                 <div style={{
                   padding: '0.75rem',
                   backgroundColor: 'var(--bg-surface)',
@@ -266,7 +267,7 @@ export const ChiTietDonHang = () => {
                   fontSize: '0.85rem',
                   marginTop: '0.5rem'
                 }}>
-                  <strong>Ghi chú:</strong> {donHang.GhiChu || donHang.ghiChu}
+                  <strong>Ghi chú:</strong> {donHang.GhiChu}
                 </div>
               )}
             </div>

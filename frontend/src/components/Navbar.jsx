@@ -29,11 +29,7 @@ export const Navbar = () => {
     const laySoLuongGio = async () => {
       try {
         const res = await api.get('/cart');
-        const cartData = res.data.data;
-        const tongSo = cartData?.tongSoLuong ?? (cartData?.cacMon || []).reduce(
-          (sum, item) => sum + (item.soLuong || 0), 
-          0
-        );
+        const tongSo = res.data.data.tongSoLuong;
         if (!daHuy) setSoLuongGio(tongSo);
       } catch {
         // Bỏ qua lỗi giỏ hàng ở navbar

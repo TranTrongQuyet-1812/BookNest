@@ -95,8 +95,8 @@ export const ChiTietSach = () => {
     setThongBao('');
     setLoi('');
     try {
-      const maSachHienTai = sach?.MaSach ?? sach?.maSach;
-      const tenSachHienTai = sach?.TenSach ?? sach?.tieuDe;
+      const maSachHienTai = sach?.MaSach;
+      const tenSachHienTai = sach?.TenSach;
       await api.post('/cart/items', { maSach: maSachHienTai, soLuong });
       setThongBao(`Đã thêm ${soLuong} cuốn "${tenSachHienTai}" vào giỏ hàng thành công!`);
       window.dispatchEvent(new CustomEvent('booknest_cart_updated'));
@@ -155,14 +155,14 @@ export const ChiTietSach = () => {
     );
   }
 
-  const anhBia = sach.AnhBia || sach.hinhAnh;
-  const tieuDe = sach.TenSach || sach.tieuDe;
-  const tacGia = sach.TacGia || sach.tacGia;
-  const giaBan = sach.GiaBan || sach.gia;
-  const soLuongTon = sach.SoLuongTon ?? sach.soLuongTon ?? 0;
-  const moTa = sach.MoTa || sach.moTa;
-  const daAn = sach.DaAn ?? sach.daAn;
-  const tenDanhMuc = sach.danhMuc?.TenDanhMuc || sach.danhMuc?.tenDanhMuc || 'Chưa phân loại';
+  const anhBia = sach.AnhBia;
+  const tieuDe = sach.TenSach;
+  const tacGia = sach.TacGia;
+  const giaBan = sach.GiaBan;
+  const soLuongTon = sach.SoLuongTon ?? 0;
+  const moTa = sach.MoTa;
+  const daAn = sach.DaAn;
+  const tenDanhMuc = sach.danhMuc?.TenDanhMuc || 'Chưa phân loại';
 
   return (
     <div className="container py-8">
@@ -386,11 +386,11 @@ export const ChiTietSach = () => {
           ) : (
             <div className="flex flex-col gap-4">
               {danhGiaList.map((dg) => {
-                const maDg = dg.MaDanhGia ?? dg.maDanhGia;
-                const nguoiDungTen = dg.nguoiDung?.HoTen ?? dg.nguoiDung?.hoTen ?? 'Bạn đọc ẩn danh';
-                const ngayDg = dg.NgayCapNhat ?? dg.NgayDanhGia ?? dg.ngayDanhGia ?? dg.createdAt;
-                const soSao = dg.SoSao ?? dg.soSao ?? 5;
-                const noiDung = dg.NoiDung ?? dg.noiDung ?? dg.nhanXet;
+                const maDg = dg.MaDanhGia;
+                const nguoiDungTen = dg.nguoiDung?.HoTen ?? 'Bạn đọc ẩn danh';
+                const ngayDg = dg.NgayCapNhat;
+                const soSao = dg.SoSao ?? 5;
+                const noiDung = dg.NoiDung;
 
                 return (
                   <div

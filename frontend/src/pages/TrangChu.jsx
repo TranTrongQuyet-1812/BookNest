@@ -197,8 +197,8 @@ export const TrangChu = () => {
               >
                 <option value="">Tất cả thể loại</option>
                 {danhMucList.map((dm) => {
-                  const idDm = dm.MaDanhMuc ?? dm.maDanhMuc;
-                  const tenDm = dm.TenDanhMuc ?? dm.tenDanhMuc;
+                  const idDm = dm.MaDanhMuc;
+                  const tenDm = dm.TenDanhMuc;
                   return (
                     <option key={idDm} value={idDm}>
                       {tenDm}
@@ -247,13 +247,13 @@ export const TrangChu = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {sachList.map((sach) => {
-              const maSach = sach.MaSach ?? sach.maSach;
-              const tenSach = sach.TenSach ?? sach.tenSach ?? sach.tieuDe;
-              const tacGia = sach.TacGia ?? sach.tacGia;
-              const anhBia = sach.AnhBia ?? sach.anhBia ?? sach.hinhAnh;
-              const tenDanhMuc = sach.danhMuc?.TenDanhMuc ?? sach.danhMuc?.tenDanhMuc ?? 'Sách';
-              const giaBan = sach.GiaBan ?? sach.giaBan ?? sach.gia;
-              const tonKho = sach.SoLuongTon ?? sach.soLuongTon ?? 0;
+              const maSach = sach.MaSach;
+              const tenSach = sach.TenSach;
+              const tacGia = sach.TacGia;
+              const anhBia = sach.AnhBia;
+              const tenDanhMuc = sach.danhMuc?.TenDanhMuc ?? 'Sách';
+              const giaBan = sach.GiaBan;
+              const tonKho = sach.SoLuongTon ?? 0;
               const sao = sach.saoTrungBinh ?? 5;
 
               return (

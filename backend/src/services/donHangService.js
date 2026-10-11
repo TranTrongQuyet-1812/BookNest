@@ -67,10 +67,8 @@ async function datHang(maNguoiDung, thongTinGiaoHang) {
         transaction: t
       });
 
-      // Với MSSQL trong Sequelize, ketQua trả về mảng [[rows, affectedCount]]
-      const soDongCapNhat = Array.isArray(ketQua?.[0])
-        ? (typeof ketQua[0][1] === 'number' ? ketQua[0][1] : (ketQua[0][0]?.length ?? 0))
-        : (ketQua?.[1] ?? 0);
+      // Với MSSQL, Sequelize trả về [[dữ liệu, số dòng bị ảnh hưởng]]
+      const [[, soDongCapNhat]] = ketQua;
 
       if (soDongCapNhat === 0) {
         // Đọc lại số lượng tồn kho mới nhất trong DB để báo lỗi chính xác

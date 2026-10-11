@@ -26,7 +26,7 @@ export const DonHangCuaToi = () => {
       if (trangThaiLoc) params.status = trangThaiLoc;
 
       const res = await api.get('/orders/my-orders', { params });
-      const ds = res.data.data?.danhSach || res.data.data || [];
+      const ds = res.data.data.danhSach;
       setDonHangList(Array.isArray(ds) ? ds : []);
     } catch (err) {
       setLoi(err.response?.data?.message || 'Không thể tải danh sách đơn hàng');
@@ -44,7 +44,7 @@ export const DonHangCuaToi = () => {
 
         const res = await api.get('/orders/my-orders', { params });
         if (daHuy) return;
-        const ds = res.data.data?.danhSach || res.data.data || [];
+        const ds = res.data.data.danhSach;
         setDonHangList(Array.isArray(ds) ? ds : []);
       } catch (err) {
         if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải danh sách đơn hàng');
@@ -151,14 +151,13 @@ export const DonHangCuaToi = () => {
       ) : (
         <div className="flex flex-col gap-4">
           {donHangList.map((don) => {
-            const maDon = don.MaDonHang ?? don.maDonHang;
-            const ngay = don.NgayDat ?? don.ngayTao ?? don.createdAt;
-            const trangThai = don.TrangThai ?? don.trangThai;
-            const nguoiNhan = don.TenNguoiNhan ?? don.tenNguoiNhan;
-            const sdt = don.SoDienThoaiNhan ?? don.soDienThoaiNhan;
-            const diaChi = don.DiaChiGiaoHang ?? don.diaChiGiaoHang;
-            const tongTien = don.TongTien ?? don.tongTien;
-            const lyDoHuy = don.LyDoHuy ?? don.lyDoHuy;
+            const maDon = don.MaDonHang;
+            const ngay = don.NgayDat;
+            const trangThai = don.TrangThai;
+            const nguoiNhan = don.TenNguoiNhan;
+            const sdt = don.SoDienThoaiNhan;
+            const diaChi = don.DiaChiGiaoHang;
+            const tongTien = don.TongTien;
 
             return (
               <div key={maDon} className="card" style={{ padding: '1.25rem' }}>
@@ -194,19 +193,6 @@ export const DonHangCuaToi = () => {
                     </span>
                   </div>
                 </div>
-
-                {lyDoHuy && (
-                  <div style={{
-                    padding: '0.5rem 0.75rem',
-                    backgroundColor: 'var(--danger-light)',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: '0.825rem',
-                    color: 'var(--danger)',
-                    marginBottom: '0.75rem'
-                  }}>
-                    Lý do hủy: {lyDoHuy}
-                  </div>
-                )}
 
                 <div className="flex justify-end items-center gap-2 pt-2" style={{ borderTop: '1px solid var(--border)' }}>
                   {trangThai === 'PENDING' && (

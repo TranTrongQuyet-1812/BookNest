@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
-import { useAuth } from '../context/AuthContext';
 import { 
   MapPin, 
   CheckCircle, 
@@ -11,7 +10,6 @@ import {
 } from 'lucide-react';
 
 export const ThanhToan = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [gioHang, setGioHang] = useState(null);
@@ -21,17 +19,25 @@ export const ThanhToan = () => {
 
   // Form thông tin nhận hàng - điền sẵn từ hồ sơ
   const [form, setForm] = useState({
-    tenNguoiNhan: user?.fullName || user?.hoTen || '',
-    soDienThoaiNhan: user?.soDienThoai || '',
-    diaChiGiaoHang: user?.diaChiMacDinh || user?.diaChi || '',
+    tenNguoiNhan: '',
+    soDienThoaiNhan: '',
+    diaChiGiaoHang: '',
     ghiChu: ''
   });
 
   useEffect(() => {
     const taiGioHang = async () => {
       try {
-        const res = await api.get('/cart');
-        setGioHang(res.data.data);
+        const [resGio, resHoSo] = await Promise.all([api.get('/cart'), api.get('/users/profile')]);
+        setGioHang(resGio.data.data);
+        // Điền sẵn thông tin nhận hàng từ hồ sơ
+        const hoSo = resHoSo.data.data;
+        setForm((formCu) => ({
+          ...formCu,
+          tenNguoiNhan: hoSo.HoTen,
+          soDienThoaiNhan: hoSo.SoDienThoai || '',
+          diaChiGiaoHang: hoSo.DiaChiMacDinh || ''
+        }));
       } catch {
         setLoi('Không thể tải thông tin giỏ hàng');
       } finally {
@@ -61,7 +67,7 @@ export const ThanhToan = () => {
       // Bắn sự kiện cập nhật giỏ hàng trên navbar về 0
       window.dispatchEvent(new CustomEvent('booknest_cart_updated'));
 
-      const maDonHang = res.data.data?.MaDonHang || res.data.data?.maDonHang;
+      const maDonHang = res.data.data?.MaDonHang;
       alert('Chúc mừng! Đơn hàng của bạn đã được khởi tạo thành công.');
       navigate(`/orders/${maDonHang}`);
     } catch (err) {
@@ -216,10 +222,10 @@ export const ThanhToan = () => {
                 paddingBottom: '0.5rem'
               }}>
                 {items.map((item) => (
-                  <div key={item.maSach || item.maChiTietGioHang} className="flex justify-between items-center py-2" style={{ fontSize: '0.875rem' }}>
+                  <div key={item.maSach} className="flex justify-between items-center py-2" style={{ fontSize: '0.875rem' }}>
                     <div style={{ maxWidth: '65%' }}>
                       <p style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {item.sach?.tenSach || item.sach?.tieuDe}
+                        {item.sach?.tenSach}
                       </p>
                       <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
                         {dinhDangTien(item.donGia)} × {item.soLuong}

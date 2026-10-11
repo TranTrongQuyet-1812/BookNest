@@ -1,7 +1,7 @@
 -- ====================================================================================
 -- DỰ ÁN: BookNest - Website Quản lý & Bán Sách Trực Tuyến
 -- TỆP: database/03_don_dep_du_lieu_rac.sql
--- MỤC TIÊU: Kịch bản dọn dẹp dữ liệu rác phát sinh do test tự động (F09 - P0)
+-- MỤC TIÊU: Kịch bản dọn dữ liệu rác phát sinh do test tự động (F09 - P0), chỉ xóa theo email/tên chính xác
 -- LƯU Ý BẢO VỆ:
 --   1. Luôn sao lưu CSDL trước khi chạy (xem BƯỚC 1 bên dưới).
 --   2. Kiểm tra danh sách rác ở BƯỚC 2 trước khi thực thi lệnh xóa.
@@ -27,23 +27,22 @@ GO
 -- ====================================================================================
 PRINT N'--- BƯỚC 2: KIỂM TRA CÁC DÒNG DỮ LIỆU RÁC TRONG HỆ THỐNG ---';
 
--- 1. Các tài khoản test tự động phát sinh (Email LIKE 'khach_test_%' hoặc 'test@gmail.com')
+-- 1. Các tài khoản test tự động phát sinh (chỉ nhận diện qua email: 'khach_test_...@gmail.com' hoặc 'test@gmail.com')
 SELECT 
     MaNguoiDung, HoTen, Email, VaiTro, DangHoatDong, NgayTao
 FROM dbo.NguoiDung
 WHERE Email LIKE 'khach_test_%@gmail.com'
-   OR Email = 'test@gmail.com'
-   OR MaNguoiDung NOT IN (1, 2, 3, 4, 5, 6, 7, 8);
+   OR Email = 'test@gmail.com';
 
--- 2. Sách rác thử nghiệm (nếu có, ví dụ MaSach = 50 hoặc 'Sach Test')
+-- 2. Sách rác thử nghiệm (nhận diện đúng theo tên 'Sach Test', không dùng LIKE để khỏi xóa nhầm sách thật)
 SELECT MaSach, TenSach, TacGia, GiaBan, SoLuongTon
 FROM dbo.Sach
-WHERE TenSach LIKE N'%Test%' OR MaSach = 50;
+WHERE TenSach IN (N'Sach Test', N'Sách Test');
 
--- 3. Danh mục rác thử nghiệm (nếu có, ví dụ 'Kinh Te Test' hoặc MaDanhMuc = 22)
+-- 3. Danh mục rác thử nghiệm (nhận diện đúng theo tên)
 SELECT MaDanhMuc, TenDanhMuc, MoTa
 FROM dbo.DanhMuc
-WHERE TenDanhMuc LIKE N'%Test%' OR MaDanhMuc = 22;
+WHERE TenDanhMuc IN (N'Kinh Te Test', N'Kinh Tế Test');
 GO
 
 -- ====================================================================================
@@ -61,8 +60,7 @@ BEGIN TRY
     SELECT MaNguoiDung 
     FROM dbo.NguoiDung
     WHERE Email LIKE 'khach_test_%@gmail.com' 
-       OR Email = 'test@gmail.com'
-       OR (MaNguoiDung > 8 AND Email LIKE '%test%');
+       OR Email = 'test@gmail.com';
 
     -- Danh sách mã đơn hàng do tài khoản rác tạo
     DECLARE @DanhSachDonHangRac TABLE (MaDonHang INT);
@@ -94,25 +92,22 @@ BEGIN TRY
 
     -- 6. Xóa lịch sử nhập kho của sách test
     DELETE FROM dbo.LichSuNhapKho
-    WHERE MaSach IN (SELECT MaSach FROM dbo.Sach WHERE TenSach IN (N'Sach Test', N'Sách Test') OR MaSach = 50);
+    WHERE MaSach IN (SELECT MaSach FROM dbo.Sach WHERE TenSach IN (N'Sach Test', N'Sách Test'));
 
     -- 7. Xóa sách test
     DELETE FROM dbo.Sach
-    WHERE TenSach IN (N'Sach Test', N'Sách Test') OR MaSach = 50;
+    WHERE TenSach IN (N'Sach Test', N'Sách Test');
 
     -- 8. Xóa danh mục test
     DELETE FROM dbo.DanhMuc
-    WHERE TenDanhMuc IN (N'Kinh Te Test', N'Kinh Tế Test') OR MaDanhMuc = 22;
+    WHERE TenDanhMuc IN (N'Kinh Te Test', N'Kinh Tế Test');
 
     -- 9. Cuối cùng, xóa các tài khoản rác trong bảng NguoiDung
     DELETE FROM dbo.NguoiDung
     WHERE MaNguoiDung IN (SELECT MaNguoiDung FROM @DanhSachNguoiDungRac);
 
-    -- 10. Cân đối lại tồn kho cuốn "Số Đỏ" (MaSach = 1) về mức chuẩn theo seed ban đầu
-    -- Khuyến nghị tốt nhất cho buổi demo/chấm đồ án: Chạy lại 01_tao_bang.sql và 02_du_lieu_mau.sql để CSDL mới 100%
-    UPDATE dbo.Sach
-    SET SoLuongTon = 45
-    WHERE MaSach = 1 AND SoLuongTon < 45;
+    -- Lưu ý: script này KHÔNG sửa lại tồn kho đã bị test làm lệch.
+    -- Muốn CSDL sạch hoàn toàn cho buổi demo/chấm đồ án: chạy lại 01_tao_bang.sql và 02_du_lieu_mau.sql.
 
     PRINT N'Dọn dẹp dữ liệu rác thành công!';
     COMMIT TRANSACTION;
@@ -132,5 +127,4 @@ PRINT N'--- BƯỚC 4: KIỂM CHỨNG LẠI DỮ LIỆU SAU KHI DỌN ---';
 
 SELECT COUNT(*) AS SoTaiKhoanChuan FROM dbo.NguoiDung; -- Kì vọng: 8 tài khoản
 SELECT COUNT(*) AS SoDanhMucChuan FROM dbo.DanhMuc;    -- Kì vọng: 8 danh mục
-SELECT MaSach, TenSach, SoLuongTon FROM dbo.Sach WHERE MaSach = 1; -- Kì vọng: Tồn = 45
 GO

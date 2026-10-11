@@ -31,7 +31,7 @@ export const QuanLyDonHang = () => {
       if (trangThaiLoc) params.status = trangThaiLoc;
 
       const res = await api.get('/admin/orders', { params });
-      const ds = res.data.data?.danhSach || res.data.data || [];
+      const ds = res.data.data.danhSach;
       setDonHangList(Array.isArray(ds) ? ds : []);
       if (res.data.data?.phanTrang) {
         setPhanTrang(res.data.data.phanTrang);
@@ -55,7 +55,7 @@ export const QuanLyDonHang = () => {
 
         const res = await api.get('/admin/orders', { params });
         if (daHuy) return;
-        const ds = res.data.data?.danhSach || res.data.data || [];
+        const ds = res.data.data.danhSach;
         setDonHangList(Array.isArray(ds) ? ds : []);
         if (res.data.data?.phanTrang) {
           setPhanTrang(res.data.data.phanTrang);
@@ -196,13 +196,13 @@ export const QuanLyDonHang = () => {
             </thead>
             <tbody>
               {donHangList.map((don) => {
-                const maDon = don.MaDonHang ?? don.maDonHang;
-                const ngay = don.NgayDat ?? don.ngayTao ?? don.createdAt;
-                const nguoiNhan = don.TenNguoiNhan ?? don.tenNguoiNhan;
-                const sdt = don.SoDienThoaiNhan ?? don.soDienThoaiNhan;
-                const diaChi = don.DiaChiGiaoHang ?? don.diaChiGiaoHang;
-                const tongTien = don.TongTien ?? don.tongTien;
-                const trangThai = don.TrangThai ?? don.trangThai;
+                const maDon = don.MaDonHang;
+                const ngay = don.NgayDat;
+                const nguoiNhan = don.TenNguoiNhan;
+                const sdt = don.SoDienThoaiNhan;
+                const diaChi = don.DiaChiGiaoHang;
+                const tongTien = don.TongTien;
+                const trangThai = don.TrangThai;
 
                 return (
                   <tr key={maDon}>

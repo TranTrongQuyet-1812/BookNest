@@ -13,7 +13,7 @@ async function layGioHang(maNguoiDung) {
       {
         model: Sach,
         as: 'sach',
-        attributes: ['MaSach', 'TenSach', 'GiaBan', 'SoLuongTon', 'AnhBia', 'DaAn']
+        attributes: ['MaSach', 'TenSach', 'TacGia', 'GiaBan', 'SoLuongTon', 'AnhBia', 'DaAn']
       }
     ],
     order: [['NgayThem', 'DESC']]
@@ -47,6 +47,7 @@ async function layGioHang(maNguoiDung) {
       sach: sach ? {
         maSach: sach.MaSach,
         tenSach: sach.TenSach,
+        tacGia: sach.TacGia,
         anhBia: sach.AnhBia,
         giaBan: donGia,
         soLuongTon: sach.SoLuongTon,

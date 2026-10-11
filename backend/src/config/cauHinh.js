@@ -28,13 +28,17 @@ const cauHinh = {
     mayChu: process.env.DB_HOST || 'localhost',
     cong: parseInt(process.env.DB_PORT, 10) || 1433,
     tenCsdl: process.env.DB_NAME || 'BookNestDB',
-    nguoiDung: process.env.DB_USER || 'booknest_user',
+    nguoiDung: process.env.DB_USER,
     matKhau: process.env.DB_PASSWORD || ''
   },
   jwt: {
     biMat: process.env.JWT_SECRET,
     hanDung: process.env.JWT_EXPIRES_IN || '7d'
-  }
+  },
+  // Nguồn frontend được phép gọi API (CORS), cách nhau bằng dấu phẩy
+  corsNguon: (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map(nguon => nguon.trim()),
+  // Số lớp reverse proxy đứng trước server (0 nếu chạy trực tiếp), dùng để rate limit nhận đúng IP
+  soLopProxy: parseInt(process.env.TRUST_PROXY, 10) || 0
 };
 
 module.exports = cauHinh;

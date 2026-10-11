@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { User, Lock, Check, AlertCircle, Save, KeyRound } from 'lucide-react';
@@ -8,9 +8,9 @@ export const HoSo = () => {
 
   // State cập nhật thông tin
   const [formProfile, setFormProfile] = useState({
-    hoTen: user?.fullName || user?.hoTen || '',
-    soDienThoai: user?.soDienThoai || '',
-    diaChi: user?.diaChiMacDinh || user?.diaChi || ''
+    hoTen: '',
+    soDienThoai: '',
+    diaChi: ''
   });
   const [thongBaoProfile, setThongBaoProfile] = useState('');
   const [loiProfile, setLoiProfile] = useState('');
@@ -26,6 +26,24 @@ export const HoSo = () => {
   const [loiPass, setLoiPass] = useState('');
   const [dangLuuPass, setDangLuuPass] = useState(false);
 
+  // Tải hồ sơ từ server để điền sẵn form (thông tin đăng nhập chỉ có id, email, họ tên, vai trò)
+  useEffect(() => {
+    const taiHoSo = async () => {
+      try {
+        const res = await api.get('/users/profile');
+        const hoSo = res.data.data;
+        setFormProfile({
+          hoTen: hoSo.HoTen,
+          soDienThoai: hoSo.SoDienThoai || '',
+          diaChi: hoSo.DiaChiMacDinh || ''
+        });
+      } catch {
+        setLoiProfile('Không thể tải thông tin cá nhân');
+      }
+    };
+    taiHoSo();
+  }, []);
+
   const handleLuuProfile = async (e) => {
     e.preventDefault();
     setThongBaoProfile('');
@@ -38,7 +56,7 @@ export const HoSo = () => {
         soDienThoai: formProfile.soDienThoai || undefined,
         diaChiMacDinh: formProfile.diaChi || undefined
       });
-      capNhatUser(res.data.data);
+      capNhatUser({ fullName: res.data.data.HoTen });
       setThongBaoProfile('Đã cập nhật thông tin cá nhân thành công!');
     } catch (err) {
       setLoiProfile(err.response?.data?.message || 'Cập nhật thông tin thất bại');

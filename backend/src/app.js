@@ -5,6 +5,7 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const cauHinh = require('./config/cauHinh');
 const { phanHoiThanhCong } = require('./middlewares/phanHoi');
 const xuLy404 = require('./middlewares/xuLy404');
 const xuLyLoi = require('./middlewares/xuLyLoi');
@@ -23,7 +24,8 @@ const swaggerSpec = require('./config/swagger');
 const app = express();
 
 // Tin cậy reverse proxy (Nginx / Cloudflare) để rate limiting nhận đúng IP của Client
-app.set('trust proxy', 1);
+// Chỉ bật khi có proxy thật (TRUST_PROXY trong .env), nếu không client có thể giả header X-Forwarded-For
+app.set('trust proxy', cauHinh.soLopProxy);
 
 // Middleware bảo mật HTTP headers (Helmet)
 // Tắt CSP nghiêm ngặt để Swagger UI hiển thị tài liệu API trơn tru
@@ -38,8 +40,8 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Cho phép gọi API chéo domain (CORS) từ giao diện Storefront và Back-Office
-app.use(cors());
+// Chỉ cho phép giao diện Storefront và Back-Office (nguồn khai báo trong .env) gọi API chéo domain
+app.use(cors({ origin: cauHinh.corsNguon }));
 
 // Tuyến đường kiểm tra tình trạng dịch vụ gốc (Root Health Check)
 app.get('/', (req, res) => {
