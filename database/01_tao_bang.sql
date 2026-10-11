@@ -68,6 +68,7 @@ CREATE TABLE dbo.Sach (
     SoLuongTon INT NOT NULL CONSTRAINT DF_Sach_SoLuongTon DEFAULT 0,
     NguongCanhBao INT NOT NULL CONSTRAINT DF_Sach_NguongCanhBao DEFAULT 5,
     AnhBia VARCHAR(500) NULL,
+    Tap INT NULL,
     MaDanhMuc INT NOT NULL,
     DaAn BIT NOT NULL CONSTRAINT DF_Sach_DaAn DEFAULT 0,
     NgayTao DATETIME2 NOT NULL CONSTRAINT DF_Sach_NgayTao DEFAULT SYSDATETIME(),
@@ -77,6 +78,7 @@ CREATE TABLE dbo.Sach (
     CONSTRAINT CK_Sach_GiaBan CHECK (GiaBan >= 0),
     CONSTRAINT CK_Sach_SoLuongTon CHECK (SoLuongTon >= 0),
     CONSTRAINT CK_Sach_NguongCanhBao CHECK (NguongCanhBao >= 0),
+    CONSTRAINT CK_Sach_Tap CHECK (Tap IS NULL OR Tap > 0),
     CONSTRAINT FK_Sach_DanhMuc FOREIGN KEY (MaDanhMuc) 
         REFERENCES dbo.DanhMuc (MaDanhMuc) 
         ON DELETE NO ACTION ON UPDATE NO ACTION

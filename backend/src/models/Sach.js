@@ -42,6 +42,10 @@ const Sach = sequelize.define('Sach', {
     type: DataTypes.STRING(500),
     allowNull: true
   },
+  Tap: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
   MaDanhMuc: {
     type: DataTypes.INTEGER,
     allowNull: false
