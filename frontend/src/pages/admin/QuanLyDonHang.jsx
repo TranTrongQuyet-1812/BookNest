@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import PhanTrang from '../../components/PhanTrang';
 import { 
   ClipboardList, 
   Clock, 
@@ -19,13 +20,14 @@ export const QuanLyDonHang = () => {
   const [trangThaiLoc, setTrangThaiLoc] = useState('');
   const [thongBao, setThongBao] = useState('');
   const [loi, setLoi] = useState('');
-  const [phanTrang, setPhanTrang] = useState({ page: 1, limit: 15, total: 0, totalPages: 1 });
+  const [trang, setTrang] = useState(1);
+  const [phanTrang, setPhanTrang] = useState(null);
 
   const taiDonHang = async () => {
     setDangTai(true);
     try {
       const params = {
-        page: phanTrang.page,
+        page: trang,
         limit: 15
       };
       if (trangThaiLoc) params.status = trangThaiLoc;
@@ -33,9 +35,7 @@ export const QuanLyDonHang = () => {
       const res = await api.get('/admin/orders', { params });
       const ds = res.data.data.danhSach;
       setDonHangList(Array.isArray(ds) ? ds : []);
-      if (res.data.data?.phanTrang) {
-        setPhanTrang(res.data.data.phanTrang);
-      }
+      setPhanTrang(res.data.data.phanTrang);
     } catch (err) {
       setLoi(err.response?.data?.message || 'Không thể tải danh sách đơn hàng');
     } finally {
@@ -48,7 +48,7 @@ export const QuanLyDonHang = () => {
     const nap = async () => {
       try {
         const params = {
-          page: phanTrang.page,
+          page: trang,
           limit: 15
         };
         if (trangThaiLoc) params.status = trangThaiLoc;
@@ -57,9 +57,7 @@ export const QuanLyDonHang = () => {
         if (daHuy) return;
         const ds = res.data.data.danhSach;
         setDonHangList(Array.isArray(ds) ? ds : []);
-        if (res.data.data?.phanTrang) {
-          setPhanTrang(res.data.data.phanTrang);
-        }
+        setPhanTrang(res.data.data.phanTrang);
       } catch (err) {
         if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải danh sách đơn hàng');
       } finally {
@@ -70,7 +68,7 @@ export const QuanLyDonHang = () => {
     return () => {
       daHuy = true;
     };
-  }, [phanTrang.page, trangThaiLoc]);
+  }, [trang, trangThaiLoc]);
 
   // Luân chuyển trạng thái đơn hàng kế tiếp (State Machine)
   const handleChuyenTrangThai = async (maDonHang, trangThaiMoi, tenHanhDong) => {
@@ -147,7 +145,7 @@ export const QuanLyDonHang = () => {
             value={trangThaiLoc}
             onChange={(e) => {
               setTrangThaiLoc(e.target.value);
-              setPhanTrang((prev) => ({ ...prev, page: 1 }));
+              setTrang(1);
             }}
           >
             <option value="">Tất cả trạng thái</option>
@@ -271,6 +269,8 @@ export const QuanLyDonHang = () => {
           </table>
         </div>
       )}
+
+      <PhanTrang phanTrang={phanTrang} onChuyenTrang={setTrang} donVi="đơn" />
     </div>
   );
 };

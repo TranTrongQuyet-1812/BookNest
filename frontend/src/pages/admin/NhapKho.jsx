@@ -10,51 +10,38 @@ import {
 } from 'lucide-react';
 
 export const NhapKho = () => {
-  const [sachList, setSachList] = useState([]);
+  const [sachSapHet, setSachSapHet] = useState([]);
   const [lichSuNhap, setLichSuNhap] = useState([]);
   const [dangTai, setDangTai] = useState(true);
   const [thongBao, setThongBao] = useState('');
   const [loi, setLoi] = useState('');
+  // Tăng số này để tải lại cảnh báo và lịch sử sau khi nhập kho xong
+  const [lanTai, setLanTai] = useState(0);
+
+  // Tìm sách để nhập: kết quả lấy từ server, mỗi lần tối đa 20 cuốn
+  const [tuKhoaSach, setTuKhoaSach] = useState('');
+  const [ketQuaSach, setKetQuaSach] = useState([]);
+  const [sachDangChon, setSachDangChon] = useState(null);
 
   // Form nhập kho
   const [formNhap, setFormNhap] = useState({
-    maSach: '',
     soLuongNhap: 10,
     ghiChu: ''
   });
   const [dangNhapKho, setDangNhapKho] = useState(false);
 
-  const taiDuLieu = async () => {
-    setDangTai(true);
-    try {
-      const [resSach, resLichSu] = await Promise.all([
-        api.get('/books', { params: { limit: 50 } }),
-        api.get('/books/inventory/history')
-      ]);
-      const dsSach = resSach.data.data.danhSach;
-      const dsLichSu = resLichSu.data.data || [];
-      setSachList(Array.isArray(dsSach) ? dsSach : []);
-      setLichSuNhap(Array.isArray(dsLichSu) ? dsLichSu : []);
-    } catch (err) {
-      setLoi(err.response?.data?.message || 'Không thể tải dữ liệu nhập kho');
-    } finally {
-      setDangTai(false);
-    }
-  };
-
+  // Tải cảnh báo sắp hết hàng và lịch sử nhập kho gần đây
   useEffect(() => {
     let daHuy = false;
     const nap = async () => {
       try {
-        const [resSach, resLichSu] = await Promise.all([
-          api.get('/books', { params: { limit: 50 } }),
+        const [resSapHet, resLichSu] = await Promise.all([
+          api.get('/books/low-stock'),
           api.get('/books/inventory/history')
         ]);
         if (daHuy) return;
-        const dsSach = resSach.data.data.danhSach;
-        const dsLichSu = resLichSu.data.data || [];
-        setSachList(Array.isArray(dsSach) ? dsSach : []);
-        setLichSuNhap(Array.isArray(dsLichSu) ? dsLichSu : []);
+        setSachSapHet(resSapHet.data.data);
+        setLichSuNhap(resLichSu.data.data);
       } catch (err) {
         if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải dữ liệu nhập kho');
       } finally {
@@ -65,32 +52,53 @@ export const NhapKho = () => {
     return () => {
       daHuy = true;
     };
-  }, []);
+  }, [lanTai]);
+
+  // Tìm sách theo từ khóa (đợi 300ms sau lần gõ cuối để không gọi server liên tục)
+  useEffect(() => {
+    let daHuy = false;
+    const hen = setTimeout(async () => {
+      try {
+        const params = { limit: 20 };
+        if (tuKhoaSach.trim()) params.search = tuKhoaSach.trim();
+        const res = await api.get('/admin/books', { params });
+        if (!daHuy) setKetQuaSach(res.data.data.danhSach);
+      } catch (err) {
+        if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tìm sách');
+      }
+    }, 300);
+    return () => {
+      daHuy = true;
+      clearTimeout(hen);
+    };
+  }, [tuKhoaSach, lanTai]);
 
   const handleNhapKho = async (e) => {
     e.preventDefault();
     setThongBao('');
     setLoi('');
+    if (!sachDangChon) {
+      setLoi('Vui lòng chọn cuốn sách cần nhập');
+      return;
+    }
     setDangNhapKho(true);
 
     try {
-      await api.post(`/books/${formNhap.maSach}/stock-in`, {
+      await api.post(`/books/${sachDangChon.MaSach}/stock-in`, {
         soLuongNhap: parseInt(formNhap.soLuongNhap),
         ghiChu: formNhap.ghiChu || undefined
       });
 
-      setThongBao('Tạo phiếu nhập kho thành công! Số lượng tồn kho đã được cộng dồn.');
-      setFormNhap({ maSach: '', soLuongNhap: 10, ghiChu: '' });
-      taiDuLieu();
+      setThongBao(`Đã nhập kho "${sachDangChon.TenSach}" thành công! Số lượng tồn kho đã được cộng dồn.`);
+      setSachDangChon(null);
+      setFormNhap({ soLuongNhap: 10, ghiChu: '' });
+      setLanTai((n) => n + 1);
     } catch (err) {
       setLoi(err.response?.data?.message || 'Nhập kho thất bại');
     } finally {
       setDangNhapKho(false);
     }
   };
-
-  // Sách sắp hết hàng (tồn kho <= 5)
-  const sachSapHet = sachList.filter((s) => (s.SoLuongTon ?? 0) <= 5);
 
   return (
     <div>
@@ -122,11 +130,11 @@ export const NhapKho = () => {
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle size={20} style={{ color: 'var(--danger)' }} />
             <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--danger)' }}>
-              Cảnh Báo: Có {sachSapHet.length} tác phẩm sắp hết hàng (≤ 5 cuốn)
+              Cảnh Báo: Có {sachSapHet.length} tác phẩm sắp hết hàng (tồn kho đã chạm ngưỡng cảnh báo)
             </h3>
           </div>
           <div className="flex flex-wrap gap-2 mt-3">
-            {sachSapHet.map((s) => {
+            {sachSapHet.slice(0, 12).map((s) => {
               const ma = s.MaSach;
               const ten = s.TenSach;
               const ton = s.SoLuongTon ?? 0;
@@ -135,13 +143,18 @@ export const NhapKho = () => {
                   key={ma}
                   className="badge badge-cancelled"
                   style={{ cursor: 'pointer', padding: '0.35rem 0.65rem' }}
-                  onClick={() => setFormNhap((prev) => ({ ...prev, maSach: ma }))}
+                  onClick={() => setSachDangChon(s)}
                   title="Bấm để chọn nhập ngay cuốn này"
                 >
                   {ten} (Còn {ton})
                 </span>
               );
             })}
+            {sachSapHet.length > 12 && (
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', alignSelf: 'center' }}>
+                và {sachSapHet.length - 12} tác phẩm khác...
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -158,25 +171,42 @@ export const NhapKho = () => {
 
           <form onSubmit={handleNhapKho}>
             <div className="form-group">
-              <label className="form-label">Chọn tác phẩm cần nhập *</label>
-              <select
-                required
+              <label className="form-label">Tìm tác phẩm cần nhập *</label>
+              <input
+                type="text"
                 className="form-input"
-                value={formNhap.maSach}
-                onChange={(e) => setFormNhap({ ...formNhap, maSach: e.target.value })}
-              >
-                <option value="">-- Chọn sách --</option>
-                {sachList.map((s) => {
-                  const ma = s.MaSach;
-                  const ten = s.TenSach;
-                  const ton = s.SoLuongTon ?? 0;
-                  return (
-                    <option key={ma} value={ma}>
-                      #{ma} - {ten} (Hiện còn: {ton})
-                    </option>
-                  );
-                })}
-              </select>
+                placeholder="Gõ tên sách hoặc tác giả..."
+                value={tuKhoaSach}
+                onChange={(e) => setTuKhoaSach(e.target.value)}
+              />
+              <div style={{ maxHeight: '180px', overflowY: 'auto', marginTop: '0.5rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
+                {ketQuaSach.length === 0 ? (
+                  <p style={{ padding: '0.5rem 0.75rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Không tìm thấy sách phù hợp</p>
+                ) : (
+                  ketQuaSach.map((s) => (
+                    <button
+                      type="button"
+                      key={s.MaSach}
+                      onClick={() => setSachDangChon(s)}
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '0.4rem 0.75rem',
+                        fontSize: '0.85rem',
+                        backgroundColor: sachDangChon?.MaSach === s.MaSach ? 'var(--primary-light, rgba(0,0,0,0.06))' : 'transparent'
+                      }}
+                    >
+                      #{s.MaSach} - {s.TenSach} (Còn {s.SoLuongTon})
+                    </button>
+                  ))
+                )}
+              </div>
+              {sachDangChon && (
+                <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>
+                  Đang chọn: #{sachDangChon.MaSach} - {sachDangChon.TenSach} (hiện còn {sachDangChon.SoLuongTon})
+                </p>
+              )}
             </div>
 
             <div className="form-group">

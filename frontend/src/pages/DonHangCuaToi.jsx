@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import PhanTrang from '../components/PhanTrang';
 import { 
   Package, 
   Clock, 
@@ -17,17 +18,20 @@ export const DonHangCuaToi = () => {
   const [dangTai, setDangTai] = useState(true);
   const [loi, setLoi] = useState('');
   const [trangThaiLoc, setTrangThaiLoc] = useState('');
+  const [trang, setTrang] = useState(1);
+  const [phanTrang, setPhanTrang] = useState(null);
 
   // Tải danh sách đơn hàng của chính mình
   const taiDonHang = async () => {
     setDangTai(true);
     try {
-      const params = {};
+      const params = { page: trang, limit: 10 };
       if (trangThaiLoc) params.status = trangThaiLoc;
 
       const res = await api.get('/orders/my-orders', { params });
       const ds = res.data.data.danhSach;
       setDonHangList(Array.isArray(ds) ? ds : []);
+      setPhanTrang(res.data.data.phanTrang);
     } catch (err) {
       setLoi(err.response?.data?.message || 'Không thể tải danh sách đơn hàng');
     } finally {
@@ -39,13 +43,14 @@ export const DonHangCuaToi = () => {
     let daHuy = false;
     const nap = async () => {
       try {
-        const params = {};
+        const params = { page: trang, limit: 10 };
         if (trangThaiLoc) params.status = trangThaiLoc;
 
         const res = await api.get('/orders/my-orders', { params });
         if (daHuy) return;
         const ds = res.data.data.danhSach;
         setDonHangList(Array.isArray(ds) ? ds : []);
+        setPhanTrang(res.data.data.phanTrang);
       } catch (err) {
         if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải danh sách đơn hàng');
       } finally {
@@ -56,7 +61,7 @@ export const DonHangCuaToi = () => {
     return () => {
       daHuy = true;
     };
-  }, [trangThaiLoc]);
+  }, [trangThaiLoc, trang]);
 
   // Hủy đơn hàng PENDING
   const handleHuyDon = async (maDonHang) => {
@@ -114,7 +119,10 @@ export const DonHangCuaToi = () => {
             className="form-input"
             style={{ width: '180px', padding: '0.45rem 0.75rem' }}
             value={trangThaiLoc}
-            onChange={(e) => setTrangThaiLoc(e.target.value)}
+            onChange={(e) => {
+              setTrangThaiLoc(e.target.value);
+              setTrang(1);
+            }}
           >
             <option value="">Tất cả trạng thái</option>
             <option value="PENDING">Chờ duyệt</option>
@@ -213,6 +221,8 @@ export const DonHangCuaToi = () => {
           })}
         </div>
       )}
+
+      <PhanTrang phanTrang={phanTrang} onChuyenTrang={setTrang} donVi="đơn" />
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import PhanTrang from '../../components/PhanTrang';
 import { 
   Plus, 
   Edit, 
@@ -17,6 +18,11 @@ export const QuanLySach = () => {
   const [danhMucList, setDanhMucList] = useState([]);
   const [dangTai, setDangTai] = useState(true);
   const [timKiem, setTimKiem] = useState('');
+  const [tuKhoaDaLoc, setTuKhoaDaLoc] = useState('');
+  const [trang, setTrang] = useState(1);
+  const [phanTrang, setPhanTrang] = useState(null);
+  // Tăng số này để tải lại dữ liệu sau khi thêm, sửa, ẩn sách hoặc thêm thể loại
+  const [lanTai, setLanTai] = useState(0);
   const [thongBao, setThongBao] = useState('');
   const [loi, setLoi] = useState('');
 
@@ -37,38 +43,20 @@ export const QuanLySach = () => {
   const [modalDanhMucMo, setModalDanhMucMo] = useState(false);
   const [formDanhMuc, setFormDanhMuc] = useState({ tenDanhMuc: '', moTa: '' });
 
-  // Tải danh sách sách và danh mục
-  const taiDuLieu = async () => {
-    setDangTai(true);
-    try {
-      const [resSach, resDanhMuc] = await Promise.all([
-        api.get('/books', { params: { limit: 50 } }),
-        api.get('/categories')
-      ]);
-      const dsSach = resSach.data.data.danhSach;
-      const dsDanhMuc = resDanhMuc.data.data || [];
-      setSachList(Array.isArray(dsSach) ? dsSach : []);
-      setDanhMucList(Array.isArray(dsDanhMuc) ? dsDanhMuc : []);
-    } catch (err) {
-      setLoi(err.response?.data?.message || 'Không thể tải dữ liệu sách');
-    } finally {
-      setDangTai(false);
-    }
-  };
+  const taiLai = () => setLanTai((n) => n + 1);
 
+  // Tải một trang sách từ server (tìm kiếm và phân trang do backend xử lý)
   useEffect(() => {
     let daHuy = false;
     const nap = async () => {
       try {
-        const [resSach, resDanhMuc] = await Promise.all([
-          api.get('/books', { params: { limit: 50 } }),
-          api.get('/categories')
-        ]);
+        const params = { page: trang, limit: 20 };
+        if (tuKhoaDaLoc) params.search = tuKhoaDaLoc;
+
+        const res = await api.get('/admin/books', { params });
         if (daHuy) return;
-        const dsSach = resSach.data.data.danhSach;
-        const dsDanhMuc = resDanhMuc.data.data || [];
-        setSachList(Array.isArray(dsSach) ? dsSach : []);
-        setDanhMucList(Array.isArray(dsDanhMuc) ? dsDanhMuc : []);
+        setSachList(res.data.data.danhSach);
+        setPhanTrang(res.data.data.phanTrang);
       } catch (err) {
         if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải dữ liệu sách');
       } finally {
@@ -79,11 +67,34 @@ export const QuanLySach = () => {
     return () => {
       daHuy = true;
     };
-  }, []);
+  }, [trang, tuKhoaDaLoc, lanTai]);
+
+  // Tải danh sách thể loại (dùng cho ô chọn thể loại khi thêm/sửa sách)
+  useEffect(() => {
+    let daHuy = false;
+    const nap = async () => {
+      try {
+        const res = await api.get('/categories');
+        if (!daHuy) setDanhMucList(res.data.data);
+      } catch (err) {
+        if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải danh sách thể loại');
+      }
+    };
+    nap();
+    return () => {
+      daHuy = true;
+    };
+  }, [lanTai]);
+
+  const handleTimKiem = (e) => {
+    e.preventDefault();
+    setTuKhoaDaLoc(timKiem.trim());
+    setTrang(1);
+  };
 
   // Mở modal thêm sách mới
   const moModalThemSach = () => {
-    const defaultDm = danhMucList[0]?.MaDanhMuc ?? danhMucList[0]?.maDanhMuc ?? '';
+    const defaultDm = danhMucList[0]?.MaDanhMuc ?? '';
     setSachDangSua(null);
     setFormSach({
       tieuDe: '',
@@ -135,7 +146,7 @@ export const QuanLySach = () => {
         setThongBao(`Đã thêm mới cuốn sách "${formSach.tieuDe}" vào kho`);
       }
       setModalSachMo(false);
-      taiDuLieu();
+      taiLai();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi khi lưu sách');
@@ -154,7 +165,7 @@ export const QuanLySach = () => {
     try {
       await api.delete(`/books/${maSach}`);
       setThongBao(`Đã ${hanhDong} thành công cuốn sách "${tenSach}"`);
-      taiDuLieu();
+      taiLai();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi khi thay đổi trạng thái sách');
@@ -169,7 +180,7 @@ export const QuanLySach = () => {
       setThongBao(`Đã tạo thể loại "${formDanhMuc.tenDanhMuc}"`);
       setFormDanhMuc({ tenDanhMuc: '', moTa: '' });
       setModalDanhMucMo(false);
-      taiDuLieu();
+      taiLai();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi khi tạo thể loại');
@@ -179,13 +190,6 @@ export const QuanLySach = () => {
   const dinhDangTien = (soTien) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(soTien || 0);
   };
-
-  const sachLoc = sachList.filter((s) => {
-    const tuKhoa = timKiem.toLowerCase();
-    const ten = (s.TenSach ?? '').toLowerCase();
-    const tg = (s.TacGia ?? '').toLowerCase();
-    return ten.includes(tuKhoa) || tg.includes(tuKhoa);
-  });
 
   return (
     <div>
@@ -221,19 +225,20 @@ export const QuanLySach = () => {
       )}
 
       {/* Ô tìm kiếm nhanh */}
-      <div className="card mb-6" style={{ padding: '0.75rem 1rem' }}>
-        <div style={{ position: 'relative' }}>
+      <form onSubmit={handleTimKiem} className="card mb-6 flex gap-2" style={{ padding: '0.75rem 1rem' }}>
+        <div style={{ position: 'relative', flex: 1 }}>
           <input
             type="text"
             className="form-input"
             style={{ paddingLeft: '2.25rem' }}
-            placeholder="Tìm kiếm sách theo tựa đề hoặc tác giả trong bảng..."
+            placeholder="Tìm sách theo tựa đề hoặc tác giả..."
             value={timKiem}
             onChange={(e) => setTimKiem(e.target.value)}
           />
           <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
         </div>
-      </div>
+        <button type="submit" className="btn btn-primary">Tìm</button>
+      </form>
 
       {/* Bảng Danh Sách Sách */}
       {dangTai ? (
@@ -255,7 +260,7 @@ export const QuanLySach = () => {
               </tr>
             </thead>
             <tbody>
-              {sachLoc.map((sach) => {
+              {sachList.map((sach) => {
                 const ma = sach.MaSach;
                 const ten = sach.TenSach;
                 const tg = sach.TacGia;
@@ -323,6 +328,8 @@ export const QuanLySach = () => {
           </table>
         </div>
       )}
+
+      <PhanTrang phanTrang={phanTrang} onChuyenTrang={setTrang} donVi="cuốn" />
 
       {/* Modal Thêm/Sửa Sách */}
       {modalSachMo && (

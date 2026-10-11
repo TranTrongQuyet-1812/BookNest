@@ -3,13 +3,12 @@ import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import StarRating from '../components/StarRating';
+import PhanTrang from '../components/PhanTrang';
 import { 
   Search, 
   Filter, 
   ShoppingCart, 
   BookOpen, 
-  ChevronLeft, 
-  ChevronRight,
   Sparkles,
   Check
 } from 'lucide-react';
@@ -20,7 +19,8 @@ export const TrangChu = () => {
   // State dữ liệu sách và danh mục
   const [sachList, setSachList] = useState([]);
   const [danhMucList, setDanhMucList] = useState([]);
-  const [phanTrang, setPhanTrang] = useState({ page: 1, limit: 12, total: 0, totalPages: 1 });
+  const [trang, setTrang] = useState(1);
+  const [phanTrang, setPhanTrang] = useState(null);
   const [dangTai, setDangTai] = useState(true);
   const [thongBaoThem, setThongBaoThem] = useState('');
 
@@ -53,7 +53,7 @@ export const TrangChu = () => {
     const taiSach = async () => {
       try {
         const params = {
-          page: phanTrang.page,
+          page: trang,
           limit: 12,
           sort: sapXep === 'gia_ASC' ? 'price_asc' : sapXep === 'gia_DESC' ? 'price_desc' : (sapXep || 'newest')
         };
@@ -64,10 +64,8 @@ export const TrangChu = () => {
         const res = await api.get('/books', { params });
         if (daHuy) return;
         const dataPhanHoi = res.data.data;
-        setSachList(dataPhanHoi?.danhSach || (Array.isArray(dataPhanHoi) ? dataPhanHoi : []));
-        if (dataPhanHoi?.phanTrang) {
-          setPhanTrang(dataPhanHoi.phanTrang);
-        }
+        setSachList(dataPhanHoi.danhSach);
+        setPhanTrang(dataPhanHoi.phanTrang);
       } catch (err) {
         console.error('Lỗi tải sách:', err);
       } finally {
@@ -79,14 +77,14 @@ export const TrangChu = () => {
     return () => {
       daHuy = true;
     };
-  }, [phanTrang.page, danhMucChon, sapXep, tuKhoaDaLoc]);
+  }, [trang, danhMucChon, sapXep, tuKhoaDaLoc]);
 
   // Xử lý gửi form tìm kiếm
   const handleTimKiem = (e) => {
     e.preventDefault();
     setDangTai(true);
     setTuKhoaDaLoc(timKiem.trim());
-    setPhanTrang((prev) => ({ ...prev, page: 1 }));
+    setTrang(1);
   };
 
   // Thêm nhanh vào giỏ hàng
@@ -192,7 +190,7 @@ export const TrangChu = () => {
                 value={danhMucChon}
                 onChange={(e) => {
                   setDanhMucChon(e.target.value);
-                  setPhanTrang((prev) => ({ ...prev, page: 1 }));
+                  setTrang(1);
                 }}
               >
                 <option value="">Tất cả thể loại</option>
@@ -361,27 +359,7 @@ export const TrangChu = () => {
         )}
 
         {/* Phân Trang */}
-        {phanTrang.totalPages > 1 && (
-          <div className="flex justify-center items-center gap-2 mt-8">
-            <button
-              disabled={phanTrang.page <= 1}
-              onClick={() => setPhanTrang((prev) => ({ ...prev, page: prev.page - 1 }))}
-              className="btn btn-outline btn-sm"
-            >
-              <ChevronLeft size={16} /> Trước
-            </button>
-            <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0 8px' }}>
-              Trang {phanTrang.page} / {phanTrang.totalPages} (Tổng {phanTrang.total} cuốn)
-            </span>
-            <button
-              disabled={phanTrang.page >= phanTrang.totalPages}
-              onClick={() => setPhanTrang((prev) => ({ ...prev, page: prev.page + 1 }))}
-              className="btn btn-outline btn-sm"
-            >
-              Sau <ChevronRight size={16} />
-            </button>
-          </div>
-        )}
+        <PhanTrang phanTrang={phanTrang} onChuyenTrang={setTrang} donVi="cuốn" />
       </div>
     </div>
   );

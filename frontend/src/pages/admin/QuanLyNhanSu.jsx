@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import PhanTrang from '../../components/PhanTrang';
 import { 
   UserPlus, 
   Lock, 
@@ -19,6 +20,8 @@ export const QuanLyNhanSu = () => {
   const [dangTai, setDangTai] = useState(true);
   const [vaiTroLoc, setVaiTroLoc] = useState('');
   const [timKiem, setTimKiem] = useState('');
+  const [trang, setTrang] = useState(1);
+  const [phanTrang, setPhanTrang] = useState(null);
   const [thongBao, setThongBao] = useState('');
   const [loi, setLoi] = useState('');
 
@@ -34,16 +37,17 @@ export const QuanLyNhanSu = () => {
   });
   const [dangTao, setDangTao] = useState(false);
 
-  const taiNguoiDung = async () => {
+  const taiNguoiDung = async (trangCanTai = trang) => {
     setDangTai(true);
     try {
-      const params = { limit: 50 };
+      const params = { page: trangCanTai, limit: 20 };
       if (vaiTroLoc) params.role = vaiTroLoc;
       if (timKiem.trim()) params.search = timKiem.trim();
 
       const res = await api.get('/admin/users', { params });
       const ds = res.data.data.danhSach;
       setNguoiDungList(Array.isArray(ds) ? ds : []);
+      setPhanTrang(res.data.data.phanTrang);
     } catch (err) {
       setLoi(err.response?.data?.message || 'Không thể tải danh sách tài khoản');
     } finally {
@@ -55,13 +59,14 @@ export const QuanLyNhanSu = () => {
     let daHuy = false;
     const nap = async () => {
       try {
-        const params = { limit: 50 };
+        const params = { page: trang, limit: 20 };
         if (vaiTroLoc) params.role = vaiTroLoc;
 
         const res = await api.get('/admin/users', { params });
         if (daHuy) return;
         const ds = res.data.data.danhSach;
         setNguoiDungList(Array.isArray(ds) ? ds : []);
+        setPhanTrang(res.data.data.phanTrang);
       } catch (err) {
         if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải danh sách tài khoản');
       } finally {
@@ -72,11 +77,12 @@ export const QuanLyNhanSu = () => {
     return () => {
       daHuy = true;
     };
-  }, [vaiTroLoc]);
+  }, [vaiTroLoc, trang]);
 
   const handleTimKiem = (e) => {
     e.preventDefault();
-    taiNguoiDung();
+    setTrang(1);
+    taiNguoiDung(1);
   };
 
   // Khóa hoặc mở khóa tài khoản
@@ -198,7 +204,10 @@ export const QuanLyNhanSu = () => {
             <select
               className="form-input"
               value={vaiTroLoc}
-              onChange={(e) => setVaiTroLoc(e.target.value)}
+              onChange={(e) => {
+                setVaiTroLoc(e.target.value);
+                setTrang(1);
+              }}
             >
               <option value="">Tất cả vai trò</option>
               <option value="admin">Quản trị viên (Admin)</option>
@@ -373,6 +382,8 @@ export const QuanLyNhanSu = () => {
           </div>
         </div>
       )}
+
+      <PhanTrang phanTrang={phanTrang} onChuyenTrang={setTrang} donVi="tài khoản" />
     </div>
   );
 };
