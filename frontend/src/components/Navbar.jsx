@@ -10,46 +10,48 @@ import {
   Moon, 
   LogOut, 
   Package, 
-  ShieldCheck, 
-  Menu, 
-  X 
+  ShieldCheck 
 } from 'lucide-react';
 
 export const Navbar = () => {
   const { user, daDangNhap, dangXuat, theme, toggleTheme } = useAuth();
   const navigate = useNavigate();
   const [soLuongGio, setSoLuongGio] = useState(0);
-  const [menuMo, setMenuMo] = useState(false);
 
   // Tải số lượng mặt hàng trong giỏ nếu đã đăng nhập và là khách hàng
   useEffect(() => {
     const isCustomer = user?.role === 'customer' || user?.vaiTro === 'customer';
-    if (daDangNhap && isCustomer) {
-      const laySoLuongGio = async () => {
-        try {
-          const res = await api.get('/cart');
-          const cartData = res.data.data;
-          const tongSo = cartData?.tongSoLuong ?? (cartData?.cacMon || []).reduce(
-            (sum, item) => sum + (item.soLuong || 0), 
-            0
-          );
-          setSoLuongGio(tongSo);
-        } catch {
-          // Bỏ qua lỗi giỏ hàng ở navbar
-        }
-      };
-      laySoLuongGio();
-
-      // Lắng nghe cập nhật giỏ hàng từ trang khác
-      const handleCapNhatGio = () => laySoLuongGio();
-      window.addEventListener('booknest_cart_updated', handleCapNhatGio);
-      return () => window.removeEventListener('booknest_cart_updated', handleCapNhatGio);
-    } else {
-      setSoLuongGio(0);
+    if (!daDangNhap || !isCustomer) {
+      return;
     }
+
+    let daHuy = false;
+    const laySoLuongGio = async () => {
+      try {
+        const res = await api.get('/cart');
+        const cartData = res.data.data;
+        const tongSo = cartData?.tongSoLuong ?? (cartData?.cacMon || []).reduce(
+          (sum, item) => sum + (item.soLuong || 0), 
+          0
+        );
+        if (!daHuy) setSoLuongGio(tongSo);
+      } catch {
+        // Bỏ qua lỗi giỏ hàng ở navbar
+      }
+    };
+    laySoLuongGio();
+
+    // Lắng nghe cập nhật giỏ hàng từ trang khác
+    const handleCapNhatGio = () => laySoLuongGio();
+    window.addEventListener('booknest_cart_updated', handleCapNhatGio);
+    return () => {
+      daHuy = true;
+      window.removeEventListener('booknest_cart_updated', handleCapNhatGio);
+    };
   }, [daDangNhap, user]);
 
   const handleDangXuat = () => {
+    setSoLuongGio(0);
     dangXuat();
     navigate('/login');
   };

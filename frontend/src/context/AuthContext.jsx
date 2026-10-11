@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
     return localStorage.getItem('booknest_token') || null;
   });
 
-  const [loading, setLoading] = useState(true);
+  const [loading] = useState(false);
 
   // Quản lý theme Light / Dark: Mặc định Light (trắng ngà giấy sách)
   const [theme, setTheme] = useState(() => {
@@ -42,7 +42,6 @@ export const AuthProvider = ({ children }) => {
     };
 
     window.addEventListener('booknest_unauthorized', handleUnauthorized);
-    setLoading(false);
 
     return () => {
       window.removeEventListener('booknest_unauthorized', handleUnauthorized);
@@ -103,6 +102,7 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

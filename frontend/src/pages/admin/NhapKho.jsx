@@ -44,7 +44,28 @@ export const NhapKho = () => {
   };
 
   useEffect(() => {
-    taiDuLieu();
+    let daHuy = false;
+    const nap = async () => {
+      try {
+        const [resSach, resLichSu] = await Promise.all([
+          api.get('/books', { params: { limit: 100 } }),
+          api.get('/books/inventory/history')
+        ]);
+        if (daHuy) return;
+        const dsSach = resSach.data.data?.danhSach || resSach.data.data || [];
+        const dsLichSu = resLichSu.data.data || [];
+        setSachList(Array.isArray(dsSach) ? dsSach : []);
+        setLichSuNhap(Array.isArray(dsLichSu) ? dsLichSu : []);
+      } catch (err) {
+        if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải dữ liệu nhập kho');
+      } finally {
+        if (!daHuy) setDangTai(false);
+      }
+    };
+    nap();
+    return () => {
+      daHuy = true;
+    };
   }, []);
 
   const handleNhapKho = async (e) => {

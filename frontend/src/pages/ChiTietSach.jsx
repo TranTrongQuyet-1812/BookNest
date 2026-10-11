@@ -16,7 +16,7 @@ import {
 
 export const ChiTietSach = () => {
   const { id } = useParams();
-  const { daDangNhap, user } = useAuth();
+  const { daDangNhap } = useAuth();
 
   const [sach, setSach] = useState(null);
   const [danhGiaList, setDanhGiaList] = useState([]);
@@ -58,7 +58,32 @@ export const ChiTietSach = () => {
   };
 
   useEffect(() => {
-    taiDuLieu();
+    let daHuy = false;
+    const nap = async () => {
+      try {
+        const [resSach, resDanhGia] = await Promise.all([
+          api.get(`/books/${id}`),
+          api.get(`/books/${id}/reviews`)
+        ]);
+        if (daHuy) return;
+        setSach(resSach.data.data);
+        const dgData = resDanhGia.data.data;
+        setDanhGiaList(dgData?.danhSach || (Array.isArray(dgData) ? dgData : []));
+        if (dgData?.thongKe) {
+          setThongKeSao(dgData.thongKe);
+        } else if (resDanhGia.data.thongKe) {
+          setThongKeSao(resDanhGia.data.thongKe);
+        }
+      } catch (err) {
+        if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải thông tin cuốn sách này');
+      } finally {
+        if (!daHuy) setDangTai(false);
+      }
+    };
+    nap();
+    return () => {
+      daHuy = true;
+    };
   }, [id]);
 
   // Thêm sách vào giỏ hàng

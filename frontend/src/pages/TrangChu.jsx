@@ -8,7 +8,6 @@ import {
   Filter, 
   ShoppingCart, 
   BookOpen, 
-  ArrowRight, 
   ChevronLeft, 
   ChevronRight,
   Sparkles,
@@ -27,28 +26,31 @@ export const TrangChu = () => {
 
   // Bộ lọc tìm kiếm
   const [timKiem, setTimKiem] = useState('');
+  const [tuKhoaDaLoc, setTuKhoaDaLoc] = useState('');
   const [danhMucChon, setDanhMucChon] = useState('');
-  const [giaTu, setGiaTu] = useState('');
-  const [giaDen, setGiaDen] = useState('');
   const [sapXep, setSapXep] = useState('newest');
 
   // Tải danh mục một lần khi mount
   useEffect(() => {
+    let daHuy = false;
     const taiDanhMuc = async () => {
       try {
         const res = await api.get('/categories');
-        setDanhMucList(res.data.data || []);
+        if (!daHuy) setDanhMucList(res.data.data || []);
       } catch (err) {
         console.error('Lỗi tải danh mục:', err);
       }
     };
     taiDanhMuc();
+    return () => {
+      daHuy = true;
+    };
   }, []);
 
   // Tải danh sách sách mỗi khi query hoặc page đổi
   useEffect(() => {
+    let daHuy = false;
     const taiSach = async () => {
-      setDangTai(true);
       try {
         const params = {
           page: phanTrang.page,
@@ -56,12 +58,11 @@ export const TrangChu = () => {
           sort: sapXep === 'gia_ASC' ? 'price_asc' : sapXep === 'gia_DESC' ? 'price_desc' : (sapXep || 'newest')
         };
 
-        if (timKiem.trim()) params.search = timKiem.trim();
+        if (tuKhoaDaLoc) params.search = tuKhoaDaLoc;
         if (danhMucChon) params.categoryId = Number(danhMucChon);
-        if (giaTu) params.minPrice = Number(giaTu);
-        if (giaDen) params.maxPrice = Number(giaDen);
 
         const res = await api.get('/books', { params });
+        if (daHuy) return;
         const dataPhanHoi = res.data.data;
         setSachList(dataPhanHoi?.danhSach || (Array.isArray(dataPhanHoi) ? dataPhanHoi : []));
         if (dataPhanHoi?.phanTrang) {
@@ -70,36 +71,22 @@ export const TrangChu = () => {
       } catch (err) {
         console.error('Lỗi tải sách:', err);
       } finally {
-        setDangTai(false);
+        if (!daHuy) setDangTai(false);
       }
     };
 
     taiSach();
-  }, [phanTrang.page, danhMucChon, sapXep]);
+    return () => {
+      daHuy = true;
+    };
+  }, [phanTrang.page, danhMucChon, sapXep, tuKhoaDaLoc]);
 
   // Xử lý gửi form tìm kiếm
   const handleTimKiem = (e) => {
     e.preventDefault();
-    setPhanTrang((prev) => ({ ...prev, page: 1 }));
-    // Kích hoạt reload sách
-    const params = {
-      page: 1,
-      limit: 12,
-      sort: sapXep === 'gia_ASC' ? 'price_asc' : sapXep === 'gia_DESC' ? 'price_desc' : (sapXep || 'newest')
-    };
-    if (timKiem.trim()) params.search = timKiem.trim();
-    if (danhMucChon) params.categoryId = Number(danhMucChon);
-    if (giaTu) params.minPrice = Number(giaTu);
-    if (giaDen) params.maxPrice = Number(giaDen);
-
     setDangTai(true);
-    api.get('/books', { params })
-      .then((res) => {
-        const dataPhanHoi = res.data.data;
-        setSachList(dataPhanHoi?.danhSach || (Array.isArray(dataPhanHoi) ? dataPhanHoi : []));
-        if (dataPhanHoi?.phanTrang) setPhanTrang(dataPhanHoi.phanTrang);
-      })
-      .finally(() => setDangTai(false));
+    setTuKhoaDaLoc(timKiem.trim());
+    setPhanTrang((prev) => ({ ...prev, page: 1 }));
   };
 
   // Thêm nhanh vào giỏ hàng

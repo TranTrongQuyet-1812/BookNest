@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { 
-  BarChart3, 
   DollarSign, 
   ShoppingBag, 
   BookOpen, 
@@ -20,26 +19,24 @@ export const DashboardThongKe = () => {
   const [denNgay, setDenNgay] = useState('');
   const [dangTai, setDangTai] = useState(true);
 
-  const taiDuLieu = async () => {
+  const taiThongKe = async (tu, den) => {
     setDangTai(true);
     try {
       const params = {};
-      if (tuNgay) params.tuNgay = tuNgay;
-      if (denNgay) params.denNgay = denNgay;
+      if (tu) params.tuNgay = tu;
+      if (den) params.denNgay = den;
 
-      // 1. Thống kê tổng quan
-      const resTongQuan = await api.get('/admin/stats/overview', { params });
-      setTongQuan(resTongQuan.data.data || resTongQuan.data.duLieu || {});
+      const [resTongQuan, resTopSach, resTyLe] = await Promise.all([
+        api.get('/admin/stats/overview', { params }),
+        api.get('/admin/stats/top-books', { params: { limit: 5 } }),
+        api.get('/admin/stats/order-rates')
+      ]);
 
-      // 2. Top sách bán chạy
-      const resTopSach = await api.get('/admin/stats/top-books', { params: { limit: 5 } });
-      setTopSach(resTopSach.data.data || resTopSach.data.duLieu || []);
-
-      // 3. Tỷ lệ đơn hàng
-      const resTyLe = await api.get('/admin/stats/order-rates');
-      const dataTyLe = resTyLe.data.data || resTyLe.data.duLieu || {};
+      setTongQuan(resTongQuan.data.data || {});
+      setTopSach(resTopSach.data.data || []);
+      const dataTyLe = resTyLe.data.data || {};
       setTyLeDon(dataTyLe.chiTiet || (Array.isArray(dataTyLe) ? dataTyLe : []));
-      setTongDonToanHeThong(dataTyLe.tongSoDon ?? resTyLe.data.tongDon ?? 0);
+      setTongDonToanHeThong(dataTyLe.tongSoDon ?? 0);
     } catch (err) {
       console.error('Lỗi tải số liệu thống kê:', err);
     } finally {
@@ -48,12 +45,36 @@ export const DashboardThongKe = () => {
   };
 
   useEffect(() => {
-    taiDuLieu();
+    let daHuy = false;
+    const napDuLieuDau = async () => {
+      try {
+        const [resTongQuan, resTopSach, resTyLe] = await Promise.all([
+          api.get('/admin/stats/overview'),
+          api.get('/admin/stats/top-books', { params: { limit: 5 } }),
+          api.get('/admin/stats/order-rates')
+        ]);
+
+        if (daHuy) return;
+        setTongQuan(resTongQuan.data.data || {});
+        setTopSach(resTopSach.data.data || []);
+        const dataTyLe = resTyLe.data.data || {};
+        setTyLeDon(dataTyLe.chiTiet || (Array.isArray(dataTyLe) ? dataTyLe : []));
+        setTongDonToanHeThong(dataTyLe.tongSoDon ?? 0);
+      } catch (err) {
+        console.error('Lỗi tải số liệu thống kê:', err);
+      } finally {
+        if (!daHuy) setDangTai(false);
+      }
+    };
+    napDuLieuDau();
+    return () => {
+      daHuy = true;
+    };
   }, []);
 
   const handleLocNgay = (e) => {
     e.preventDefault();
-    taiDuLieu();
+    taiThongKe(tuNgay, denNgay);
   };
 
   const dinhDangTien = (soTien) => {

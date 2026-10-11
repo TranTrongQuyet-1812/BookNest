@@ -1,5 +1,4 @@
-import React from 'react';
-import { BookOpen, Heart, Shield, Code } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 
 export const Footer = () => {
   return (

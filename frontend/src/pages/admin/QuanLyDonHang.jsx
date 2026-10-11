@@ -10,7 +10,6 @@ import {
   Filter, 
   Check, 
   AlertCircle, 
-  ArrowRight, 
   Ban 
 } from 'lucide-react';
 
@@ -21,9 +20,6 @@ export const QuanLyDonHang = () => {
   const [thongBao, setThongBao] = useState('');
   const [loi, setLoi] = useState('');
   const [phanTrang, setPhanTrang] = useState({ page: 1, limit: 15, total: 0, totalPages: 1 });
-
-  // Modal Chi Tiết & Hủy Đơn
-  const [donDangXem, setDonDangXem] = useState(null);
 
   const taiDonHang = async () => {
     setDangTai(true);
@@ -48,7 +44,32 @@ export const QuanLyDonHang = () => {
   };
 
   useEffect(() => {
-    taiDonHang();
+    let daHuy = false;
+    const nap = async () => {
+      try {
+        const params = {
+          page: phanTrang.page,
+          limit: 15
+        };
+        if (trangThaiLoc) params.status = trangThaiLoc;
+
+        const res = await api.get('/admin/orders', { params });
+        if (daHuy) return;
+        const ds = res.data.data?.danhSach || res.data.data || [];
+        setDonHangList(Array.isArray(ds) ? ds : []);
+        if (res.data.data?.phanTrang) {
+          setPhanTrang(res.data.data.phanTrang);
+        }
+      } catch (err) {
+        if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải danh sách đơn hàng');
+      } finally {
+        if (!daHuy) setDangTai(false);
+      }
+    };
+    nap();
+    return () => {
+      daHuy = true;
+    };
   }, [phanTrang.page, trangThaiLoc]);
 
   // Luân chuyển trạng thái đơn hàng kế tiếp (State Machine)

@@ -36,7 +36,26 @@ export const DonHangCuaToi = () => {
   };
 
   useEffect(() => {
-    taiDonHang();
+    let daHuy = false;
+    const nap = async () => {
+      try {
+        const params = {};
+        if (trangThaiLoc) params.status = trangThaiLoc;
+
+        const res = await api.get('/orders/my-orders', { params });
+        if (daHuy) return;
+        const ds = res.data.data?.danhSach || res.data.data || [];
+        setDonHangList(Array.isArray(ds) ? ds : []);
+      } catch (err) {
+        if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải danh sách đơn hàng');
+      } finally {
+        if (!daHuy) setDangTai(false);
+      }
+    };
+    nap();
+    return () => {
+      daHuy = true;
+    };
   }, [trangThaiLoc]);
 
   // Hủy đơn hàng PENDING

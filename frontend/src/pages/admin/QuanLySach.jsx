@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { 
-  BookOpen, 
   Plus, 
   Edit, 
   Eye, 
@@ -58,7 +57,28 @@ export const QuanLySach = () => {
   };
 
   useEffect(() => {
-    taiDuLieu();
+    let daHuy = false;
+    const nap = async () => {
+      try {
+        const [resSach, resDanhMuc] = await Promise.all([
+          api.get('/books', { params: { limit: 100 } }),
+          api.get('/categories')
+        ]);
+        if (daHuy) return;
+        const dsSach = resSach.data.data?.danhSach || resSach.data.data || [];
+        const dsDanhMuc = resDanhMuc.data.data || [];
+        setSachList(Array.isArray(dsSach) ? dsSach : []);
+        setDanhMucList(Array.isArray(dsDanhMuc) ? dsDanhMuc : []);
+      } catch (err) {
+        if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải dữ liệu sách');
+      } finally {
+        if (!daHuy) setDangTai(false);
+      }
+    };
+    nap();
+    return () => {
+      daHuy = true;
+    };
   }, []);
 
   // Mở modal thêm sách mới

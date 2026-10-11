@@ -3,10 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { 
-  CreditCard, 
   MapPin, 
-  Phone, 
-  User, 
   CheckCircle, 
   AlertCircle, 
   ArrowLeft, 
@@ -26,7 +23,7 @@ export const ThanhToan = () => {
   const [form, setForm] = useState({
     tenNguoiNhan: user?.fullName || user?.hoTen || '',
     soDienThoaiNhan: user?.soDienThoai || '',
-    diaChiGiaoHang: user?.diaChi || '',
+    diaChiGiaoHang: user?.diaChiMacDinh || user?.diaChi || '',
     ghiChu: ''
   });
 
@@ -35,7 +32,7 @@ export const ThanhToan = () => {
       try {
         const res = await api.get('/cart');
         setGioHang(res.data.data);
-      } catch (err) {
+      } catch {
         setLoi('Không thể tải thông tin giỏ hàng');
       } finally {
         setDangTai(false);

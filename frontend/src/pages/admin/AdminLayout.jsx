@@ -4,7 +4,6 @@ import { useAuth } from '../../context/AuthContext';
 import { 
   BarChart3, 
   BookOpen, 
-  Layers, 
   ClipboardList, 
   Users, 
   LogOut, 

@@ -21,20 +21,23 @@ export const ChiTietDonHang = () => {
   const [dangTai, setDangTai] = useState(true);
   const [loi, setLoi] = useState('');
 
-  const taiChiTiet = async () => {
-    setDangTai(true);
-    try {
-      const res = await api.get(`/orders/${id}`);
-      setDonHang(res.data.data);
-    } catch (err) {
-      setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Không tìm thấy thông tin đơn hàng này (IDOR Protected)');
-    } finally {
-      setDangTai(false);
-    }
-  };
-
   useEffect(() => {
-    taiChiTiet();
+    let daHuy = false;
+    const napChiTiet = async () => {
+      try {
+        const res = await api.get(`/orders/${id}`);
+        if (daHuy) return;
+        setDonHang(res.data.data);
+      } catch (err) {
+        if (!daHuy) setLoi(err.response?.data?.message || err.response?.data?.thongDiep || 'Không tìm thấy thông tin đơn hàng này (IDOR Protected)');
+      } finally {
+        if (!daHuy) setDangTai(false);
+      }
+    };
+    napChiTiet();
+    return () => {
+      daHuy = true;
+    };
   }, [id]);
 
   const dinhDangTien = (soTien) => {

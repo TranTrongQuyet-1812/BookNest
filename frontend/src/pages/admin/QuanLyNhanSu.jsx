@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { 
-  Users, 
   UserPlus, 
   Lock, 
   Unlock, 
-  ShieldCheck, 
   Search, 
   Filter, 
   Check, 
@@ -54,7 +52,26 @@ export const QuanLyNhanSu = () => {
   };
 
   useEffect(() => {
-    taiNguoiDung();
+    let daHuy = false;
+    const nap = async () => {
+      try {
+        const params = { limit: 50 };
+        if (vaiTroLoc) params.role = vaiTroLoc;
+
+        const res = await api.get('/admin/users', { params });
+        if (daHuy) return;
+        const ds = res.data.data?.danhSach || res.data.data || [];
+        setNguoiDungList(Array.isArray(ds) ? ds : []);
+      } catch (err) {
+        if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải danh sách tài khoản');
+      } finally {
+        if (!daHuy) setDangTai(false);
+      }
+    };
+    nap();
+    return () => {
+      daHuy = true;
+    };
   }, [vaiTroLoc]);
 
   const handleTimKiem = (e) => {

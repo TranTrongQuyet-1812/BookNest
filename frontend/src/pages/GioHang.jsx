@@ -33,7 +33,22 @@ export const GioHang = () => {
   };
 
   useEffect(() => {
-    taiGioHang();
+    let daHuy = false;
+    const nap = async () => {
+      try {
+        const res = await api.get('/cart');
+        if (daHuy) return;
+        setGioHang(res.data.data);
+      } catch (err) {
+        if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải giỏ hàng của bạn');
+      } finally {
+        if (!daHuy) setDangTai(false);
+      }
+    };
+    nap();
+    return () => {
+      daHuy = true;
+    };
   }, []);
 
   // Thay đổi số lượng mặt hàng trong giỏ
