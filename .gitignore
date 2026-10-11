@@ -51,3 +51,7 @@ scripts/
 AGENTS.md
 CLAUDE.md
 GEMINI.md
+
+# Công cụ nội bộ (kiểm thử, cào dữ liệu), không đẩy lên GitHub
+Tool/
+TesttingTool/

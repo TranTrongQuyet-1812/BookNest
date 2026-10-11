@@ -14,7 +14,7 @@ Dự án chú trọng đặc biệt vào:
 - **Chuẩn hóa Cơ sở dữ liệu 3NF:** 9 bảng quan hệ chặt chẽ, 12 khóa ngoại `ON DELETE NO ACTION`, bảng mã tiếng Việt, 15 chỉ mục (Index) tối ưu hiệu năng (gồm 10 chỉ mục cốt lõi và 5 chỉ mục tối ưu hóa bổ sung gồm Covering Indexes tính sao và doanh thu).
 - **Bảo mật & Phân quyền RBAC:** Xác thực JWT Stateless kết hợp kiểm soát truy cập dựa trên vai trò (4 vai trò: `customer`, `librarian`, `order_staff`, `admin`), mã hóa mật khẩu Bcrypt với salt rounds 10, chống lộ thông tin với IDOR Guard, bảo vệ HTTP Headers với **Helmet**, chống brute-force đăng nhập với **express-rate-limit**.
 - **Toàn vẹn Dữ liệu & Xử lý Đồng thời:** Giao dịch đặt hàng nguyên tử (Database Transaction kết hợp chỉ dẫn khóa dòng `tableHint: TableHints.UPDLOCK` sinh `WITH (UPDLOCK)` thực thi trên MS SQL Server) chống bán âm kho (Race Condition Prevention), thuật toán sắp xếp khóa dòng `MaSach ASC` chống Deadlock 1205, máy trạng thái luân chuyển đơn hàng 1 chiều.
-- **Tài liệu hóa API & Kiểm thử tự động:** Swagger UI OpenAPI 3.0 tại `/api-docs` mô tả đầy đủ **mọi endpoint** (có test tự động đối chiếu với các route đã đăng ký), chuẩn RESTful không route alias, hỗ trợ cả kiểm thử đơn vị thuần an toàn (Pure Unit Tests 27/27 pass không chạm DB) và kiểm thử tích hợp (Integration Tests).
+- **Tài liệu hóa API & Kiểm thử tự động:** Swagger UI OpenAPI 3.0 tại `/api-docs` mô tả đầy đủ **mọi endpoint**, chuẩn RESTful không route alias.
 
 ---
 
@@ -25,7 +25,6 @@ Dự án chú trọng đặc biệt vào:
 - **ORM & Database Driver:** Sequelize 6.x & Tedious 20.x.
 - **Validation:** Joi validator.
 - **API Documentation:** Swagger UI Express & Swagger JSDoc.
-- **Automated Testing:** Jest & Supertest (Kiểm thử logic thuần & tích hợp).
 - **Frontend SPA:** React 19, Vite, React Router DOM, Axios, Lucide Icons, Custom Warm Paper Design System (Hỗ trợ 2 chế độ: Sáng Giấy Ngà `#FBF9F5` và Tối Dịu Mắt `#18181B`).
 
 ---
@@ -48,9 +47,6 @@ Project_MonBE/
 │   │   ├── routes/             # Định tuyến API theo phân hệ (7 router files)
 │   │   ├── app.js              # Express Application, Helmet & Routing
 │   │   └── server.js           # Khởi động máy chủ cổng 5000
-│   └── tests/                  # Bộ kiểm thử tự động Jest & Supertest
-│       ├── unit_pure_logic.test.js # 27 pure unit tests (chạy an toàn, không đụng DB)
-│       └── ...                 # 8 integration test suites
 ├── frontend/                   # Ứng dụng giao diện khách hàng & quản trị (Vite React)
 │   ├── src/
 │   │   ├── components/         # Navbar, Footer, Route Guards, Star Rating
@@ -90,18 +86,7 @@ Project_MonBE/
    ```bash
    npm install
    ```
-4. Chạy kiểm thử tự động:
-   - **Chế độ kiểm thử thuần (Khuyên dùng khi dev - An toàn, không chạm DB):**
-     ```bash
-     npx jest tests/unit_pure_logic.test.js
-     # Kết quả: 27/27 tests passed (State Machine, RBAC, IDOR, Bcrypt, Deadlock Sort, Helmet, Rate Limit, UPDLOCK, Swagger)
-     ```
-   - **Chế độ kiểm thử tích hợp (Yêu cầu CSDL thật đã nạp seed):**
-     ```bash
-     npm test
-     # Chạy toàn bộ 9 suites kiểm thử tích hợp (đã trang bị tự hoàn kho và dọn dẹp)
-     ```
-5. Khởi động máy chủ backend:
+4. Khởi động máy chủ backend:
    ```bash
    npm run dev
    # Backend chạy tại: http://localhost:5000
