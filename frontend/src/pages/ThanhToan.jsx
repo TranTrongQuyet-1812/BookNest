@@ -33,7 +33,8 @@ export const ThanhToan = () => {
     soDienThoaiNhan: '',
     email: '',
     diaChiGiaoHang: '',
-    ghiChu: ''
+    ghiChu: '',
+    luuMacDinh: true
   });
 
   useEffect(() => {
@@ -101,7 +102,8 @@ export const ThanhToan = () => {
           tenNguoiNhan: form.tenNguoiNhan,
           soDienThoaiNhan: form.soDienThoaiNhan,
           diaChiGiaoHang: form.diaChiGiaoHang,
-          ghiChu: form.ghiChu || undefined
+          ghiChu: form.ghiChu || undefined,
+          luuMacDinh: form.luuMacDinh
         });
 
         maDonHang = res.data.data?.MaDonHang;
@@ -374,6 +376,29 @@ export const ThanhToan = () => {
                   style={{ borderRadius: '6px' }}
                 />
               </div>
+
+              {/* Tùy chọn lưu làm mặc định cho thành viên */}
+              {daDangNhap && (
+                <div style={{
+                  marginTop: '0.85rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '0.5rem 0.25rem'
+                }}>
+                  <input
+                    type="checkbox"
+                    id="luuMacDinh"
+                    name="luuMacDinh"
+                    checked={form.luuMacDinh}
+                    onChange={(e) => setForm({ ...form, luuMacDinh: e.target.checked })}
+                    style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: 'var(--primary)' }}
+                  />
+                  <label htmlFor="luuMacDinh" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', cursor: 'pointer', userSelect: 'none' }}>
+                    Tự động lưu thông tin này làm địa chỉ mặc định cho các lần đặt sách sau
+                  </label>
+                </div>
+              )}
 
               {/* Thông tin phương thức thanh toán */}
               <div style={{

@@ -121,7 +121,8 @@ const luatDatHang = Joi.object({
     'string.max': 'Địa chỉ giao hàng không được vượt quá 255 ký tự',
     'any.required': 'Địa chỉ giao hàng là bắt buộc'
   }),
-  ghiChu: Joi.string().trim().max(500).allow(null, '')
+  ghiChu: Joi.string().trim().max(500).allow(null, ''),
+  luuMacDinh: Joi.boolean().default(true)
 });
 
 // Schema truy vấn danh sách đơn hàng
@@ -164,6 +165,9 @@ const luatKhachHuyDon = Joi.object({
  *               ghiChu:
  *                 type: string
  *                 example: Giao hàng vào giờ hành chính
+ *               luuMacDinh:
+ *                 type: boolean
+ *                 example: true
  *     responses:
  *       201:
  *         description: Đặt hàng thành công

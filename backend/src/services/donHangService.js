@@ -128,6 +128,21 @@ async function datHang(maNguoiDung, thongTinGiaoHang) {
     // Dọn sạch giỏ hàng của khách sau khi đặt thành công
     await GioHang.destroy({ where: { MaNguoiDung: maNguoiDung }, transaction: t });
 
+    // Tự động lưu/cập nhật thông tin nhận hàng (SĐT, Địa chỉ mặc định) vào hồ sơ người dùng nếu đang trống hoặc có yêu cầu
+    const nguoiDungHienTai = await NguoiDung.findByPk(maNguoiDung, { transaction: t });
+    if (nguoiDungHienTai) {
+      const capNhat = {};
+      if (!nguoiDungHienTai.SoDienThoai || thongTinGiaoHang.luuMacDinh) {
+        capNhat.SoDienThoai = thongTinGiaoHang.soDienThoaiNhan;
+      }
+      if (!nguoiDungHienTai.DiaChiMacDinh || thongTinGiaoHang.luuMacDinh) {
+        capNhat.DiaChiMacDinh = thongTinGiaoHang.diaChiGiaoHang;
+      }
+      if (Object.keys(capNhat).length > 0) {
+        await nguoiDungHienTai.update(capNhat, { transaction: t });
+      }
+    }
+
     await t.commit();
     return layChiTietDonHang(donHangMoi.MaDonHang);
   } catch (loi) {
