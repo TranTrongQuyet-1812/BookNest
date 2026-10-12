@@ -213,23 +213,23 @@ export const QuanLySach = () => {
     <div>
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <div>
-          <h1 className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700 }}>
-            {coQuyenSuaSach ? 'Quản Lý Sách & Danh Mục' : 'Tra Cứu Sách & Tồn Kho'}
+          <h1 style={{ fontSize: '1.45rem', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
+            {coQuyenSuaSach ? 'Quản Lý Sách & Thể Loại' : 'Tra Cứu Sách & Tồn Kho'}
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
             {coQuyenSuaSach
-              ? 'Quản trị danh mục ấn phẩm, cập nhật giá và kiểm soát ẩn/hiện sách'
+              ? 'Quản trị danh mục ấn phẩm, cập nhật giá bán và kiểm soát trạng thái kinh doanh'
               : 'Tra cứu danh mục sách, theo dõi tồn kho và thông tin tác phẩm (Chế độ chỉ đọc)'}
           </p>
         </div>
 
         {coQuyenSuaSach && (
           <div className="flex gap-2">
-            <button onClick={() => setModalDanhMucMo(true)} className="btn btn-outline">
-              <FolderPlus size={16} /> Thêm Thể Loại
+            <button onClick={() => setModalDanhMucMo(true)} className="btn btn-outline btn-sm">
+              <FolderPlus size={15} /> Thêm Thể Loại
             </button>
-            <button onClick={moModalThemSach} className="btn btn-primary">
-              <Plus size={16} /> Thêm Sách Mới
+            <button onClick={moModalThemSach} className="btn btn-primary btn-sm">
+              <Plus size={15} /> Thêm Sách Mới
             </button>
           </div>
         )}
@@ -247,32 +247,32 @@ export const QuanLySach = () => {
       )}
 
       {/* Ô tìm kiếm nhanh */}
-      <form onSubmit={handleTimKiem} className="card mb-6 flex gap-2" style={{ padding: '0.75rem 1rem' }}>
+      <form onSubmit={handleTimKiem} className="card mb-6 flex gap-2" style={{ padding: '0.65rem 0.85rem' }}>
         <div style={{ position: 'relative', flex: 1 }}>
           <input
             type="text"
             className="form-input"
-            style={{ paddingLeft: '2.25rem' }}
+            style={{ paddingLeft: '2.25rem', fontSize: '0.875rem' }}
             placeholder="Tìm sách theo tựa đề hoặc tác giả..."
             value={timKiem}
             onChange={(e) => setTimKiem(e.target.value)}
           />
-          <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--adm-text-muted)' }} />
         </div>
-        <button type="submit" className="btn btn-primary">Tìm</button>
+        <button type="submit" className="btn btn-primary btn-sm">Tìm</button>
       </form>
 
       {/* Bảng Danh Sách Sách */}
       {dangTai ? (
         <div className="flex justify-center py-12">
-          <p className="font-serif" style={{ color: 'var(--text-muted)' }}>Đang nạp dữ liệu sách...</p>
+          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.875rem' }}>Đang nạp dữ liệu sách...</p>
         </div>
       ) : (
-        <div className="table-container">
-          <table className="table">
+        <div className="admindash-table-wrap">
+          <table className="admindash-table">
             <thead>
               <tr>
-                <th>Mã</th>
+                <th style={{ width: '70px' }}>Mã</th>
                 <th>Tác Phẩm & Tác Giả</th>
                 <th>Thể Loại</th>
                 <th>Giá Bán</th>
@@ -293,25 +293,25 @@ export const QuanLySach = () => {
 
                 return (
                   <tr key={ma}>
-                    <td style={{ fontWeight: 600, color: 'var(--text-muted)' }}>#{ma}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--adm-text-muted)' }} className="tabular-nums">#{ma}</td>
                     <td>
-                      <div style={{ fontWeight: 600 }}>{ten}</div>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--adm-text-main)' }}>{ten}</div>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)' }}>
                         Tác giả: {tg}
                       </span>
                     </td>
                     <td>
-                      <span className="badge badge-role">
+                      <span className="badge badge-role" style={{ fontSize: '0.72rem' }}>
                         {dm}
                       </span>
                     </td>
-                    <td style={{ fontWeight: 600, color: 'var(--primary)' }}>
+                    <td style={{ fontWeight: 600, color: 'var(--adm-primary)' }} className="tabular-nums">
                       {dinhDangTien(gia)}
                     </td>
-                    <td>
+                    <td className="tabular-nums">
                       <span style={{
                         fontWeight: 600,
-                        color: ton <= 5 ? 'var(--danger)' : 'var(--text-main)'
+                        color: ton <= 5 ? 'var(--adm-danger)' : 'var(--adm-text-main)'
                       }}>
                         {ton} cuốn
                       </span>
@@ -337,7 +337,7 @@ export const QuanLySach = () => {
                             <button
                               onClick={() => handleToggleAnSach(sach)}
                               className="btn btn-outline btn-sm"
-                              style={{ color: an ? 'var(--accent)' : 'var(--danger)' }}
+                              style={{ color: an ? 'var(--adm-success)' : 'var(--adm-danger)', borderColor: an ? '#A7F3D0' : '#FECACA' }}
                               title={an ? 'Khôi phục hiển thị' : 'Ẩn sách khỏi khách hàng'}
                             >
                               {an ? <Eye size={14} /> : <EyeOff size={14} />}
@@ -370,12 +370,12 @@ export const QuanLySach = () => {
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '600px' }}>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-serif" style={{ fontSize: '1.25rem', fontWeight: 700 }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--adm-text-main)' }}>
                 {coQuyenSuaSach
                   ? (sachDangSua ? 'Chỉnh Sửa Sách' : 'Thêm Tác Phẩm Mới')
                   : 'Chi Tiết Tác Phẩm (Chỉ Đọc)'}
               </h3>
-              <button onClick={() => setModalSachMo(false)} style={{ color: 'var(--text-muted)' }}>
+              <button onClick={() => setModalSachMo(false)} style={{ color: 'var(--adm-text-muted)' }}>
                 <X size={20} />
               </button>
             </div>
@@ -505,7 +505,7 @@ export const QuanLySach = () => {
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '440px' }}>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-serif" style={{ fontSize: '1.2rem', fontWeight: 700 }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--adm-text-main)' }}>
                 Thêm Thể Loại Sách
               </h3>
               <button onClick={() => setModalDanhMucMo(false)}>

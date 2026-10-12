@@ -51,24 +51,38 @@ const AdminIndexRedirect = () => {
   return <Navigate to="/unauthorized" replace />;
 };
 
-// Component điều phối tuyến đường kết hợp hiệu ứng chuyển trang đóng băng (Freeze Route)
+// Component điều phối tuyến đường kết hợp hiệu ứng chuyển trang đóng băng (Freeze Route) cho Storefront
 const AppContent = () => {
   const location = useLocation();
+  const laKhuAdmin = location.pathname.startsWith('/admin');
   const [displayLocation, setDisplayLocation] = useState(location);
 
-  // Khi rèm đã che kín 100% màn hình, mới hoán đổi sang trang mới!
+  // Khi rèm đã che kín 100% màn hình, mới hoán đổi sang trang mới cho Storefront!
   const handleCurtainCovered = useCallback(() => {
     setDisplayLocation(location);
   }, [location]);
 
+  // Nếu là khu vực Admindash, lập tức đồng bộ route không chờ animation
+  React.useEffect(() => {
+    if (laKhuAdmin) {
+      setDisplayLocation(location);
+    }
+  }, [location, laKhuAdmin]);
+
   return (
     <>
-      <PaperBackgroundCanvas />
-      <PageLoader 
-        location={location} 
-        onCurtainCovered={handleCurtainCovered} 
-      />
-      <Routes location={displayLocation}>
+      {/* Nền giấy 3D Canvas chỉ dành cho Storefront; Admindash dùng nền phẳng hiệu năng cao */}
+      {!laKhuAdmin && <PaperBackgroundCanvas />}
+
+      {/* Rèm che chuyển trang điện ảnh chỉ dùng cho Storefront; Admindash chuyển trang tức thì theo chuẩn B2B Operate */}
+      {!laKhuAdmin && (
+        <PageLoader 
+          location={location} 
+          onCurtainCovered={handleCurtainCovered} 
+        />
+      )}
+
+      <Routes location={laKhuAdmin ? location : displayLocation}>
         {/* ==================== CÁC ROUTE STOREFRONT ==================== */}
         <Route path="/" element={<StorefrontLayout><TrangChu /></StorefrontLayout>} />
         <Route path="/books" element={<StorefrontLayout><TrangChu /></StorefrontLayout>} />

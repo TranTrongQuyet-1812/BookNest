@@ -146,15 +146,15 @@ export const QuanLyNhanSu = () => {
   const layBadgeVaiTro = (vaiTro) => {
     switch (vaiTro) {
       case 'quan_tri':
-        return <span className="badge" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>Quản trị viên</span>;
+        return <span className="badge" style={{ backgroundColor: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE' }}>Quản trị viên</span>;
       case 'thu_kho':
-        return <span className="badge badge-confirmed">Thủ kho</span>;
+        return <span className="badge" style={{ backgroundColor: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0' }}>Thủ kho</span>;
       case 'thu_thu':
-        return <span className="badge badge-pending">Thủ thư</span>;
+        return <span className="badge" style={{ backgroundColor: '#FFFBEB', color: '#B45309', border: '1px solid #FDE68A' }}>Thủ thư</span>;
       case 'khach_hang':
-        return <span className="badge badge-role">Khách hàng</span>;
+        return <span className="badge" style={{ backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1' }}>Khách hàng</span>;
       default:
-        return <span className="badge">{vaiTro}</span>;
+        return <span className="badge badge-role">{vaiTro}</span>;
     }
   };
 
@@ -162,48 +162,70 @@ export const QuanLyNhanSu = () => {
     <div>
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <div>
-          <h1 className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700 }}>
-            Quản Lý Nhân Sự & Người Dùng
+          <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--adm-text-main)', letterSpacing: '-0.02em' }}>
+            Quản Lý Nhân Sự & Khách Hàng
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
             Cấp tài khoản nhân viên vận hành và quản lý quyền truy cập hệ thống
           </p>
         </div>
 
-        <button onClick={() => setModalMo(true)} className="btn btn-primary">
-          <UserPlus size={16} /> Tạo Tài Khoản Nhân Sự
+        <button onClick={() => setModalMo(true)} className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+          <UserPlus size={15} /> Tạo Tài Khoản Nhân Sự
         </button>
       </div>
 
       {thongBao && (
-        <div className="alert alert-success mb-4">
-          <Check size={18} /> <span>{thongBao}</span>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          padding: '0.75rem 1rem',
+          borderRadius: '6px',
+          backgroundColor: 'var(--adm-success-subtle)',
+          color: 'var(--adm-success)',
+          border: '1px solid #A7F3D0',
+          fontSize: '0.85rem',
+          marginBottom: '1rem'
+        }}>
+          <Check size={16} /> <span>{thongBao}</span>
         </div>
       )}
       {loi && (
-        <div className="alert alert-danger mb-4">
-          <AlertCircle size={18} /> <span>{loi}</span>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          padding: '0.75rem 1rem',
+          borderRadius: '6px',
+          backgroundColor: 'var(--adm-danger-subtle)',
+          color: 'var(--adm-danger)',
+          border: '1px solid #FECACA',
+          fontSize: '0.85rem',
+          marginBottom: '1rem'
+        }}>
+          <AlertCircle size={16} /> <span>{loi}</span>
         </div>
       )}
 
       {/* Bộ Lọc & Tìm Kiếm */}
-      <div className="card mb-6" style={{ padding: '1rem' }}>
+      <div className="card mb-5" style={{ padding: '0.85rem 1.25rem' }}>
         <form onSubmit={handleTimKiem} className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div style={{ position: 'relative' }}>
             <input
               type="text"
               placeholder="Tìm theo tên hoặc email..."
-              className="form-input"
+              className="form-input w-full"
               style={{ paddingLeft: '2.25rem' }}
               value={timKiem}
               onChange={(e) => setTimKiem(e.target.value)}
             />
-            <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--adm-text-muted)' }} />
           </div>
 
           <div>
             <select
-              className="form-input"
+              className="form-input w-full"
               value={vaiTroLoc}
               onChange={(e) => {
                 setVaiTroLoc(e.target.value);
@@ -219,8 +241,8 @@ export const QuanLyNhanSu = () => {
           </div>
 
           <div>
-            <button type="submit" className="btn btn-outline w-full">
-              <Filter size={16} /> Lọc Danh Sách
+            <button type="submit" className="btn btn-outline w-full" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+              <Filter size={15} /> Lọc Danh Sách
             </button>
           </div>
         </form>
@@ -229,19 +251,19 @@ export const QuanLyNhanSu = () => {
       {/* Bảng Danh Sách Người Dùng */}
       {dangTai ? (
         <div className="flex justify-center py-12">
-          <p className="font-serif" style={{ color: 'var(--text-muted)' }}>Đang nạp danh sách tài khoản...</p>
+          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.9rem' }}>Đang nạp danh sách tài khoản...</p>
         </div>
       ) : (
-        <div className="table-container">
-          <table className="table">
+        <div className="admindash-table-wrap">
+          <table className="admindash-table">
             <thead>
               <tr>
-                <th>Mã</th>
+                <th style={{ width: '70px' }}>Mã</th>
                 <th>Họ Tên & Email</th>
-                <th>Vai Trò</th>
-                <th>Số Điện Thoại</th>
-                <th>Trạng Thái</th>
-                <th style={{ textAlign: 'right' }}>Thao Tác</th>
+                <th style={{ width: '140px' }}>Vai Trò</th>
+                <th style={{ width: '130px' }}>Số Điện Thoại</th>
+                <th style={{ width: '120px' }}>Trạng Thái</th>
+                <th style={{ textAlign: 'right', width: '120px' }}>Thao Tác</th>
               </tr>
             </thead>
             <tbody>
@@ -257,13 +279,15 @@ export const QuanLyNhanSu = () => {
 
                 return (
                   <tr key={userId}>
-                    <td style={{ fontWeight: 600, color: 'var(--text-muted)' }}>#{userId}</td>
+                    <td className="tabular-nums" style={{ fontWeight: 600, color: 'var(--adm-text-muted)', fontSize: '0.8rem' }}>
+                      #{userId}
+                    </td>
                     <td>
-                      <div style={{ fontWeight: 600 }}>{hoTen}</div>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{email}</span>
+                      <div style={{ fontWeight: 600, color: 'var(--adm-text-main)' }}>{hoTen}</div>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--adm-text-muted)' }}>{email}</span>
                     </td>
                     <td>{layBadgeVaiTro(vaiTro)}</td>
-                    <td style={{ fontSize: '0.875rem' }}>{sdt || '—'}</td>
+                    <td className="tabular-nums" style={{ fontSize: '0.85rem' }}>{sdt || '—'}</td>
                     <td>
                       {dangHoatDong ? (
                         <span className="badge badge-delivered">Hoạt động</span>
@@ -273,19 +297,26 @@ export const QuanLyNhanSu = () => {
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       {laChinhMinh ? (
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Tài khoản của bạn</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)', fontStyle: 'italic' }}>
+                          Tài khoản hiện tại
+                        </span>
                       ) : (
                         <button
                           onClick={() => handleToggleKhoa(u)}
-                          className="btn btn-outline btn-sm"
+                          className="btn btn-outline"
                           style={{
-                            color: dangHoatDong ? 'var(--danger)' : 'var(--accent)',
-                            borderColor: dangHoatDong ? 'var(--danger)' : 'var(--accent)'
+                            fontSize: '0.75rem',
+                            padding: '0.3rem 0.6rem',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            color: dangHoatDong ? 'var(--adm-danger)' : 'var(--adm-success)',
+                            borderColor: dangHoatDong ? '#FECACA' : '#A7F3D0'
                           }}
                           title={dangHoatDong ? 'Khóa tài khoản' : 'Mở khóa'}
                         >
-                          {dangHoatDong ? <Lock size={14} /> : <Unlock size={14} />}
-                          {dangHoatDong ? 'Khóa' : 'Mở Khóa'}
+                          {dangHoatDong ? <Lock size={13} /> : <Unlock size={13} />}
+                          <span>{dangHoatDong ? 'Khóa' : 'Mở Khóa'}</span>
                         </button>
                       )}
                     </td>
@@ -302,11 +333,11 @@ export const QuanLyNhanSu = () => {
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '500px' }}>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-serif" style={{ fontSize: '1.25rem', fontWeight: 700 }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--adm-text-main)' }}>
                 Thêm Mới Nhân Sự Vận Hành
               </h3>
-              <button onClick={() => setModalMo(false)}>
-                <X size={20} />
+              <button onClick={() => setModalMo(false)} style={{ color: 'var(--adm-text-muted)' }}>
+                <X size={18} />
               </button>
             </div>
 

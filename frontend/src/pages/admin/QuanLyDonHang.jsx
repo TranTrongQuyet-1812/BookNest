@@ -128,20 +128,20 @@ export const QuanLyDonHang = () => {
     <div>
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <div>
-          <h1 className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700 }}>
+          <h1 style={{ fontSize: '1.45rem', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
             Quản Lý & Xử Lý Đơn Hàng
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Luân chuyển trạng thái đơn hàng theo quy trình nghiêm ngặt và hỗ trợ hoàn kho an toàn
+          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+            Luân chuyển trạng thái đơn hàng theo quy trình State Machine nghiêm ngặt
           </p>
         </div>
 
         {/* Lọc Trạng Thái */}
         <div className="flex items-center gap-2">
-          <Filter size={16} style={{ color: 'var(--text-muted)' }} />
+          <Filter size={15} style={{ color: 'var(--adm-text-muted)' }} />
           <select
             className="form-input"
-            style={{ width: '180px', padding: '0.45rem 0.75rem' }}
+            style={{ width: '170px', padding: '0.4rem 0.65rem', fontSize: '0.825rem' }}
             value={trangThaiLoc}
             onChange={(e) => {
               setTrangThaiLoc(e.target.value);
@@ -172,19 +172,19 @@ export const QuanLyDonHang = () => {
       {/* Bảng Danh Sách Đơn Hàng */}
       {dangTai ? (
         <div className="flex justify-center py-12">
-          <p className="font-serif" style={{ color: 'var(--text-muted)' }}>Đang nạp dữ liệu đơn hàng...</p>
+          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.875rem' }}>Đang nạp dữ liệu đơn hàng...</p>
         </div>
       ) : donHangList.length === 0 ? (
         <div className="card text-center py-12">
-          <ClipboardList size={48} style={{ margin: '0 auto 1rem', color: 'var(--text-muted)' }} />
-          <h3 className="font-serif" style={{ fontSize: '1.25rem' }}>Không có đơn hàng nào</h3>
+          <ClipboardList size={40} style={{ margin: '0 auto 0.75rem', color: 'var(--adm-text-muted)' }} />
+          <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--adm-text-main)' }}>Không tìm thấy đơn hàng nào</h3>
         </div>
       ) : (
-        <div className="table-container">
-          <table className="table">
+        <div className="admindash-table-wrap">
+          <table className="admindash-table">
             <thead>
               <tr>
-                <th>Mã Đơn</th>
+                <th style={{ width: '85px' }}>Mã Đơn</th>
                 <th>Thời Gian</th>
                 <th>Khách Hàng & Liên Hệ</th>
                 <th>Tổng Tiền</th>
@@ -204,17 +204,17 @@ export const QuanLyDonHang = () => {
 
                 return (
                   <tr key={maDon}>
-                    <td style={{ fontWeight: 700, color: 'var(--primary)' }}>#{maDon}</td>
-                    <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    <td style={{ fontWeight: 700, color: 'var(--adm-primary)' }} className="tabular-nums">#{maDon}</td>
+                    <td style={{ fontSize: '0.825rem', color: 'var(--adm-text-muted)' }} className="tabular-nums">
                       {ngay ? new Date(ngay).toLocaleString('vi-VN') : '—'}
                     </td>
                     <td>
-                      <div style={{ fontWeight: 600 }}>{nguoiNhan}</div>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--adm-text-main)' }}>{nguoiNhan}</div>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)' }}>
                         {sdt} • {diaChi}
                       </span>
                     </td>
-                    <td style={{ fontWeight: 700, color: 'var(--text-main)' }}>
+                    <td style={{ fontWeight: 700, color: 'var(--adm-text-main)' }} className="tabular-nums">
                       {dinhDangTien(tongTien)}
                     </td>
                     <td>{layBadgeTrangThai(trangThai)}</td>
@@ -243,7 +243,7 @@ export const QuanLyDonHang = () => {
                           <button
                             onClick={() => handleChuyenTrangThai(maDon, 'DA_GIAO', 'Hoàn tất giao')}
                             className="btn btn-sm"
-                            style={{ backgroundColor: 'var(--accent)', color: '#FFF' }}
+                            style={{ backgroundColor: 'var(--adm-success)', color: '#FFF' }}
                           >
                             Hoàn Tất
                           </button>
@@ -254,7 +254,7 @@ export const QuanLyDonHang = () => {
                           <button
                             onClick={() => handleHuyDon(maDon)}
                             className="btn btn-outline btn-sm"
-                            style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                            style={{ color: 'var(--adm-danger)', borderColor: '#FECACA' }}
                             title="Hủy đơn hàng và hoàn kho"
                           >
                             <Ban size={14} /> Hủy

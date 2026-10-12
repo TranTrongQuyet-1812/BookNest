@@ -104,11 +104,11 @@ export const NhapKho = () => {
     <div>
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <div>
-          <h1 className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700 }}>
-            Quản Lý Nhập Kho & Tồn Kho
+          <h1 style={{ fontSize: '1.45rem', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
+            Nhập Kho & Quản Lý Tồn Kho
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Lập phiếu nhập sách mới, theo dõi lịch sử nguồn nhập và cảnh báo hết hàng
+          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+            Lập phiếu nhập ấn phẩm, giám sát biến động tồn kho và cảnh báo thiếu hụt
           </p>
         </div>
       </div>
@@ -126,14 +126,14 @@ export const NhapKho = () => {
 
       {/* Cảnh Báo Sách Sắp Hết Hàng */}
       {sachSapHet.length > 0 && (
-        <div className="card mb-8" style={{ borderLeft: '4px solid var(--danger)', padding: '1.25rem' }}>
+        <div className="card mb-6" style={{ borderLeft: '3px solid var(--adm-danger)', padding: '1rem 1.25rem' }}>
           <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle size={20} style={{ color: 'var(--danger)' }} />
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--danger)' }}>
-              Cảnh Báo: Có {sachSapHet.length} tác phẩm sắp hết hàng (tồn kho đã chạm ngưỡng cảnh báo)
+            <AlertTriangle size={18} style={{ color: 'var(--adm-danger)' }} />
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--adm-danger)', margin: 0 }}>
+              Cảnh Báo: Có {sachSapHet.length} tác phẩm chạm ngưỡng sắp hết hàng
             </h3>
           </div>
-          <div className="flex flex-wrap gap-2 mt-3">
+          <div className="flex flex-wrap gap-1.5 mt-2.5">
             {sachSapHet.slice(0, 12).map((s) => {
               const ma = s.MaSach;
               const ten = s.TenSach;
@@ -151,7 +151,7 @@ export const NhapKho = () => {
               );
             })}
             {sachSapHet.length > 12 && (
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', alignSelf: 'center' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--adm-text-muted)', alignSelf: 'center' }}>
                 và {sachSapHet.length - 12} tác phẩm khác...
               </span>
             )}
@@ -161,10 +161,10 @@ export const NhapKho = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Form Tạo Phiếu Nhập Kho */}
-        <div className="card">
+        <div className="card" style={{ padding: '1.25rem' }}>
           <div className="flex items-center gap-2 mb-4">
-            <PlusCircle size={20} style={{ color: 'var(--primary)' }} />
-            <h3 className="font-serif" style={{ fontSize: '1.2rem', fontWeight: 600 }}>
+            <PlusCircle size={18} style={{ color: 'var(--adm-primary)' }} />
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, letterSpacing: '-0.01em', margin: 0 }}>
               Lập Phiếu Nhập Kho
             </h3>
           </div>
@@ -179,9 +179,9 @@ export const NhapKho = () => {
                 value={tuKhoaSach}
                 onChange={(e) => setTuKhoaSach(e.target.value)}
               />
-              <div style={{ maxHeight: '180px', overflowY: 'auto', marginTop: '0.5rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ maxHeight: '180px', overflowY: 'auto', marginTop: '0.5rem', border: '1px solid var(--adm-border)', borderRadius: '6px' }}>
                 {ketQuaSach.length === 0 ? (
-                  <p style={{ padding: '0.5rem 0.75rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Không tìm thấy sách phù hợp</p>
+                  <p style={{ padding: '0.5rem 0.75rem', color: 'var(--adm-text-muted)', fontSize: '0.85rem' }}>Không tìm thấy sách phù hợp</p>
                 ) : (
                   ketQuaSach.map((s) => (
                     <button
@@ -194,7 +194,8 @@ export const NhapKho = () => {
                         textAlign: 'left',
                         padding: '0.4rem 0.75rem',
                         fontSize: '0.85rem',
-                        backgroundColor: sachDangChon?.MaSach === s.MaSach ? 'var(--primary-light, rgba(0,0,0,0.06))' : 'transparent'
+                        color: 'var(--adm-text-main)',
+                        backgroundColor: sachDangChon?.MaSach === s.MaSach ? 'var(--adm-primary-subtle)' : 'transparent'
                       }}
                     >
                       #{s.MaSach} - {s.TenSach} (Còn {s.SoLuongTon})
@@ -203,7 +204,7 @@ export const NhapKho = () => {
                 )}
               </div>
               {sachDangChon && (
-                <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>
+                <p style={{ marginTop: '0.5rem', fontSize: '0.825rem', fontWeight: 600, color: 'var(--adm-primary)' }}>
                   Đang chọn: #{sachDangChon.MaSach} - {sachDangChon.TenSach} (hiện còn {sachDangChon.SoLuongTon})
                 </p>
               )}
@@ -237,33 +238,33 @@ export const NhapKho = () => {
               disabled={dangNhapKho}
               className="btn btn-primary w-full mt-3"
             >
-              <Boxes size={18} />
+              <Boxes size={16} />
               {dangNhapKho ? 'Đang cập nhật kho...' : 'Xác Nhận Nhập Kho'}
             </button>
           </form>
         </div>
 
         {/* Bảng Lịch Sử Nhập Kho */}
-        <div className="card lg:col-span-2">
+        <div className="card lg:col-span-2" style={{ padding: '1.25rem' }}>
           <div className="flex items-center gap-2 mb-4">
-            <History size={20} style={{ color: 'var(--primary)' }} />
-            <h3 className="font-serif" style={{ fontSize: '1.2rem', fontWeight: 600 }}>
+            <History size={18} style={{ color: 'var(--adm-primary)' }} />
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, letterSpacing: '-0.01em', margin: 0 }}>
               Lịch Sử Các Lần Nhập Kho Gần Đây
             </h3>
           </div>
 
           {dangTai ? (
-            <p style={{ color: 'var(--text-muted)' }}>Đang tải lịch sử...</p>
+            <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem' }}>Đang tải lịch sử...</p>
           ) : lichSuNhap.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
+            <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem', fontStyle: 'italic' }}>
               Chưa có phiếu nhập kho nào được tạo trong hệ thống.
             </p>
           ) : (
-            <div className="table-container">
-              <table className="table">
+            <div className="admindash-table-wrap">
+              <table className="admindash-table">
                 <thead>
                   <tr>
-                    <th>Mã Phiếu</th>
+                    <th style={{ width: '85px' }}>Mã Phiếu</th>
                     <th>Thời Gian</th>
                     <th>Tác Phẩm</th>
                     <th>SL Nhập</th>
@@ -280,17 +281,17 @@ export const NhapKho = () => {
 
                     return (
                       <tr key={maPhieu}>
-                        <td style={{ fontWeight: 600 }}>#{maPhieu}</td>
-                        <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                        <td style={{ fontWeight: 600 }} className="tabular-nums">#{maPhieu}</td>
+                        <td style={{ fontSize: '0.825rem', color: 'var(--adm-text-muted)' }} className="tabular-nums">
                           {ngay ? new Date(ngay).toLocaleString('vi-VN') : '—'}
                         </td>
                         <td>
-                          <strong>{tenSach}</strong>
+                          <strong style={{ fontSize: '0.85rem', color: 'var(--adm-text-main)' }}>{tenSach}</strong>
                         </td>
-                        <td style={{ fontWeight: 700, color: 'var(--accent)' }}>
+                        <td style={{ fontWeight: 600, color: 'var(--adm-success)' }} className="tabular-nums">
                           +{sl} cuốn
                         </td>
-                        <td style={{ fontSize: '0.85rem' }}>
+                        <td style={{ fontSize: '0.825rem', color: 'var(--adm-text-main)' }}>
                           {nguoi}
                         </td>
                       </tr>
