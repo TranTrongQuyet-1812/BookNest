@@ -77,15 +77,11 @@ const AppContent = () => {
         <Route path="/register" element={<StorefrontLayout><DangKy /></StorefrontLayout>} />
         <Route path="/unauthorized" element={<StorefrontLayout><KhongCoQuyen /></StorefrontLayout>} />
 
-        {/* Tuyến đường Giỏ Hàng: Công khai cho cả Khách vãng lai (Guest) và Khách hàng */}
+        {/* Tuyến đường Giỏ Hàng và Thanh Toán: Công khai cho cả Khách vãng lai (Guest) và Khách hàng */}
         <Route path="/cart" element={<StorefrontLayout><GioHang /></StorefrontLayout>} />
+        <Route path="/checkout" element={<StorefrontLayout><ThanhToan /></StorefrontLayout>} />
 
         {/* Các Route Yêu Cầu Đăng Nhập */}
-        <Route path="/checkout" element={
-          <ProtectedRoute>
-            <StorefrontLayout><ThanhToan /></StorefrontLayout>
-          </ProtectedRoute>
-        } />
         <Route path="/orders" element={
           <ProtectedRoute>
             <StorefrontLayout><DonHangCuaToi /></StorefrontLayout>

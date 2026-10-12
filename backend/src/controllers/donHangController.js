@@ -14,6 +14,16 @@ async function xuLyDatHang(req, res) {
   });
 }
 
+// Khách vãng lai (Guest) đặt hàng trực tiếp
+async function xuLyDatHangKhachVangLai(req, res) {
+  const ketQua = await donHangService.datHangKhachVangLai(req.body);
+  return phanHoiThanhCong(res, {
+    duLieu: ketQua,
+    thongDiep: 'Đặt hàng thành công',
+    maTrangThai: 201
+  });
+}
+
 // Khách hàng xem danh sách đơn hàng cá nhân
 async function xuLyLayDanhSachDonCuaKhach(req, res) {
   const ketQua = await donHangService.layDanhSachDonKhach(req.user.id, req.query);
@@ -89,6 +99,7 @@ async function xuLyAdminHuyDon(req, res) {
 
 module.exports = {
   xuLyDatHang,
+  xuLyDatHangKhachVangLai,
   xuLyLayDanhSachDonCuaKhach,
   xuLyLayChiTietDonCuaKhach,
   xuLyKhachHuyDon,

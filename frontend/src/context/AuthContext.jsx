@@ -112,6 +112,14 @@ export const AuthProvider = ({ children }) => {
     setUser(nguoiDungCapNhat);
   };
 
+  // Thiết lập phiên đăng nhập trực tiếp (dùng khi Khách vãng lai đặt đơn thành công)
+  const datSession = (jwtToken, nguoiDung) => {
+    localStorage.setItem('booknest_token', jwtToken);
+    localStorage.setItem('booknest_user', JSON.stringify(nguoiDung));
+    setToken(jwtToken);
+    setUser(nguoiDung);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -124,6 +132,7 @@ export const AuthProvider = ({ children }) => {
         dangKy,
         dangXuat,
         capNhatUser,
+        datSession,
         daDangNhap: Boolean(token && user)
       }}
     >

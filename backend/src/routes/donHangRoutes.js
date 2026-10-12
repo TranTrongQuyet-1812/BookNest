@@ -12,7 +12,95 @@ const kiemTraChuDon = require('../middlewares/kiemTraChuDon');
 
 const router = express.Router();
 
-// Tất cả các route đơn hàng của khách đều cần đăng nhập với vai trò customer
+// Schema kiểm tra thông tin đặt hàng cho khách vãng lai
+const luatDatHangKhachVangLai = Joi.object({
+  tenNguoiNhan: Joi.string().trim().min(2).max(100).required().messages({
+    'string.empty': 'Tên người nhận không được để trống',
+    'string.min': 'Tên người nhận phải có ít nhất 2 ký tự',
+    'string.max': 'Tên người nhận không được vượt quá 100 ký tự',
+    'any.required': 'Tên người nhận là bắt buộc'
+  }),
+  soDienThoaiNhan: Joi.string().trim().pattern(/^(0|\+84)[3|5|7|8|9][0-9]{8}$/).required().messages({
+    'string.pattern.base': 'Số điện thoại nhận không đúng định dạng số di động Việt Nam',
+    'any.required': 'Số điện thoại nhận là bắt buộc'
+  }),
+  diaChiGiaoHang: Joi.string().trim().min(5).max(255).required().messages({
+    'string.empty': 'Địa chỉ giao hàng không được để trống',
+    'string.min': 'Địa chỉ giao hàng phải có ít nhất 5 ký tự',
+    'string.max': 'Địa chỉ giao hàng không được vượt quá 255 ký tự',
+    'any.required': 'Địa chỉ giao hàng là bắt buộc'
+  }),
+  email: Joi.string().trim().email().allow(null, '').messages({
+    'string.email': 'Email không đúng định dạng'
+  }),
+  ghiChu: Joi.string().trim().max(500).allow(null, ''),
+  cacMon: Joi.array().items(
+    Joi.object({
+      maSach: Joi.number().integer().positive().required(),
+      soLuong: Joi.number().integer().positive().required()
+    })
+  ).min(1).required().messages({
+    'array.min': 'Đơn hàng phải có ít nhất một cuốn sách',
+    'any.required': 'Danh sách sách đặt mua là bắt buộc'
+  })
+});
+
+/**
+ * @swagger
+ * /api/orders/guest:
+ *   post:
+ *     summary: Khách vãng lai đặt hàng trực tiếp từ giỏ hàng client
+ *     tags: [Đơn hàng (Orders)]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [tenNguoiNhan, soDienThoaiNhan, diaChiGiaoHang, cacMon]
+ *             properties:
+ *               tenNguoiNhan:
+ *                 type: string
+ *                 example: Khách Vãng Lai
+ *               soDienThoaiNhan:
+ *                 type: string
+ *                 example: "0912345678"
+ *               diaChiGiaoHang:
+ *                 type: string
+ *                 example: 456 Võ Thị Sáu, Biên Hòa
+ *               email:
+ *                 type: string
+ *                 example: khachvanglai@gmail.com
+ *               ghiChu:
+ *                 type: string
+ *                 example: Giao vào giờ hành chính
+ *               cacMon:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required: [maSach, soLuong]
+ *                   properties:
+ *                     maSach:
+ *                       type: integer
+ *                       example: 1
+ *                     soLuong:
+ *                       type: integer
+ *                       example: 2
+ *     responses:
+ *       201:
+ *         description: Đặt hàng thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       400:
+ *         description: Thông tin nhận hàng hoặc danh sách sách không hợp lệ
+ *       409:
+ *         description: Sách hết tồn kho hoặc đã ngừng kinh doanh
+ */
+router.post('/guest', kiemTraDuLieu(luatDatHangKhachVangLai), batLoiAsync(donHangController.xuLyDatHangKhachVangLai));
+
+// Tất cả các route bên dưới của khách đều cần đăng nhập với vai trò customer
 router.use(xacThucToken, phanQuyen('customer'));
 
 // Schema kiểm tra thông tin đặt hàng

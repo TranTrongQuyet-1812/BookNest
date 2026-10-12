@@ -12,7 +12,10 @@ const {
   LichSuTrangThaiDonHang,
   NguoiDung
 } = require('../models');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
+const cauHinh = require('../config/cauHinh');
 
 // Hàm thuần kiểm tra tính hợp lệ của việc chuyển đổi trạng thái đơn hàng (State Machine)
 function kiemTraChuyenTrangThai(trangThaiCu, trangThaiMoi) {
@@ -127,6 +130,158 @@ async function datHang(maNguoiDung, thongTinGiaoHang) {
 
     await t.commit();
     return layChiTietDonHang(donHangMoi.MaDonHang);
+  } catch (loi) {
+    await t.rollback();
+    throw loi;
+  }
+}
+
+// 1b. Khách vãng lai (Guest) đặt hàng trực tiếp (ACID Transaction, chống race condition và bán âm kho)
+async function datHangKhachVangLai(thongTinDatHang) {
+  const { tenNguoiNhan, soDienThoaiNhan, diaChiGiaoHang, email, ghiChu, cacMon } = thongTinDatHang;
+
+  if (!cacMon || cacMon.length === 0) {
+    throw LoiNghiepVu.yeuCauKhongHopLe('Giỏ hàng đang trống, vui lòng chọn sách trước khi đặt hàng');
+  }
+
+  const t = await sequelize.transaction();
+
+  try {
+    // Tìm hoặc tạo tài khoản khách hàng để thỏa mãn ràng buộc khóa ngoại MaNguoiDung NOT NULL
+    const emailChuanHoa = email ? email.toLowerCase().trim() : `guest_${soDienThoaiNhan}@guest.booknest.vn`;
+    let nguoiDung = await NguoiDung.findOne({
+      where: { Email: emailChuanHoa },
+      transaction: t
+    });
+
+    if (!nguoiDung) {
+      nguoiDung = await NguoiDung.findOne({
+        where: { SoDienThoai: soDienThoaiNhan },
+        transaction: t
+      });
+    }
+
+    if (!nguoiDung) {
+      const matKhauNgauNhien = Math.random().toString(36).slice(-8) + 'Aa1@';
+      const matKhauHash = await bcrypt.hash(matKhauNgauNhien, 10);
+      nguoiDung = await NguoiDung.create(
+        {
+          HoTen: tenNguoiNhan,
+          Email: emailChuanHoa,
+          MatKhauHash: matKhauHash,
+          SoDienThoai: soDienThoaiNhan,
+          DiaChiMacDinh: diaChiGiaoHang,
+          VaiTro: 'customer',
+          DangHoatDong: true
+        },
+        { transaction: t }
+      );
+    }
+
+    const maNguoiDung = nguoiDung.MaNguoiDung;
+    let tongTien = 0;
+    const danhSachChiTiet = [];
+
+    // Sắp xếp các món theo maSach ASC để triệt tiêu Deadlock 1205
+    const cacMonSapXep = [...cacMon].sort((a, b) => a.maSach - b.maSach);
+
+    for (const mon of cacMonSapXep) {
+      const soLuong = parseInt(mon.soLuong, 10);
+      if (soLuong <= 0) continue;
+
+      // Trừ tồn kho nguyên tử bằng Sequelize decrement
+      const ketQua = await Sach.decrement('SoLuongTon', {
+        by: soLuong,
+        where: {
+          MaSach: mon.maSach,
+          SoLuongTon: { [Op.gte]: soLuong },
+          DaAn: false
+        },
+        transaction: t
+      });
+
+      const [[, soDongCapNhat]] = ketQua;
+
+      if (soDongCapNhat === 0) {
+        const sachHienTai = await Sach.findByPk(mon.maSach, { transaction: t });
+        if (!sachHienTai || sachHienTai.DaAn) {
+          throw LoiNghiepVu.xungDot(`Cuốn sách mã số ${mon.maSach} hiện đã ngừng kinh doanh`);
+        }
+        throw LoiNghiepVu.xungDot(
+          `Sách "${sachHienTai.TenSach}" không đủ số lượng tồn kho (chỉ còn ${sachHienTai.SoLuongTon} cuốn)`
+        );
+      }
+
+      const sachChotGia = await Sach.findByPk(mon.maSach, { transaction: t });
+      const donGia = parseFloat(sachChotGia.GiaBan);
+      tongTien += donGia * soLuong;
+      danhSachChiTiet.push({
+        MaSach: mon.maSach,
+        SoLuong: soLuong,
+        DonGia: donGia
+      });
+    }
+
+    // Tạo đơn hàng mới ở trạng thái chờ duyệt (PENDING)
+    const donHangMoi = await DonHang.create(
+      {
+        MaNguoiDung: maNguoiDung,
+        TenNguoiNhan: tenNguoiNhan,
+        SoDienThoaiNhan: soDienThoaiNhan,
+        DiaChiGiaoHang: diaChiGiaoHang,
+        GhiChu: ghiChu || null,
+        TongTien: tongTien,
+        TrangThai: 'PENDING'
+      },
+      { transaction: t }
+    );
+
+    // Gắn mã đơn hàng vào danh sách chi tiết và lưu hàng loạt
+    const chiTietCoMaDon = danhSachChiTiet.map(ct => ({
+      ...ct,
+      MaDonHang: donHangMoi.MaDonHang
+    }));
+    await ChiTietDonHang.bulkCreate(chiTietCoMaDon, { transaction: t });
+
+    // Ghi nhận dòng lịch sử trạng thái đầu tiên
+    await LichSuTrangThaiDonHang.create(
+      {
+        MaDonHang: donHangMoi.MaDonHang,
+        TrangThaiCu: null,
+        TrangThaiMoi: 'PENDING',
+        MaNguoiThucHien: maNguoiDung,
+        GhiChu: 'Khách vãng lai đặt đơn hàng mới'
+      },
+      { transaction: t }
+    );
+
+    await t.commit();
+
+    // Sinh token JWT để khách tự động duy trì phiên đăng nhập và truy cập đơn vừa tạo
+    const token = jwt.sign(
+      {
+        id: nguoiDung.MaNguoiDung,
+        email: nguoiDung.Email,
+        role: nguoiDung.VaiTro,
+        fullName: nguoiDung.HoTen
+      },
+      cauHinh.jwt.biMat,
+      { expiresIn: cauHinh.jwt.hanDung }
+    );
+
+    const chiTiet = await layChiTietDonHang(donHangMoi.MaDonHang);
+    const donHangObj = chiTiet.toJSON ? chiTiet.toJSON() : chiTiet;
+
+    return {
+      ...donHangObj,
+      token,
+      user: {
+        id: nguoiDung.MaNguoiDung,
+        email: nguoiDung.Email,
+        fullName: nguoiDung.HoTen,
+        role: nguoiDung.VaiTro
+      }
+    };
   } catch (loi) {
     await t.rollback();
     throw loi;
@@ -406,6 +561,7 @@ async function adminHuyDon(maDonHang, lyDo, maNguoiThucHien) {
 module.exports = {
   kiemTraChuyenTrangThai,
   datHang,
+  datHangKhachVangLai,
   layChiTietDonHang,
   layDanhSachDonKhach,
   khachHuyDon,

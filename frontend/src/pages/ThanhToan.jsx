@@ -2,57 +2,79 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import useCartStore from '../stores/cartStore';
+import { useAuth } from '../context/AuthContext';
 import { 
   MapPin, 
   CheckCircle, 
   AlertCircle, 
   ArrowLeft, 
-  ShieldCheck 
+  ShieldCheck, 
+  BookOpen, 
+  User, 
+  Mail, 
+  Phone, 
+  Truck,
+  Sparkles,
+  Lock
 } from 'lucide-react';
 
 export const ThanhToan = () => {
   const navigate = useNavigate();
-  const { gioHang, layGioHang, xoaTrangState } = useCartStore();
+  const { user, daDangNhap, datSession } = useAuth();
+  const { gioHang, cacMon, layGioHang, xoaTrangState } = useCartStore();
 
   const [dangTai, setDangTai] = useState(true);
   const [dangDatHang, setDangDatHang] = useState(false);
   const [loi, setLoi] = useState('');
 
-  // Form thông tin nhận hàng - điền sẵn từ hồ sơ
+  // Form thông tin nhận hàng
   const [form, setForm] = useState({
     tenNguoiNhan: '',
     soDienThoaiNhan: '',
+    email: '',
     diaChiGiaoHang: '',
     ghiChu: ''
   });
 
   useEffect(() => {
     let daHuy = false;
+
     const taiDuLieu = async () => {
       try {
-        const [resGio, resHoSo] = await Promise.all([layGioHang(), api.get('/users/profile')]);
+        // Tải giỏ hàng (tự động nhận diện Guest qua localStorage hoặc Customer qua API)
+        await layGioHang();
         if (daHuy) return;
-        if (!resGio) {
-          setLoi('Không thể tải thông tin giỏ hàng');
+
+        // Nếu đã đăng nhập, tự động lấy thông tin từ hồ sơ người dùng để điền sẵn form
+        if (daDangNhap) {
+          try {
+            const resHoSo = await api.get('/users/profile');
+            if (daHuy) return;
+            const hoSo = resHoSo.data?.data;
+            if (hoSo) {
+              setForm((formCu) => ({
+                ...formCu,
+                tenNguoiNhan: hoSo.HoTen || '',
+                soDienThoaiNhan: hoSo.SoDienThoai || '',
+                email: hoSo.Email || user?.email || '',
+                diaChiGiaoHang: hoSo.DiaChiMacDinh || ''
+              }));
+            }
+          } catch (errProfile) {
+            console.warn('Không thể nạp hồ sơ người dùng, chuyển sang chế độ điền tay:', errProfile);
+          }
         }
-        const hoSo = resHoSo.data.data;
-        if (hoSo) {
-          setForm((formCu) => ({
-            ...formCu,
-            tenNguoiNhan: hoSo.HoTen || '',
-            soDienThoaiNhan: hoSo.SoDienThoai || '',
-            diaChiGiaoHang: hoSo.DiaChiMacDinh || ''
-          }));
-        }
-      } catch {
-        if (!daHuy) setLoi('Không thể tải thông tin giao hàng');
+      } catch (errGio) {
+        console.error('Lỗi tải giỏ hàng:', errGio);
+        if (!daHuy) setLoi('Không thể tải thông tin giỏ hàng');
       } finally {
         if (!daHuy) setDangTai(false);
       }
     };
+
     taiDuLieu();
     return () => { daHuy = true; };
-  }, [layGioHang]);
+  }, [layGioHang, daDangNhap, user]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -63,22 +85,60 @@ export const ThanhToan = () => {
     setLoi('');
     setDangDatHang(true);
 
-    try {
-      const res = await api.post('/orders', {
-        tenNguoiNhan: form.tenNguoiNhan,
-        soDienThoaiNhan: form.soDienThoaiNhan,
-        diaChiGiaoHang: form.diaChiGiaoHang,
-        ghiChu: form.ghiChu || undefined
-      });
+    const danhSachMon = items;
+    if (danhSachMon.length === 0) {
+      setLoi('Giỏ hàng của bạn đang trống!');
+      setDangDatHang(false);
+      return;
+    }
 
-      // Xóa trắng state giỏ hàng tập trung sau khi đặt hàng thành công
+    try {
+      let maDonHang;
+
+      if (daDangNhap) {
+        // --- Nhánh Khách hàng ĐÃ ĐĂNG NHẬP ---
+        const res = await api.post('/orders', {
+          tenNguoiNhan: form.tenNguoiNhan,
+          soDienThoaiNhan: form.soDienThoaiNhan,
+          diaChiGiaoHang: form.diaChiGiaoHang,
+          ghiChu: form.ghiChu || undefined
+        });
+
+        maDonHang = res.data.data?.MaDonHang;
+      } else {
+        // --- Nhánh Khách vãng lai (Guest Checkout) ---
+        const res = await api.post('/orders/guest', {
+          tenNguoiNhan: form.tenNguoiNhan,
+          soDienThoaiNhan: form.soDienThoaiNhan,
+          diaChiGiaoHang: form.diaChiGiaoHang,
+          email: form.email || undefined,
+          ghiChu: form.ghiChu || undefined,
+          cacMon: danhSachMon.map(mon => ({
+            maSach: mon.maSach,
+            soLuong: mon.soLuong
+          }))
+        });
+
+        const data = res.data.data;
+        maDonHang = data?.MaDonHang || data?.donHang?.MaDonHang;
+
+        // Tự động khởi tạo phiên đăng nhập để khách truy cập trang chi tiết đơn hàng
+        if (data?.token && data?.user && datSession) {
+          datSession(data.token, data.user);
+        }
+
+        // Xóa sạch giỏ hàng Guest trong localStorage
+        localStorage.removeItem('booknest_guest_cart');
+      }
+
+      // Xóa sạch state giỏ hàng tập trung
       xoaTrangState();
 
-      const maDonHang = res.data.data?.MaDonHang;
-      alert('Chúc mừng! Đơn hàng của bạn đã được khởi tạo thành công.');
+      alert('Kính chúc quý độc giả nhiều niềm vui! Đơn hàng của bạn đã được khởi tạo thành công.');
       navigate(`/orders/${maDonHang}`);
     } catch (err) {
-      setLoi(err.response?.data?.message || 'Đặt hàng thất bại. Vui lòng kiểm tra lại');
+      const msg = err.response?.data?.message || 'Đặt hàng thất bại. Vui lòng kiểm tra lại thông tin nhận hàng';
+      setLoi(msg);
     } finally {
       setDangDatHang(false);
     }
@@ -88,24 +148,52 @@ export const ThanhToan = () => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(soTien || 0);
   };
 
+  const items = cacMon || gioHang?.cacMon || [];
+
   if (dangTai) {
     return (
-      <div className="container py-12 flex justify-center">
-        <p className="font-serif" style={{ color: 'var(--text-muted)' }}>Đang chuẩn bị trang thanh toán...</p>
+      <div className="container py-16 text-center" style={{ minHeight: '60vh' }}>
+        <div style={{
+          width: '48px',
+          height: '48px',
+          border: '3px solid var(--border)',
+          borderTopColor: 'var(--primary)',
+          borderRadius: '50%',
+          margin: '0 auto 1.5rem',
+          animation: 'spin 1s linear infinite'
+        }} />
+        <p className="font-serif" style={{ color: 'var(--text-muted)', fontSize: '1.05rem', fontStyle: 'italic' }}>
+          Đang chuẩn bị trang thanh toán cho ấn phẩm của bạn...
+        </p>
       </div>
     );
   }
 
-  const items = gioHang?.cacMon || [];
   if (items.length === 0) {
     return (
-      <div className="container py-12 text-center">
-        <div className="card" style={{ maxWidth: '480px', margin: '0 auto', padding: '2rem' }}>
-          <h3 className="font-serif" style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>
-            Giỏ hàng của bạn đang trống!
-          </h3>
-          <Link to="/" className="btn btn-primary">
-            Khám phá sách và thêm vào giỏ
+      <div className="container py-16 text-center">
+        <div className="card" style={{ maxWidth: '520px', margin: '0 auto', padding: '2.5rem 2rem', borderRadius: '12px' }}>
+          <div style={{
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
+            backgroundColor: 'rgba(76, 69, 65, 0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 1.25rem',
+            color: 'var(--text-muted)'
+          }}>
+            <BookOpen size={30} />
+          </div>
+          <h2 className="font-serif" style={{ fontSize: '1.45rem', fontWeight: 700, marginBottom: '0.75rem' }}>
+            Giỏ Hàng Của Bạn Đang Trống
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.75rem', lineHeight: 1.6 }}>
+            Hãy dạo quanh các kệ sách nghệ thuật của BookNest để lựa chọn những tác phẩm yêu thích trước khi tiến hành thanh toán nhé.
+          </p>
+          <Link to="/" className="btn btn-primary" style={{ padding: '0.75rem 1.75rem', borderRadius: '6px' }}>
+            Khám phá các kệ sách
           </Link>
         </div>
       </div>
@@ -114,65 +202,151 @@ export const ThanhToan = () => {
 
   return (
     <div className="container py-8">
-      <Link to="/cart" className="btn btn-outline btn-sm mb-6 inline-flex items-center gap-1">
-        <ArrowLeft size={16} /> Quay lại giỏ hàng
-      </Link>
+      {/* Thanh điều hướng nhanh */}
+      <div className="flex items-center justify-between mb-6">
+        <Link to="/cart" className="btn btn-outline btn-sm inline-flex items-center gap-1.5" style={{ borderRadius: '6px' }}>
+          <ArrowLeft size={16} /> Quay lại giỏ hàng
+        </Link>
+        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          Thanh toán an toàn • Mã hóa SSL 256-bit
+        </span>
+      </div>
 
-      <h1 className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '1.5rem' }}>
-        Xác Nhận Đặt Hàng
-      </h1>
+      <div className="mb-6">
+        <h1 className="font-serif" style={{ fontSize: '1.85rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.25rem' }}>
+          Xác Nhận Đặt Hàng & Giao Nhận
+        </h1>
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+          Vui lòng điền thông tin để BookNest đóng gói cẩn thận và gửi ấn phẩm đến tay bạn.
+        </p>
+      </div>
 
       {loi && (
-        <div className="alert alert-danger mb-6">
-          <AlertCircle size={18} />
+        <div className="alert alert-danger mb-6 flex items-center gap-2" style={{ borderRadius: '8px' }}>
+          <AlertCircle size={20} style={{ flexShrink: 0 }} />
           <span>{loi}</span>
         </div>
       )}
 
       <form onSubmit={handleDatHang}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Cột Điền Thông Tin Nhận Hàng */}
-          <div className="lg:col-span-2">
-            <div className="card" style={{ padding: '1.75rem' }}>
-              <div className="flex items-center gap-2 mb-4">
+          {/* Cột Trái: Thông Tin Nhận Hàng & Giao Nhận */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Banner trạng thái khách */}
+            <div style={{
+              padding: '1rem 1.25rem',
+              borderRadius: '8px',
+              backgroundColor: daDangNhap ? 'rgba(40, 167, 69, 0.08)' : 'rgba(217, 131, 36, 0.08)',
+              border: `1px solid ${daDangNhap ? 'rgba(40, 167, 69, 0.25)' : 'rgba(217, 131, 36, 0.25)'}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px'
+            }}>
+              <div className="flex items-center gap-3">
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  backgroundColor: daDangNhap ? 'rgba(40, 167, 69, 0.15)' : 'rgba(217, 131, 36, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: daDangNhap ? 'var(--success, #28a745)' : 'var(--accent, #d98324)',
+                  flexShrink: 0
+                }}>
+                  {daDangNhap ? <Sparkles size={18} /> : <User size={18} />}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.92rem', color: 'var(--text-main)' }}>
+                    {daDangNhap ? `Thành viên BookNest: ${user?.fullName || user?.email}` : 'Đặt hàng với tư cách Khách vãng lai (Guest)'}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    {daDangNhap 
+                      ? 'Thông tin mặc định được tự động điền từ hồ sơ của bạn.'
+                      : 'Bạn không bắt buộc phải đăng nhập. Hệ thống sẽ tự động khởi tạo phiên theo dõi đơn hàng sau khi đặt.'}
+                  </div>
+                </div>
+              </div>
+              {!daDangNhap && (
+                <Link to="/login" state={{ from: { pathname: '/checkout' } }} className="btn btn-outline btn-sm" style={{ flexShrink: 0, fontSize: '0.78rem' }}>
+                  Đã có tài khoản?
+                </Link>
+              )}
+            </div>
+
+            {/* Khung Thông Tin Giao Hàng */}
+            <div className="card" style={{ padding: '1.75rem', borderRadius: '10px' }}>
+              <div className="flex items-center gap-2 mb-5 pb-3" style={{ borderBottom: '1px solid var(--border)' }}>
                 <MapPin size={20} style={{ color: 'var(--primary)' }} />
-                <h3 className="font-serif" style={{ fontSize: '1.2rem', fontWeight: 600 }}>
-                  Thông Tin Giao Hàng
-                </h3>
+                <h2 className="font-serif" style={{ fontSize: '1.25rem', fontWeight: 600 }}>
+                  Địa Chỉ Nhận Sách
+                </h2>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Tên người nhận hàng *</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Họ tên người nhận */}
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                    Tên người nhận hàng <span style={{ color: 'var(--danger)' }}>*</span>
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      required
+                      name="tenNguoiNhan"
+                      className="form-input"
+                      value={form.tenNguoiNhan}
+                      onChange={handleChange}
+                      placeholder="Ví dụ: Nguyễn Văn An"
+                      style={{ borderRadius: '6px' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Số điện thoại nhận */}
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                    Số điện thoại liên hệ <span style={{ color: 'var(--danger)' }}>*</span>
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="tel"
+                      required
+                      name="soDienThoaiNhan"
+                      className="form-input"
+                      value={form.soDienThoaiNhan}
+                      onChange={handleChange}
+                      placeholder="Ví dụ: 0912345678"
+                      style={{ borderRadius: '6px' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Email nhận thông báo đơn hàng */}
+              <div className="form-group mt-4">
+                <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                  Địa chỉ Email <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400 }}>(Tùy chọn - để nhận hóa đơn và thông báo vận chuyển)</span>
+                </label>
                 <div style={{ position: 'relative' }}>
                   <input
-                    type="text"
-                    required
-                    name="tenNguoiNhan"
+                    type="email"
+                    name="email"
                     className="form-input"
-                    value={form.tenNguoiNhan}
+                    value={form.email}
                     onChange={handleChange}
-                    placeholder="Nguyễn Văn A"
+                    placeholder="tenban@gmail.com"
+                    style={{ borderRadius: '6px' }}
                   />
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Số điện thoại liên hệ *</label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="tel"
-                    required
-                    name="soDienThoaiNhan"
-                    className="form-input"
-                    value={form.soDienThoaiNhan}
-                    onChange={handleChange}
-                    placeholder="0912345678"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Địa chỉ nhận sách chi tiết *</label>
+              {/* Địa chỉ chi tiết */}
+              <div className="form-group mt-4">
+                <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                  Địa chỉ giao hàng chi tiết <span style={{ color: 'var(--danger)' }}>*</span>
+                </label>
                 <textarea
                   required
                   rows="3"
@@ -180,97 +354,199 @@ export const ThanhToan = () => {
                   className="form-input"
                   value={form.diaChiGiaoHang}
                   onChange={handleChange}
-                  placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..."
+                  placeholder="Số nhà, ngõ/ngách, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..."
+                  style={{ borderRadius: '6px', resize: 'vertical' }}
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Ghi chú cho nhân viên giao hàng (nếu có)</label>
+              {/* Ghi chú */}
+              <div className="form-group mt-4">
+                <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                  Ghi chú cho bộ phận điều phối (nếu có)
+                </label>
                 <input
                   type="text"
                   name="ghiChu"
                   className="form-input"
                   value={form.ghiChu}
                   onChange={handleChange}
-                  placeholder="Giao giờ hành chính, gọi trước khi đến..."
+                  placeholder="Giao giờ hành chính, bọc chống sốc cẩn thận, gọi trước khi đến..."
+                  style={{ borderRadius: '6px' }}
                 />
               </div>
 
+              {/* Thông tin phương thức thanh toán */}
               <div style={{
-                marginTop: '1.25rem',
-                padding: '1rem',
+                marginTop: '1.5rem',
+                padding: '1.15rem',
                 backgroundColor: 'var(--bg-surface)',
-                borderRadius: 'var(--radius-sm)',
+                borderRadius: '8px',
+                border: '1px solid var(--border)',
                 display: 'flex',
-                gap: '8px',
+                alignItems: 'flex-start',
+                gap: '12px',
                 fontSize: '0.85rem',
                 color: 'var(--text-muted)'
               }}>
-                <ShieldCheck size={20} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                <span>
-                  Phương thức thanh toán: <strong>Thanh toán khi nhận hàng (COD)</strong>. Bạn chỉ cần thanh toán khi đã cầm trên tay những cuốn sách nguyên vẹn từ BookNest.
-                </span>
+                <ShieldCheck size={22} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: '2px' }} />
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '3px' }}>
+                    Phương thức thanh toán: Nhận hàng rồi mới thanh toán (COD)
+                  </div>
+                  <span>
+                    Bạn được toàn quyền đồng kiểm tra ngoại quan sách nguyên vẹn từ nhân viên giao hàng của BookNest trước khi thanh toán tiền mặt.
+                  </span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Cột Xem Lại Đơn Hàng */}
+          {/* Cột Phải: Tổng Kết & Xác Nhận Đơn Hàng */}
           <div>
-            <div className="card" style={{ padding: '1.5rem' }}>
-              <h3 className="font-serif" style={{ fontSize: '1.15rem', fontWeight: 600, marginBottom: '1rem' }}>
-                Đơn Hàng ({items.length} tác phẩm)
-              </h3>
+            <div className="card" style={{ padding: '1.75rem', borderRadius: '10px', position: 'sticky', top: '90px' }}>
+              <div className="flex items-center justify-between mb-4 pb-3" style={{ borderBottom: '1px solid var(--border)' }}>
+                <h2 className="font-serif" style={{ fontSize: '1.25rem', fontWeight: 700 }}>
+                  Tóm Tắt Đơn Hàng
+                </h2>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  {gioHang?.tongSoLuong || items.reduce((s, i) => s + (i.soLuong || 0), 0)} cuốn
+                </span>
+              </div>
 
+              {/* Danh sách sách cuộn */}
               <div style={{
-                maxHeight: '260px',
+                maxHeight: '280px',
                 overflowY: 'auto',
-                marginBottom: '1rem',
-                borderBottom: '1px solid var(--border)',
-                paddingBottom: '0.5rem'
+                marginBottom: '1.25rem',
+                paddingRight: '4px'
               }}>
                 {items.map((item) => (
-                  <div key={item.maSach} className="flex justify-between items-center py-2" style={{ fontSize: '0.875rem' }}>
-                    <div style={{ maxWidth: '65%' }}>
-                      <p style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div
+                    key={item.maSach}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '0.65rem 0',
+                      borderBottom: '1px solid rgba(76, 69, 65, 0.08)'
+                    }}
+                  >
+                    {/* Ảnh thu nhỏ */}
+                    <div style={{
+                      width: '42px',
+                      height: '56px',
+                      backgroundColor: 'var(--bg-surface)',
+                      borderRadius: '4px',
+                      overflow: 'hidden',
+                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '1px solid var(--border)'
+                    }}>
+                      {item.sach?.anhBia ? (
+                        <img
+                          src={item.sach.anhBia}
+                          alt={item.sach.tenSach}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <BookOpen size={18} style={{ color: 'var(--text-muted)' }} />
+                      )}
+                    </div>
+
+                    {/* Chi tiết */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: 'var(--text-main)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        marginBottom: '2px'
+                      }}>
                         {item.sach?.tenSach}
                       </p>
-                      <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                         {dinhDangTien(item.donGia)} × {item.soLuong}
-                      </span>
+                      </div>
                     </div>
-                    <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>
+
+                    {/* Thành tiền */}
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-main)', flexShrink: 0 }}>
                       {dinhDangTien(item.thanhTien)}
-                    </span>
+                    </div>
                   </div>
                 ))}
               </div>
 
-              <div className="flex justify-between py-1" style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                <span>Tạm tính:</span>
-                <span>{dinhDangTien(gioHang?.tongTien)}</span>
+              {/* Chi tiết chi phí */}
+              <div className="space-y-2 py-2" style={{ borderTop: '1px solid var(--border)', fontSize: '0.9rem' }}>
+                <div className="flex justify-between" style={{ color: 'var(--text-muted)' }}>
+                  <span>Tạm tính tiền sách:</span>
+                  <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>
+                    {dinhDangTien(gioHang?.tongTien)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center" style={{ color: 'var(--text-muted)' }}>
+                  <span className="flex items-center gap-1.5">
+                    <Truck size={15} style={{ color: 'var(--accent)' }} /> Vận chuyển toàn quốc:
+                  </span>
+                  <span style={{ color: 'var(--accent)', fontWeight: 600 }}>Miễn phí</span>
+                </div>
               </div>
 
-              <div className="flex justify-between py-1" style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                <span>Vận chuyển:</span>
-                <span style={{ color: 'var(--accent)', fontWeight: 600 }}>Miễn phí</span>
-              </div>
-
-              <div className="flex justify-between py-3 mt-2" style={{ borderTop: '1px solid var(--border)', fontSize: '1.1rem' }}>
-                <span style={{ fontWeight: 600 }}>Tổng tiền:</span>
-                <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '1.3rem' }}>
+              {/* Tổng thanh toán */}
+              <div className="flex justify-between items-center py-4 mt-2" style={{
+                borderTop: '1px dashed var(--border)',
+                borderBottom: '1px dashed var(--border)'
+              }}>
+                <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)' }}>
+                  Tổng thanh toán:
+                </span>
+                <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '1.45rem' }}>
                   {dinhDangTien(gioHang?.tongTien)}
                 </span>
               </div>
 
+              {/* Nút Đặt Hàng */}
               <button
                 type="submit"
                 disabled={dangDatHang}
-                className="btn btn-primary w-full mt-4"
-                style={{ padding: '0.85rem' }}
+                className="btn btn-primary w-full mt-5"
+                style={{
+                  padding: '0.95rem 1rem',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  borderRadius: '6px',
+                  boxShadow: '0 4px 12px rgba(139, 69, 19, 0.15)'
+                }}
               >
-                <CheckCircle size={18} />
-                {dangDatHang ? 'Đang xác thực giao dịch...' : 'Xác Nhận Đặt Hàng'}
+                {dangDatHang ? (
+                  <span className="inline-flex items-center gap-2">
+                    <div style={{
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid rgba(255, 255, 255, 0.4)',
+                      borderTopColor: '#fff',
+                      borderRadius: '50%',
+                      animation: 'spin 0.8s linear infinite'
+                    }} />
+                    Đang khởi tạo đơn hàng...
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-2">
+                    <CheckCircle size={18} /> Xác Nhận Đặt Hàng
+                  </span>
+                )}
               </button>
+
+              <div className="flex items-center justify-center gap-1.5 mt-3" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                <Lock size={13} />
+                <span>Khoá số lượng và đơn giá nguyên tử trong CSDL</span>
+              </div>
             </div>
           </div>
         </div>

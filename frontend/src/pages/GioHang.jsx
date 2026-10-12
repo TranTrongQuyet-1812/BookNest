@@ -32,12 +32,8 @@ export const GioHang = () => {
     layGioHang();
   }, [layGioHang]);
 
-  // Tiến hành đặt hàng: Nếu là khách vãng lai, chuyển hướng sang đăng nhập và quay lại checkout sau đó
+  // Tiến hành đặt hàng: Điều hướng thẳng sang trang thanh toán (hỗ trợ cả Khách vãng lai và Thành viên)
   const handleTienHanhDatHang = () => {
-    if (!daDangNhap) {
-      navigate('/login', { state: { from: { pathname: '/checkout' } } });
-      return;
-    }
     navigate('/checkout');
   };
 
@@ -328,14 +324,12 @@ export const GioHang = () => {
                 className="btn btn-primary w-full"
                 style={{ padding: '0.85rem' }}
               >
-                {daDangNhap ? 'Tiến Hành Đặt Hàng' : 'Đăng Nhập Để Đặt Hàng'}
+                Tiến Hành Đặt Hàng
                 <ArrowRight size={18} />
               </button>
 
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.75rem', textAlign: 'center' }}>
-                {daDangNhap
-                  ? 'Giá và tình trạng tồn kho được khóa nguyên tử khi tạo đơn hàng'
-                  : 'Bạn sẽ được chuyển đến trang đăng nhập trước khi hoàn tất đặt hàng'}
+                Giá và tình trạng tồn kho được kiểm tra nguyên tử khi tạo đơn hàng
               </p>
             </div>
           </div>
