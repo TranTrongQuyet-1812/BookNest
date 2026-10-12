@@ -1,191 +1,553 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import useCartStore from '../stores/cartStore';
 import api from '../services/api';
-import { 
-  BookOpen, 
-  ShoppingCart, 
-  User, 
-  Sun, 
-  Moon, 
-  LogOut, 
-  Package, 
-  ShieldCheck 
-} from 'lucide-react';
+import LogoBookNest from './LogoBookNest';
+import { Search, ShoppingCart, User, LogOut, ChevronDown, Sun, Moon } from 'lucide-react';
 
 export const Navbar = () => {
   const { user, daDangNhap, dangXuat, theme, toggleTheme } = useAuth();
+  const { tongSoLuong, layGioHang, xoaTrangState } = useCartStore();
   const navigate = useNavigate();
-  const [soLuongGio, setSoLuongGio] = useState(0);
+  const [danhMucList, setDanhMucList] = useState([]);
+  const [moDropdown, setMoDropdown] = useState(false);
+  const [tuKhoa, setTuKhoa] = useState('');
+  const dropdownRef = useRef(null);
 
-  // Tải số lượng mặt hàng trong giỏ nếu đã đăng nhập và là khách hàng
+  // Tải danh mục cho menu dropdown
   useEffect(() => {
-    const isCustomer = user?.role === 'customer';
-    if (!daDangNhap || !isCustomer) {
-      return;
-    }
-
     let daHuy = false;
-    const laySoLuongGio = async () => {
+    const taiDanhMuc = async () => {
       try {
-        const res = await api.get('/cart');
-        const tongSo = res.data.data.tongSoLuong;
-        if (!daHuy) setSoLuongGio(tongSo);
-      } catch {
-        // Bỏ qua lỗi giỏ hàng ở navbar
+        const res = await api.get('/categories');
+        if (!daHuy) setDanhMucList(res.data.data || []);
+      } catch (err) {
+        console.error('Lỗi tải danh mục navbar:', err);
       }
     };
-    laySoLuongGio();
+    taiDanhMuc();
+    return () => { daHuy = true; };
+  }, []);
 
-    // Lắng nghe cập nhật giỏ hàng từ trang khác
-    const handleCapNhatGio = () => laySoLuongGio();
-    window.addEventListener('booknest_cart_updated', handleCapNhatGio);
-    return () => {
-      daHuy = true;
-      window.removeEventListener('booknest_cart_updated', handleCapNhatGio);
+  // Đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setMoDropdown(false);
+      }
     };
-  }, [daDangNhap, user]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Lấy giỏ hàng qua Zustand Store (Hỗ trợ cả Khách vãng lai lẫn Khách hàng)
+  useEffect(() => {
+    const laNhanSu = user && ['admin', 'librarian', 'order_staff'].includes(user.role);
+    if (!laNhanSu) {
+      layGioHang();
+    }
+  }, [user, layGioHang]);
 
   const handleDangXuat = () => {
-    setSoLuongGio(0);
+    xoaTrangState();
     dangXuat();
     navigate('/login');
   };
 
+  const handleTimKiem = (e) => {
+    e.preventDefault();
+    if (tuKhoa.trim()) {
+      navigate(`/?search=${encodeURIComponent(tuKhoa.trim())}`);
+    }
+  };
+
   const laNhanSu = user && ['admin', 'librarian', 'order_staff'].includes(user.role);
 
-  return (
-    <header style={{
-      backgroundColor: 'var(--bg-card)',
-      borderBottom: '1px solid var(--border)',
-      position: 'sticky',
-      top: 0,
-      zIndex: 40,
-      transition: 'all 0.2s ease'
-    }}>
-      <div className="container flex items-center justify-between py-3">
-        {/* Logo & Tên dự án */}
-        <Link to="/" className="flex items-center gap-2">
-          <div style={{
-            backgroundColor: 'var(--primary)',
-            color: 'var(--primary-text)',
-            padding: '6px',
-            borderRadius: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <BookOpen size={20} />
-          </div>
-          <span className="font-serif" style={{
-            fontSize: '1.35rem',
-            fontWeight: 700,
-            letterSpacing: '-0.02em',
-            color: 'var(--text-main)'
-          }}>
-            Book<span style={{ color: 'var(--primary)' }}>Nest</span>
-          </span>
-        </Link>
+  // Hiệu ứng giọt mực loang chuyển theme (Chuẩn nguyên bản Portfolio Profile)
+  const dangChuyenThemeRef = useRef(false);
 
-        {/* Menu Điều Hướng Trung Tâm */}
-        <nav className="flex items-center gap-6" style={{ display: 'none', mdDisplay: 'flex' }}>
-          <Link to="/" style={{ fontWeight: 500, color: 'var(--text-main)' }}>
-            Trang Chủ
+  const handleToggleTheme = (e) => {
+    // Chống spam click khi giọt mực đang trong chu trình loang thấm
+    if (dangChuyenThemeRef.current) return;
+    dangChuyenThemeRef.current = true;
+
+    const btn = e.currentTarget;
+    const rect = btn?.getBoundingClientRect();
+    const cx = rect ? rect.left + rect.width / 2 : window.innerWidth - 80;
+    const cy = rect ? rect.top + rect.height / 2 : 30;
+    const targetDark = theme !== 'dark';
+
+    // 1. Kích hoạt hiệu ứng giọt mực thấm loang hữu cơ trên Three.js WebGL Canvas
+    window.dispatchEvent(
+      new CustomEvent('ink-bleed-trigger', {
+        detail: { cx, cy, targetDark }
+      })
+    );
+
+    // 2. Kích hoạt Sóng Thấm Mực Đồng Bộ Tuyệt Đối (Thuật toán Thích Ứng Khối Lớn & Header)
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+    const maxDist = Math.hypot(
+      Math.max(cx, vw - cx),
+      Math.max(cy, vh - cy)
+    );
+
+    const query = [
+      'header .container > div:first-child',
+      'header form',
+      'header .container > div:last-child',
+      'article',
+      'section > div',
+      '.grid > div',
+      '[class*="rounded"]',
+      'button',
+      'input',
+      'h1, h2, h3, h4, p',
+      'a'
+    ].join(', ');
+
+    const rawElements = Array.from(document.querySelectorAll(query));
+    const visibleElements = rawElements.filter((el) => {
+      const tag = el.tagName;
+      if (tag === 'HEADER' || tag === 'MAIN' || tag === 'SECTION' || tag === 'FOOTER' || el.id === 'root') {
+        return false;
+      }
+      if (el.classList.contains('pointer-events-none') || el.classList.contains('container')) {
+        return false;
+      }
+      if (el.style.display === 'grid' || el.classList.contains('grid')) {
+        return false;
+      }
+      const r = el.getBoundingClientRect();
+      return (
+        r.bottom >= -20 &&
+        r.top <= vh + 20 &&
+        r.right >= -20 &&
+        r.left <= vw + 20 &&
+        r.width > 0 &&
+        r.height > 0
+      );
+    });
+
+    const topLevelUnits = visibleElements.filter((el) => {
+      return !visibleElements.some((other) => other !== el && other.contains(el));
+    });
+
+    const stagedElements = [];
+    for (const el of topLevelUnits) {
+      const r = el.getBoundingClientRect();
+      const closestX = Math.max(r.left, Math.min(cx, r.right));
+      const closestY = Math.max(r.top, Math.min(cy, r.bottom));
+
+      // Với khối lớn (rộng hoặc cao > 400px như Khung Đăng nhập, Đăng ký, Chi tiết sách):
+      // Dịch điểm đón mực về phía trọng tâm khối (60% theo chiều ngang, 45% theo chiều dọc)
+      // để khối lớn ngấm màu khi mũi sóng mực Three.js lan tới nửa thân, không bị đổi màu quá sớm
+      let targetX = closestX;
+      let targetY = closestY;
+      if (r.width > 400) {
+        const midX = r.left + r.width / 2;
+        targetX = closestX + (midX - closestX) * 0.60;
+      }
+      if (r.height > 400) {
+        const midY = r.top + r.height / 2;
+        targetY = closestY + (midY - closestY) * 0.45;
+      }
+
+      const dist = Math.hypot(targetX - cx, targetY - cy);
+      const normDist = Math.min(1.0, dist / Math.max(maxDist, 1));
+      const delay = Math.round(40 + Math.pow(normDist, 0.72) * 820);
+      el.classList.add('card-theme-wave');
+      el.style.setProperty('--wave-delay', `${delay}ms`);
+      stagedElements.push(el);
+    }
+
+    // 3. Đổi class .dark và state theme ở frame kế tiếp để CSS transition bắt đầu đồng bộ
+    requestAnimationFrame(() => {
+      toggleTheme();
+    });
+
+    // 4. Mở khóa và dọn sạch class sau chu trình 1350ms
+    setTimeout(() => {
+      stagedElements.forEach((el) => {
+        el.classList.remove('card-theme-wave');
+        el.style.removeProperty('--wave-delay');
+      });
+      dangChuyenThemeRef.current = false;
+    }, 1350);
+  };
+
+  return (
+    <header 
+      style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        backgroundColor: 'var(--navbar-bg)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        boxShadow: '0 2px 8px rgba(76, 69, 65, 0.03)',
+        borderBottom: '1px solid var(--border)',
+        transition: 'background-color 650ms cubic-bezier(0.33, 1, 0.68, 1) 200ms, border-color 650ms cubic-bezier(0.33, 1, 0.68, 1) 200ms'
+      }}
+    >
+      {/* Khối nội dung Navbar */}
+      <div 
+        className="container" 
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0.65rem 1rem',
+          gap: '1.25rem'
+        }}
+      >
+        {/* Khối Logo & Tên thương hiệu & Dropdown Danh Mục */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <Link 
+            to="/" 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.65rem',
+              textDecoration: 'none'
+            }} 
+            title="BookNest - Tổ ấm của những trang sách"
+          >
+            <LogoBookNest height={38} />
+            <span className="font-fleur" style={{
+              fontSize: '2.1rem',
+              color: 'var(--text-main)',
+              lineHeight: 1,
+              letterSpacing: '0.01em',
+              userSelect: 'none'
+            }}>
+              BookNest
+            </span>
           </Link>
-          <Link to="/books" style={{ fontWeight: 500, color: 'var(--text-muted)' }}>
-            Kho Sách
-          </Link>
-          {laNhanSu && (
-            <Link 
-              to="/admin" 
-              className="badge badge-role"
-              style={{ padding: '0.35rem 0.75rem', gap: '0.4rem', color: 'var(--primary)' }}
+
+          {/* Nút Danh Mục Sách & Dropdown */}
+          <div ref={dropdownRef} style={{ position: 'relative' }}>
+            <button
+              onClick={() => setMoDropdown(!moDropdown)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                backgroundColor: 'transparent',
+                border: '1px solid var(--border)',
+                borderRadius: '8px',
+                padding: '0.45rem 0.85rem',
+                color: 'var(--text-main)',
+                fontSize: '0.88rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'background-color 0.15s ease, border-color 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
+                e.currentTarget.style.borderColor = 'var(--text-main)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderColor = 'var(--border)';
+              }}
             >
-              <ShieldCheck size={14} />
-              Quản Trị Hệ Thống
+              <span>Danh mục</span>
+              <ChevronDown size={14} style={{
+                transform: moDropdown ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.2s ease',
+                color: 'var(--text-muted)'
+              }} />
+            </button>
+
+            {moDropdown && (
+              <div style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                left: 0,
+                backgroundColor: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderRadius: '12px',
+                boxShadow: 'var(--shadow-md)',
+                width: '230px',
+                zIndex: 60,
+                overflow: 'hidden',
+                animation: 'fadeIn 0.15s ease'
+              }}>
+                <div style={{ padding: '0.35rem 0' }}>
+                  {danhMucList.map((dm) => (
+                    <Link
+                      key={dm.MaDanhMuc}
+                      to={`/?categoryId=${dm.MaDanhMuc}`}
+                      onClick={() => setMoDropdown(false)}
+                      style={{
+                        display: 'block',
+                        padding: '0.6rem 1rem',
+                        fontSize: '0.88rem',
+                        color: 'var(--text-main)',
+                        fontWeight: 500,
+                        transition: 'background-color 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-surface)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      {dm.TenDanhMuc}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Thanh Tìm Kiếm Trung Tâm Tối Giản */}
+        <form onSubmit={handleTimKiem} style={{
+          flex: 1,
+          maxWidth: '460px',
+          display: 'flex',
+          alignItems: 'center',
+          position: 'relative'
+        }}>
+          <input
+            type="text"
+            value={tuKhoa}
+            onChange={(e) => setTuKhoa(e.target.value)}
+            placeholder="Tìm tên sách, tác giả..."
+            style={{
+              width: '100%',
+              padding: '0.45rem 2.5rem 0.45rem 0.95rem',
+              borderRadius: '999px',
+              border: '1px solid var(--border)',
+              backgroundColor: 'var(--bg-surface)',
+              color: 'var(--text-main)',
+              fontSize: '0.88rem',
+              outline: 'none',
+              transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = 'var(--primary)';
+              e.currentTarget.style.boxShadow = '0 0 0 2px var(--primary-light)';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = 'var(--border)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              position: 'absolute',
+              right: '8px',
+              backgroundColor: 'transparent',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              padding: '4px'
+            }}
+            title="Tìm kiếm"
+          >
+            <Search size={16} />
+          </button>
+        </form>
+
+        {/* Khối Tiện Ích Phải: Giỏ Hàng & Người Dùng */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {laNhanSu && (
+            <Link
+              to="/admin"
+              style={{
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                color: 'var(--primary-dark)',
+                padding: '0.45rem 0.75rem',
+                border: '1px solid var(--border)',
+                borderRadius: '8px',
+                transition: 'background-color 0.15s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-surface)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              Quản trị
             </Link>
           )}
-        </nav>
 
-        {/* Khối Tiện Ích Bên Phải */}
-        <div className="flex items-center gap-3">
-          {/* Nút Đổi Theme */}
-          <button
-            onClick={toggleTheme}
-            className="btn btn-outline btn-icon"
-            title={theme === 'light' ? 'Chuyển sang chế độ Tối dịu' : 'Chuyển sang chế độ Giấy ngà'}
-            aria-label="Đổi giao diện"
-          >
-            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-          </button>
-
-          {/* Giỏ Hàng (Dành cho khách hàng) */}
           {(!user || user.role === 'customer') && (
             <Link
               to="/cart"
-              className="btn btn-outline"
-              style={{ position: 'relative', padding: '0.5rem 0.85rem' }}
-              title="Xem giỏ hàng"
+              style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.45rem 0.85rem',
+                borderRadius: '8px',
+                border: '1px solid var(--border)',
+                color: 'var(--text-main)',
+                fontSize: '0.88rem',
+                fontWeight: 500,
+                transition: 'background-color 0.15s ease, border-color 0.15s ease'
+              }}
+              title="Giỏ hàng của bạn"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
+                e.currentTarget.style.borderColor = 'var(--text-main)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderColor = 'var(--border)';
+              }}
             >
-              <ShoppingCart size={18} />
-              <span style={{ marginLeft: '4px', fontSize: '0.85rem' }}>Giỏ hàng</span>
-              {soLuongGio > 0 && (
+              <ShoppingCart size={16} />
+              <span>Giỏ hàng</span>
+              {tongSoLuong > 0 && (
                 <span style={{
-                  position: 'absolute',
-                  top: '-6px',
-                  right: '-6px',
                   backgroundColor: 'var(--primary)',
                   color: 'var(--primary-text)',
                   fontSize: '0.72rem',
                   fontWeight: 700,
                   borderRadius: '999px',
-                  padding: '1px 6px',
+                  padding: '1px 7px',
                   minWidth: '18px',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  marginLeft: '2px'
                 }}>
-                  {soLuongGio}
+                  {tongSoLuong}
                 </span>
               )}
             </Link>
           )}
 
-          {/* Trạng Thái Người Dùng */}
+          {/* Nút Toggle Chuyển Đổi Dark / Light Mode (Tích hợp hiệu ứng giọt mực loang) */}
+          <button
+            onClick={handleToggleTheme}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '36px',
+              height: '36px',
+              borderRadius: '8px',
+              border: '1px solid var(--border)',
+              backgroundColor: 'transparent',
+              color: 'var(--text-main)',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s ease, border-color 0.2s ease',
+              flexShrink: 0
+            }}
+            title={theme === 'dark' ? 'Chuyển sang Chế độ Sáng' : 'Chuyển sang Chế độ Tối'}
+            aria-label="Chuyển đổi giao diện Sáng / Tối"
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
+              e.currentTarget.style.borderColor = 'var(--border-focus)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.borderColor = 'var(--border)';
+            }}
+          >
+            {theme === 'dark' ? (
+              <Sun size={17} style={{ color: 'var(--primary)' }} />
+            ) : (
+              <Moon size={17} style={{ color: 'var(--text-main)' }} />
+            )}
+          </button>
+
           {daDangNhap ? (
-            <div className="flex items-center gap-2">
-              <Link 
-                to="/profile" 
-                className="btn btn-outline"
-                style={{ padding: '0.45rem 0.75rem', fontSize: '0.85rem' }}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Link
+                to="/profile"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.45rem 0.75rem',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-main)',
+                  fontSize: '0.88rem',
+                  fontWeight: 500,
+                  transition: 'background-color 0.15s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-surface)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
-                <User size={16} />
+                <User size={15} style={{ color: 'var(--text-muted)' }} />
                 <span>{user.fullName}</span>
               </Link>
-              
               <Link
                 to="/orders"
-                className="btn btn-outline"
-                style={{ padding: '0.45rem 0.65rem' }}
+                style={{
+                  padding: '0.45rem 0.75rem',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-main)',
+                  fontSize: '0.85rem',
+                  fontWeight: 500,
+                  transition: 'background-color 0.15s ease'
+                }}
                 title="Đơn hàng của tôi"
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-surface)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
-                <Package size={16} />
+                Đơn hàng
               </Link>
-
               <button
                 onClick={handleDangXuat}
-                className="btn btn-outline"
-                style={{ padding: '0.45rem 0.65rem', color: 'var(--danger)' }}
+                style={{
+                  padding: '0.45rem 0.65rem',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border)',
+                  backgroundColor: 'transparent',
+                  color: 'var(--danger)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background-color 0.15s ease'
+                }}
                 title="Đăng xuất"
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--danger-light)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
-                <LogOut size={16} />
+                <LogOut size={15} />
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              <Link to="/login" className="btn btn-outline btn-sm">
-                Đăng Nhập
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Link
+                to="/login"
+                style={{
+                  padding: '0.45rem 0.85rem',
+                  borderRadius: '8px',
+                  fontSize: '0.88rem',
+                  fontWeight: 500,
+                  color: 'var(--text-main)',
+                  transition: 'background-color 0.15s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-surface)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                Đăng nhập
               </Link>
-              <Link to="/register" className="btn btn-primary btn-sm">
-                Đăng Ký
+              <Link
+                to="/register"
+                style={{
+                  padding: '0.45rem 0.95rem',
+                  borderRadius: '8px',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  backgroundColor: 'var(--primary)',
+                  color: 'var(--primary-text)',
+                  boxShadow: '0 1px 3px rgba(76, 69, 65, 0.08)',
+                  transition: 'background-color 0.15s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-hover)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--primary)'}
+              >
+                Đăng ký
               </Link>
             </div>
           )}

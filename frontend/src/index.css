@@ -7,73 +7,96 @@
 
 :root {
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-serif: 'Merriweather', Georgia, serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-script: 'Dancing Script', cursive;
+  --font-fleur: 'Fleur De Leah', cursive;
+  --font-bonheur: 'Bonheur Royale', cursive;
 
-  /* Theme Light (Mặc định) */
-  --bg-app: #F7F4EB;              /* Nền toàn trang - ngà giấy sách */
-  --bg-card: #FDFBF7;             /* Thẻ nội dung - giấy mờ thanh lịch */
-  --bg-surface: #EFE9DB;          /* Mặt phẳng phụ / header bảng / sidebar */
-  --bg-hover: #E8E1D0;            /* Trạng thái di chuột */
-  --border: #DFD7C7;              /* Đường viền dịu nhẹ */
-  --border-focus: #8B5A2B;        /* Viền khi focus */
+  /* Theme Light Duy Nhất - Giấy Ngà & Cà Phê Ấm (Minimalist) */
+  --bg-app: #FCF0DA;              /* Nền toàn trang - Kem Be Giấy Ngà */
+  --bg-card: #FFFFFF;             /* Thẻ nội dung / Sách - Trắng sạch sẽ */
+  --bg-surface: #F5E8CD;          /* Bề mặt phụ / header bảng / dropdown */
+  --bg-hover: #ECE0C4;            /* Di chuột */
+  --border: #E8DCC4;              /* Đường viền mỏng tinh tế */
+  --border-focus: #4C4541;        /* Viền khi focus */
   
-  --text-main: #2C2824;           /* Chữ chính - than chì ấm */
-  --text-muted: #6B6359;          /* Chữ phụ / mô tả */
-  --text-sub: #8C8275;            /* Chữ mờ / placeholder */
+  --text-main: #4C4541;           /* Chữ chính - Nâu Than Cà Phê đầm sang */
+  --text-muted: #736B66;          /* Chữ phụ / mô tả */
+  --text-sub: #9E958F;            /* Chữ mờ / placeholder */
 
-  --primary: #8B4513;             /* Màu nhấn chính - nâu da mộc / bìa sách cổ */
-  --primary-hover: #72380E;
-  --primary-light: #F2E3D5;
-  --primary-text: #FFFFFF;
+  --primary: #F2C46A;             /* Màu nhấn chính - Vàng Hổ Phách Ấm */
+  --primary-hover: #E5B555;
+  --primary-dark: #4C4541;        /* Nâu than khi cần độ tương phản cao */
+  --primary-light: #FDF4E1;
+  --primary-text: #4C4541;        /* Chữ trên nền nút vàng */
 
-  --accent: #2E6B47;              /* Xanh lục tri thức / thông báo thành công */
-  --accent-light: #E1EFE6;
-  --warning: #C07018;             /* Vàng hổ phách cảnh báo */
-  --warning-light: #FBF0DF;
-  --danger: #B33927;              /* Đỏ đất báo lỗi / hủy đơn */
-  --danger-light: #FBE5E2;
-  --info: #2B6699;                /* Xanh lam thông tin */
-  --info-light: #DFEDFA;
+  --accent: #AEAC78;              /* Xanh Rêu Sage - thiên nhiên, mầm sống */
+  --accent-light: #F0F0E4;
+  --warning: #D97706;             /* Cảnh báo */
+  --warning-light: #FEF3C7;
+  --danger: #DC2626;              /* Đỏ đất báo lỗi / xóa */
+  --danger-light: #FEE2E2;
+  --info: #2563EB;                /* Xanh lam */
+  --info-light: #EFF6FF;
 
-  --shadow-sm: 0 1px 3px rgba(44, 40, 36, 0.05);
-  --shadow-md: 0 4px 12px rgba(44, 40, 36, 0.07);
-  --shadow-lg: 0 10px 25px rgba(44, 40, 36, 0.1);
+  --shadow-sm: 0 1px 3px rgba(76, 69, 65, 0.04);
+  --shadow-md: 0 4px 12px rgba(76, 69, 65, 0.06);
+  --shadow-lg: 0 10px 25px rgba(76, 69, 65, 0.08);
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
   --radius-full: 9999px;
+  --navbar-bg: rgba(252, 240, 218, 0.94);
+  --price: #B45309;               /* Màu giá tiền trên nền sáng */
+
+  /* Biến màu Logo BookNest SVG (Đổi màu theo Theme) */
+  --logo-vang: #F6C15C;           /* Cánh sách sáng - Vàng hổ phách */
+  --logo-cam: #F4AF3F;            /* Cánh sách bóng - Cam hổ phách */
+  --logo-la: #899C5F;             /* Chiếc lá mầm - Xanh rêu tươi */
+  --logo-nau: #4E443F;            /* Chiếc tổ chim & vầng trăng - Nâu cà phê đầm ấm */
 }
 
-[data-theme="dark"] {
-  /* Theme Dark (Tối dịu mắt, chống mỏi) */
-  --bg-app: #18181B;              /* Than đen dịu, không đen kịt #000000 */
-  --bg-card: #232328;             /* Nền card nổi bật */
-  --bg-surface: #2C2C33;          /* Bề mặt phụ */
-  --bg-hover: #35353E;
-  --border: #3A3A42;
-  --border-focus: #D4A373;
+/* Theme Dark - Phong cách Mực Tím Rượu Vang & Than Chì Color Hunt (#2C2C2C, #853953, #612D53, #F3F4F4) */
+.dark {
+  --bg-app: #2C2C2C;              /* Nền toàn trang - Than chì lì dịu mắt */
+  --bg-card: #3A3238;             /* Thẻ nội dung / Sách - Than chì ánh mận ấm, phân tách rõ khỏi nền */
+  --bg-surface: #483E46;          /* Bề mặt phụ / header bảng / dropdown / ô nhập */
+  --bg-hover: #564954;            /* Di chuột */
+  --border: #63535F;              /* Đường viền mận than rõ nét, phân tách khối sắc sảo */
+  --border-focus: #853953;        /* Viền khi focus - Đỏ rượu vang */
+  --navbar-bg: rgba(44, 44, 44, 0.95); /* Nền Navbar mờ kính */
 
-  --text-main: #E6E4DF;           /* Chữ sáng ấm */
-  --text-muted: #A39F97;          /* Chữ phụ */
-  --text-sub: #78746D;
+  --text-main: #F3F4F4;           /* Chữ chính - Trắng phấn sáng dịu mắt */
+  --text-muted: #D4C7CE;          /* Chữ phụ / mô tả - Sáng rõ, dễ đọc, không bị chìm */
+  --text-sub: #ABA0A7;            /* Chữ mờ / placeholder - Đủ tương phản, không bị tàng hình */
 
-  --primary: #D4A373;             /* Hổ phách ấm */
-  --primary-hover: #B8895A;
-  --primary-light: #3A2E24;
-  --primary-text: #18181B;
+  --primary: #853953;             /* Màu nhấn chính - Đỏ Rượu Vang sang trọng */
+  --primary-hover: #9E4463;
+  --primary-dark: #612D53;        /* Tím mận đêm */
+  --primary-light: #4A2837;
+  --primary-text: #F3F4F4;        /* Chữ trên nền nút đỏ vang */
 
-  --accent: #48A870;
-  --accent-light: #1A3324;
-  --warning: #E09038;
-  --warning-light: #382A18;
-  --danger: #D95D4A;
-  --danger-light: #381E1A;
-  --info: #4F98D6;
-  --info-light: #182A3A;
+  --accent: #612D53;              /* Tím mận đêm huyền bí */
+  --accent-light: #3A1E32;
+  --warning: #F59E0B;
+  --warning-light: #382A14;
+  --danger: #EF4444;
+  --danger-light: #381A1A;
+  --info: #3B82F6;
+  --info-light: #18283E;
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.5);
+  --price: #F2C46A;               /* Giá tiền màu vàng hổ phách ấm sáng rực rỡ trên nền tối */
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(243, 244, 244, 0.08);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(243, 244, 244, 0.12);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(243, 244, 244, 0.16);
+
+  /* Biến màu Logo BookNest SVG (Đổi màu động Dark Mode - Vầng Trăng Vàng Hổ Phách & Trang Sách Ngà) */
+  --logo-vang: #FFF8EB;           /* Cánh sách sáng - Kem ngà trang giấy tỏa sáng dưới ánh trăng */
+  --logo-cam: #E89D34;            /* Cánh sách bóng - Cam hổ phách ấm tạo chiều sâu 3D */
+  --logo-la: #9BC06A;             /* Chiếc lá mầm - Xanh non rực rỡ tràn đầy sức sống */
+  --logo-nau: #F2C46A;            /* Chiếc tổ & vầng trăng khuyết - Vàng hổ phách rực rỡ sang trọng */
 }
 
 /* ==========================================================================
@@ -85,14 +108,27 @@
   padding: 0;
 }
 
+html {
+  background-color: var(--bg-app);
+}
+
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-app);
+  background-color: transparent;
   color: var(--text-main);
   line-height: 1.5;
   min-height: 100vh;
-  transition: background-color 0.25s ease, color 0.25s ease;
+  transition: color 0.25s ease;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Sóng thấm mực loang theo khoảng cách cho các thẻ bề mặt giao diện */
+.card-theme-wave,
+.card-theme-wave * {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow !important;
+  transition-duration: 480ms !important;
+  transition-timing-function: cubic-bezier(0.33, 1, 0.68, 1) !important;
+  transition-delay: var(--wave-delay, 0ms) !important;
 }
 
 a {
@@ -112,6 +148,12 @@ input, select, textarea {
   font-size: 0.95rem;
 }
 
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-sub);
+  opacity: 0.9;
+}
+
 /* ==========================================================================
    Utility Classes & Layout
    ========================================================================== */
@@ -123,6 +165,18 @@ input, select, textarea {
 
 .font-serif {
   font-family: var(--font-serif);
+}
+
+.font-script {
+  font-family: var(--font-script);
+}
+
+.font-fleur {
+  font-family: var(--font-fleur);
+}
+
+.font-bonheur {
+  font-family: var(--font-bonheur);
 }
 
 /* Flexbox & Grid */
@@ -372,4 +426,30 @@ input, select, textarea {
   width: 100%;
   padding: 1.5rem;
   box-shadow: var(--shadow-lg);
+}
+
+/* Tiện ích cuộn ngang mượt mà ẩn scrollbar cho Kệ Sách */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Tiện ích Typography nghệ thuật */
+.font-script {
+  font-family: var(--font-script);
+}
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Sóng Thấm Mực Theo Khoảng Cách Cho Các Thẻ Bề Mặt Giao Diện (Staggered Proximity Wave - Chuẩn Nguyên Bản Portfolio) */
+.card-theme-wave,
+.card-theme-wave * {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow !important;
+  transition-duration: 480ms !important;
+  transition-timing-function: cubic-bezier(0.33, 1, 0.68, 1) !important;
+  transition-delay: var(--wave-delay, 0ms) !important;
 }

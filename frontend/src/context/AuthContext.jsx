@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useLayoutEffect, useRef } from 'react';
 import api from '../services/api';
 
 const AuthContext = createContext(null);
@@ -19,19 +19,49 @@ export const AuthProvider = ({ children }) => {
 
   const [loading] = useState(false);
 
-  // Quản lý theme Light / Dark: Mặc định Light (trắng ngà giấy sách)
+  // Quản lý chủ đề giao diện (Theme Dark / Light)
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('booknest_theme') || 'light';
+    try {
+      const luuTheme = localStorage.getItem('booknest_theme');
+      if (luuTheme === 'dark' || luuTheme === 'light') return luuTheme;
+    } catch {
+      // ignore
+    }
+    return 'light';
   });
 
-  useEffect(() => {
-    // Áp dụng class theme lên thẻ HTML gốc
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('booknest_theme', theme);
+  const daKhoiTaoThemeRef = useRef(false);
+
+  // Áp dụng class .dark và data-theme lên <html> khi theme thay đổi
+  // Dùng useLayoutEffect (không phải useEffect) để khi Navbar bọc toggleTheme trong flushSync, class .dark đổi
+  // ngay trong cùng khung hình với lúc mực bắt đầu loang, nếu không giao diện đổi lệch mốc so với giấy WebGL
+  useLayoutEffect(() => {
+    const isDark = theme === 'dark';
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+    try {
+      localStorage.setItem('booknest_theme', theme);
+    } catch {
+      // ignore
+    }
+
+    // Chỉ phát sự kiện chuyển màu động khi người dùng chủ động toggle (không phát khi mount)
+    if (daKhoiTaoThemeRef.current) {
+      window.dispatchEvent(new CustomEvent('booknest-theme-change', {
+        detail: { isDark }
+      }));
+    } else {
+      daKhoiTaoThemeRef.current = true;
+    }
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
   };
 
   // Lắng nghe sự kiện 401 Unauthorized từ api interceptor

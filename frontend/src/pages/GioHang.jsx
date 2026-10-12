@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import useCartStore from '../stores/cartStore';
+import { useAuth } from '../context/AuthContext';
 import { 
   ShoppingCart, 
   Trash2, 
@@ -14,79 +15,56 @@ import {
 
 export const GioHang = () => {
   const navigate = useNavigate();
-  const [gioHang, setGioHang] = useState(null);
-  const [dangTai, setDangTai] = useState(true);
-  const [loi, setLoi] = useState('');
-  const [dangCapNhat, setDangCapNhat] = useState(false);
-
-  // Tải thông tin giỏ hàng từ API
-  const taiGioHang = async () => {
-    setDangTai(true);
-    try {
-      const res = await api.get('/cart');
-      setGioHang(res.data.data);
-    } catch (err) {
-      setLoi(err.response?.data?.message || 'Không thể tải giỏ hàng của bạn');
-    } finally {
-      setDangTai(false);
-    }
-  };
+  const { daDangNhap } = useAuth();
+  const {
+    gioHang,
+    cacMon,
+    daKhoiTao,
+    dangCapNhat,
+    loi,
+    layGioHang,
+    capNhatSoLuong,
+    xoaMon,
+    xoaToanBoGio
+  } = useCartStore();
 
   useEffect(() => {
-    let daHuy = false;
-    const nap = async () => {
-      try {
-        const res = await api.get('/cart');
-        if (daHuy) return;
-        setGioHang(res.data.data);
-      } catch (err) {
-        if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải giỏ hàng của bạn');
-      } finally {
-        if (!daHuy) setDangTai(false);
-      }
-    };
-    nap();
-    return () => {
-      daHuy = true;
-    };
-  }, []);
+    layGioHang();
+  }, [layGioHang]);
+
+  // Tiến hành đặt hàng: Nếu là khách vãng lai, chuyển hướng sang đăng nhập và quay lại checkout sau đó
+  const handleTienHanhDatHang = () => {
+    if (!daDangNhap) {
+      navigate('/login', { state: { from: { pathname: '/checkout' } } });
+      return;
+    }
+    navigate('/checkout');
+  };
 
   // Thay đổi số lượng mặt hàng trong giỏ
   const handleCapNhatSoLuong = async (maSach, soLuongMoi) => {
     if (soLuongMoi < 1) return;
-    setDangCapNhat(true);
-    try {
-      await api.put(`/cart/items/${maSach}`, { soLuong: soLuongMoi });
-      await taiGioHang();
-      window.dispatchEvent(new CustomEvent('booknest_cart_updated'));
-    } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi khi cập nhật số lượng');
-    } finally {
-      setDangCapNhat(false);
+    const ketQua = await capNhatSoLuong(maSach, soLuongMoi);
+    if (!ketQua.thanhCong) {
+      alert(ketQua.thongDiep);
     }
   };
 
   // Xóa một mặt hàng khỏi giỏ
   const handleXoaMatHang = async (maSach) => {
     if (!window.confirm('Bạn có chắc muốn xóa cuốn sách này khỏi giỏ hàng?')) return;
-    try {
-      await api.delete(`/cart/items/${maSach}`);
-      await taiGioHang();
-      window.dispatchEvent(new CustomEvent('booknest_cart_updated'));
-    } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi khi xóa sản phẩm');
+    const ketQua = await xoaMon(maSach);
+    if (!ketQua.thanhCong) {
+      alert(ketQua.thongDiep);
     }
   };
 
   // Xóa sạch toàn bộ giỏ hàng
   const handleXoaTatCa = async () => {
     if (!window.confirm('Bạn có chắc muốn dọn sạch giỏ hàng?')) return;
-    try {
-      await api.delete('/cart');
-      await taiGioHang();
-      window.dispatchEvent(new CustomEvent('booknest_cart_updated'));
-    } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi khi dọn giỏ hàng');
+    const ketQua = await xoaToanBoGio();
+    if (!ketQua.thanhCong) {
+      alert(ketQua.thongDiep);
     }
   };
 
@@ -94,15 +72,62 @@ export const GioHang = () => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(soTien || 0);
   };
 
-  if (dangTai) {
+  const items = cacMon || [];
+  const coDuLieuSan = items.length > 0;
+
+  // Khung xương Skeleton 2 cột chuẩn tỷ lệ - Chỉ hiện khi hoàn toàn chưa có dữ liệu và đang nạp lần đầu
+  if (!daKhoiTao && !coDuLieuSan) {
     return (
-      <div className="container py-12 flex justify-center">
-        <p className="font-serif" style={{ color: 'var(--text-muted)' }}>Đang nạp giỏ hàng...</p>
+      <div className="container py-8" style={{ minHeight: '60vh' }}>
+        <h1 className="font-serif mb-6" style={{ fontSize: '1.75rem', fontWeight: 700 }}>
+          Giỏ Hàng Của Bạn
+        </h1>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Cột trái: Khung bảng sản phẩm */}
+          <div className="lg:col-span-2">
+            <div style={{
+              backgroundColor: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: '8px',
+              padding: '1.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.25rem'
+            }}>
+              {[1, 2].map((i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ width: '48px', height: '64px', backgroundColor: 'rgba(76, 69, 65, 0.08)', borderRadius: '4px' }} />
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ height: '18px', width: '60%', backgroundColor: 'rgba(76, 69, 65, 0.08)', borderRadius: '4px' }} />
+                    <div style={{ height: '14px', width: '35%', backgroundColor: 'rgba(76, 69, 65, 0.05)', borderRadius: '4px' }} />
+                  </div>
+                  <div style={{ height: '24px', width: '80px', backgroundColor: 'rgba(76, 69, 65, 0.08)', borderRadius: '4px' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Cột phải: Khung tổng kết đơn hàng */}
+          <div>
+            <div style={{
+              backgroundColor: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: '8px',
+              padding: '1.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem'
+            }}>
+              <div style={{ height: '22px', width: '50%', backgroundColor: 'rgba(76, 69, 65, 0.08)', borderRadius: '4px' }} />
+              <div style={{ height: '16px', width: '100%', backgroundColor: 'rgba(76, 69, 65, 0.05)', borderRadius: '4px' }} />
+              <div style={{ height: '16px', width: '100%', backgroundColor: 'rgba(76, 69, 65, 0.05)', borderRadius: '4px' }} />
+              <div style={{ height: '44px', width: '100%', backgroundColor: 'rgba(76, 69, 65, 0.08)', borderRadius: '6px', marginTop: '0.5rem' }} />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
-
-  const items = gioHang?.cacMon || [];
   const coSanPhamVuotTon = items.some((item) => item.soLuong > (item.sach?.soLuongTon ?? 0));
 
   return (
@@ -299,16 +324,18 @@ export const GioHang = () => {
 
               <button
                 disabled={items.length === 0 || coSanPhamVuotTon}
-                onClick={() => navigate('/checkout')}
+                onClick={handleTienHanhDatHang}
                 className="btn btn-primary w-full"
                 style={{ padding: '0.85rem' }}
               >
-                Tiến Hành Đặt Hàng
+                {daDangNhap ? 'Tiến Hành Đặt Hàng' : 'Đăng Nhập Để Đặt Hàng'}
                 <ArrowRight size={18} />
               </button>
 
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.75rem', textAlign: 'center' }}>
-                Giá và tình trạng tồn kho được khóa nguyên tử khi tạo đơn hàng
+                {daDangNhap
+                  ? 'Giá và tình trạng tồn kho được khóa nguyên tử khi tạo đơn hàng'
+                  : 'Bạn sẽ được chuyển đến trang đăng nhập trước khi hoàn tất đặt hàng'}
               </p>
             </div>
           </div>

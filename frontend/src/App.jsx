@@ -1,7 +1,10 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState, useCallback } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProtectedRoute, RoleGuard } from './components/Guards';
+import SmoothScroll from './components/SmoothScroll';
+import PageLoader from './components/PageLoader';
+import PaperBackgroundCanvas from './components/canvas/PaperBackgroundCanvas';
 
 // Components Chung
 import Navbar from './components/Navbar';
@@ -30,7 +33,7 @@ import QuanLyNhanSu from './pages/admin/QuanLyNhanSu';
 // Layout chung cho Storefront (có Navbar & Footer)
 const StorefrontLayout = ({ children }) => {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', position: 'relative', zIndex: 1 }}>
       <Navbar />
       <main style={{ flex: 1 }}>{children}</main>
       <Footer />
@@ -48,95 +51,117 @@ const AdminIndexRedirect = () => {
   return <Navigate to="/unauthorized" replace />;
 };
 
+// Component điều phối tuyến đường kết hợp hiệu ứng chuyển trang đóng băng (Freeze Route)
+const AppContent = () => {
+  const location = useLocation();
+  const [displayLocation, setDisplayLocation] = useState(location);
+
+  // Khi rèm đã che kín 100% màn hình, mới hoán đổi sang trang mới!
+  const handleCurtainCovered = useCallback(() => {
+    setDisplayLocation(location);
+  }, [location]);
+
+  return (
+    <>
+      <PaperBackgroundCanvas />
+      <PageLoader 
+        location={location} 
+        onCurtainCovered={handleCurtainCovered} 
+      />
+      <Routes location={displayLocation}>
+        {/* ==================== CÁC ROUTE STOREFRONT ==================== */}
+        <Route path="/" element={<StorefrontLayout><TrangChu /></StorefrontLayout>} />
+        <Route path="/books" element={<StorefrontLayout><TrangChu /></StorefrontLayout>} />
+        <Route path="/books/:id" element={<StorefrontLayout><ChiTietSach /></StorefrontLayout>} />
+        <Route path="/login" element={<StorefrontLayout><DangNhap /></StorefrontLayout>} />
+        <Route path="/register" element={<StorefrontLayout><DangKy /></StorefrontLayout>} />
+        <Route path="/unauthorized" element={<StorefrontLayout><KhongCoQuyen /></StorefrontLayout>} />
+
+        {/* Tuyến đường Giỏ Hàng: Công khai cho cả Khách vãng lai (Guest) và Khách hàng */}
+        <Route path="/cart" element={<StorefrontLayout><GioHang /></StorefrontLayout>} />
+
+        {/* Các Route Yêu Cầu Đăng Nhập */}
+        <Route path="/checkout" element={
+          <ProtectedRoute>
+            <StorefrontLayout><ThanhToan /></StorefrontLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/orders" element={
+          <ProtectedRoute>
+            <StorefrontLayout><DonHangCuaToi /></StorefrontLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/orders/:id" element={
+          <ProtectedRoute>
+            <StorefrontLayout><ChiTietDonHang /></StorefrontLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <StorefrontLayout><HoSo /></StorefrontLayout>
+          </ProtectedRoute>
+        } />
+
+        {/* ==================== CÁC ROUTE BACK-OFFICE QUẢN TRỊ ==================== */}
+        <Route path="/admin" element={
+          <ProtectedRoute>
+            <RoleGuard allowedRoles={['admin', 'librarian', 'order_staff']}>
+              <AdminLayout />
+            </RoleGuard>
+          </ProtectedRoute>
+        }>
+          <Route index element={<AdminIndexRedirect />} />
+          
+          {/* Dashboard Thống kê: Chỉ Admin */}
+          <Route path="dashboard" element={
+            <RoleGuard allowedRoles={['admin']}>
+              <DashboardThongKe />
+            </RoleGuard>
+          } />
+
+          {/* Quản lý Sách: Thủ thư & Admin */}
+          <Route path="books" element={
+            <RoleGuard allowedRoles={['librarian', 'admin']}>
+              <QuanLySach />
+            </RoleGuard>
+          } />
+
+          {/* Nhập kho: Thủ thư & Admin */}
+          <Route path="inventory" element={
+            <RoleGuard allowedRoles={['librarian', 'admin']}>
+              <NhapKho />
+            </RoleGuard>
+          } />
+
+          {/* Xử lý Đơn hàng: Nhân viên đơn hàng & Admin */}
+          <Route path="orders" element={
+            <RoleGuard allowedRoles={['order_staff', 'admin']}>
+              <QuanLyDonHang />
+            </RoleGuard>
+          } />
+
+          {/* Quản lý Nhân sự: Chỉ Admin */}
+          <Route path="users" element={
+            <RoleGuard allowedRoles={['admin']}>
+              <QuanLyNhanSu />
+            </RoleGuard>
+          } />
+        </Route>
+
+        {/* Bắt các đường dẫn không tồn tại */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
+  );
+};
+
 export const App = () => {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Routes>
-          {/* ==================== CÁC ROUTE STOREFRONT ==================== */}
-          <Route path="/" element={<StorefrontLayout><TrangChu /></StorefrontLayout>} />
-          <Route path="/books" element={<StorefrontLayout><TrangChu /></StorefrontLayout>} />
-          <Route path="/books/:id" element={<StorefrontLayout><ChiTietSach /></StorefrontLayout>} />
-          <Route path="/login" element={<StorefrontLayout><DangNhap /></StorefrontLayout>} />
-          <Route path="/register" element={<StorefrontLayout><DangKy /></StorefrontLayout>} />
-          <Route path="/unauthorized" element={<StorefrontLayout><KhongCoQuyen /></StorefrontLayout>} />
-
-          {/* Các Route Yêu Cầu Khách Hàng Đăng Nhập */}
-          <Route path="/cart" element={
-            <ProtectedRoute>
-              <StorefrontLayout><GioHang /></StorefrontLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/checkout" element={
-            <ProtectedRoute>
-              <StorefrontLayout><ThanhToan /></StorefrontLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/orders" element={
-            <ProtectedRoute>
-              <StorefrontLayout><DonHangCuaToi /></StorefrontLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/orders/:id" element={
-            <ProtectedRoute>
-              <StorefrontLayout><ChiTietDonHang /></StorefrontLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <StorefrontLayout><HoSo /></StorefrontLayout>
-            </ProtectedRoute>
-          } />
-
-          {/* ==================== CÁC ROUTE BACK-OFFICE QUẢN TRỊ ==================== */}
-          <Route path="/admin" element={
-            <ProtectedRoute>
-              <RoleGuard allowedRoles={['admin', 'librarian', 'order_staff']}>
-                <AdminLayout />
-              </RoleGuard>
-            </ProtectedRoute>
-          }>
-            <Route index element={<AdminIndexRedirect />} />
-            
-            {/* Dashboard Thống kê: Chỉ Admin */}
-            <Route path="dashboard" element={
-              <RoleGuard allowedRoles={['admin']}>
-                <DashboardThongKe />
-              </RoleGuard>
-            } />
-
-            {/* Quản lý Sách: Thủ thư & Admin */}
-            <Route path="books" element={
-              <RoleGuard allowedRoles={['librarian', 'admin']}>
-                <QuanLySach />
-              </RoleGuard>
-            } />
-
-            {/* Nhập kho: Thủ thư & Admin */}
-            <Route path="inventory" element={
-              <RoleGuard allowedRoles={['librarian', 'admin']}>
-                <NhapKho />
-              </RoleGuard>
-            } />
-
-            {/* Xử lý Đơn hàng: Nhân viên đơn hàng & Admin */}
-            <Route path="orders" element={
-              <RoleGuard allowedRoles={['order_staff', 'admin']}>
-                <QuanLyDonHang />
-              </RoleGuard>
-            } />
-
-            {/* Quản lý Nhân sự: Chỉ Admin */}
-            <Route path="users" element={
-              <RoleGuard allowedRoles={['admin']}>
-                <QuanLyNhanSu />
-              </RoleGuard>
-            } />
-          </Route>
-
-          {/* Bắt các đường dẫn không tồn tại */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <SmoothScroll>
+          <AppContent />
+        </SmoothScroll>
       </BrowserRouter>
     </AuthProvider>
   );

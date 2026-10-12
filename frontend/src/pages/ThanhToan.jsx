@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
+import useCartStore from '../stores/cartStore';
 import { 
   MapPin, 
   CheckCircle, 
@@ -11,8 +12,8 @@ import {
 
 export const ThanhToan = () => {
   const navigate = useNavigate();
+  const { gioHang, layGioHang, xoaTrangState } = useCartStore();
 
-  const [gioHang, setGioHang] = useState(null);
   const [dangTai, setDangTai] = useState(true);
   const [dangDatHang, setDangDatHang] = useState(false);
   const [loi, setLoi] = useState('');
@@ -26,26 +27,32 @@ export const ThanhToan = () => {
   });
 
   useEffect(() => {
-    const taiGioHang = async () => {
+    let daHuy = false;
+    const taiDuLieu = async () => {
       try {
-        const [resGio, resHoSo] = await Promise.all([api.get('/cart'), api.get('/users/profile')]);
-        setGioHang(resGio.data.data);
-        // Điền sẵn thông tin nhận hàng từ hồ sơ
+        const [resGio, resHoSo] = await Promise.all([layGioHang(), api.get('/users/profile')]);
+        if (daHuy) return;
+        if (!resGio) {
+          setLoi('Không thể tải thông tin giỏ hàng');
+        }
         const hoSo = resHoSo.data.data;
-        setForm((formCu) => ({
-          ...formCu,
-          tenNguoiNhan: hoSo.HoTen,
-          soDienThoaiNhan: hoSo.SoDienThoai || '',
-          diaChiGiaoHang: hoSo.DiaChiMacDinh || ''
-        }));
+        if (hoSo) {
+          setForm((formCu) => ({
+            ...formCu,
+            tenNguoiNhan: hoSo.HoTen || '',
+            soDienThoaiNhan: hoSo.SoDienThoai || '',
+            diaChiGiaoHang: hoSo.DiaChiMacDinh || ''
+          }));
+        }
       } catch {
-        setLoi('Không thể tải thông tin giỏ hàng');
+        if (!daHuy) setLoi('Không thể tải thông tin giao hàng');
       } finally {
-        setDangTai(false);
+        if (!daHuy) setDangTai(false);
       }
     };
-    taiGioHang();
-  }, []);
+    taiDuLieu();
+    return () => { daHuy = true; };
+  }, [layGioHang]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -64,8 +71,8 @@ export const ThanhToan = () => {
         ghiChu: form.ghiChu || undefined
       });
 
-      // Bắn sự kiện cập nhật giỏ hàng trên navbar về 0
-      window.dispatchEvent(new CustomEvent('booknest_cart_updated'));
+      // Xóa trắng state giỏ hàng tập trung sau khi đặt hàng thành công
+      xoaTrangState();
 
       const maDonHang = res.data.data?.MaDonHang;
       alert('Chúc mừng! Đơn hàng của bạn đã được khởi tạo thành công.');

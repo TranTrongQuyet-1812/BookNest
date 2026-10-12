@@ -1,15 +1,23 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, LogIn, AlertCircle, UserCheck } from 'lucide-react';
+import useCartStore from '../stores/cartStore';
+import LogoBookNest from '../components/LogoBookNest';
+import { 
+  Eye, 
+  EyeOff, 
+  AlertCircle 
+} from 'lucide-react';
 
 export const DangNhap = () => {
   const { dangNhap } = useAuth();
+  const { dongBoGioHangGuestLenServer } = useCartStore();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [email, setEmail] = useState('');
   const [matKhau, setMatKhau] = useState('');
+  const [hienMatKhau, setHienMatKhau] = useState(false);
   const [loi, setLoi] = useState('');
   const [dangXuLy, setDangXuLy] = useState(false);
 
@@ -24,6 +32,8 @@ export const DangNhap = () => {
       if (['admin', 'librarian', 'order_staff'].includes(user.role)) {
         navigate('/admin');
       } else {
+        // Tự động đồng bộ giỏ hàng khách vãng lai lên server nếu có
+        await dongBoGioHangGuestLenServer();
         const duongDanCu = location.state?.from?.pathname || '/';
         navigate(duongDanCu);
       }
@@ -34,127 +44,200 @@ export const DangNhap = () => {
     }
   };
 
-  // Nút bấm điền nhanh tài khoản demo phục vụ chấm điểm đồ án
-  const dienTaiKhoanDemo = (emailDemo) => {
-    setEmail(emailDemo);
-    setMatKhau('BookNest@123');
-    setLoi('');
-  };
+
 
   return (
-    <div className="container py-12 flex justify-center">
-      <div className="card" style={{ maxWidth: '460px', width: '100%', padding: '2rem' }}>
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <div style={{
-            display: 'inline-flex',
-            padding: '10px',
-            backgroundColor: 'var(--primary)',
-            color: 'var(--primary-text)',
-            borderRadius: '12px',
-            marginBottom: '0.75rem'
-          }}>
-            <BookOpen size={28} />
-          </div>
-          <h2 className="font-serif" style={{ fontSize: '1.5rem', fontWeight: 700 }}>Đăng Nhập BookNest</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-            Truy cập hệ thống quản lý & mua sách trực tuyến
-          </p>
-        </div>
-
-        {loi && (
-          <div className="alert alert-danger">
-            <AlertCircle size={18} />
-            <span>{loi}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Địa chỉ Email</label>
-            <input
-              type="email"
-              required
-              className="form-input"
-              placeholder="nhap.email@vidu.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Mật khẩu</label>
-            <input
-              type="password"
-              required
-              className="form-input"
-              placeholder="••••••••"
-              value={matKhau}
-              onChange={(e) => setMatKhau(e.target.value)}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={dangXuLy}
-            className="btn btn-primary w-full mt-4"
-            style={{ padding: '0.75rem' }}
-          >
-            <LogIn size={18} />
-            {dangXuLy ? 'Đang xác thực...' : 'Đăng Nhập'}
-          </button>
-        </form>
-
-        {/* Điền nhanh tài khoản demo */}
+    <div className="container py-12 flex justify-center items-center" style={{ minHeight: 'calc(100vh - 220px)' }}>
+      {/* Khung sách đôi Folio Split Card (Thiết kế Card Sang Trọng, Phân Tầng Rõ Nét) */}
+      <div style={{
+        maxWidth: '920px',
+        width: '100%',
+        backgroundColor: 'var(--bg-card)',
+        borderRadius: '24px',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-md)',
+        overflow: 'hidden',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))'
+      }}>
+        {/* Cột Trái: Story & Brand Atmosphere */}
         <div style={{
-          marginTop: '1.5rem',
-          paddingTop: '1.25rem',
-          borderTop: '1px solid var(--border)'
+          backgroundColor: 'var(--bg-surface)',
+          padding: '3rem 2.5rem',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          borderRight: '1px solid var(--border)'
         }}>
-          <div className="flex items-center gap-1 mb-2" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-            <UserCheck size={14} />
-            <span>ĐIỀN NHANH TÀI KHOẢN DEMO (PASS: BookNest@123):</span>
+          <div>
+            {/* Logo & Tên thương hiệu */}
+            <div className="flex items-center gap-3 mb-8">
+              <LogoBookNest height={44} />
+              <span className="font-fleur" style={{
+                fontSize: '2.5rem',
+                color: 'var(--text-main)',
+                lineHeight: 1
+              }}>
+                BookNest
+              </span>
+            </div>
+
+            {/* Đoạn tản văn & Danh ngôn */}
+            <p style={{
+              fontFamily: 'var(--font-serif)',
+              fontSize: '1.25rem',
+              fontStyle: 'italic',
+              lineHeight: 1.6,
+              color: 'var(--text-main)',
+              marginBottom: '0.75rem'
+            }}>
+              "Một cuốn sách thực sự tốt sẽ dạy cho ta điều gì đó mới mẻ mỗi lần ta đọc lại nó."
+            </p>
+            <p style={{
+              fontSize: '0.85rem',
+              color: 'var(--text-muted)',
+              marginBottom: '2rem',
+              fontWeight: 500
+            }}>
+              — Ralph Waldo Emerson
+            </p>
+
+            <p style={{
+              fontSize: '0.9rem',
+              color: 'var(--text-muted)',
+              lineHeight: 1.7,
+              marginBottom: '2rem'
+            }}>
+              Chào mừng bạn trở về với BookNest. Nơi tách cà phê thơm dịu và những trang sách đang kiên nhẫn chờ người lật mở.
+            </p>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => dienTaiKhoanDemo('admin@booknest.vn')}
-              className="btn btn-outline btn-sm"
-              style={{ fontSize: '0.78rem' }}
-            >
-              Quản Trị (Admin)
-            </button>
-            <button
-              type="button"
-              onClick={() => dienTaiKhoanDemo('thuthu@booknest.vn')}
-              className="btn btn-outline btn-sm"
-              style={{ fontSize: '0.78rem' }}
-            >
-              Thủ Thư (Librarian)
-            </button>
-            <button
-              type="button"
-              onClick={() => dienTaiKhoanDemo('nhanvien@booknest.vn')}
-              className="btn btn-outline btn-sm"
-              style={{ fontSize: '0.78rem' }}
-            >
-              NV Đơn (Staff)
-            </button>
-            <button
-              type="button"
-              onClick={() => dienTaiKhoanDemo('khachhang@booknest.vn')}
-              className="btn btn-outline btn-sm"
-              style={{ fontSize: '0.78rem' }}
-            >
-              Khách (Customer)
-            </button>
+
+          {/* 3 Cam kết - Phong cách Typography tối giản không lạm dụng icon */}
+          <div style={{
+            borderTop: '1px solid var(--border)',
+            paddingTop: '1.5rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.65rem',
+            fontSize: '0.825rem',
+            color: 'var(--text-muted)'
+          }}>
+            <div>• 100% Sách Thật & Tuyển Chọn Tinh Tế</div>
+            <div>• Giao Hàng Nhanh Chóng & Bọc Sách Cẩn Trọng</div>
+            <div>• Độc Giả Xác Thực & Đánh Giá Khách Quan</div>
           </div>
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-          Chưa có tài khoản?{' '}
-          <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 600 }}>
-            Đăng ký tài khoản mới
-          </Link>
+        {/* Cột Phải: Biểu Mẫu Đăng Nhập */}
+        <div style={{
+          padding: '3rem 2.5rem',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center'
+        }}>
+          <div style={{ marginBottom: '1.75rem' }}>
+            <h2 className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-main)' }}>
+              Đăng Nhập
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.35rem' }}>
+              Nhập email và mật khẩu để tiếp tục hành trình đọc sách
+            </p>
+          </div>
+
+          {loi && (
+            <div className="alert alert-danger mb-4" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertCircle size={18} style={{ flexShrink: 0 }} />
+              <span style={{ fontSize: '0.875rem' }}>{loi}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            {/* Trường Email - Tối giản không icon thừa */}
+            <div className="form-group mb-4">
+              <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                Địa chỉ Email
+              </label>
+              <input
+                type="email"
+                required
+                className="form-input"
+                placeholder="nhap.email@vidu.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            {/* Trường Mật khẩu - Giữ duy nhất nút mắt toggle */}
+            <div className="form-group mb-5">
+              <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                Mật khẩu
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={hienMatKhau ? 'text' : 'password'}
+                  required
+                  className="form-input"
+                  style={{ paddingRight: '40px' }}
+                  placeholder="••••••••"
+                  value={matKhau}
+                  onChange={(e) => setMatKhau(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setHienMatKhau(!hienMatKhau)}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-muted)',
+                    padding: '4px'
+                  }}
+                  title={hienMatKhau ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                >
+                  {hienMatKhau ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Nút bấm Submit */}
+            <button
+              type="submit"
+              disabled={dangXuLy}
+              className="btn btn-primary w-full"
+              style={{
+                padding: '0.85rem',
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                textAlign: 'center'
+              }}
+            >
+              {dangXuLy ? 'Đang xác thực thông tin...' : 'Đăng Nhập'}
+            </button>
+          </form>
+
+
+
+          {/* Link sang trang Đăng Ký */}
+          <div style={{
+            textAlign: 'center',
+            marginTop: '1.5rem',
+            fontSize: '0.875rem',
+            color: 'var(--text-muted)'
+          }}>
+            Bạn chưa có tài khoản?{' '}
+            <Link 
+              to="/register" 
+              style={{ 
+                color: 'var(--primary-dark)', 
+                fontWeight: 600,
+                textDecoration: 'underline',
+                textUnderlineOffset: '3px'
+              }}
+            >
+              Đăng ký tài khoản mới
+            </Link>
+          </div>
         </div>
       </div>
     </div>

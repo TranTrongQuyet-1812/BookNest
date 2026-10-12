@@ -3,12 +3,39 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" type="image/png" href="/Logo_BookNest.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BookNest - Nhà Sách & Quản Lý Trực Tuyến</title>
-    <!-- Google Fonts: Inter cho nội dung rõ ràng, Merriweather cho nét chữ cổ điển của sách -->
+    <title>BookNest - Tổ ấm của những trang sách</title>
+    <!-- Script Chống Chớp Sáng (Anti-FOUC): Nạp và áp dụng ngay class .dark trước khi trình duyệt paint khung hình đầu tiên -->
+    <script>
+      (function () {
+        try {
+          var savedTheme = localStorage.getItem('booknest_theme');
+          if (savedTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+            document.documentElement.setAttribute('data-theme', 'dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.setAttribute('data-theme', 'light');
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      /* Ngăn chặn chớp màu nền trình duyệt trắng trước khi CSS tải xong */
+      html.dark {
+        background-color: #2C2C2C !important;
+        color: #F3F4F4;
+      }
+      html:not(.dark) {
+        background-color: #FCF0DA;
+        color: #4C4541;
+      }
+    </style>
+    <!-- Google Fonts: Inter (giao diện), Fleur De Leah (chữ BookNest uốn lượn), Bonheur Royale (danh mục & kệ sách), Playfair Display -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bonheur+Royale&family=Dancing+Script:wght@600;700&family=Fleur+De+Leah&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,600;1,700&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="root"></div>
