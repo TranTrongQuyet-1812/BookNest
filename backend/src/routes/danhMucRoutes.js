@@ -106,7 +106,7 @@ router.get('/:id', batLoiAsync(danhMucController.xuLyLayChiTiet));
 router.post(
   '/',
   xacThucToken,
-  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
+  phanQuyen('quan_tri', 'thu_kho'),
   kiemTraDuLieu(luatDanhMuc),
   batLoiAsync(danhMucController.xuLyTao)
 );
@@ -115,7 +115,7 @@ router.post(
  * @swagger
  * /api/categories/{id}:
  *   put:
- *     summary: Cập nhật thông tin danh mục (Quản trị viên, Thủ kho, Thủ thư)
+ *     summary: Cập nhật thông tin danh mục (Quản trị viên, Thủ kho)
  *     tags: [Danh mục (Categories)]
  *     security:
  *       - bearerAuth: []
@@ -161,7 +161,7 @@ router.post(
 router.put(
   '/:id',
   xacThucToken,
-  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
+  phanQuyen('quan_tri', 'thu_kho'),
   kiemTraDuLieu(luatDanhMuc),
   batLoiAsync(danhMucController.xuLyCapNhat)
 );
@@ -170,7 +170,7 @@ router.put(
  * @swagger
  * /api/categories/{id}:
  *   delete:
- *     summary: Xóa danh mục khi không có sách gắn kèm (Quản trị viên, Thủ kho, Thủ thư)
+ *     summary: Xóa danh mục khi không có sách gắn kèm (Quản trị viên, Thủ kho)
  *     tags: [Danh mục (Categories)]
  *     security:
  *       - bearerAuth: []
@@ -200,7 +200,7 @@ router.put(
 router.delete(
   '/:id',
   xacThucToken,
-  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
+  phanQuyen('quan_tri', 'thu_kho'),
   batLoiAsync(danhMucController.xuLyXoa)
 );
 

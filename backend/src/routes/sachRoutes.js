@@ -187,7 +187,7 @@ router.get(
 router.get(
   '/inventory/history',
   xacThucToken,
-  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
+  phanQuyen('quan_tri', 'thu_kho'),
   batLoiAsync(sachController.xuLyTatCaLichSuNhapKho)
 );
 
@@ -220,7 +220,7 @@ router.get('/:id', xacThucTuyChon, batLoiAsync(sachController.xuLyLayChiTiet));
  * @swagger
  * /api/books:
  *   post:
- *     summary: Thêm sách mới vào kho (Quản trị viên, Thủ kho, Thủ thư)
+ *     summary: Thêm sách mới vào kho (Quản trị viên, Thủ kho)
  *     tags: [Sách & Kho (Books)]
  *     security:
  *       - bearerAuth: []
@@ -273,7 +273,7 @@ router.get('/:id', xacThucTuyChon, batLoiAsync(sachController.xuLyLayChiTiet));
 router.post(
   '/',
   xacThucToken,
-  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
+  phanQuyen('quan_tri', 'thu_kho'),
   kiemTraDuLieu(luatTaoSach),
   batLoiAsync(sachController.xuLyTao)
 );
@@ -282,7 +282,7 @@ router.post(
  * @swagger
  * /api/books/{id}:
  *   put:
- *     summary: Cập nhật thông tin cuốn sách (Quản trị viên, Thủ kho, Thủ thư)
+ *     summary: Cập nhật thông tin cuốn sách (Quản trị viên, Thủ kho)
  *     tags: [Sách & Kho (Books)]
  *     security:
  *       - bearerAuth: []
@@ -335,7 +335,7 @@ router.post(
 router.put(
   '/:id',
   xacThucToken,
-  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
+  phanQuyen('quan_tri', 'thu_kho'),
   kiemTraDuLieu(luatCapNhatSach),
   batLoiAsync(sachController.xuLyCapNhat)
 );
@@ -344,7 +344,7 @@ router.put(
  * @swagger
  * /api/books/{id}:
  *   delete:
- *     summary: Xóa mềm (ẩn) cuốn sách khỏi danh mục kinh doanh (Quản trị viên, Thủ kho, Thủ thư)
+ *     summary: Xóa mềm (ẩn) cuốn sách khỏi danh mục kinh doanh (Quản trị viên, Thủ kho)
  *     tags: [Sách & Kho (Books)]
  *     security:
  *       - bearerAuth: []
@@ -372,7 +372,7 @@ router.put(
 router.delete(
   '/:id',
   xacThucToken,
-  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
+  phanQuyen('quan_tri', 'thu_kho'),
   batLoiAsync(sachController.xuLyXoa)
 );
 
@@ -380,7 +380,7 @@ router.delete(
  * @swagger
  * /api/books/{id}/stock-in:
  *   post:
- *     summary: Nhập thêm số lượng tồn kho cho sách (Quản trị viên, Thủ kho, Thủ thư)
+ *     summary: Nhập thêm số lượng tồn kho cho sách (Quản trị viên, Thủ kho)
  *     tags: [Sách & Kho (Books)]
  *     security:
  *       - bearerAuth: []
@@ -424,7 +424,7 @@ router.delete(
 router.post(
   '/:id/stock-in',
   xacThucToken,
-  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
+  phanQuyen('quan_tri', 'thu_kho'),
   kiemTraDuLieu(luatNhapKho),
   batLoiAsync(sachController.xuLyNhapKho)
 );
@@ -433,7 +433,7 @@ router.post(
  * @swagger
  * /api/books/{id}/stock-in-history:
  *   get:
- *     summary: Xem lịch sử các lần nhập kho của cuốn sách (Quản trị viên, Thủ kho, Thủ thư)
+ *     summary: Xem lịch sử các lần nhập kho của cuốn sách (Quản trị viên, Thủ kho)
  *     tags: [Sách & Kho (Books)]
  *     security:
  *       - bearerAuth: []
@@ -461,7 +461,7 @@ router.post(
 router.get(
   '/:id/stock-in-history',
   xacThucToken,
-  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
+  phanQuyen('quan_tri', 'thu_kho'),
   batLoiAsync(sachController.xuLyLichSuNhapKho)
 );
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import PhanTrang from '../../components/PhanTrang';
 import { 
   Plus, 
@@ -14,6 +15,11 @@ import {
 } from 'lucide-react';
 
 export const QuanLySach = () => {
+  const { user } = useAuth();
+  const vaiTro = user?.role;
+  // Chỉ Quản trị viên và Thủ kho mới được quyền thêm, sửa, đổi giá và ẩn sách
+  const coQuyenSuaSach = ['quan_tri', 'thu_kho'].includes(vaiTro);
+
   const [sachList, setSachList] = useState([]);
   const [danhMucList, setDanhMucList] = useState([]);
   const [dangTai, setDangTai] = useState(true);
@@ -126,6 +132,10 @@ export const QuanLySach = () => {
   // Lưu sách (Tạo mới hoặc Sửa)
   const handleLuuSach = async (e) => {
     e.preventDefault();
+    if (!coQuyenSuaSach) {
+      alert('Tài khoản của bạn chỉ có quyền tra cứu, không được sửa hoặc thêm sách.');
+      return;
+    }
     try {
       const payload = {
         tenSach: formSach.tieuDe,
@@ -155,6 +165,10 @@ export const QuanLySach = () => {
 
   // Ẩn hoặc Khôi phục sách (Soft delete toggle)
   const handleToggleAnSach = async (sach) => {
+    if (!coQuyenSuaSach) {
+      alert('Tài khoản của bạn không có quyền ẩn hoặc khôi phục sách.');
+      return;
+    }
     const maSach = sach.MaSach;
     const tenSach = sach.TenSach;
     const daAn = sach.DaAn;
@@ -175,6 +189,10 @@ export const QuanLySach = () => {
   // Thêm danh mục mới
   const handleThemDanhMuc = async (e) => {
     e.preventDefault();
+    if (!coQuyenSuaSach) {
+      alert('Tài khoản của bạn không có quyền tạo thể loại mới.');
+      return;
+    }
     try {
       await api.post('/categories', formDanhMuc);
       setThongBao(`Đã tạo thể loại "${formDanhMuc.tenDanhMuc}"`);
@@ -196,21 +214,25 @@ export const QuanLySach = () => {
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <div>
           <h1 className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700 }}>
-            Quản Lý Sách & Danh Mục
+            {coQuyenSuaSach ? 'Quản Lý Sách & Danh Mục' : 'Tra Cứu Sách & Tồn Kho'}
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Quản trị danh mục ấn phẩm, cập nhật giá và kiểm soát ẩn/hiện sách
+            {coQuyenSuaSach
+              ? 'Quản trị danh mục ấn phẩm, cập nhật giá và kiểm soát ẩn/hiện sách'
+              : 'Tra cứu danh mục sách, theo dõi tồn kho và thông tin tác phẩm (Chế độ chỉ đọc)'}
           </p>
         </div>
 
-        <div className="flex gap-2">
-          <button onClick={() => setModalDanhMucMo(true)} className="btn btn-outline">
-            <FolderPlus size={16} /> Thêm Thể Loại
-          </button>
-          <button onClick={moModalThemSach} className="btn btn-primary">
-            <Plus size={16} /> Thêm Sách Mới
-          </button>
-        </div>
+        {coQuyenSuaSach && (
+          <div className="flex gap-2">
+            <button onClick={() => setModalDanhMucMo(true)} className="btn btn-outline">
+              <FolderPlus size={16} /> Thêm Thể Loại
+            </button>
+            <button onClick={moModalThemSach} className="btn btn-primary">
+              <Plus size={16} /> Thêm Sách Mới
+            </button>
+          </div>
+        )}
       </div>
 
       {thongBao && (
@@ -303,22 +325,34 @@ export const QuanLySach = () => {
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div className="inline-flex gap-2">
-                        <button
-                          onClick={() => moModalSuaSach(sach)}
-                          className="btn btn-outline btn-sm"
-                          title="Chỉnh sửa thông tin"
-                        >
-                          <Edit size={14} /> Sửa
-                        </button>
-                        <button
-                          onClick={() => handleToggleAnSach(sach)}
-                          className="btn btn-outline btn-sm"
-                          style={{ color: an ? 'var(--accent)' : 'var(--danger)' }}
-                          title={an ? 'Khôi phục hiển thị' : 'Ẩn sách khỏi khách hàng'}
-                        >
-                          {an ? <Eye size={14} /> : <EyeOff size={14} />}
-                          {an ? 'Hiện' : 'Ẩn'}
-                        </button>
+                        {coQuyenSuaSach ? (
+                          <>
+                            <button
+                              onClick={() => moModalSuaSach(sach)}
+                              className="btn btn-outline btn-sm"
+                              title="Chỉnh sửa thông tin"
+                            >
+                              <Edit size={14} /> Sửa
+                            </button>
+                            <button
+                              onClick={() => handleToggleAnSach(sach)}
+                              className="btn btn-outline btn-sm"
+                              style={{ color: an ? 'var(--accent)' : 'var(--danger)' }}
+                              title={an ? 'Khôi phục hiển thị' : 'Ẩn sách khỏi khách hàng'}
+                            >
+                              {an ? <Eye size={14} /> : <EyeOff size={14} />}
+                              {an ? 'Hiện' : 'Ẩn'}
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => moModalSuaSach(sach)}
+                            className="btn btn-outline btn-sm"
+                            title="Xem chi tiết cuốn sách"
+                          >
+                            <Eye size={14} /> Xem
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -331,13 +365,15 @@ export const QuanLySach = () => {
 
       <PhanTrang phanTrang={phanTrang} onChuyenTrang={setTrang} donVi="cuốn" />
 
-      {/* Modal Thêm/Sửa Sách */}
+      {/* Modal Thêm/Sửa/Xem Sách */}
       {modalSachMo && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '600px' }}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-serif" style={{ fontSize: '1.25rem', fontWeight: 700 }}>
-                {sachDangSua ? 'Chỉnh Sửa Sách' : 'Thêm Tác Phẩm Mới'}
+                {coQuyenSuaSach
+                  ? (sachDangSua ? 'Chỉnh Sửa Sách' : 'Thêm Tác Phẩm Mới')
+                  : 'Chi Tiết Tác Phẩm (Chỉ Đọc)'}
               </h3>
               <button onClick={() => setModalSachMo(false)} style={{ color: 'var(--text-muted)' }}>
                 <X size={20} />
@@ -350,6 +386,7 @@ export const QuanLySach = () => {
                 <input
                   type="text"
                   required
+                  disabled={!coQuyenSuaSach}
                   className="form-input"
                   value={formSach.tieuDe}
                   onChange={(e) => setFormSach({ ...formSach, tieuDe: e.target.value })}
@@ -362,6 +399,7 @@ export const QuanLySach = () => {
                   <input
                     type="text"
                     required
+                    disabled={!coQuyenSuaSach}
                     className="form-input"
                     value={formSach.tacGia}
                     onChange={(e) => setFormSach({ ...formSach, tacGia: e.target.value })}
@@ -372,6 +410,7 @@ export const QuanLySach = () => {
                   <label className="form-label">Thể loại *</label>
                   <select
                     required
+                    disabled={!coQuyenSuaSach}
                     className="form-input"
                     value={formSach.maDanhMuc}
                     onChange={(e) => setFormSach({ ...formSach, maDanhMuc: e.target.value })}
@@ -397,6 +436,7 @@ export const QuanLySach = () => {
                     type="number"
                     min="1000"
                     required
+                    disabled={!coQuyenSuaSach}
                     className="form-input"
                     value={formSach.gia}
                     onChange={(e) => setFormSach({ ...formSach, gia: e.target.value })}
@@ -408,6 +448,7 @@ export const QuanLySach = () => {
                   <input
                     type="number"
                     min="0"
+                    disabled={!coQuyenSuaSach}
                     className="form-input"
                     value={formSach.soLuongTon}
                     onChange={(e) => setFormSach({ ...formSach, soLuongTon: e.target.value })}
@@ -419,6 +460,7 @@ export const QuanLySach = () => {
                 <label className="form-label">URL Hình ảnh bìa sách</label>
                 <input
                   type="url"
+                  disabled={!coQuyenSuaSach}
                   className="form-input"
                   placeholder="https://..."
                   value={formSach.hinhAnh}
@@ -430,6 +472,7 @@ export const QuanLySach = () => {
                 <label className="form-label">Mô tả tóm tắt</label>
                 <textarea
                   rows="3"
+                  disabled={!coQuyenSuaSach}
                   className="form-input"
                   value={formSach.moTa}
                   onChange={(e) => setFormSach({ ...formSach, moTa: e.target.value })}
@@ -437,12 +480,20 @@ export const QuanLySach = () => {
               </div>
 
               <div className="flex justify-end gap-2 mt-4">
-                <button type="button" onClick={() => setModalSachMo(false)} className="btn btn-outline">
-                  Hủy
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  {sachDangSua ? 'Lưu Cập Nhật' : 'Thêm Vào Kho'}
-                </button>
+                {coQuyenSuaSach ? (
+                  <>
+                    <button type="button" onClick={() => setModalSachMo(false)} className="btn btn-outline">
+                      Hủy
+                    </button>
+                    <button type="submit" className="btn btn-primary">
+                      {sachDangSua ? 'Lưu Cập Nhật' : 'Thêm Vào Kho'}
+                    </button>
+                  </>
+                ) : (
+                  <button type="button" onClick={() => setModalSachMo(false)} className="btn btn-outline">
+                    Đóng
+                  </button>
+                )}
               </div>
             </form>
           </div>

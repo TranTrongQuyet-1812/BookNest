@@ -20,18 +20,22 @@ export const AdminLayout = () => {
 
   const handleDangXuat = () => {
     dangXuat();
-    navigate('/login');
+    navigate('/admin/login');
   };
 
   const vaiTro = user?.role;
   const laQuanTri = vaiTro === 'quan_tri';
-  // Tạm thời Thủ kho và Thủ thư cùng thấy mục sách và kho; mục đơn hàng dành cho Thủ thư (sẽ siết ở T33)
-  const laThuKhoHoacThuThu = ['thu_kho', 'thu_thu'].includes(vaiTro) || laQuanTri;
-  const laThuThu = vaiTro === 'thu_thu' || laQuanTri;
+  const laThuKho = vaiTro === 'thu_kho';
+  const laThuThu = vaiTro === 'thu_thu';
+
+  // Thủ kho và Quản trị viên quản lý kho sách; Thủ thư tra cứu sách
+  const coQuyenVaoKho = laQuanTri || laThuKho;
+  const coQuyenXuLyDon = laQuanTri || laThuThu;
+  const coQuyenVaoSach = laQuanTri || laThuKho || laThuThu;
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-app)' }}>
-      {/* Sidebar Bảng Điều Khiển Quản Trị */}
+      {/* Sidebar Bảng Điều Khiển Quản Trị Admindash */}
       <aside style={{
         width: '260px',
         backgroundColor: 'var(--bg-card)',
@@ -63,7 +67,7 @@ export const AdminLayout = () => {
                 BookNest
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Hệ Thống Back-Office
+                Khu Vực Admindash
               </div>
             </div>
           </div>
@@ -75,10 +79,10 @@ export const AdminLayout = () => {
             borderRadius: 'var(--radius-sm)',
             marginBottom: '1.25rem'
           }}>
-            <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{user?.fullName}</div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{user?.fullName || user?.email}</div>
             <div className="flex items-center gap-1 mt-1">
-              <span className="badge badge-role" style={{ fontSize: '0.7rem' }}>
-                {vaiTro === 'quan_tri' ? 'Quản Trị Viên' : vaiTro === 'thu_kho' ? 'Thủ Kho' : 'Thủ Thư'}
+              <span className={`badge ${laQuanTri ? 'badge-role' : laThuKho ? 'badge-confirmed' : 'badge-shipping'}`} style={{ fontSize: '0.7rem' }}>
+                {laQuanTri ? 'Quản Trị Viên' : laThuKho ? 'Thủ Kho' : laThuThu ? 'Thủ Thư' : 'Nhân Sự'}
               </span>
             </div>
           </div>
@@ -96,29 +100,29 @@ export const AdminLayout = () => {
               </NavLink>
             )}
 
-            {laThuKhoHoacThuThu && (
-              <>
-                <NavLink
-                  to="/admin/books"
-                  className={({ isActive }) => `btn ${isActive ? 'btn-primary' : 'btn-outline'}`}
-                  style={{ justifyContent: 'flex-start', padding: '0.625rem 0.85rem', width: '100%' }}
-                >
-                  <BookOpen size={18} />
-                  <span>Quản Lý Sách & Danh Mục</span>
-                </NavLink>
-
-                <NavLink
-                  to="/admin/inventory"
-                  className={({ isActive }) => `btn ${isActive ? 'btn-primary' : 'btn-outline'}`}
-                  style={{ justifyContent: 'flex-start', padding: '0.625rem 0.85rem', width: '100%' }}
-                >
-                  <Boxes size={18} />
-                  <span>Nhập Kho & Tồn Kho</span>
-                </NavLink>
-              </>
+            {coQuyenVaoSach && (
+              <NavLink
+                to="/admin/books"
+                className={({ isActive }) => `btn ${isActive ? 'btn-primary' : 'btn-outline'}`}
+                style={{ justifyContent: 'flex-start', padding: '0.625rem 0.85rem', width: '100%' }}
+              >
+                <BookOpen size={18} />
+                <span>{laThuThu ? 'Tra Cứu Sách & Tồn' : 'Quản Lý Sách & Danh Mục'}</span>
+              </NavLink>
             )}
 
-            {laThuThu && (
+            {coQuyenVaoKho && (
+              <NavLink
+                to="/admin/inventory"
+                className={({ isActive }) => `btn ${isActive ? 'btn-primary' : 'btn-outline'}`}
+                style={{ justifyContent: 'flex-start', padding: '0.625rem 0.85rem', width: '100%' }}
+              >
+                <Boxes size={18} />
+                <span>Nhập Kho & Tồn Kho</span>
+              </NavLink>
+            )}
+
+            {coQuyenXuLyDon && (
               <NavLink
                 to="/admin/orders"
                 className={({ isActive }) => `btn ${isActive ? 'btn-primary' : 'btn-outline'}`}
