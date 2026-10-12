@@ -56,3 +56,6 @@ GEMINI.md
 Tool/
 TesttingTool/
 PROMPT_LOG.md
+
+# Database SQL scripts (Nội bộ, bảo mật dữ liệu)
+database/

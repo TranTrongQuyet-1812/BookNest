@@ -103,14 +103,14 @@ Project_MonBE/
 ---
 
 ## 5. Danh Sách Tài Khoản Demo Hệ Thống
-Tất cả các tài khoản demo đều dùng chung mật khẩu: **`BookNest@123`** (Trang đăng nhập có sẵn 4 nút bấm điền nhanh chỉ bằng 1 cú click):
+Tất cả các tài khoản demo đều dùng chung mật khẩu: **`12345678`**:
 
 | Vai trò | Email đăng nhập | Quyền hạn trong hệ thống |
 | :--- | :--- | :--- |
 | **Quản trị viên (Admin)** | `admin@booknest.vn` | Toàn quyền: Thống kê doanh thu, Quản lý sách & kho, Xử lý đơn, Quản lý tài khoản nhân sự |
 | **Thủ thư (Librarian)** | `thuthu@booknest.vn` | Quản lý danh mục sách, Thêm/sửa sách, Lập phiếu nhập kho, Cảnh báo sách sắp hết |
 | **Nhân viên đơn (Order Staff)** | `nhanvien@booknest.vn` | Xem đơn toàn hệ thống, Luân chuyển trạng thái đơn (Duyệt -> Giao -> Hoàn tất), Hủy đơn hoàn kho |
-| **Khách hàng (Customer)** | `khachhang@booknest.vn` | Tìm kiếm sách, Thêm giỏ hàng, Đặt mua hàng COD, Quản lý đơn cá nhân, Viết đánh giá sản phẩm |
+| **Khách hàng (Customer)** | `khach1@gmail.com` | Tìm kiếm sách, Thêm giỏ hàng, Đặt mua hàng COD, Quản lý đơn cá nhân, Viết đánh giá sản phẩm |
 
 ---
 
