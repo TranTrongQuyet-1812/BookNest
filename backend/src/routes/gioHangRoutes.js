@@ -1,6 +1,6 @@
 /**
  * Tuyến đường (Routes) quản lý giỏ hàng (/api/cart).
- * Chỉ khách hàng (customer) mới có quyền thao tác trên giỏ hàng cá nhân.
+ * Chỉ khách hàng (khach_hang) mới có quyền thao tác trên giỏ hàng cá nhân.
  */
 const express = require('express');
 const Joi = require('joi');
@@ -12,8 +12,8 @@ const kiemTraDuLieu = require('../middlewares/kiemTraDuLieu');
 
 const router = express.Router();
 
-// Tất cả các route giỏ hàng đều yêu cầu đăng nhập với vai trò customer
-router.use(xacThucToken, phanQuyen('customer'));
+// Tất cả các route giỏ hàng đều yêu cầu đăng nhập với vai trò khach_hang
+router.use(xacThucToken, phanQuyen('khach_hang'));
 
 // Schema thêm sách vào giỏ
 const luatThemVaoGio = Joi.object({

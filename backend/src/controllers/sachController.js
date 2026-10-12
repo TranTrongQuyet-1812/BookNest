@@ -24,7 +24,7 @@ async function xuLyLayDanhSachAdmin(req, res) {
 
 // Lấy chi tiết một cuốn sách
 async function xuLyLayChiTiet(req, res) {
-  const laAdmin = req.user && ['admin', 'librarian'].includes(req.user.role);
+  const laAdmin = req.user && ['quan_tri', 'thu_kho', 'thu_thu'].includes(req.user.role);
   const sach = await sachService.layChiTietSach(req.params.id, laAdmin);
   return phanHoiThanhCong(res, {
     duLieu: sach,

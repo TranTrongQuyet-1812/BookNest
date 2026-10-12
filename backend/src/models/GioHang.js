@@ -1,12 +1,12 @@
 /**
  * Model Sequelize ánh xạ bảng GioHang trong cơ sở dữ liệu BookNestDB.
- * Bảng trung gian n-n giữa NguoiDung và Sach, sử dụng khóa chính ghép (MaNguoiDung, MaSach).
+ * Bảng trung gian n-n giữa KhachHang và Sach, sử dụng khóa chính ghép (MaKhachHang, MaSach).
  */
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/ketNoiDb');
 
 const GioHang = sequelize.define('GioHang', {
-  MaNguoiDung: {
+  MaKhachHang: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     allowNull: false

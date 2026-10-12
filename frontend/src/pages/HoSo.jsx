@@ -108,7 +108,7 @@ export const HoSo = () => {
           <div className="mb-3" style={{ fontSize: '0.875rem' }}>
             <span style={{ color: 'var(--text-muted)' }}>Email: </span>
             <strong>{user?.email}</strong>
-            <span className="badge badge-role" style={{ marginLeft: '8px' }}>{user?.role}</span>
+            <span className="badge badge-role" style={{ marginLeft: '8px' }}>{{ khach_hang: 'Khách hàng', quan_tri: 'Quản trị viên', thu_kho: 'Thủ kho', thu_thu: 'Thủ thư' }[user?.role] ?? user?.role}</span>
           </div>
 
           {thongBaoProfile && (

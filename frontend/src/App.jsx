@@ -44,10 +44,10 @@ const StorefrontLayout = ({ children }) => {
 // Component điều hướng thông minh khi vào /admin
 const AdminIndexRedirect = () => {
   const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
-  if (user.role === 'librarian') return <Navigate to="/admin/books" replace />;
-  if (user.role === 'order_staff') return <Navigate to="/admin/orders" replace />;
+  if (!user) return <Navigate to="/admin/login" replace />;
+  if (user.role === 'quan_tri') return <Navigate to="/admin/dashboard" replace />;
+  if (user.role === 'thu_kho') return <Navigate to="/admin/books" replace />;
+  if (user.role === 'thu_thu') return <Navigate to="/admin/orders" replace />;
   return <Navigate to="/unauthorized" replace />;
 };
 
@@ -74,6 +74,7 @@ const AppContent = () => {
         <Route path="/books" element={<StorefrontLayout><TrangChu /></StorefrontLayout>} />
         <Route path="/books/:id" element={<StorefrontLayout><ChiTietSach /></StorefrontLayout>} />
         <Route path="/login" element={<StorefrontLayout><DangNhap /></StorefrontLayout>} />
+        <Route path="/admin/login" element={<StorefrontLayout><DangNhap choNhanVien /></StorefrontLayout>} />
         <Route path="/register" element={<StorefrontLayout><DangKy /></StorefrontLayout>} />
         <Route path="/unauthorized" element={<StorefrontLayout><KhongCoQuyen /></StorefrontLayout>} />
 
@@ -100,45 +101,45 @@ const AppContent = () => {
 
         {/* ==================== CÁC ROUTE BACK-OFFICE QUẢN TRỊ ==================== */}
         <Route path="/admin" element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles={['admin', 'librarian', 'order_staff']}>
+          <ProtectedRoute trangDangNhap="/admin/login">
+            <RoleGuard allowedRoles={['quan_tri', 'thu_kho', 'thu_thu']}>
               <AdminLayout />
             </RoleGuard>
           </ProtectedRoute>
         }>
           <Route index element={<AdminIndexRedirect />} />
           
-          {/* Dashboard Thống kê: Chỉ Admin */}
+          {/* Dashboard Thống kê: Chỉ Quản trị viên */}
           <Route path="dashboard" element={
-            <RoleGuard allowedRoles={['admin']}>
+            <RoleGuard allowedRoles={['quan_tri']}>
               <DashboardThongKe />
             </RoleGuard>
           } />
 
-          {/* Quản lý Sách: Thủ thư & Admin */}
+          {/* Quản lý Sách: Thủ kho, Thủ thư & Quản trị viên */}
           <Route path="books" element={
-            <RoleGuard allowedRoles={['librarian', 'admin']}>
+            <RoleGuard allowedRoles={['quan_tri', 'thu_kho', 'thu_thu']}>
               <QuanLySach />
             </RoleGuard>
           } />
 
-          {/* Nhập kho: Thủ thư & Admin */}
+          {/* Nhập kho: Thủ kho, Thủ thư & Quản trị viên */}
           <Route path="inventory" element={
-            <RoleGuard allowedRoles={['librarian', 'admin']}>
+            <RoleGuard allowedRoles={['quan_tri', 'thu_kho', 'thu_thu']}>
               <NhapKho />
             </RoleGuard>
           } />
 
-          {/* Xử lý Đơn hàng: Nhân viên đơn hàng & Admin */}
+          {/* Xử lý Đơn hàng: Thủ thư & Quản trị viên */}
           <Route path="orders" element={
-            <RoleGuard allowedRoles={['order_staff', 'admin']}>
+            <RoleGuard allowedRoles={['quan_tri', 'thu_thu']}>
               <QuanLyDonHang />
             </RoleGuard>
           } />
 
-          {/* Quản lý Nhân sự: Chỉ Admin */}
+          {/* Quản lý Nhân sự: Chỉ Quản trị viên */}
           <Route path="users" element={
-            <RoleGuard allowedRoles={['admin']}>
+            <RoleGuard allowedRoles={['quan_tri']}>
               <QuanLyNhanSu />
             </RoleGuard>
           } />

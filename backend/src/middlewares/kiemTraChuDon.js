@@ -1,6 +1,6 @@
 /**
  * Middleware kiểm tra quyền sở hữu đơn hàng (chống lỗ hổng IDOR - Insecure Direct Object References).
- * Nếu người dùng là khách hàng (customer), chỉ được xem/hủy đơn của chính mình.
+ * Nếu người dùng là khách hàng (khach_hang), chỉ được xem/hủy đơn của chính mình.
  * Nếu đơn không tồn tại hoặc thuộc khách hàng khác, trả về mã 404 (không tiết lộ sự tồn tại của đơn hàng).
  */
 const { DonHang } = require('../models');
@@ -18,8 +18,8 @@ async function kiemTraChuDon(req, res, next) {
       throw LoiNghiepVu.khongTimThay('Không tìm thấy đơn hàng yêu cầu');
     }
 
-    // Nếu là khách hàng, bắt buộc mã người dùng phải trùng khớp với chủ đơn
-    if (req.user.role === 'customer' && donHang.MaNguoiDung !== req.user.id) {
+    // Nếu là khách hàng, bắt buộc mã khách hàng phải trùng khớp với chủ đơn
+    if (req.user.role === 'khach_hang' && donHang.MaKhachHang !== req.user.id) {
       throw LoiNghiepVu.khongTimThay('Không tìm thấy đơn hàng yêu cầu');
     }
 

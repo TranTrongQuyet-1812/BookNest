@@ -31,7 +31,7 @@ const luatTruyVanAdminSach = Joi.object({
  * @swagger
  * /api/admin/books:
  *   get:
- *     summary: Xem toàn bộ sách phía Back-Office kể cả sách đã bị ẩn (Admin/Librarian)
+ *     summary: Xem toàn bộ sách phía Back-Office kể cả sách đã bị ẩn (Quản trị viên, Thủ kho, Thủ thư)
  *     tags: [Sách & Kho (Books)]
  *     security:
  *       - bearerAuth: []
@@ -69,7 +69,7 @@ const luatTruyVanAdminSach = Joi.object({
 router.get(
   '/books',
   xacThucToken,
-  phanQuyen('admin', 'librarian'),
+  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
   kiemTraDuLieu(luatTruyVanAdminSach, 'query'),
   batLoiAsync(sachController.xuLyLayDanhSachAdmin)
 );
@@ -80,13 +80,13 @@ router.get(
 const luatTruyVanAdminDonHang = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(50).default(10),
-  status: Joi.string().valid('PENDING', 'CONFIRMED', 'SHIPPING', 'DELIVERED', 'CANCELLED'),
+  status: Joi.string().valid('CHO_DUYET', 'DA_XAC_NHAN', 'DANG_GIAO', 'DA_GIAO', 'DA_HUY'),
   tuNgay: Joi.date().iso(),
   denNgay: Joi.date().iso()
 });
 
 const luatCapNhatTrangThai = Joi.object({
-  trangThaiMoi: Joi.string().valid('CONFIRMED', 'SHIPPING', 'DELIVERED').required().messages({
+  trangThaiMoi: Joi.string().valid('DA_XAC_NHAN', 'DANG_GIAO', 'DA_GIAO').required().messages({
     'any.only': 'Trạng thái mới không hợp lệ',
     'any.required': 'Trạng thái mới là bắt buộc'
   }),
@@ -105,7 +105,7 @@ const luatAdminHuyDon = Joi.object({
  * @swagger
  * /api/admin/orders:
  *   get:
- *     summary: Xem danh sách toàn bộ đơn hàng của hệ thống (Admin/Order Staff)
+ *     summary: Xem danh sách toàn bộ đơn hàng của hệ thống (Quản trị viên, Thủ thư)
  *     tags: [Quản trị đơn hàng (Admin Orders)]
  *     security:
  *       - bearerAuth: []
@@ -124,7 +124,7 @@ const luatAdminHuyDon = Joi.object({
  *         name: status
  *         schema:
  *           type: string
- *           enum: [PENDING, CONFIRMED, SHIPPING, DELIVERED, CANCELLED]
+ *           enum: [CHO_DUYET, DA_XAC_NHAN, DANG_GIAO, DA_GIAO, DA_HUY]
  *       - in: query
  *         name: tuNgay
  *         schema:
@@ -150,7 +150,7 @@ const luatAdminHuyDon = Joi.object({
 router.get(
   '/orders',
   xacThucToken,
-  phanQuyen('admin', 'order_staff'),
+  phanQuyen('quan_tri', 'thu_thu'),
   kiemTraDuLieu(luatTruyVanAdminDonHang, 'query'),
   batLoiAsync(donHangController.xuLyAdminLayDanhSachDon)
 );
@@ -159,7 +159,7 @@ router.get(
  * @swagger
  * /api/admin/orders/{id}:
  *   get:
- *     summary: Xem chi tiết bất kỳ đơn hàng nào trong hệ thống (Admin/Order Staff)
+ *     summary: Xem chi tiết bất kỳ đơn hàng nào trong hệ thống (Quản trị viên, Thủ thư)
  *     tags: [Quản trị đơn hàng (Admin Orders)]
  *     security:
  *       - bearerAuth: []
@@ -183,7 +183,7 @@ router.get(
 router.get(
   '/orders/:id',
   xacThucToken,
-  phanQuyen('admin', 'order_staff'),
+  phanQuyen('quan_tri', 'thu_thu'),
   batLoiAsync(donHangController.xuLyAdminLayChiTietDon)
 );
 
@@ -191,7 +191,7 @@ router.get(
  * @swagger
  * /api/admin/orders/{id}/status:
  *   put:
- *     summary: Chuyển trạng thái đơn hàng theo State Machine (PENDING -> CONFIRMED -> SHIPPING -> DELIVERED)
+ *     summary: Chuyển trạng thái đơn hàng theo State Machine (CHO_DUYET -> DA_XAC_NHAN -> DANG_GIAO -> DA_GIAO)
  *     tags: [Quản trị đơn hàng (Admin Orders)]
  *     security:
  *       - bearerAuth: []
@@ -212,8 +212,8 @@ router.get(
  *             properties:
  *               trangThaiMoi:
  *                 type: string
- *                 enum: [CONFIRMED, SHIPPING, DELIVERED]
- *                 example: CONFIRMED
+ *                 enum: [DA_XAC_NHAN, DANG_GIAO, DA_GIAO]
+ *                 example: DA_XAC_NHAN
  *               ghiChu:
  *                 type: string
  *                 example: Đã xác nhận đơn hàng với khách
@@ -232,7 +232,7 @@ router.get(
 router.put(
   '/orders/:id/status',
   xacThucToken,
-  phanQuyen('admin', 'order_staff'),
+  phanQuyen('quan_tri', 'thu_thu'),
   kiemTraDuLieu(luatCapNhatTrangThai),
   batLoiAsync(donHangController.xuLyAdminCapNhatTrangThai)
 );
@@ -241,7 +241,7 @@ router.put(
  * @swagger
  * /api/admin/orders/{id}/cancel:
  *   put:
- *     summary: Hủy đơn hàng và tự động hoàn lại tồn kho (Admin/Order Staff - khi đơn PENDING hoặc CONFIRMED)
+ *     summary: Hủy đơn hàng và tự động hoàn lại tồn kho (Quản trị viên, Thủ thư - khi đơn CHO_DUYET hoặc DA_XAC_NHAN)
  *     tags: [Quản trị đơn hàng (Admin Orders)]
  *     security:
  *       - bearerAuth: []
@@ -273,23 +273,29 @@ router.put(
  *       400:
  *         description: Lý do hủy không hợp lệ
  *       409:
- *         description: Đơn hàng không ở trạng thái PENDING hoặc CONFIRMED
+ *         description: Đơn hàng không ở trạng thái CHO_DUYET hoặc DA_XAC_NHAN
  */
 router.put(
   '/orders/:id/cancel',
   xacThucToken,
-  phanQuyen('admin', 'order_staff'),
+  phanQuyen('quan_tri', 'thu_thu'),
   kiemTraDuLieu(luatAdminHuyDon),
   batLoiAsync(donHangController.xuLyAdminHuyDon)
 );
 
 // ==========================================
-// 3. Quản lý nhân sự & tài khoản (T17)
+// 3. Quản lý tài khoản nhân viên và khách hàng (T17)
 // ==========================================
-const luatTruyVanAdminNguoiDung = Joi.object({
+const luatTruyVanNhanVien = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(50).default(10),
-  role: Joi.string().valid('admin', 'librarian', 'order_staff', 'customer'),
+  role: Joi.string().valid('quan_tri', 'thu_kho', 'thu_thu'),
+  search: Joi.string().trim().allow('')
+});
+
+const luatTruyVanKhachHang = Joi.object({
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(50).default(10),
   search: Joi.string().trim().allow('')
 });
 
@@ -309,14 +315,13 @@ const luatTaoNhanVien = Joi.object({
     'string.max': 'Họ tên không được vượt quá 100 ký tự',
     'any.required': 'Họ tên là bắt buộc'
   }),
-  vaiTro: Joi.string().valid('librarian', 'order_staff').required().messages({
-    'any.only': 'Chỉ được phép tạo tài khoản với vai trò librarian hoặc order_staff',
+  vaiTro: Joi.string().valid('thu_kho', 'thu_thu').required().messages({
+    'any.only': 'Chỉ được phép tạo tài khoản với vai trò thu_kho hoặc thu_thu',
     'any.required': 'Vai trò là bắt buộc'
   }),
   soDienThoai: Joi.string().trim().pattern(/^(0|\+84)[3|5|7|8|9][0-9]{8}$/).allow(null, '').messages({
     'string.pattern.base': 'Số điện thoại không đúng định dạng'
-  }),
-  diaChiMacDinh: Joi.string().trim().max(255).allow(null, '')
+  })
 });
 
 const luatCapNhatTrangThaiKhoa = Joi.object({
@@ -327,9 +332,9 @@ const luatCapNhatTrangThaiKhoa = Joi.object({
 
 /**
  * @swagger
- * /api/admin/users:
+ * /api/admin/staff:
  *   get:
- *     summary: Xem danh sách mọi tài khoản trong hệ thống có phân trang và lọc vai trò (Admin)
+ *     summary: Xem danh sách nhân viên có phân trang, tìm kiếm và lọc vai trò (Quản trị viên)
  *     tags: [Quản trị nhân sự (Admin Users)]
  *     security:
  *       - bearerAuth: []
@@ -348,14 +353,14 @@ const luatCapNhatTrangThaiKhoa = Joi.object({
  *         name: role
  *         schema:
  *           type: string
- *           enum: [admin, librarian, order_staff, customer]
+ *           enum: [quan_tri, thu_kho, thu_thu]
  *       - in: query
  *         name: search
  *         schema:
  *           type: string
  *     responses:
  *       200:
- *         description: Danh sách người dùng
+ *         description: Danh sách nhân viên
  *         content:
  *           application/json:
  *             schema:
@@ -363,21 +368,21 @@ const luatCapNhatTrangThaiKhoa = Joi.object({
  *       401:
  *         description: Chưa đăng nhập
  *       403:
- *         description: Chỉ dành cho Admin
+ *         description: Chỉ dành cho Quản trị viên
  */
 router.get(
-  '/users',
+  '/staff',
   xacThucToken,
-  phanQuyen('admin'),
-  kiemTraDuLieu(luatTruyVanAdminNguoiDung, 'query'),
-  batLoiAsync(nguoiDungController.xuLyAdminLayDanhSach)
+  phanQuyen('quan_tri'),
+  kiemTraDuLieu(luatTruyVanNhanVien, 'query'),
+  batLoiAsync(nguoiDungController.xuLyAdminLayDanhSachNhanVien)
 );
 
 /**
  * @swagger
- * /api/admin/users:
+ * /api/admin/staff:
  *   post:
- *     summary: Tạo tài khoản nhân sự mới và chỉ định vai trò (librarian hoặc order_staff) (Admin)
+ *     summary: Tạo tài khoản nhân viên mới và chỉ định vai trò (thu_kho hoặc thu_thu) (Quản trị viên)
  *     tags: [Quản trị nhân sự (Admin Users)]
  *     security:
  *       - bearerAuth: []
@@ -391,53 +396,49 @@ router.get(
  *             properties:
  *               email:
  *                 type: string
- *                 format: email
- *                 example: thuthu_moi@booknest.vn
+ *                 example: nhanvien.moi@booknest.vn
  *               matKhau:
  *                 type: string
  *                 example: MatKhau123
  *               hoTen:
  *                 type: string
- *                 example: Lê Thủ Thư
+ *                 example: Nguyễn Văn Kho
  *               vaiTro:
  *                 type: string
- *                 enum: [librarian, order_staff]
- *                 example: librarian
+ *                 enum: [thu_kho, thu_thu]
+ *                 example: thu_kho
  *               soDienThoai:
  *                 type: string
- *                 example: "0902222333"
- *               diaChiMacDinh:
- *                 type: string
- *                 example: Văn phòng BookNest
+ *                 example: "0912345678"
  *     responses:
  *       201:
- *         description: Tạo nhân sự thành công
+ *         description: Tạo tài khoản nhân viên thành công
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/PhanHoiThanhCong'
  *       400:
- *         description: Dữ liệu không hợp lệ
+ *         description: Dữ liệu không hợp lệ hoặc vai trò không được phép tạo
  *       401:
  *         description: Chưa đăng nhập
  *       403:
- *         description: Chỉ dành cho Admin
+ *         description: Chỉ dành cho Quản trị viên
  *       409:
  *         description: Email đã tồn tại
  */
 router.post(
-  '/users',
+  '/staff',
   xacThucToken,
-  phanQuyen('admin'),
+  phanQuyen('quan_tri'),
   kiemTraDuLieu(luatTaoNhanVien),
   batLoiAsync(nguoiDungController.xuLyAdminTaoNhanVien)
 );
 
 /**
  * @swagger
- * /api/admin/users/{id}/status:
+ * /api/admin/staff/{id}/status:
  *   put:
- *     summary: Khóa hoặc kích hoạt lại tài khoản người dùng (chống tự khóa tài khoản Admin chính mình)
+ *     summary: Khóa hoặc kích hoạt lại tài khoản nhân viên (chặn quản trị viên tự khóa chính mình)
  *     tags: [Quản trị nhân sự (Admin Users)]
  *     security:
  *       - bearerAuth: []
@@ -447,7 +448,7 @@ router.post(
  *         required: true
  *         schema:
  *           type: integer
- *         description: Mã người dùng
+ *         description: Mã nhân viên
  *     requestBody:
  *       required: true
  *       content:
@@ -471,16 +472,107 @@ router.post(
  *       401:
  *         description: Chưa đăng nhập
  *       403:
- *         description: Chỉ dành cho Admin
+ *         description: Chỉ dành cho Quản trị viên
  *       404:
- *         description: Không tìm thấy tài khoản
+ *         description: Không tìm thấy nhân viên
  */
 router.put(
-  '/users/:id/status',
+  '/staff/:id/status',
   xacThucToken,
-  phanQuyen('admin'),
+  phanQuyen('quan_tri'),
   kiemTraDuLieu(luatCapNhatTrangThaiKhoa),
-  batLoiAsync(nguoiDungController.xuLyAdminCapNhatTrangThaiKhoa)
+  batLoiAsync(nguoiDungController.xuLyAdminCapNhatTrangThaiNhanVien)
+);
+
+/**
+ * @swagger
+ * /api/admin/customers:
+ *   get:
+ *     summary: Xem danh sách khách hàng có phân trang và tìm kiếm (Quản trị viên)
+ *     tags: [Quản trị nhân sự (Admin Users)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Danh sách khách hàng
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Chỉ dành cho Quản trị viên
+ */
+router.get(
+  '/customers',
+  xacThucToken,
+  phanQuyen('quan_tri'),
+  kiemTraDuLieu(luatTruyVanKhachHang, 'query'),
+  batLoiAsync(nguoiDungController.xuLyAdminLayDanhSachKhachHang)
+);
+
+/**
+ * @swagger
+ * /api/admin/customers/{id}/status:
+ *   put:
+ *     summary: Khóa hoặc kích hoạt lại tài khoản khách hàng (Quản trị viên)
+ *     tags: [Quản trị nhân sự (Admin Users)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Mã khách hàng
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [dangHoatDong]
+ *             properties:
+ *               dangHoatDong:
+ *                 type: boolean
+ *                 example: false
+ *     responses:
+ *       200:
+ *         description: Cập nhật trạng thái tài khoản thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Chỉ dành cho Quản trị viên
+ *       404:
+ *         description: Không tìm thấy khách hàng
+ */
+router.put(
+  '/customers/:id/status',
+  xacThucToken,
+  phanQuyen('quan_tri'),
+  kiemTraDuLieu(luatCapNhatTrangThaiKhoa),
+  batLoiAsync(nguoiDungController.xuLyAdminCapNhatTrangThaiKhachHang)
 );
 
 // ==========================================
@@ -499,7 +591,7 @@ const luatTruyVanTopSach = Joi.object({
  * @swagger
  * /api/admin/stats/overview:
  *   get:
- *     summary: Thống kê tổng quan tình hình kinh doanh (Tổng doanh thu, số đơn DELIVERED, số sách đã bán) (Admin)
+ *     summary: Thống kê tổng quan tình hình kinh doanh (Tổng doanh thu, số đơn DA_GIAO, số sách đã bán) (Quản trị viên)
  *     tags: [Thống kê báo cáo (Admin Stats)]
  *     security:
  *       - bearerAuth: []
@@ -524,12 +616,12 @@ const luatTruyVanTopSach = Joi.object({
  *       401:
  *         description: Chưa đăng nhập
  *       403:
- *         description: Chỉ dành cho Admin
+ *         description: Chỉ dành cho Quản trị viên
  */
 router.get(
   '/stats/overview',
   xacThucToken,
-  phanQuyen('admin'),
+  phanQuyen('quan_tri'),
   kiemTraDuLieu(luatTruyVanDoanhThu, 'query'),
   batLoiAsync(thongKeController.xuLyLayTongQuan)
 );
@@ -538,7 +630,7 @@ router.get(
  * @swagger
  * /api/admin/stats/top-books:
  *   get:
- *     summary: Xem danh sách những cuốn sách bán chạy nhất hệ thống (Admin)
+ *     summary: Xem danh sách những cuốn sách bán chạy nhất hệ thống (Quản trị viên)
  *     tags: [Thống kê báo cáo (Admin Stats)]
  *     security:
  *       - bearerAuth: []
@@ -559,12 +651,12 @@ router.get(
  *       401:
  *         description: Chưa đăng nhập
  *       403:
- *         description: Chỉ dành cho Admin
+ *         description: Chỉ dành cho Quản trị viên
  */
 router.get(
   '/stats/top-books',
   xacThucToken,
-  phanQuyen('admin'),
+  phanQuyen('quan_tri'),
   kiemTraDuLieu(luatTruyVanTopSach, 'query'),
   batLoiAsync(thongKeController.xuLyLayTopSach)
 );
@@ -573,7 +665,7 @@ router.get(
  * @swagger
  * /api/admin/stats/order-rates:
  *   get:
- *     summary: Thống kê tỷ lệ các trạng thái đơn hàng (tỷ lệ hoàn thành, hủy đơn) (Admin)
+ *     summary: Thống kê tỷ lệ các trạng thái đơn hàng (tỷ lệ hoàn thành, hủy đơn) (Quản trị viên)
  *     tags: [Thống kê báo cáo (Admin Stats)]
  *     security:
  *       - bearerAuth: []
@@ -587,12 +679,12 @@ router.get(
  *       401:
  *         description: Chưa đăng nhập
  *       403:
- *         description: Chỉ dành cho Admin
+ *         description: Chỉ dành cho Quản trị viên
  */
 router.get(
   '/stats/order-rates',
   xacThucToken,
-  phanQuyen('admin'),
+  phanQuyen('quan_tri'),
   batLoiAsync(thongKeController.xuLyLayTyLeDon)
 );
 

@@ -68,20 +68,20 @@ export const ChiTietDonHang = () => {
 
   // Danh sách các nấc tiến độ
   const cacBuoc = [
-    { key: 'PENDING', label: 'Chờ duyệt', icon: Clock },
-    { key: 'CONFIRMED', label: 'Đã xác nhận', icon: CheckCircle2 },
-    { key: 'SHIPPING', label: 'Đang giao', icon: Truck },
-    { key: 'DELIVERED', label: 'Đã giao', icon: PackageCheck }
+    { key: 'CHO_DUYET', label: 'Chờ duyệt', icon: Clock },
+    { key: 'DA_XAC_NHAN', label: 'Đã xác nhận', icon: CheckCircle2 },
+    { key: 'DANG_GIAO', label: 'Đang giao', icon: Truck },
+    { key: 'DA_GIAO', label: 'Đã giao', icon: PackageCheck }
   ];
 
   const trangThaiDon = donHang.TrangThai;
   const maDonHang = donHang.MaDonHang ?? id;
   const ngayTaoDon = donHang.NgayDat;
   const danhSachMon = donHang.chiTietDonHang;
-  // Lý do hủy nằm trong ghi chú của dòng lịch sử chuyển sang CANCELLED
-  const lyDoHuy = donHang.lichSuTrangThai?.find((ls) => ls.TrangThaiMoi === 'CANCELLED')?.GhiChu;
+  // Lý do hủy nằm trong ghi chú của dòng lịch sử chuyển sang DA_HUY
+  const lyDoHuy = donHang.lichSuTrangThai?.find((ls) => ls.TrangThaiMoi === 'DA_HUY')?.GhiChu;
 
-  const laDonHuy = trangThaiDon === 'CANCELLED';
+  const laDonHuy = trangThaiDon === 'DA_HUY';
   const chiSoHienTai = cacBuoc.findIndex((b) => b.key === trangThaiDon);
 
   return (

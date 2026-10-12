@@ -12,7 +12,7 @@ const DanhGia = sequelize.define('DanhGia', {
     autoIncrement: true,
     allowNull: false
   },
-  MaNguoiDung: {
+  MaKhachHang: {
     type: DataTypes.INTEGER,
     allowNull: false
   },

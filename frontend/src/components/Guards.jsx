@@ -4,9 +4,10 @@ import { useAuth } from '../context/AuthContext';
 
 /**
  * Component bảo vệ các tuyến đường yêu cầu người dùng phải đăng nhập trước khi truy cập.
- * Nếu chưa đăng nhập, tự động chuyển hướng đến trang /login và lưu lại đường dẫn trước đó.
+ * Nếu chưa đăng nhập, tự động chuyển hướng đến trang đăng nhập của khu đó (mặc định /login, khu nhân viên là /admin/login)
+ * và lưu lại đường dẫn trước đó.
  */
-export const ProtectedRoute = ({ children }) => {
+export const ProtectedRoute = ({ children, trangDangNhap = '/login' }) => {
   const { daDangNhap, loading } = useAuth();
   const location = useLocation();
 
@@ -19,7 +20,7 @@ export const ProtectedRoute = ({ children }) => {
   }
 
   if (!daDangNhap) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to={trangDangNhap} state={{ from: location }} replace />;
   }
 
   return children;

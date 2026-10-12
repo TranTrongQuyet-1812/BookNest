@@ -1,6 +1,7 @@
 /**
- * Tuyến đường (Routes) cho các API liên quan đến xác thực người dùng.
- * Bao gồm: Đăng ký (/api/auth/register) và Đăng nhập (/api/auth/login).
+ * Tuyến đường (Routes) cho các API liên quan đến xác thực.
+ * Cổng khách hàng (routerKhach, gắn tại /api/auth): đăng ký và đăng nhập, chỉ tra bảng KhachHang.
+ * Cổng nhân viên (routerNhanVien, gắn tại /api/admin/auth): đăng nhập, chỉ tra bảng NhanVien.
  */
 const express = require('express');
 const Joi = require('joi');
@@ -9,7 +10,8 @@ const xacThucController = require('../controllers/xacThucController');
 const batLoiAsync = require('../middlewares/batLoiAsync');
 const kiemTraDuLieu = require('../middlewares/kiemTraDuLieu');
 
-const router = express.Router();
+const routerKhach = express.Router();
+const routerNhanVien = express.Router();
 
 // Giới hạn tần suất gọi API đăng nhập để chống brute-force (10 lần / 15 phút trên mỗi IP)
 // Trong môi trường kiểm thử (test), nâng giới hạn để không gây nghẽn test tự động
@@ -107,13 +109,13 @@ const luatDangNhap = Joi.object({
  *       409:
  *         description: Email đã được sử dụng
  */
-router.post('/register', kiemTraDuLieu(luatDangKy), batLoiAsync(xacThucController.xuLyDangKy));
+routerKhach.post('/register', kiemTraDuLieu(luatDangKy), batLoiAsync(xacThucController.xuLyDangKy));
 
 /**
  * @swagger
  * /api/auth/login:
  *   post:
- *     summary: Đăng nhập tài khoản lấy JWT
+ *     summary: Đăng nhập tài khoản khách hàng lấy JWT (cổng Storefront, chỉ tra bảng KhachHang)
  *     tags: [Xác thực (Auth)]
  *     requestBody:
  *       required: true
@@ -144,6 +146,43 @@ router.post('/register', kiemTraDuLieu(luatDangKy), batLoiAsync(xacThucControlle
  *       403:
  *         description: Tài khoản đã bị khóa
  */
-router.post('/login', gioiHanDangNhap, kiemTraDuLieu(luatDangNhap), batLoiAsync(xacThucController.xuLyDangNhap));
+routerKhach.post('/login', gioiHanDangNhap, kiemTraDuLieu(luatDangNhap), batLoiAsync(xacThucController.xuLyDangNhapKhachHang));
 
-module.exports = router;
+/**
+ * @swagger
+ * /api/admin/auth/login:
+ *   post:
+ *     summary: Đăng nhập tài khoản nhân viên lấy JWT (cổng Back-Office, chỉ tra bảng NhanVien)
+ *     tags: [Xác thực (Auth)]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, matKhau]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: thuthu@booknest.vn
+ *               matKhau:
+ *                 type: string
+ *                 example: MatKhau123
+ *     responses:
+ *       200:
+ *         description: Đăng nhập thành công, trả về token JWT (aud nhan_vien) và thông tin nhân viên
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       400:
+ *         description: Dữ liệu gửi lên không hợp lệ
+ *       401:
+ *         description: Email hoặc mật khẩu không chính xác
+ *       403:
+ *         description: Tài khoản đã bị khóa
+ */
+routerNhanVien.post('/login', gioiHanDangNhap, kiemTraDuLieu(luatDangNhap), batLoiAsync(xacThucController.xuLyDangNhapNhanVien));
+
+module.exports = { routerKhach, routerNhanVien };

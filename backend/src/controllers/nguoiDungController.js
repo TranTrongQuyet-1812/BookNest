@@ -1,12 +1,12 @@
 /**
- * Tầng Controller điều phối các yêu cầu xem/sửa thông tin hồ sơ và đổi mật khẩu người dùng.
+ * Tầng Controller điều phối các yêu cầu xem/sửa thông tin hồ sơ, đổi mật khẩu và quản trị tài khoản.
  */
 const nguoiDungService = require('../services/nguoiDungService');
 const { phanHoiThanhCong } = require('../middlewares/phanHoi');
 
-// Lấy thông tin hồ sơ của người dùng đang đăng nhập
+// Lấy thông tin hồ sơ của người dùng đang đăng nhập (khách hoặc nhân viên, theo aud của token)
 async function xuLyLayHoSo(req, res) {
-  const ketQua = await nguoiDungService.layThongTinHoSo(req.user.id);
+  const ketQua = await nguoiDungService.layThongTinHoSo(req.user.aud, req.user.id);
   return phanHoiThanhCong(res, {
     duLieu: ketQua,
     thongDiep: 'Lấy thông tin hồ sơ thành công'
@@ -15,7 +15,7 @@ async function xuLyLayHoSo(req, res) {
 
 // Cập nhật thông tin hồ sơ
 async function xuLyCapNhatHoSo(req, res) {
-  const ketQua = await nguoiDungService.capNhatHoSo(req.user.id, req.body);
+  const ketQua = await nguoiDungService.capNhatHoSo(req.user.aud, req.user.id, req.body);
   return phanHoiThanhCong(res, {
     duLieu: ketQua,
     thongDiep: 'Cập nhật thông tin hồ sơ thành công'
@@ -24,18 +24,27 @@ async function xuLyCapNhatHoSo(req, res) {
 
 // Đổi mật khẩu
 async function xuLyDoiMatKhau(req, res) {
-  await nguoiDungService.doiMatKhau(req.user.id, req.body);
+  await nguoiDungService.doiMatKhau(req.user.aud, req.user.id, req.body);
   return phanHoiThanhCong(res, {
     thongDiep: 'Đổi mật khẩu thành công'
   });
 }
 
-// Back-Office: Danh sách người dùng
-async function xuLyAdminLayDanhSach(req, res) {
-  const ketQua = await nguoiDungService.adminLayDanhSachNguoiDung(req.query);
+// Back-Office: Danh sách nhân viên
+async function xuLyAdminLayDanhSachNhanVien(req, res) {
+  const ketQua = await nguoiDungService.adminLayDanhSachNhanVien(req.query);
   return phanHoiThanhCong(res, {
     duLieu: ketQua,
-    thongDiep: 'Lấy danh sách người dùng thành công'
+    thongDiep: 'Lấy danh sách nhân viên thành công'
+  });
+}
+
+// Back-Office: Danh sách khách hàng
+async function xuLyAdminLayDanhSachKhachHang(req, res) {
+  const ketQua = await nguoiDungService.adminLayDanhSachKhachHang(req.query);
+  return phanHoiThanhCong(res, {
+    duLieu: ketQua,
+    thongDiep: 'Lấy danh sách khách hàng thành công'
   });
 }
 
@@ -49,12 +58,24 @@ async function xuLyAdminTaoNhanVien(req, res) {
   });
 }
 
-// Back-Office: Khóa / mở khóa tài khoản
-async function xuLyAdminCapNhatTrangThaiKhoa(req, res) {
-  const ketQua = await nguoiDungService.adminCapNhatTrangThaiKhoa(
+// Back-Office: Khóa / mở khóa tài khoản nhân viên
+async function xuLyAdminCapNhatTrangThaiNhanVien(req, res) {
+  const ketQua = await nguoiDungService.adminCapNhatTrangThaiNhanVien(
     req.params.id,
     req.body.dangHoatDong,
     req.user.id
+  );
+  return phanHoiThanhCong(res, {
+    duLieu: ketQua,
+    thongDiep: 'Cập nhật trạng thái hoạt động thành công'
+  });
+}
+
+// Back-Office: Khóa / mở khóa tài khoản khách hàng
+async function xuLyAdminCapNhatTrangThaiKhachHang(req, res) {
+  const ketQua = await nguoiDungService.adminCapNhatTrangThaiKhachHang(
+    req.params.id,
+    req.body.dangHoatDong
   );
   return phanHoiThanhCong(res, {
     duLieu: ketQua,
@@ -66,7 +87,9 @@ module.exports = {
   xuLyLayHoSo,
   xuLyCapNhatHoSo,
   xuLyDoiMatKhau,
-  xuLyAdminLayDanhSach,
+  xuLyAdminLayDanhSachNhanVien,
+  xuLyAdminLayDanhSachKhachHang,
   xuLyAdminTaoNhanVien,
-  xuLyAdminCapNhatTrangThaiKhoa
+  xuLyAdminCapNhatTrangThaiNhanVien,
+  xuLyAdminCapNhatTrangThaiKhachHang
 };

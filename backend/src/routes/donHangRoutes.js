@@ -24,14 +24,17 @@ const luatDatHangKhachVangLai = Joi.object({
     'string.pattern.base': 'Số điện thoại nhận không đúng định dạng số di động Việt Nam',
     'any.required': 'Số điện thoại nhận là bắt buộc'
   }),
+  emailNhan: Joi.string().trim().lowercase().max(255).email().required().messages({
+    'string.empty': 'Email nhận thông báo không được để trống',
+    'string.email': 'Email không đúng định dạng',
+    'string.max': 'Email không được vượt quá 255 ký tự',
+    'any.required': 'Email nhận thông báo đơn hàng là bắt buộc'
+  }),
   diaChiGiaoHang: Joi.string().trim().min(5).max(255).required().messages({
     'string.empty': 'Địa chỉ giao hàng không được để trống',
     'string.min': 'Địa chỉ giao hàng phải có ít nhất 5 ký tự',
     'string.max': 'Địa chỉ giao hàng không được vượt quá 255 ký tự',
     'any.required': 'Địa chỉ giao hàng là bắt buộc'
-  }),
-  email: Joi.string().trim().email().allow(null, '').messages({
-    'string.email': 'Email không đúng định dạng'
   }),
   ghiChu: Joi.string().trim().max(500).allow(null, ''),
   cacMon: Joi.array().items(
@@ -49,7 +52,7 @@ const luatDatHangKhachVangLai = Joi.object({
  * @swagger
  * /api/orders/guest:
  *   post:
- *     summary: Khách vãng lai đặt hàng trực tiếp từ giỏ hàng client
+ *     summary: Khách vãng lai đặt hàng trực tiếp từ giỏ hàng client (không tạo tài khoản, không lưu hồ sơ)
  *     tags: [Đơn hàng (Orders)]
  *     requestBody:
  *       required: true
@@ -57,7 +60,7 @@ const luatDatHangKhachVangLai = Joi.object({
  *         application/json:
  *           schema:
  *             type: object
- *             required: [tenNguoiNhan, soDienThoaiNhan, diaChiGiaoHang, cacMon]
+ *             required: [tenNguoiNhan, soDienThoaiNhan, emailNhan, diaChiGiaoHang, cacMon]
  *             properties:
  *               tenNguoiNhan:
  *                 type: string
@@ -65,12 +68,12 @@ const luatDatHangKhachVangLai = Joi.object({
  *               soDienThoaiNhan:
  *                 type: string
  *                 example: "0912345678"
+ *               emailNhan:
+ *                 type: string
+ *                 example: khach@example.com
  *               diaChiGiaoHang:
  *                 type: string
  *                 example: 456 Võ Thị Sáu, Biên Hòa
- *               email:
- *                 type: string
- *                 example: khachvanglai@gmail.com
  *               ghiChu:
  *                 type: string
  *                 example: Giao vào giờ hành chính
@@ -100,8 +103,8 @@ const luatDatHangKhachVangLai = Joi.object({
  */
 router.post('/guest', kiemTraDuLieu(luatDatHangKhachVangLai), batLoiAsync(donHangController.xuLyDatHangKhachVangLai));
 
-// Tất cả các route bên dưới của khách đều cần đăng nhập với vai trò customer
-router.use(xacThucToken, phanQuyen('customer'));
+// Tất cả các route bên dưới của khách đều cần đăng nhập với vai trò khach_hang
+router.use(xacThucToken, phanQuyen('khach_hang'));
 
 // Schema kiểm tra thông tin đặt hàng
 const luatDatHang = Joi.object({
@@ -114,6 +117,12 @@ const luatDatHang = Joi.object({
   soDienThoaiNhan: Joi.string().trim().pattern(/^(0|\+84)[3|5|7|8|9][0-9]{8}$/).required().messages({
     'string.pattern.base': 'Số điện thoại nhận không đúng định dạng số di động Việt Nam',
     'any.required': 'Số điện thoại nhận là bắt buộc'
+  }),
+  emailNhan: Joi.string().trim().lowercase().max(255).email().required().messages({
+    'string.empty': 'Email nhận thông báo không được để trống',
+    'string.email': 'Email không đúng định dạng',
+    'string.max': 'Email không được vượt quá 255 ký tự',
+    'any.required': 'Email nhận thông báo đơn hàng là bắt buộc'
   }),
   diaChiGiaoHang: Joi.string().trim().min(5).max(255).required().messages({
     'string.empty': 'Địa chỉ giao hàng không được để trống',
@@ -129,7 +138,7 @@ const luatDatHang = Joi.object({
 const luatTruyVanDonKhach = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(50).default(10),
-  status: Joi.string().valid('PENDING', 'CONFIRMED', 'SHIPPING', 'DELIVERED', 'CANCELLED')
+  status: Joi.string().valid('CHO_DUYET', 'DA_XAC_NHAN', 'DANG_GIAO', 'DA_GIAO', 'DA_HUY')
 });
 
 // Schema hủy đơn của khách
@@ -151,7 +160,7 @@ const luatKhachHuyDon = Joi.object({
  *         application/json:
  *           schema:
  *             type: object
- *             required: [tenNguoiNhan, soDienThoaiNhan, diaChiGiaoHang]
+ *             required: [tenNguoiNhan, soDienThoaiNhan, emailNhan, diaChiGiaoHang]
  *             properties:
  *               tenNguoiNhan:
  *                 type: string
@@ -159,6 +168,9 @@ const luatKhachHuyDon = Joi.object({
  *               soDienThoaiNhan:
  *                 type: string
  *                 example: "0914444555"
+ *               emailNhan:
+ *                 type: string
+ *                 example: khach@example.com
  *               diaChiGiaoHang:
  *                 type: string
  *                 example: 123 Biên Hòa, Đồng Nai
@@ -207,7 +219,7 @@ router.post('/', kiemTraDuLieu(luatDatHang), batLoiAsync(donHangController.xuLyD
  *         name: status
  *         schema:
  *           type: string
- *           enum: [PENDING, CONFIRMED, SHIPPING, DELIVERED, CANCELLED]
+ *           enum: [CHO_DUYET, DA_XAC_NHAN, DANG_GIAO, DA_GIAO, DA_HUY]
  *         description: Lọc theo trạng thái đơn
  *     responses:
  *       200:
@@ -250,7 +262,7 @@ router.get('/my-orders/:id', kiemTraChuDon, batLoiAsync(donHangController.xuLyLa
  * @swagger
  * /api/orders/{id}/cancel:
  *   put:
- *     summary: Khách hàng tự hủy đơn khi đơn còn ở trạng thái PENDING
+ *     summary: Khách hàng tự hủy đơn khi đơn còn ở trạng thái CHO_DUYET
  *     tags: [Đơn hàng (Orders)]
  *     security:
  *       - bearerAuth: []
@@ -280,7 +292,7 @@ router.get('/my-orders/:id', kiemTraChuDon, batLoiAsync(donHangController.xuLyLa
  *       404:
  *         description: Không tìm thấy đơn hàng
  *       409:
- *         description: Đơn hàng không ở trạng thái PENDING
+ *         description: Đơn hàng không ở trạng thái CHO_DUYET
  */
 router.put('/:id/cancel', kiemTraChuDon, kiemTraDuLieu(luatKhachHuyDon), batLoiAsync(donHangController.xuLyKhachHuyDon));
 

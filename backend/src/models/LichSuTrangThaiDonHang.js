@@ -24,9 +24,14 @@ const LichSuTrangThaiDonHang = sequelize.define('LichSuTrangThaiDonHang', {
     type: DataTypes.STRING(20),
     allowNull: false
   },
-  MaNguoiThucHien: {
+  // Người thực hiện là khách hoặc nhân viên (đúng một trong hai); cả hai NULL = khách vãng lai tự đặt
+  MaKhachHangThucHien: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: true
+  },
+  MaNhanVienThucHien: {
+    type: DataTypes.INTEGER,
+    allowNull: true
   },
   GhiChu: {
     type: DataTypes.STRING(500),

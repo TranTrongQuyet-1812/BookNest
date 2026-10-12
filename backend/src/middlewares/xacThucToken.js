@@ -1,11 +1,26 @@
 /**
  * Middleware xác thực danh tính người dùng thông qua mã JSON Web Token (JWT).
  * Kiểm tra tính hợp lệ của token và truy vấn CSDL để đảm bảo tài khoản không bị khóa.
+ * Token mang claim "aud" (khach_hang hoặc nhan_vien) để biết phải tra bảng KhachHang hay NhanVien.
  */
 const jwt = require('jsonwebtoken');
 const cauHinh = require('../config/cauHinh');
 const LoiNghiepVu = require('./loiNghiepVu');
-const { NguoiDung } = require('../models');
+const { NhanVien, KhachHang } = require('../models');
+const { AUD_KHACH_HANG, AUD_NHAN_VIEN, thongTinTaiKhoan } = require('../utils/taiKhoan');
+
+// Mỗi khu có bảng tài khoản riêng, tra theo aud của token
+const BANG_THEO_AUD = {
+  [AUD_KHACH_HANG]: KhachHang,
+  [AUD_NHAN_VIEN]: NhanVien
+};
+
+// Tra tài khoản theo token; trả về null nếu token không có aud hợp lệ hoặc tài khoản không tồn tại
+async function timTaiKhoan(duLieuGiaiMa) {
+  const Bang = BANG_THEO_AUD[duLieuGiaiMa.aud];
+  if (!Bang) return null;
+  return Bang.findByPk(duLieuGiaiMa.id);
+}
 
 async function xacThucToken(req, res, next) {
   try {
@@ -27,22 +42,17 @@ async function xacThucToken(req, res, next) {
     }
 
     // Truy vấn CSDL để lấy thông tin mới nhất và kiểm tra trạng thái hoạt động
-    const nguoiDung = await NguoiDung.findByPk(duLieuGiaiMa.id);
-    if (!nguoiDung) {
-      throw LoiNghiepVu.chuaXacThuc('Tài khoản liên kết với token này không tồn tại');
+    const taiKhoan = await timTaiKhoan(duLieuGiaiMa);
+    if (!taiKhoan) {
+      throw LoiNghiepVu.chuaXacThuc('Tài khoản liên kết với token này không tồn tại hoặc phiên đăng nhập cũ không còn hợp lệ');
     }
 
-    if (!nguoiDung.DangHoatDong) {
+    if (!taiKhoan.DangHoatDong) {
       throw LoiNghiepVu.camTruyCap('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên');
     }
 
-    // Gắn thông tin người dùng từ CSDL vào request (không tin vai trò lưu cứng trong token cũ)
-    req.user = {
-      id: nguoiDung.MaNguoiDung,
-      email: nguoiDung.Email,
-      role: nguoiDung.VaiTro,
-      fullName: nguoiDung.HoTen
-    };
+    // Gắn thông tin từ CSDL vào request (không tin vai trò lưu cứng trong token cũ)
+    req.user = thongTinTaiKhoan(duLieuGiaiMa.aud, taiKhoan);
 
     return next();
   } catch (loi) {
@@ -67,14 +77,9 @@ async function xacThucTuyChon(req, res, next) {
       return next();
     }
 
-    const nguoiDung = await NguoiDung.findByPk(duLieuGiaiMa.id);
-    if (nguoiDung && nguoiDung.DangHoatDong) {
-      req.user = {
-        id: nguoiDung.MaNguoiDung,
-        email: nguoiDung.Email,
-        role: nguoiDung.VaiTro,
-        fullName: nguoiDung.HoTen
-      };
+    const taiKhoan = await timTaiKhoan(duLieuGiaiMa);
+    if (taiKhoan && taiKhoan.DangHoatDong) {
+      req.user = thongTinTaiKhoan(duLieuGiaiMa.aud, taiKhoan);
     }
 
     return next();

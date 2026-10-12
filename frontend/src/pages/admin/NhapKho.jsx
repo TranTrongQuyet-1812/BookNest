@@ -276,7 +276,7 @@ export const NhapKho = () => {
                     const ngay = phieu.NgayNhap;
                     const tenSach = phieu.sach?.TenSach ?? (`Sách #${phieu.MaSach}`);
                     const sl = phieu.SoLuongNhap ?? 0;
-                    const nguoi = phieu.nguoiNhap?.HoTen ?? 'Thủ thư';
+                    const nguoi = phieu.nhanVienNhap?.HoTen ?? 'Nhân viên';
 
                     return (
                       <tr key={maPhieu}>

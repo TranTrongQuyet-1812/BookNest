@@ -63,7 +63,7 @@ export const DonHangCuaToi = () => {
     };
   }, [trangThaiLoc, trang]);
 
-  // Hủy đơn hàng PENDING
+  // Hủy đơn hàng CHO_DUYET
   const handleHuyDon = async (maDonHang) => {
     const lyDo = window.prompt('Vui lòng nhập lý do hủy đơn hàng:');
     if (lyDo === null) return;
@@ -85,15 +85,15 @@ export const DonHangCuaToi = () => {
 
   const layBadgeTrangThai = (trangThai) => {
     switch (trangThai) {
-      case 'PENDING':
+      case 'CHO_DUYET':
         return <span className="badge badge-pending"><Clock size={13} /> Chờ duyệt</span>;
-      case 'CONFIRMED':
+      case 'DA_XAC_NHAN':
         return <span className="badge badge-confirmed"><CheckCircle size={13} /> Đã xác nhận</span>;
-      case 'SHIPPING':
+      case 'DANG_GIAO':
         return <span className="badge badge-shipping"><Truck size={13} /> Đang giao hàng</span>;
-      case 'DELIVERED':
+      case 'DA_GIAO':
         return <span className="badge badge-delivered"><CheckCircle size={13} /> Đã giao thành công</span>;
-      case 'CANCELLED':
+      case 'DA_HUY':
         return <span className="badge badge-cancelled"><XCircle size={13} /> Đã hủy</span>;
       default:
         return <span className="badge">{trangThai}</span>;
@@ -125,11 +125,11 @@ export const DonHangCuaToi = () => {
             }}
           >
             <option value="">Tất cả trạng thái</option>
-            <option value="PENDING">Chờ duyệt</option>
-            <option value="CONFIRMED">Đã xác nhận</option>
-            <option value="SHIPPING">Đang giao</option>
-            <option value="DELIVERED">Đã giao thành công</option>
-            <option value="CANCELLED">Đã hủy</option>
+            <option value="CHO_DUYET">Chờ duyệt</option>
+            <option value="DA_XAC_NHAN">Đã xác nhận</option>
+            <option value="DANG_GIAO">Đang giao</option>
+            <option value="DA_GIAO">Đã giao thành công</option>
+            <option value="DA_HUY">Đã hủy</option>
           </select>
         </div>
       </div>
@@ -203,7 +203,7 @@ export const DonHangCuaToi = () => {
                 </div>
 
                 <div className="flex justify-end items-center gap-2 pt-2" style={{ borderTop: '1px solid var(--border)' }}>
-                  {trangThai === 'PENDING' && (
+                  {trangThai === 'CHO_DUYET' && (
                     <button
                       onClick={() => handleHuyDon(maDon)}
                       className="btn btn-outline btn-sm"

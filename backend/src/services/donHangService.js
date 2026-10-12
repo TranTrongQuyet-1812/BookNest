@@ -10,25 +10,23 @@ const {
   Sach,
   GioHang,
   LichSuTrangThaiDonHang,
-  NguoiDung
+  KhachHang,
+  NhanVien
 } = require('../models');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
-const cauHinh = require('../config/cauHinh');
 
 // Hàm thuần kiểm tra tính hợp lệ của việc chuyển đổi trạng thái đơn hàng (State Machine)
 function kiemTraChuyenTrangThai(trangThaiCu, trangThaiMoi) {
   const maTranChuyen = {
-    PENDING: ['CONFIRMED'],
-    CONFIRMED: ['SHIPPING'],
-    SHIPPING: ['DELIVERED']
+    CHO_DUYET: ['DA_XAC_NHAN'],
+    DA_XAC_NHAN: ['DANG_GIAO'],
+    DANG_GIAO: ['DA_GIAO']
   };
   return Boolean(maTranChuyen[trangThaiCu] && maTranChuyen[trangThaiCu].includes(trangThaiMoi));
 }
 
 // 1. Đặt hàng trong một Transaction (ACID, chống race condition và bán âm kho)
-async function datHang(maNguoiDung, thongTinGiaoHang) {
+async function datHang(maKhachHang, thongTinGiaoHang) {
   const t = await sequelize.transaction();
 
   try {
@@ -36,7 +34,7 @@ async function datHang(maNguoiDung, thongTinGiaoHang) {
     // Trên SQL Server, lock: t.LOCK.UPDATE bị bỏ qua; TableHints.UPDLOCK sinh WITH (UPDLOCK) thật sự.
     // Nếu khách hàng bấm đúp, request thứ hai sẽ bị khóa chờ request thứ nhất commit và thấy giỏ hàng đã trống.
     const cacMonTrongGio = await GioHang.findAll({
-      where: { MaNguoiDung: maNguoiDung },
+      where: { MaKhachHang: maKhachHang },
       include: [{ model: Sach, as: 'sach' }],
       tableHint: TableHints.UPDLOCK,
       transaction: t
@@ -92,16 +90,17 @@ async function datHang(maNguoiDung, thongTinGiaoHang) {
       });
     }
 
-    // Tạo đơn hàng mới ở trạng thái chờ duyệt (PENDING)
+    // Tạo đơn hàng mới ở trạng thái chờ duyệt (CHO_DUYET)
     const donHangMoi = await DonHang.create(
       {
-        MaNguoiDung: maNguoiDung,
+        MaKhachHang: maKhachHang,
         TenNguoiNhan: thongTinGiaoHang.tenNguoiNhan,
         SoDienThoaiNhan: thongTinGiaoHang.soDienThoaiNhan,
+        EmailNhan: thongTinGiaoHang.emailNhan,
         DiaChiGiaoHang: thongTinGiaoHang.diaChiGiaoHang,
         GhiChu: thongTinGiaoHang.ghiChu || null,
         TongTien: tongTien,
-        TrangThai: 'PENDING'
+        TrangThai: 'CHO_DUYET'
       },
       { transaction: t }
     );
@@ -118,28 +117,28 @@ async function datHang(maNguoiDung, thongTinGiaoHang) {
       {
         MaDonHang: donHangMoi.MaDonHang,
         TrangThaiCu: null,
-        TrangThaiMoi: 'PENDING',
-        MaNguoiThucHien: maNguoiDung,
+        TrangThaiMoi: 'CHO_DUYET',
+        MaKhachHangThucHien: maKhachHang,
         GhiChu: 'Khách hàng đặt đơn hàng mới'
       },
       { transaction: t }
     );
 
     // Dọn sạch giỏ hàng của khách sau khi đặt thành công
-    await GioHang.destroy({ where: { MaNguoiDung: maNguoiDung }, transaction: t });
+    await GioHang.destroy({ where: { MaKhachHang: maKhachHang }, transaction: t });
 
     // Tự động lưu/cập nhật thông tin nhận hàng (SĐT, Địa chỉ mặc định) vào hồ sơ người dùng nếu đang trống hoặc có yêu cầu
-    const nguoiDungHienTai = await NguoiDung.findByPk(maNguoiDung, { transaction: t });
-    if (nguoiDungHienTai) {
+    const khachHienTai = await KhachHang.findByPk(maKhachHang, { transaction: t });
+    if (khachHienTai) {
       const capNhat = {};
-      if (!nguoiDungHienTai.SoDienThoai || thongTinGiaoHang.luuMacDinh) {
+      if (!khachHienTai.SoDienThoai || thongTinGiaoHang.luuMacDinh) {
         capNhat.SoDienThoai = thongTinGiaoHang.soDienThoaiNhan;
       }
-      if (!nguoiDungHienTai.DiaChiMacDinh || thongTinGiaoHang.luuMacDinh) {
+      if (!khachHienTai.DiaChiMacDinh || thongTinGiaoHang.luuMacDinh) {
         capNhat.DiaChiMacDinh = thongTinGiaoHang.diaChiGiaoHang;
       }
       if (Object.keys(capNhat).length > 0) {
-        await nguoiDungHienTai.update(capNhat, { transaction: t });
+        await khachHienTai.update(capNhat, { transaction: t });
       }
     }
 
@@ -153,7 +152,7 @@ async function datHang(maNguoiDung, thongTinGiaoHang) {
 
 // 1b. Khách vãng lai (Guest) đặt hàng trực tiếp (ACID Transaction, chống race condition và bán âm kho)
 async function datHangKhachVangLai(thongTinDatHang) {
-  const { tenNguoiNhan, soDienThoaiNhan, diaChiGiaoHang, email, ghiChu, cacMon } = thongTinDatHang;
+  const { tenNguoiNhan, soDienThoaiNhan, emailNhan, diaChiGiaoHang, ghiChu, cacMon } = thongTinDatHang;
 
   if (!cacMon || cacMon.length === 0) {
     throw LoiNghiepVu.yeuCauKhongHopLe('Giỏ hàng đang trống, vui lòng chọn sách trước khi đặt hàng');
@@ -162,38 +161,8 @@ async function datHangKhachVangLai(thongTinDatHang) {
   const t = await sequelize.transaction();
 
   try {
-    // Tìm hoặc tạo tài khoản khách hàng để thỏa mãn ràng buộc khóa ngoại MaNguoiDung NOT NULL
-    const emailChuanHoa = email ? email.toLowerCase().trim() : `guest_${soDienThoaiNhan}@guest.booknest.vn`;
-    let nguoiDung = await NguoiDung.findOne({
-      where: { Email: emailChuanHoa },
-      transaction: t
-    });
-
-    if (!nguoiDung) {
-      nguoiDung = await NguoiDung.findOne({
-        where: { SoDienThoai: soDienThoaiNhan },
-        transaction: t
-      });
-    }
-
-    if (!nguoiDung) {
-      const matKhauNgauNhien = Math.random().toString(36).slice(-8) + 'Aa1@';
-      const matKhauHash = await bcrypt.hash(matKhauNgauNhien, 10);
-      nguoiDung = await NguoiDung.create(
-        {
-          HoTen: tenNguoiNhan,
-          Email: emailChuanHoa,
-          MatKhauHash: matKhauHash,
-          SoDienThoai: soDienThoaiNhan,
-          DiaChiMacDinh: diaChiGiaoHang,
-          VaiTro: 'customer',
-          DangHoatDong: true
-        },
-        { transaction: t }
-      );
-    }
-
-    const maNguoiDung = nguoiDung.MaNguoiDung;
+    // Khách vãng lai không có tài khoản: đơn lưu MaKhachHang = NULL, thông tin giao hàng nằm ngay trên đơn.
+    // Hệ thống không lưu hồ sơ khách, lần sau khách phải nhập lại.
     let tongTien = 0;
     const danhSachChiTiet = [];
 
@@ -237,16 +206,17 @@ async function datHangKhachVangLai(thongTinDatHang) {
       });
     }
 
-    // Tạo đơn hàng mới ở trạng thái chờ duyệt (PENDING)
+    // Tạo đơn hàng mới ở trạng thái chờ duyệt (CHO_DUYET)
     const donHangMoi = await DonHang.create(
       {
-        MaNguoiDung: maNguoiDung,
+        MaKhachHang: null,
         TenNguoiNhan: tenNguoiNhan,
         SoDienThoaiNhan: soDienThoaiNhan,
+        EmailNhan: emailNhan,
         DiaChiGiaoHang: diaChiGiaoHang,
         GhiChu: ghiChu || null,
         TongTien: tongTien,
-        TrangThai: 'PENDING'
+        TrangThai: 'CHO_DUYET'
       },
       { transaction: t }
     );
@@ -263,8 +233,9 @@ async function datHangKhachVangLai(thongTinDatHang) {
       {
         MaDonHang: donHangMoi.MaDonHang,
         TrangThaiCu: null,
-        TrangThaiMoi: 'PENDING',
-        MaNguoiThucHien: maNguoiDung,
+        TrangThaiMoi: 'CHO_DUYET',
+        MaKhachHangThucHien: null,
+        MaNhanVienThucHien: null,
         GhiChu: 'Khách vãng lai đặt đơn hàng mới'
       },
       { transaction: t }
@@ -272,31 +243,8 @@ async function datHangKhachVangLai(thongTinDatHang) {
 
     await t.commit();
 
-    // Sinh token JWT để khách tự động duy trì phiên đăng nhập và truy cập đơn vừa tạo
-    const token = jwt.sign(
-      {
-        id: nguoiDung.MaNguoiDung,
-        email: nguoiDung.Email,
-        role: nguoiDung.VaiTro,
-        fullName: nguoiDung.HoTen
-      },
-      cauHinh.jwt.biMat,
-      { expiresIn: cauHinh.jwt.hanDung }
-    );
-
-    const chiTiet = await layChiTietDonHang(donHangMoi.MaDonHang);
-    const donHangObj = chiTiet.toJSON ? chiTiet.toJSON() : chiTiet;
-
-    return {
-      ...donHangObj,
-      token,
-      user: {
-        id: nguoiDung.MaNguoiDung,
-        email: nguoiDung.Email,
-        fullName: nguoiDung.HoTen,
-        role: nguoiDung.VaiTro
-      }
-    };
+    // Không cấp token: khách vãng lai không có phiên đăng nhập
+    return layChiTietDonHang(donHangMoi.MaDonHang);
   } catch (loi) {
     await t.rollback();
     throw loi;
@@ -316,12 +264,15 @@ async function layChiTietDonHang(maDonHang) {
       {
         model: LichSuTrangThaiDonHang,
         as: 'lichSuTrangThai',
-        include: [{ model: NguoiDung, as: 'nguoiThucHien', attributes: ['MaNguoiDung', 'HoTen', 'VaiTro'] }]
+        include: [
+          { model: KhachHang, as: 'khachHangThucHien', attributes: ['MaKhachHang', 'HoTen'] },
+          { model: NhanVien, as: 'nhanVienThucHien', attributes: ['MaNhanVien', 'HoTen', 'VaiTro'] }
+        ]
       },
       {
-        model: NguoiDung,
-        as: 'nguoiDung',
-        attributes: ['MaNguoiDung', 'HoTen', 'Email', 'SoDienThoai']
+        model: KhachHang,
+        as: 'khachHang',
+        attributes: ['MaKhachHang', 'HoTen', 'Email', 'SoDienThoai']
       }
     ]
   });
@@ -334,12 +285,12 @@ async function layChiTietDonHang(maDonHang) {
 }
 
 // 3. Khách hàng xem danh sách đơn của chính mình
-async function layDanhSachDonKhach(maNguoiDung, { page = 1, limit = 10, status }) {
+async function layDanhSachDonKhach(maKhachHang, { page = 1, limit = 10, status }) {
   const trang = Math.max(1, parseInt(page, 10) || 1);
   const gioiHan = Math.min(50, Math.max(1, parseInt(limit, 10) || 10));
   const viTri = (trang - 1) * gioiHan;
 
-  const dieuKien = { MaNguoiDung: maNguoiDung };
+  const dieuKien = { MaKhachHang: maKhachHang };
   if (status) dieuKien.TrangThai = status;
 
   const { rows, count } = await DonHang.findAndCountAll({
@@ -380,27 +331,27 @@ async function hoanTonKho(danhSachChiTiet, transaction) {
   }
 }
 
-// 4. Khách hàng tự hủy đơn khi đơn còn PENDING (Transaction hoàn kho)
-async function khachHuyDon(maDonHang, maNguoiDung, lyDo) {
+// 4. Khách hàng tự hủy đơn khi đơn còn CHO_DUYET (Transaction hoàn kho)
+async function khachHuyDon(maDonHang, maKhachHang, lyDo) {
   const donHang = await DonHang.findByPk(maDonHang, {
     include: [{ model: ChiTietDonHang, as: 'chiTietDonHang' }]
   });
 
-  if (!donHang || donHang.MaNguoiDung !== maNguoiDung) {
+  if (!donHang || donHang.MaKhachHang !== maKhachHang) {
     throw LoiNghiepVu.khongTimThay('Không tìm thấy đơn hàng yêu cầu');
   }
 
-  if (donHang.TrangThai !== 'PENDING') {
-    throw LoiNghiepVu.xungDot('Chỉ có thể hủy đơn hàng khi đang ở trạng thái chờ duyệt (PENDING)');
+  if (donHang.TrangThai !== 'CHO_DUYET') {
+    throw LoiNghiepVu.xungDot('Chỉ có thể hủy đơn hàng khi đang ở trạng thái chờ duyệt (CHO_DUYET)');
   }
 
   const t = await sequelize.transaction();
 
   try {
-    // Cập nhật trạng thái sang CANCELLED có điều kiện WHERE TrangThai = PENDING (chống hủy trùng)
+    // Cập nhật trạng thái sang DA_HUY có điều kiện WHERE TrangThai = CHO_DUYET (chống hủy trùng)
     const [soDongCapNhat] = await DonHang.update(
-      { TrangThai: 'CANCELLED' },
-      { where: { MaDonHang: maDonHang, TrangThai: 'PENDING' }, transaction: t }
+      { TrangThai: 'DA_HUY' },
+      { where: { MaDonHang: maDonHang, TrangThai: 'CHO_DUYET' }, transaction: t }
     );
 
     if (soDongCapNhat === 0) {
@@ -414,9 +365,9 @@ async function khachHuyDon(maDonHang, maNguoiDung, lyDo) {
     await LichSuTrangThaiDonHang.create(
       {
         MaDonHang: maDonHang,
-        TrangThaiCu: 'PENDING',
-        TrangThaiMoi: 'CANCELLED',
-        MaNguoiThucHien: maNguoiDung,
+        TrangThaiCu: 'CHO_DUYET',
+        TrangThaiMoi: 'DA_HUY',
+        MaKhachHangThucHien: maKhachHang,
         GhiChu: lyDo || 'Khách hàng tự hủy đơn'
       },
       { transaction: t }
@@ -451,9 +402,9 @@ async function adminLayDanhSachDon({ page = 1, limit = 10, status, tuNgay, denNg
     offset: viTri,
     include: [
       {
-        model: NguoiDung,
-        as: 'nguoiDung',
-        attributes: ['MaNguoiDung', 'HoTen', 'Email', 'SoDienThoai']
+        model: KhachHang,
+        as: 'khachHang',
+        attributes: ['MaKhachHang', 'HoTen', 'Email', 'SoDienThoai']
       },
       {
         model: ChiTietDonHang,
@@ -475,7 +426,7 @@ async function adminLayDanhSachDon({ page = 1, limit = 10, status, tuNgay, denNg
 }
 
 // 6. Back-Office: Chuyển trạng thái đơn hàng (Optimistic Lock)
-async function adminCapNhatTrangThai(maDonHang, trangThaiMoi, ghiChu, maNguoiThucHien) {
+async function adminCapNhatTrangThai(maDonHang, trangThaiMoi, ghiChu, maNhanVien) {
   const donHang = await DonHang.findByPk(maDonHang);
   if (!donHang) {
     throw LoiNghiepVu.khongTimThay('Không tìm thấy đơn hàng yêu cầu');
@@ -484,7 +435,7 @@ async function adminCapNhatTrangThai(maDonHang, trangThaiMoi, ghiChu, maNguoiThu
   const trangThaiCu = donHang.TrangThai;
   if (!kiemTraChuyenTrangThai(trangThaiCu, trangThaiMoi)) {
     throw LoiNghiepVu.xungDot(
-      `Không thể chuyển trạng thái từ ${trangThaiCu} sang ${trangThaiMoi}. Vui lòng tuân thủ quy trình PENDING -> CONFIRMED -> SHIPPING -> DELIVERED.`
+      `Không thể chuyển trạng thái từ ${trangThaiCu} sang ${trangThaiMoi}. Vui lòng tuân thủ quy trình CHO_DUYET -> DA_XAC_NHAN -> DANG_GIAO -> DA_GIAO.`
     );
   }
 
@@ -507,7 +458,7 @@ async function adminCapNhatTrangThai(maDonHang, trangThaiMoi, ghiChu, maNguoiThu
         MaDonHang: maDonHang,
         TrangThaiCu: trangThaiCu,
         TrangThaiMoi: trangThaiMoi,
-        MaNguoiThucHien: maNguoiThucHien,
+        MaNhanVienThucHien: maNhanVien,
         GhiChu: ghiChu || null
       },
       { transaction: t }
@@ -521,8 +472,8 @@ async function adminCapNhatTrangThai(maDonHang, trangThaiMoi, ghiChu, maNguoiThu
   }
 }
 
-// 7. Back-Office: Nhân viên hủy đơn (bắt buộc có lý do, hoàn kho nếu PENDING hoặc CONFIRMED)
-async function adminHuyDon(maDonHang, lyDo, maNguoiThucHien) {
+// 7. Back-Office: Nhân viên hủy đơn (bắt buộc có lý do, hoàn kho nếu CHO_DUYET hoặc DA_XAC_NHAN)
+async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
   const donHang = await DonHang.findByPk(maDonHang, {
     include: [{ model: ChiTietDonHang, as: 'chiTietDonHang' }]
   });
@@ -532,7 +483,7 @@ async function adminHuyDon(maDonHang, lyDo, maNguoiThucHien) {
   }
 
   const trangThaiCu = donHang.TrangThai;
-  if (!['PENDING', 'CONFIRMED'].includes(trangThaiCu)) {
+  if (!['CHO_DUYET', 'DA_XAC_NHAN'].includes(trangThaiCu)) {
     throw LoiNghiepVu.xungDot(`Không thể hủy đơn hàng đang ở trạng thái ${trangThaiCu}.`);
   }
 
@@ -540,9 +491,9 @@ async function adminHuyDon(maDonHang, lyDo, maNguoiThucHien) {
 
   try {
     const [soDongCapNhat] = await DonHang.update(
-      { TrangThai: 'CANCELLED' },
+      { TrangThai: 'DA_HUY' },
       {
-        where: { MaDonHang: maDonHang, TrangThai: { [Op.in]: ['PENDING', 'CONFIRMED'] } },
+        where: { MaDonHang: maDonHang, TrangThai: { [Op.in]: ['CHO_DUYET', 'DA_XAC_NHAN'] } },
         transaction: t
       }
     );
@@ -558,8 +509,8 @@ async function adminHuyDon(maDonHang, lyDo, maNguoiThucHien) {
       {
         MaDonHang: maDonHang,
         TrangThaiCu: trangThaiCu,
-        TrangThaiMoi: 'CANCELLED',
-        MaNguoiThucHien: maNguoiThucHien,
+        TrangThaiMoi: 'DA_HUY',
+        MaNhanVienThucHien: maNhanVien,
         GhiChu: lyDo
       },
       { transaction: t }

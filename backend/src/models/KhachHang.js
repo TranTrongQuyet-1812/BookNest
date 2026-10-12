@@ -1,12 +1,13 @@
 /**
- * Model Sequelize ánh xạ bảng NguoiDung trong cơ sở dữ liệu BookNestDB.
- * Quản lý thông tin tài khoản khách hàng, thủ thư, nhân viên đơn hàng và quản trị viên.
+ * Model Sequelize ánh xạ bảng KhachHang trong cơ sở dữ liệu BookNestDB.
+ * Quản lý tài khoản khách hàng của Storefront (giỏ hàng, đơn hàng, đánh giá).
+ * Khách hàng không có cột vai trò: trong token mang giá trị khach_hang.
  */
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/ketNoiDb');
 
-const NguoiDung = sequelize.define('NguoiDung', {
-  MaNguoiDung: {
+const KhachHang = sequelize.define('KhachHang', {
+  MaKhachHang: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
@@ -33,21 +34,16 @@ const NguoiDung = sequelize.define('NguoiDung', {
     type: DataTypes.STRING(255),
     allowNull: true
   },
-  VaiTro: {
-    type: DataTypes.STRING(20),
-    allowNull: false,
-    defaultValue: 'customer'
-  },
   DangHoatDong: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
     defaultValue: true
   }
 }, {
-  tableName: 'NguoiDung',
+  tableName: 'KhachHang',
   freezeTableName: true,
   createdAt: 'NgayTao',
   updatedAt: 'NgayCapNhat'
 });
 
-module.exports = NguoiDung;
+module.exports = KhachHang;

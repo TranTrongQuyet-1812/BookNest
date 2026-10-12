@@ -11,8 +11,8 @@
 **BookNest** là hệ thống quản lý kho sách và sàn thương mại điện tử chuyên ngành sách được xây dựng theo chuẩn kiến trúc phân tầng doanh nghiệp **SERN Stack** (SQL Server, Express.js, React, Node.js). 
 
 Dự án chú trọng đặc biệt vào:
-- **Chuẩn hóa Cơ sở dữ liệu 3NF:** 9 bảng quan hệ chặt chẽ, 12 khóa ngoại `ON DELETE NO ACTION`, bảng mã tiếng Việt, 15 chỉ mục (Index) tối ưu hiệu năng (gồm 10 chỉ mục cốt lõi và 5 chỉ mục tối ưu hóa bổ sung gồm Covering Indexes tính sao và doanh thu).
-- **Bảo mật & Phân quyền RBAC:** Xác thực JWT Stateless kết hợp kiểm soát truy cập dựa trên vai trò (4 vai trò: `customer`, `librarian`, `order_staff`, `admin`), mã hóa mật khẩu Bcrypt với salt rounds 10, chống lộ thông tin với IDOR Guard, bảo vệ HTTP Headers với **Helmet**, chống brute-force đăng nhập với **express-rate-limit**.
+- **Chuẩn hóa Cơ sở dữ liệu 3NF:** 10 bảng quan hệ chặt chẽ (tài khoản tách riêng `NhanVien` và `KhachHang`), 13 khóa ngoại `ON DELETE NO ACTION`, bảng mã và giá trị mã bằng tiếng Việt, 16 chỉ mục (Index) tối ưu hiệu năng (gồm 11 chỉ mục cốt lõi và 5 chỉ mục tối ưu hóa bổ sung gồm Covering Indexes tính sao và doanh thu).
+- **Bảo mật & Phân quyền RBAC:** Xác thực JWT Stateless kết hợp kiểm soát truy cập dựa trên vai trò (khách hàng và 3 vai trò nhân sự: `quan_tri`, `thu_kho`, `thu_thu`; hai cổng đăng nhập riêng), mã hóa mật khẩu Bcrypt với salt rounds 10, chống lộ thông tin với IDOR Guard, bảo vệ HTTP Headers với **Helmet**, chống brute-force đăng nhập với **express-rate-limit**.
 - **Toàn vẹn Dữ liệu & Xử lý Đồng thời:** Giao dịch đặt hàng nguyên tử (Database Transaction kết hợp chỉ dẫn khóa dòng `tableHint: TableHints.UPDLOCK` sinh `WITH (UPDLOCK)` thực thi trên MS SQL Server) chống bán âm kho (Race Condition Prevention), thuật toán sắp xếp khóa dòng `MaSach ASC` chống Deadlock 1205, máy trạng thái luân chuyển đơn hàng 1 chiều.
 - **Tài liệu hóa API & Kiểm thử tự động:** Swagger UI OpenAPI 3.0 tại `/api-docs` mô tả đầy đủ **mọi endpoint**, chuẩn RESTful không route alias.
 
@@ -33,7 +33,7 @@ Dự án chú trọng đặc biệt vào:
 ```text
 Project_MonBE/
 ├── database/                   # Kịch bản DDL và dữ liệu mẫu SQL Server
-│   ├── 01_tao_bang.sql         # Tạo 9 bảng chuẩn 3NF, 12 FK, 15 Index tối ưu
+│   ├── 01_tao_bang.sql         # Tạo 10 bảng chuẩn 3NF, 13 FK, 16 Index tối ưu
 │   ├── 02_du_lieu_mau.sql      # Seed 36 cuốn sách, 8 tài khoản, đơn hàng demo tuần tự
 │   ├── 03_don_dep_du_lieu_rac.sql # Kịch bản khôi phục và dọn dẹp CSDL về trạng thái sạch
 │   └── 04_cau_hinh_va_toi_uu_index.sql # Kịch bản cấu hình RCSI, AUTO_CLOSE và index phủ
@@ -65,7 +65,7 @@ Project_MonBE/
 1. Mở **SQL Server Configuration Manager**, đảm bảo dịch vụ **SQL Server (SQLEXPRESS)** đang chạy và giao thức **TCP/IP** đã được `Enabled` ở cổng **1433**.
 2. Mở **SQL Server Management Studio (SSMS)** hoặc công cụ dòng lệnh:
    - Tạo trước một CSDL trống (script không tự tạo CSDL): `CREATE DATABASE BookNestDB COLLATE Vietnamese_CI_AI;`
-   - Chạy tập lệnh [`database/01_tao_bang.sql`](./database/01_tao_bang.sql) để tạo 9 bảng cùng 15 chỉ mục tối ưu trong `BookNestDB`.
+   - Chạy tập lệnh [`database/01_tao_bang.sql`](./database/01_tao_bang.sql) để tạo 10 bảng cùng 16 chỉ mục tối ưu trong `BookNestDB`.
    - Chạy tập lệnh [`database/02_du_lieu_mau.sql`](./database/02_du_lieu_mau.sql) để nạp 36 cuốn sách và các tài khoản demo.
    - *(Tùy chọn nâng cao)*: Chạy [`database/04_cau_hinh_va_toi_uu_index.sql`](./database/04_cau_hinh_va_toi_uu_index.sql) để kích hoạt RCSI (`READ_COMMITTED_SNAPSHOT`) và tắt `AUTO_CLOSE`.
 
@@ -107,10 +107,12 @@ Tất cả các tài khoản demo đều dùng chung mật khẩu: **`12345678`*
 
 | Vai trò | Email đăng nhập | Quyền hạn trong hệ thống |
 | :--- | :--- | :--- |
-| **Quản trị viên (Admin)** | `admin@booknest.vn` | Toàn quyền: Thống kê doanh thu, Quản lý sách & kho, Xử lý đơn, Quản lý tài khoản nhân sự |
-| **Thủ thư (Librarian)** | `thuthu@booknest.vn` | Quản lý danh mục sách, Thêm/sửa sách, Lập phiếu nhập kho, Cảnh báo sách sắp hết |
-| **Nhân viên đơn (Order Staff)** | `nhanvien@booknest.vn` | Xem đơn toàn hệ thống, Luân chuyển trạng thái đơn (Duyệt -> Giao -> Hoàn tất), Hủy đơn hoàn kho |
-| **Khách hàng (Customer)** | `khach1@gmail.com` | Tìm kiếm sách, Thêm giỏ hàng, Đặt mua hàng COD, Quản lý đơn cá nhân, Viết đánh giá sản phẩm |
+| **Quản trị viên** (`quan_tri`) | `admin@booknest.vn` | Toàn quyền: Thống kê doanh thu, Quản lý sách & kho, Xử lý đơn, Quản lý tài khoản nhân sự |
+| **Thủ thư** (`thu_thu`) | `thuthu@booknest.vn`, `nhanvien@booknest.vn` | Phụ trách bán hàng: Xem đơn toàn hệ thống, Luân chuyển trạng thái đơn (Duyệt -> Giao -> Hoàn tất), Hủy đơn hoàn kho |
+| **Thủ kho** (`thu_kho`) | `thukho@booknest.vn` | Phụ trách hàng hóa: Quản lý danh mục và sách, Lập phiếu nhập kho, Cảnh báo sách sắp hết |
+| **Khách hàng** | `khach1@gmail.com` | Tìm kiếm sách, Thêm giỏ hàng, Đặt mua hàng COD, Quản lý đơn cá nhân, Viết đánh giá sản phẩm |
+
+Nhân viên đăng nhập ở **`/admin/login`**, khách hàng đăng nhập ở **`/login`** (hai cổng riêng, hai bảng tài khoản riêng).
 
 ---
 

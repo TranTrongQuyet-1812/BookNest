@@ -15,9 +15,19 @@ async function xuLyDangKy(req, res) {
   });
 }
 
-// Xử lý đăng nhập tài khoản
-async function xuLyDangNhap(req, res) {
-  const ketQua = await xacThucService.dangNhap(req.body);
+// Xử lý đăng nhập của khách hàng
+async function xuLyDangNhapKhachHang(req, res) {
+  const ketQua = await xacThucService.dangNhapKhachHang(req.body);
+  return phanHoiThanhCong(res, {
+    duLieu: ketQua,
+    thongDiep: 'Đăng nhập thành công',
+    maTrangThai: 200
+  });
+}
+
+// Xử lý đăng nhập của nhân viên (cổng Back-Office)
+async function xuLyDangNhapNhanVien(req, res) {
+  const ketQua = await xacThucService.dangNhapNhanVien(req.body);
   return phanHoiThanhCong(res, {
     duLieu: ketQua,
     thongDiep: 'Đăng nhập thành công',
@@ -27,5 +37,6 @@ async function xuLyDangNhap(req, res) {
 
 module.exports = {
   xuLyDangKy,
-  xuLyDangNhap
+  xuLyDangNhapKhachHang,
+  xuLyDangNhapNhanVien
 };

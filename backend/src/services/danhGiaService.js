@@ -1,9 +1,9 @@
 /**
  * Tầng Service quản lý đánh giá sách của khách hàng (DanhGia).
- * Quy tắc nghiệp vụ: Chỉ khách đã mua và nhận sách thành công (đơn DELIVERED) mới được đánh giá.
+ * Quy tắc nghiệp vụ: Chỉ khách đã mua và nhận sách thành công (đơn DA_GIAO) mới được đánh giá.
  * Mỗi khách chỉ có 1 đánh giá cho mỗi sách (gửi lại sẽ cập nhật đánh giá cũ).
  */
-const { sequelize, DanhGia, DonHang, ChiTietDonHang, Sach, NguoiDung } = require('../models');
+const { sequelize, DanhGia, DonHang, ChiTietDonHang, Sach, KhachHang } = require('../models');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 
 // Lấy danh sách đánh giá của cuốn sách kèm thống kê số sao trung bình
@@ -24,9 +24,9 @@ async function layDanhSachDanhGia(maSach, { page = 1, limit = 10 }) {
     offset: viTri,
     include: [
       {
-        model: NguoiDung,
-        as: 'nguoiDung',
-        attributes: ['MaNguoiDung', 'HoTen'] // Tuyệt đối không lộ Email hoặc thông tin cá nhân
+        model: KhachHang,
+        as: 'khachHang',
+        attributes: ['MaKhachHang', 'HoTen'] // Tuyệt đối không lộ Email hoặc thông tin cá nhân
       }
     ]
   });
@@ -52,18 +52,18 @@ async function layDanhSachDanhGia(maSach, { page = 1, limit = 10 }) {
   };
 }
 
-// Viết hoặc cập nhật đánh giá sách (chỉ cho phép khách đã nhận sách DELIVERED)
-async function taoHoacCapNhatDanhGia(maNguoiDung, maSach, { soSao, noiDung }) {
+// Viết hoặc cập nhật đánh giá sách (chỉ cho phép khách đã nhận sách DA_GIAO)
+async function taoHoacCapNhatDanhGia(maKhachHang, maSach, { soSao, noiDung }) {
   const sach = await Sach.findByPk(maSach);
   if (!sach || sach.DaAn) {
     throw LoiNghiepVu.khongTimThay('Không tìm thấy cuốn sách này');
   }
 
-  // Kiểm tra điều kiện: Khách phải có ít nhất 1 đơn hàng trạng thái DELIVERED chứa cuốn sách này
+  // Kiểm tra điều kiện: Khách phải có ít nhất 1 đơn hàng trạng thái DA_GIAO chứa cuốn sách này
   const daNhanSach = await DonHang.findOne({
     where: {
-      MaNguoiDung: maNguoiDung,
-      TrangThai: 'DELIVERED'
+      MaKhachHang: maKhachHang,
+      TrangThai: 'DA_GIAO'
     },
     include: [
       {
@@ -82,7 +82,7 @@ async function taoHoacCapNhatDanhGia(maNguoiDung, maSach, { soSao, noiDung }) {
 
   // Khách chỉ có 1 đánh giá cho mỗi sách: Nếu đã có thì cập nhật, chưa có thì tạo mới
   let danhGia = await DanhGia.findOne({
-    where: { MaNguoiDung: maNguoiDung, MaSach: maSach }
+    where: { MaKhachHang: maKhachHang, MaSach: maSach }
   });
 
   if (danhGia) {
@@ -91,7 +91,7 @@ async function taoHoacCapNhatDanhGia(maNguoiDung, maSach, { soSao, noiDung }) {
     await danhGia.save();
   } else {
     danhGia = await DanhGia.create({
-      MaNguoiDung: maNguoiDung,
+      MaKhachHang: maKhachHang,
       MaSach: maSach,
       SoSao: soSao,
       NoiDung: noiDung || null

@@ -31,20 +31,23 @@ export const QuanLyNhanSu = () => {
     hoTen: '',
     email: '',
     matKhau: '',
-    vaiTro: 'librarian',
-    soDienThoai: '',
-    diaChi: ''
+    vaiTro: 'thu_thu',
+    soDienThoai: ''
   });
   const [dangTao, setDangTao] = useState(false);
+
+  // Khách hàng nằm ở danh sách riêng, nhân viên lọc theo vai trò
+  const laKhach = vaiTroLoc === 'khach_hang';
+  const duongDanDanhSach = laKhach ? '/admin/customers' : '/admin/staff';
 
   const taiNguoiDung = async (trangCanTai = trang) => {
     setDangTai(true);
     try {
       const params = { page: trangCanTai, limit: 20 };
-      if (vaiTroLoc) params.role = vaiTroLoc;
+      if (vaiTroLoc && !laKhach) params.role = vaiTroLoc;
       if (timKiem.trim()) params.search = timKiem.trim();
 
-      const res = await api.get('/admin/users', { params });
+      const res = await api.get(duongDanDanhSach, { params });
       const ds = res.data.data.danhSach;
       setNguoiDungList(Array.isArray(ds) ? ds : []);
       setPhanTrang(res.data.data.phanTrang);
@@ -60,9 +63,9 @@ export const QuanLyNhanSu = () => {
     const nap = async () => {
       try {
         const params = { page: trang, limit: 20 };
-        if (vaiTroLoc) params.role = vaiTroLoc;
+        if (vaiTroLoc && !laKhach) params.role = vaiTroLoc;
 
-        const res = await api.get('/admin/users', { params });
+        const res = await api.get(duongDanDanhSach, { params });
         if (daHuy) return;
         const ds = res.data.data.danhSach;
         setNguoiDungList(Array.isArray(ds) ? ds : []);
@@ -77,7 +80,7 @@ export const QuanLyNhanSu = () => {
     return () => {
       daHuy = true;
     };
-  }, [vaiTroLoc, trang]);
+  }, [vaiTroLoc, trang, laKhach, duongDanDanhSach]);
 
   const handleTimKiem = (e) => {
     e.preventDefault();
@@ -87,9 +90,9 @@ export const QuanLyNhanSu = () => {
 
   // Khóa hoặc mở khóa tài khoản
   const handleToggleKhoa = async (u) => {
-    const userId = u.MaNguoiDung;
+    const userId = laKhach ? u.MaKhachHang : u.MaNhanVien;
     const myId = adminHienTai?.id;
-    if (userId === myId) {
+    if (!laKhach && userId === myId) {
       alert('Bạn không thể tự khóa tài khoản quản trị của chính mình!');
       return;
     }
@@ -101,7 +104,7 @@ export const QuanLyNhanSu = () => {
 
     try {
       const trangThaiMoi = !dangHoatDong;
-      await api.put(`/admin/users/${userId}/status`, { dangHoatDong: trangThaiMoi });
+      await api.put(`${duongDanDanhSach}/${userId}/status`, { dangHoatDong: trangThaiMoi });
       setThongBao(`Đã ${hanhDong} tài khoản ${email} thành công`);
       taiNguoiDung();
       setTimeout(() => setThongBao(''), 3000);
@@ -115,13 +118,12 @@ export const QuanLyNhanSu = () => {
     e.preventDefault();
     setDangTao(true);
     try {
-      await api.post('/admin/users', {
+      await api.post('/admin/staff', {
         hoTen: formNhanSu.hoTen,
         email: formNhanSu.email,
         matKhau: formNhanSu.matKhau,
         vaiTro: formNhanSu.vaiTro,
-        soDienThoai: formNhanSu.soDienThoai || undefined,
-        diaChiMacDinh: formNhanSu.diaChi || undefined
+        soDienThoai: formNhanSu.soDienThoai || undefined
       });
       setThongBao(`Đã khởi tạo tài khoản nhân sự thành công: ${formNhanSu.email}`);
       setModalMo(false);
@@ -129,9 +131,8 @@ export const QuanLyNhanSu = () => {
         hoTen: '',
         email: '',
         matKhau: '',
-        vaiTro: 'librarian',
-        soDienThoai: '',
-        diaChi: ''
+        vaiTro: 'thu_thu',
+        soDienThoai: ''
       });
       taiNguoiDung();
       setTimeout(() => setThongBao(''), 3000);
@@ -144,13 +145,13 @@ export const QuanLyNhanSu = () => {
 
   const layBadgeVaiTro = (vaiTro) => {
     switch (vaiTro) {
-      case 'admin':
-        return <span className="badge" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>Admin</span>;
-      case 'librarian':
-        return <span className="badge badge-confirmed">Thủ thư</span>;
-      case 'order_staff':
-        return <span className="badge badge-pending">NV Đơn hàng</span>;
-      case 'customer':
+      case 'quan_tri':
+        return <span className="badge" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>Quản trị viên</span>;
+      case 'thu_kho':
+        return <span className="badge badge-confirmed">Thủ kho</span>;
+      case 'thu_thu':
+        return <span className="badge badge-pending">Thủ thư</span>;
+      case 'khach_hang':
         return <span className="badge badge-role">Khách hàng</span>;
       default:
         return <span className="badge">{vaiTro}</span>;
@@ -209,11 +210,11 @@ export const QuanLyNhanSu = () => {
                 setTrang(1);
               }}
             >
-              <option value="">Tất cả vai trò</option>
-              <option value="admin">Quản trị viên (Admin)</option>
-              <option value="librarian">Thủ thư (Librarian)</option>
-              <option value="order_staff">Nhân viên đơn (Staff)</option>
-              <option value="customer">Khách hàng (Customer)</option>
+              <option value="">Tất cả nhân viên</option>
+              <option value="quan_tri">Quản trị viên</option>
+              <option value="thu_kho">Thủ kho</option>
+              <option value="thu_thu">Thủ thư</option>
+              <option value="khach_hang">Khách hàng</option>
             </select>
           </div>
 
@@ -245,14 +246,14 @@ export const QuanLyNhanSu = () => {
             </thead>
             <tbody>
               {nguoiDungList.map((u) => {
-                const userId = u.MaNguoiDung;
+                const userId = laKhach ? u.MaKhachHang : u.MaNhanVien;
                 const hoTen = u.HoTen;
                 const email = u.Email;
-                const vaiTro = u.VaiTro;
+                const vaiTro = laKhach ? 'khach_hang' : u.VaiTro;
                 const sdt = u.SoDienThoai;
                 const dangHoatDong = u.DangHoatDong;
                 const myId = adminHienTai?.id;
-                const laChinhMinh = userId === myId;
+                const laChinhMinh = !laKhach && userId === myId;
 
                 return (
                   <tr key={userId}>
@@ -354,8 +355,8 @@ export const QuanLyNhanSu = () => {
                     value={formNhanSu.vaiTro}
                     onChange={(e) => setFormNhanSu({ ...formNhanSu, vaiTro: e.target.value })}
                   >
-                    <option value="librarian">Thủ thư (Librarian)</option>
-                    <option value="order_staff">Nhân viên đơn (Staff)</option>
+                    <option value="thu_thu">Thủ thư</option>
+                    <option value="thu_kho">Thủ kho</option>
                   </select>
                 </div>
               </div>

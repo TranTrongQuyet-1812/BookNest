@@ -6,9 +6,9 @@ const { GioHang, Sach } = require('../models');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 
 // Lấy danh sách sản phẩm trong giỏ của khách hàng kèm thông tin tạm tính và cảnh báo
-async function layGioHang(maNguoiDung) {
+async function layGioHang(maKhachHang) {
   const cacMon = await GioHang.findAll({
-    where: { MaNguoiDung: maNguoiDung },
+    where: { MaKhachHang: maKhachHang },
     include: [
       {
         model: Sach,
@@ -66,14 +66,14 @@ async function layGioHang(maNguoiDung) {
 }
 
 // Thêm sách vào giỏ: cộng dồn số lượng nếu đã có, kiểm tra tồn kho
-async function themVaoGio(maNguoiDung, { maSach, soLuong }) {
+async function themVaoGio(maKhachHang, { maSach, soLuong }) {
   const sach = await Sach.findByPk(maSach);
   if (!sach || sach.DaAn) {
     throw LoiNghiepVu.khongTimThay('Cuốn sách này không tồn tại hoặc đã ngừng kinh doanh');
   }
 
   const monHienCo = await GioHang.findOne({
-    where: { MaNguoiDung: maNguoiDung, MaSach: maSach }
+    where: { MaKhachHang: maKhachHang, MaSach: maSach }
   });
 
   const soLuongMoi = monHienCo ? (monHienCo.SoLuong + soLuong) : soLuong;
@@ -89,19 +89,19 @@ async function themVaoGio(maNguoiDung, { maSach, soLuong }) {
     await monHienCo.save();
   } else {
     await GioHang.create({
-      MaNguoiDung: maNguoiDung,
+      MaKhachHang: maKhachHang,
       MaSach: maSach,
       SoLuong: soLuong
     });
   }
 
-  return layGioHang(maNguoiDung);
+  return layGioHang(maKhachHang);
 }
 
 // Cập nhật số lượng của một cuốn sách trong giỏ
-async function capNhatSoLuong(maNguoiDung, maSach, soLuong) {
+async function capNhatSoLuong(maKhachHang, maSach, soLuong) {
   const monTrongGio = await GioHang.findOne({
-    where: { MaNguoiDung: maNguoiDung, MaSach: maSach }
+    where: { MaKhachHang: maKhachHang, MaSach: maSach }
   });
 
   if (!monTrongGio) {
@@ -122,13 +122,13 @@ async function capNhatSoLuong(maNguoiDung, maSach, soLuong) {
   monTrongGio.SoLuong = soLuong;
   await monTrongGio.save();
 
-  return layGioHang(maNguoiDung);
+  return layGioHang(maKhachHang);
 }
 
 // Xóa một cuốn sách khỏi giỏ hàng
-async function xoaKhoiGio(maNguoiDung, maSach) {
+async function xoaKhoiGio(maKhachHang, maSach) {
   const monTrongGio = await GioHang.findOne({
-    where: { MaNguoiDung: maNguoiDung, MaSach: maSach }
+    where: { MaKhachHang: maKhachHang, MaSach: maSach }
   });
 
   if (!monTrongGio) {
@@ -140,8 +140,8 @@ async function xoaKhoiGio(maNguoiDung, maSach) {
 }
 
 // Xóa toàn bộ giỏ hàng của người dùng
-async function xoaToanBoGioHang(maNguoiDung) {
-  await GioHang.destroy({ where: { MaNguoiDung: maNguoiDung } });
+async function xoaToanBoGioHang(maKhachHang) {
+  await GioHang.destroy({ where: { MaKhachHang: maKhachHang } });
   return { thanhCong: true };
 }
 

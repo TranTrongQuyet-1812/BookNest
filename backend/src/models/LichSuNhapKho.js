@@ -20,7 +20,7 @@ const LichSuNhapKho = sequelize.define('LichSuNhapKho', {
     type: DataTypes.INTEGER,
     allowNull: false
   },
-  MaNguoiNhap: {
+  MaNhanVienNhap: {
     type: DataTypes.INTEGER,
     allowNull: false
   },

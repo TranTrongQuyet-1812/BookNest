@@ -78,9 +78,9 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  // Hàm đăng nhập
-  const dangNhap = async (email, matKhau) => {
-    const res = await api.post('/auth/login', { email, matKhau });
+  // Đăng nhập ở một cổng: khách hàng dùng /auth/login, nhân viên dùng /admin/auth/login
+  const dangNhapTaiCong = async (duongDan, email, matKhau) => {
+    const res = await api.post(duongDan, { email, matKhau });
     const { token: jwtToken, user: nguoiDung } = res.data.data;
 
     localStorage.setItem('booknest_token', jwtToken);
@@ -90,6 +90,9 @@ export const AuthProvider = ({ children }) => {
     setUser(nguoiDung);
     return nguoiDung;
   };
+
+  const dangNhap = (email, matKhau) => dangNhapTaiCong('/auth/login', email, matKhau);
+  const dangNhapNhanVien = (email, matKhau) => dangNhapTaiCong('/admin/auth/login', email, matKhau);
 
   // Hàm đăng ký
   const dangKy = async (duLieu) => {
@@ -112,14 +115,6 @@ export const AuthProvider = ({ children }) => {
     setUser(nguoiDungCapNhat);
   };
 
-  // Thiết lập phiên đăng nhập trực tiếp (dùng khi Khách vãng lai đặt đơn thành công)
-  const datSession = (jwtToken, nguoiDung) => {
-    localStorage.setItem('booknest_token', jwtToken);
-    localStorage.setItem('booknest_user', JSON.stringify(nguoiDung));
-    setToken(jwtToken);
-    setUser(nguoiDung);
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -129,10 +124,10 @@ export const AuthProvider = ({ children }) => {
         theme,
         toggleTheme,
         dangNhap,
+        dangNhapNhanVien,
         dangKy,
         dangXuat,
         capNhatUser,
-        datSession,
         daDangNhap: Boolean(token && user)
       }}
     >

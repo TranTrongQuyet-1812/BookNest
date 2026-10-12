@@ -25,13 +25,13 @@ async function layTongQuanDoanhThu({ tuNgay, denNgay }) {
       COALESCE(SUM(ct.TongSach), 0) AS tongSachDaBan
     FROM DonHang dh
     INNER JOIN LichSuTrangThaiDonHang ls 
-      ON dh.MaDonHang = ls.MaDonHang AND ls.TrangThaiMoi = 'DELIVERED'
+      ON dh.MaDonHang = ls.MaDonHang AND ls.TrangThaiMoi = 'DA_GIAO'
     LEFT JOIN (
       SELECT MaDonHang, SUM(SoLuong) AS TongSach
       FROM ChiTietDonHang
       GROUP BY MaDonHang
     ) ct ON dh.MaDonHang = ct.MaDonHang
-    WHERE dh.TrangThai = 'DELIVERED' ${dieuKienNgay}
+    WHERE dh.TrangThai = 'DA_GIAO' ${dieuKienNgay}
   `;
 
   const [ketQua] = await sequelize.query(cauTruyVan, {
@@ -59,7 +59,7 @@ async function layTopSachBanChay({ limit = 10 }) {
       COALESCE(SUM(ct.SoLuong), 0) AS daBan,
       COALESCE(SUM(ct.SoLuong * ct.DonGia), 0) AS doanhThu
     FROM ChiTietDonHang ct
-    INNER JOIN DonHang dh ON ct.MaDonHang = dh.MaDonHang AND dh.TrangThai = 'DELIVERED'
+    INNER JOIN DonHang dh ON ct.MaDonHang = dh.MaDonHang AND dh.TrangThai = 'DA_GIAO'
     INNER JOIN Sach s ON ct.MaSach = s.MaSach
     LEFT JOIN DanhMuc dm ON s.MaDanhMuc = dm.MaDanhMuc
     GROUP BY s.MaSach, s.TenSach, s.AnhBia, dm.TenDanhMuc
@@ -103,8 +103,8 @@ async function layTyLeDonHang() {
     const soLuong = parseInt(t.soLuong, 10);
     const tyLe = tongSoDon > 0 ? parseFloat(((soLuong / tongSoDon) * 100).toFixed(1)) : 0;
 
-    if (t.trangThai === 'DELIVERED') soDonThanhCong = soLuong;
-    if (t.trangThai === 'CANCELLED') soDonHuy = soLuong;
+    if (t.trangThai === 'DA_GIAO') soDonThanhCong = soLuong;
+    if (t.trangThai === 'DA_HUY') soDonHuy = soLuong;
 
     return {
       trangThai: t.trangThai,

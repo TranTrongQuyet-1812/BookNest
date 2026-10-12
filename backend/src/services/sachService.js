@@ -2,7 +2,7 @@
  * Tầng Service quản lý sách, tìm kiếm tiếng Việt không dấu, phân trang, CRUD và nhập kho.
  */
 const { Op } = require('sequelize');
-const { sequelize, Sach, DanhMuc, LichSuNhapKho, NguoiDung } = require('../models');
+const { sequelize, Sach, DanhMuc, LichSuNhapKho, NhanVien } = require('../models');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 const { chuaTuKhoa } = require('../utils/timKiem');
 
@@ -113,7 +113,7 @@ async function layChiTietSach(maSach, laAdmin = false) {
 }
 
 // Thêm sách mới (trong transaction: ghi thêm LichSuNhapKho nếu tồn kho > 0)
-async function taoSach(duLieu, maNguoiTao) {
+async function taoSach(duLieu, maNhanVienTao) {
   const danhMuc = await DanhMuc.findByPk(duLieu.maDanhMuc);
   if (!danhMuc) {
     throw LoiNghiepVu.yeuCauKhongHopLe('Danh mục được chọn không tồn tại');
@@ -143,7 +143,7 @@ async function taoSach(duLieu, maNguoiTao) {
         {
           MaSach: sachMoi.MaSach,
           SoLuongNhap: tonKhoBanDau,
-          MaNguoiNhap: maNguoiTao,
+          MaNhanVienNhap: maNhanVienTao,
           GhiChu: 'Nhập kho ban đầu khi tạo sách'
         },
         { transaction: t }
@@ -198,7 +198,7 @@ async function xoaMemSach(maSach) {
 }
 
 // Nhập kho cho sách (Transaction: Atomic UPDATE SoLuongTon + ghi LichSuNhapKho)
-async function nhapKho(maSach, { soLuongNhap, ghiChu }, maNguoiNhap) {
+async function nhapKho(maSach, { soLuongNhap, ghiChu }, maNhanVienNhap) {
   const sach = await Sach.findByPk(maSach);
   if (!sach) {
     throw LoiNghiepVu.khongTimThay('Không tìm thấy cuốn sách này');
@@ -223,7 +223,7 @@ async function nhapKho(maSach, { soLuongNhap, ghiChu }, maNguoiNhap) {
       {
         MaSach: maSach,
         SoLuongNhap: soLuong,
-        MaNguoiNhap: maNguoiNhap,
+        MaNhanVienNhap: maNhanVienNhap,
         GhiChu: ghiChu || null
       },
       { transaction: t }
@@ -246,7 +246,7 @@ async function layLichSuNhapKho(maSach) {
 
   const lichSu = await LichSuNhapKho.findAll({
     where: { MaSach: maSach },
-    include: [{ model: NguoiDung, as: 'nguoiNhap', attributes: ['MaNguoiDung', 'HoTen', 'Email'] }],
+    include: [{ model: NhanVien, as: 'nhanVienNhap', attributes: ['MaNhanVien', 'HoTen', 'Email'] }],
     order: [['NgayNhap', 'DESC']]
   });
 
@@ -258,7 +258,7 @@ async function layTatCaLichSuNhapKho() {
   const lichSu = await LichSuNhapKho.findAll({
     include: [
       { model: Sach, as: 'sach', attributes: ['MaSach', 'TenSach'] },
-      { model: NguoiDung, as: 'nguoiNhap', attributes: ['MaNguoiDung', 'HoTen', 'Email'] }
+      { model: NhanVien, as: 'nhanVienNhap', attributes: ['MaNhanVien', 'HoTen', 'Email'] }
     ],
     order: [['NgayNhap', 'DESC']],
     limit: 50

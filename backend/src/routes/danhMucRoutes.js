@@ -69,7 +69,7 @@ router.get('/:id', batLoiAsync(danhMucController.xuLyLayChiTiet));
  * @swagger
  * /api/categories:
  *   post:
- *     summary: Thêm danh mục thể loại mới (Admin/Librarian)
+ *     summary: Thêm danh mục thể loại mới (Quản trị viên, Thủ kho, Thủ thư)
  *     tags: [Danh mục (Categories)]
  *     security:
  *       - bearerAuth: []
@@ -106,7 +106,7 @@ router.get('/:id', batLoiAsync(danhMucController.xuLyLayChiTiet));
 router.post(
   '/',
   xacThucToken,
-  phanQuyen('admin', 'librarian'),
+  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
   kiemTraDuLieu(luatDanhMuc),
   batLoiAsync(danhMucController.xuLyTao)
 );
@@ -115,7 +115,7 @@ router.post(
  * @swagger
  * /api/categories/{id}:
  *   put:
- *     summary: Cập nhật thông tin danh mục (Admin/Librarian)
+ *     summary: Cập nhật thông tin danh mục (Quản trị viên, Thủ kho, Thủ thư)
  *     tags: [Danh mục (Categories)]
  *     security:
  *       - bearerAuth: []
@@ -161,7 +161,7 @@ router.post(
 router.put(
   '/:id',
   xacThucToken,
-  phanQuyen('admin', 'librarian'),
+  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
   kiemTraDuLieu(luatDanhMuc),
   batLoiAsync(danhMucController.xuLyCapNhat)
 );
@@ -170,7 +170,7 @@ router.put(
  * @swagger
  * /api/categories/{id}:
  *   delete:
- *     summary: Xóa danh mục khi không có sách gắn kèm (Admin/Librarian)
+ *     summary: Xóa danh mục khi không có sách gắn kèm (Quản trị viên, Thủ kho, Thủ thư)
  *     tags: [Danh mục (Categories)]
  *     security:
  *       - bearerAuth: []
@@ -200,7 +200,7 @@ router.put(
 router.delete(
   '/:id',
   xacThucToken,
-  phanQuyen('admin', 'librarian'),
+  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
   batLoiAsync(danhMucController.xuLyXoa)
 );
 

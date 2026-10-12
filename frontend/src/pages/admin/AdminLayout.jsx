@@ -24,9 +24,10 @@ export const AdminLayout = () => {
   };
 
   const vaiTro = user?.role;
-  const laAdmin = vaiTro === 'admin';
-  const laThuThu = vaiTro === 'librarian' || laAdmin;
-  const laNhanVienDon = vaiTro === 'order_staff' || laAdmin;
+  const laQuanTri = vaiTro === 'quan_tri';
+  // Tạm thời Thủ kho và Thủ thư cùng thấy mục sách và kho; mục đơn hàng dành cho Thủ thư (sẽ siết ở T33)
+  const laThuKhoHoacThuThu = ['thu_kho', 'thu_thu'].includes(vaiTro) || laQuanTri;
+  const laThuThu = vaiTro === 'thu_thu' || laQuanTri;
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-app)' }}>
@@ -74,17 +75,17 @@ export const AdminLayout = () => {
             borderRadius: 'var(--radius-sm)',
             marginBottom: '1.25rem'
           }}>
-            <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{user?.hoTen}</div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{user?.fullName}</div>
             <div className="flex items-center gap-1 mt-1">
               <span className="badge badge-role" style={{ fontSize: '0.7rem' }}>
-                {vaiTro === 'admin' ? 'Quản Trị Viên (Admin)' : vaiTro === 'librarian' ? 'Thủ Thư (Librarian)' : 'NV Đơn Hàng (Staff)'}
+                {vaiTro === 'quan_tri' ? 'Quản Trị Viên' : vaiTro === 'thu_kho' ? 'Thủ Kho' : 'Thủ Thư'}
               </span>
             </div>
           </div>
 
           {/* Danh Sách Mục Menu Theo Vai Trò (RBAC) */}
           <nav className="flex flex-col gap-1">
-            {laAdmin && (
+            {laQuanTri && (
               <NavLink
                 to="/admin/dashboard"
                 className={({ isActive }) => `btn ${isActive ? 'btn-primary' : 'btn-outline'}`}
@@ -95,7 +96,7 @@ export const AdminLayout = () => {
               </NavLink>
             )}
 
-            {laThuThu && (
+            {laThuKhoHoacThuThu && (
               <>
                 <NavLink
                   to="/admin/books"
@@ -117,7 +118,7 @@ export const AdminLayout = () => {
               </>
             )}
 
-            {laNhanVienDon && (
+            {laThuThu && (
               <NavLink
                 to="/admin/orders"
                 className={({ isActive }) => `btn ${isActive ? 'btn-primary' : 'btn-outline'}`}
@@ -128,7 +129,7 @@ export const AdminLayout = () => {
               </NavLink>
             )}
 
-            {laAdmin && (
+            {laQuanTri && (
               <NavLink
                 to="/admin/users"
                 className={({ isActive }) => `btn ${isActive ? 'btn-primary' : 'btn-outline'}`}

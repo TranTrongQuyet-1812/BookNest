@@ -9,8 +9,9 @@ import {
   AlertCircle 
 } from 'lucide-react';
 
-export const DangNhap = () => {
-  const { dangNhap } = useAuth();
+// choNhanVien = true: cổng đăng nhập của nhân viên (/admin/login), còn lại là cổng khách hàng (/login)
+export const DangNhap = ({ choNhanVien = false }) => {
+  const { dangNhap, dangNhapNhanVien } = useAuth();
   const { dongBoGioHangGuestLenServer } = useCartStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,11 +28,11 @@ export const DangNhap = () => {
     setDangXuLy(true);
 
     try {
-      const user = await dangNhap(email, matKhau);
-      // Điều hướng tương ứng vai trò
-      if (['admin', 'librarian', 'order_staff'].includes(user.role)) {
+      if (choNhanVien) {
+        await dangNhapNhanVien(email, matKhau);
         navigate('/admin');
       } else {
+        await dangNhap(email, matKhau);
         // Tự động đồng bộ giỏ hàng khách vãng lai lên server nếu có
         await dongBoGioHangGuestLenServer();
         const duongDanCu = location.state?.from?.pathname || '/';
@@ -137,10 +138,10 @@ export const DangNhap = () => {
         }}>
           <div style={{ marginBottom: '1.75rem' }}>
             <h2 className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-main)' }}>
-              Đăng Nhập
+              {choNhanVien ? 'Đăng Nhập Nhân Viên' : 'Đăng Nhập'}
             </h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.35rem' }}>
-              Nhập email và mật khẩu để tiếp tục hành trình đọc sách
+              {choNhanVien ? 'Dành cho thủ thư, thủ kho và quản trị viên của BookNest' : 'Nhập email và mật khẩu để tiếp tục hành trình đọc sách'}
             </p>
           </div>
 
@@ -225,9 +226,9 @@ export const DangNhap = () => {
             fontSize: '0.875rem',
             color: 'var(--text-muted)'
           }}>
-            Bạn chưa có tài khoản?{' '}
+            {choNhanVien ? 'Bạn là khách hàng?' : 'Bạn chưa có tài khoản?'}{' '}
             <Link 
-              to="/register" 
+              to={choNhanVien ? '/login' : '/register'} 
               style={{ 
                 color: 'var(--primary-dark)', 
                 fontWeight: 600,
@@ -235,8 +236,16 @@ export const DangNhap = () => {
                 textUnderlineOffset: '3px'
               }}
             >
-              Đăng ký tài khoản mới
+              {choNhanVien ? 'Đăng nhập khách hàng' : 'Đăng ký tài khoản mới'}
             </Link>
+            {!choNhanVien && (
+              <div style={{ marginTop: '0.5rem' }}>
+                Bạn là nhân viên?{' '}
+                <Link to="/admin/login" style={{ color: 'var(--primary-dark)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+                  Đăng nhập nhân viên
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

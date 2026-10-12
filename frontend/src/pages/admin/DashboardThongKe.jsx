@@ -89,7 +89,7 @@ export const DashboardThongKe = () => {
             Báo Cáo & Thống Kê Doanh Thu
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Tổng hợp dữ liệu kinh doanh từ các giao dịch hoàn tất (DELIVERED)
+            Tổng hợp dữ liệu kinh doanh từ các giao dịch hoàn tất
           </p>
         </div>
 
@@ -237,11 +237,11 @@ export const DashboardThongKe = () => {
                 {tyLeDon.map((tl) => {
                   let mauSac = 'var(--text-muted)';
                   let tenTiengViet = tl.trangThai;
-                  if (tl.trangThai === 'PENDING') { mauSac = 'var(--warning)'; tenTiengViet = 'Chờ duyệt (PENDING)'; }
-                  if (tl.trangThai === 'CONFIRMED') { mauSac = 'var(--info)'; tenTiengViet = 'Đã xác nhận (CONFIRMED)'; }
-                  if (tl.trangThai === 'SHIPPING') { mauSac = 'var(--primary)'; tenTiengViet = 'Đang giao (SHIPPING)'; }
-                  if (tl.trangThai === 'DELIVERED') { mauSac = 'var(--accent)'; tenTiengViet = 'Đã giao (DELIVERED)'; }
-                  if (tl.trangThai === 'CANCELLED') { mauSac = 'var(--danger)'; tenTiengViet = 'Đã hủy (CANCELLED)'; }
+                  if (tl.trangThai === 'CHO_DUYET') { mauSac = 'var(--warning)'; tenTiengViet = 'Chờ duyệt'; }
+                  if (tl.trangThai === 'DA_XAC_NHAN') { mauSac = 'var(--info)'; tenTiengViet = 'Đã xác nhận'; }
+                  if (tl.trangThai === 'DANG_GIAO') { mauSac = 'var(--primary)'; tenTiengViet = 'Đang giao'; }
+                  if (tl.trangThai === 'DA_GIAO') { mauSac = 'var(--accent)'; tenTiengViet = 'Đã giao'; }
+                  if (tl.trangThai === 'DA_HUY') { mauSac = 'var(--danger)'; tenTiengViet = 'Đã hủy'; }
 
                   return (
                     <div key={tl.trangThai} style={{ padding: '0.5rem 0' }}>

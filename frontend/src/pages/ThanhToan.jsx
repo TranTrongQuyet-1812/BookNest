@@ -20,12 +20,14 @@ import {
 
 export const ThanhToan = () => {
   const navigate = useNavigate();
-  const { user, daDangNhap, datSession } = useAuth();
+  const { user, daDangNhap } = useAuth();
   const { gioHang, cacMon, layGioHang, xoaTrangState } = useCartStore();
 
   const [dangTai, setDangTai] = useState(true);
   const [dangDatHang, setDangDatHang] = useState(false);
   const [loi, setLoi] = useState('');
+  // Đơn vừa đặt của khách vãng lai: khách không có trang xem đơn nên hiện kết quả ngay tại đây
+  const [donVuaDat, setDonVuaDat] = useState(null);
 
   // Form thông tin nhận hàng
   const [form, setForm] = useState({
@@ -94,26 +96,31 @@ export const ThanhToan = () => {
     }
 
     try {
-      let maDonHang;
-
       if (daDangNhap) {
         // --- Nhánh Khách hàng ĐÃ ĐĂNG NHẬP ---
         const res = await api.post('/orders', {
           tenNguoiNhan: form.tenNguoiNhan,
           soDienThoaiNhan: form.soDienThoaiNhan,
+          emailNhan: form.email,
           diaChiGiaoHang: form.diaChiGiaoHang,
           ghiChu: form.ghiChu || undefined,
           luuMacDinh: form.luuMacDinh
         });
 
-        maDonHang = res.data.data?.MaDonHang;
+        const maDonHang = res.data.data?.MaDonHang;
+
+        // Xóa sạch state giỏ hàng tập trung
+        xoaTrangState();
+
+        alert('Kính chúc quý độc giả nhiều niềm vui! Đơn hàng của bạn đã được khởi tạo thành công.');
+        navigate(`/orders/${maDonHang}`);
       } else {
-        // --- Nhánh Khách vãng lai (Guest Checkout) ---
+        // --- Nhánh Khách vãng lai (Guest Checkout): không tạo tài khoản, không lưu thông tin ---
         const res = await api.post('/orders/guest', {
           tenNguoiNhan: form.tenNguoiNhan,
           soDienThoaiNhan: form.soDienThoaiNhan,
+          emailNhan: form.email,
           diaChiGiaoHang: form.diaChiGiaoHang,
-          email: form.email || undefined,
           ghiChu: form.ghiChu || undefined,
           cacMon: danhSachMon.map(mon => ({
             maSach: mon.maSach,
@@ -121,23 +128,11 @@ export const ThanhToan = () => {
           }))
         });
 
-        const data = res.data.data;
-        maDonHang = data?.MaDonHang || data?.donHang?.MaDonHang;
-
-        // Tự động khởi tạo phiên đăng nhập để khách truy cập trang chi tiết đơn hàng
-        if (data?.token && data?.user && datSession) {
-          datSession(data.token, data.user);
-        }
-
         // Xóa sạch giỏ hàng Guest trong localStorage
         localStorage.removeItem('booknest_guest_cart');
+        xoaTrangState();
+        setDonVuaDat(res.data.data);
       }
-
-      // Xóa sạch state giỏ hàng tập trung
-      xoaTrangState();
-
-      alert('Kính chúc quý độc giả nhiều niềm vui! Đơn hàng của bạn đã được khởi tạo thành công.');
-      navigate(`/orders/${maDonHang}`);
     } catch (err) {
       const msg = err.response?.data?.message || 'Đặt hàng thất bại. Vui lòng kiểm tra lại thông tin nhận hàng';
       setLoi(msg);
@@ -167,6 +162,38 @@ export const ThanhToan = () => {
         <p className="font-serif" style={{ color: 'var(--text-muted)', fontSize: '1.05rem', fontStyle: 'italic' }}>
           Đang chuẩn bị trang thanh toán cho ấn phẩm của bạn...
         </p>
+      </div>
+    );
+  }
+
+  if (donVuaDat) {
+    return (
+      <div className="container py-16 text-center">
+        <div className="card" style={{ maxWidth: '560px', margin: '0 auto', padding: '2.5rem 2rem', borderRadius: '12px' }}>
+          <CheckCircle size={48} style={{ color: 'var(--success, #28a745)', marginBottom: '1rem' }} />
+          <h2 className="font-serif" style={{ fontSize: '1.45rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+            Đặt hàng thành công
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+            Mã đơn của bạn là <strong>#{donVuaDat.MaDonHang}</strong>, hãy ghi lại để tiện liên hệ.
+            Vì bạn đặt hàng không đăng nhập nên thông tin này sẽ không được lưu cho lần sau.
+          </p>
+          <div style={{ textAlign: 'left', fontSize: '0.9rem', lineHeight: 1.8, marginBottom: '1.75rem' }}>
+            <div><strong>Người nhận:</strong> {donVuaDat.TenNguoiNhan}</div>
+            <div><strong>Số điện thoại:</strong> {donVuaDat.SoDienThoaiNhan}</div>
+            <div><strong>Email thông báo:</strong> {donVuaDat.EmailNhan}</div>
+            <div><strong>Địa chỉ:</strong> {donVuaDat.DiaChiGiaoHang}</div>
+            <div><strong>Tổng tiền:</strong> {dinhDangTien(donVuaDat.TongTien)}</div>
+          </div>
+          <div className="flex gap-3" style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link to="/" className="btn btn-primary" style={{ padding: '0.7rem 1.5rem', borderRadius: '6px' }}>
+              Tiếp tục mua sắm
+            </Link>
+            <Link to="/register" className="btn btn-outline" style={{ padding: '0.7rem 1.5rem', borderRadius: '6px' }}>
+              Đăng ký để lần sau không phải nhập lại
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -266,7 +293,7 @@ export const ThanhToan = () => {
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                     {daDangNhap 
                       ? 'Thông tin mặc định được tự động điền từ hồ sơ của bạn.'
-                      : 'Bạn không bắt buộc phải đăng nhập. Hệ thống sẽ tự động khởi tạo phiên theo dõi đơn hàng sau khi đặt.'}
+                      : 'Bạn không cần đăng nhập. Thông tin chỉ dùng để giao đơn này và không được lưu lại, lần sau bạn sẽ nhập lại.'}
                   </div>
                 </div>
               </div>
@@ -326,14 +353,16 @@ export const ThanhToan = () => {
                 </div>
               </div>
 
-              {/* Email nhận thông báo đơn hàng */}
+              {/* Email nhận thông báo trạng thái đơn hàng */}
               <div className="form-group mt-4">
                 <label className="form-label" style={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                  Địa chỉ Email <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400 }}>(Tùy chọn - để nhận hóa đơn và thông báo vận chuyển)</span>
+                  Địa chỉ Email <span style={{ color: 'var(--danger)' }}>*</span>{' '}
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400 }}>(để nhận thông báo khi trạng thái đơn hàng thay đổi)</span>
                 </label>
                 <div style={{ position: 'relative' }}>
                   <input
                     type="email"
+                    required
                     name="email"
                     className="form-input"
                     value={form.email}

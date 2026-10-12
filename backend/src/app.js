@@ -11,7 +11,7 @@ const xuLy404 = require('./middlewares/xuLy404');
 const xuLyLoi = require('./middlewares/xuLyLoi');
 
 // Nạp các Router phân hệ
-const xacThucRoutes = require('./routes/xacThucRoutes');
+const { routerKhach: xacThucKhachRoutes, routerNhanVien: xacThucNhanVienRoutes } = require('./routes/xacThucRoutes');
 const nguoiDungRoutes = require('./routes/nguoiDungRoutes');
 const danhMucRoutes = require('./routes/danhMucRoutes');
 const sachRoutes = require('./routes/sachRoutes');
@@ -60,7 +60,8 @@ app.get('/api/suc-khoe', (req, res) => {
 });
 
 // Gắn các tuyến đường API
-app.use('/api/auth', xacThucRoutes);
+app.use('/api/auth', xacThucKhachRoutes);
+app.use('/api/admin/auth', xacThucNhanVienRoutes);
 app.use('/api/users', nguoiDungRoutes);
 app.use('/api/categories', danhMucRoutes);
 app.use('/api/books', sachRoutes);

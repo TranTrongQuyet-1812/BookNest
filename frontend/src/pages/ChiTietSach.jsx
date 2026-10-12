@@ -733,7 +733,7 @@ export const ChiTietSach = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 {danhGiaList.map((dg) => {
                   const maDg = dg.MaDanhGia;
-                  const nguoiDungTen = dg.nguoiDung?.HoTen ?? 'Bạn đọc yêu sách';
+                  const nguoiDungTen = dg.khachHang?.HoTen ?? 'Bạn đọc yêu sách';
                   const ngayDg = dg.NgayCapNhat;
                   const soSao = dg.SoSao ?? 5;
                   const noiDung = dg.NoiDung;

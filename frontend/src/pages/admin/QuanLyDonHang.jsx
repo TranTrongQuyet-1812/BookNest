@@ -109,15 +109,15 @@ export const QuanLyDonHang = () => {
 
   const layBadgeTrangThai = (trangThai) => {
     switch (trangThai) {
-      case 'PENDING':
+      case 'CHO_DUYET':
         return <span className="badge badge-pending"><Clock size={13} /> Chờ duyệt</span>;
-      case 'CONFIRMED':
+      case 'DA_XAC_NHAN':
         return <span className="badge badge-confirmed"><CheckCircle size={13} /> Đã xác nhận</span>;
-      case 'SHIPPING':
+      case 'DANG_GIAO':
         return <span className="badge badge-shipping"><Truck size={13} /> Đang giao</span>;
-      case 'DELIVERED':
+      case 'DA_GIAO':
         return <span className="badge badge-delivered"><PackageCheck size={13} /> Đã giao</span>;
-      case 'CANCELLED':
+      case 'DA_HUY':
         return <span className="badge badge-cancelled"><XCircle size={13} /> Đã hủy</span>;
       default:
         return <span className="badge">{trangThai}</span>;
@@ -149,11 +149,11 @@ export const QuanLyDonHang = () => {
             }}
           >
             <option value="">Tất cả trạng thái</option>
-            <option value="PENDING">Chờ duyệt (PENDING)</option>
-            <option value="CONFIRMED">Đã xác nhận (CONFIRMED)</option>
-            <option value="SHIPPING">Đang giao (SHIPPING)</option>
-            <option value="DELIVERED">Đã giao (DELIVERED)</option>
-            <option value="CANCELLED">Đã hủy (CANCELLED)</option>
+            <option value="CHO_DUYET">Chờ duyệt</option>
+            <option value="DA_XAC_NHAN">Đã xác nhận</option>
+            <option value="DANG_GIAO">Đang giao</option>
+            <option value="DA_GIAO">Đã giao</option>
+            <option value="DA_HUY">Đã hủy</option>
           </select>
         </div>
       </div>
@@ -221,27 +221,27 @@ export const QuanLyDonHang = () => {
                     <td style={{ textAlign: 'right' }}>
                       <div className="inline-flex gap-2">
                         {/* Nút chuyển tiến theo State Machine */}
-                        {trangThai === 'PENDING' && (
+                        {trangThai === 'CHO_DUYET' && (
                           <button
-                            onClick={() => handleChuyenTrangThai(maDon, 'CONFIRMED', 'Xác nhận đơn')}
+                            onClick={() => handleChuyenTrangThai(maDon, 'DA_XAC_NHAN', 'Xác nhận đơn')}
                             className="btn btn-primary btn-sm"
                           >
                             Duyệt Đơn
                           </button>
                         )}
 
-                        {trangThai === 'CONFIRMED' && (
+                        {trangThai === 'DA_XAC_NHAN' && (
                           <button
-                            onClick={() => handleChuyenTrangThai(maDon, 'SHIPPING', 'Giao hàng')}
+                            onClick={() => handleChuyenTrangThai(maDon, 'DANG_GIAO', 'Giao hàng')}
                             className="btn btn-primary btn-sm"
                           >
                             Giao Hàng
                           </button>
                         )}
 
-                        {trangThai === 'SHIPPING' && (
+                        {trangThai === 'DANG_GIAO' && (
                           <button
-                            onClick={() => handleChuyenTrangThai(maDon, 'DELIVERED', 'Hoàn tất giao')}
+                            onClick={() => handleChuyenTrangThai(maDon, 'DA_GIAO', 'Hoàn tất giao')}
                             className="btn btn-sm"
                             style={{ backgroundColor: 'var(--accent)', color: '#FFF' }}
                           >
@@ -249,8 +249,8 @@ export const QuanLyDonHang = () => {
                           </button>
                         )}
 
-                        {/* Nút hủy đơn (Áp dụng cho PENDING, CONFIRMED, SHIPPING) */}
-                        {!['DELIVERED', 'CANCELLED'].includes(trangThai) && (
+                        {/* Nút hủy đơn (Áp dụng cho CHO_DUYET, DA_XAC_NHAN, DANG_GIAO) */}
+                        {!['DA_GIAO', 'DA_HUY'].includes(trangThai) && (
                           <button
                             onClick={() => handleHuyDon(maDon)}
                             className="btn btn-outline btn-sm"

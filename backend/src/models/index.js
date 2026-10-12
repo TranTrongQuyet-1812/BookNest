@@ -3,7 +3,8 @@
  * Không sử dụng sequelize.sync() vì cơ sở dữ liệu đã được khởi tạo bởi script SQL chuẩn 3NF.
  */
 const { sequelize } = require('../config/ketNoiDb');
-const NguoiDung = require('./NguoiDung');
+const NhanVien = require('./NhanVien');
+const KhachHang = require('./KhachHang');
 const DanhMuc = require('./DanhMuc');
 const Sach = require('./Sach');
 const GioHang = require('./GioHang');
@@ -20,10 +21,10 @@ DanhMuc.hasMany(Sach, { foreignKey: 'MaDanhMuc', as: 'danhSachSach' });
 Sach.belongsTo(DanhMuc, { foreignKey: 'MaDanhMuc', as: 'danhMuc' });
 
 // ==========================================
-// 2. Quan hệ NguoiDung ↔ DonHang (1 - n)
+// 2. Quan hệ KhachHang ↔ DonHang (1 - n). MaKhachHang NULL = đơn của khách vãng lai
 // ==========================================
-NguoiDung.hasMany(DonHang, { foreignKey: 'MaNguoiDung', as: 'danhSachDonHang' });
-DonHang.belongsTo(NguoiDung, { foreignKey: 'MaNguoiDung', as: 'nguoiDung' });
+KhachHang.hasMany(DonHang, { foreignKey: 'MaKhachHang', as: 'danhSachDonHang' });
+DonHang.belongsTo(KhachHang, { foreignKey: 'MaKhachHang', as: 'khachHang' });
 
 // ==========================================
 // 3. Quan hệ DonHang ↔ ChiTietDonHang ↔ Sach (n - n)
@@ -38,47 +39,51 @@ DonHang.belongsToMany(Sach, { through: ChiTietDonHang, foreignKey: 'MaDonHang', 
 Sach.belongsToMany(DonHang, { through: ChiTietDonHang, foreignKey: 'MaSach', otherKey: 'MaDonHang', as: 'danhSachDonHang' });
 
 // ==========================================
-// 4. Quan hệ NguoiDung ↔ GioHang ↔ Sach (n - n)
+// 4. Quan hệ KhachHang ↔ GioHang ↔ Sach (n - n)
 // ==========================================
-NguoiDung.hasMany(GioHang, { foreignKey: 'MaNguoiDung', as: 'gioHang' });
-GioHang.belongsTo(NguoiDung, { foreignKey: 'MaNguoiDung', as: 'nguoiDung' });
+KhachHang.hasMany(GioHang, { foreignKey: 'MaKhachHang', as: 'gioHang' });
+GioHang.belongsTo(KhachHang, { foreignKey: 'MaKhachHang', as: 'khachHang' });
 
 Sach.hasMany(GioHang, { foreignKey: 'MaSach', as: 'gioHang' });
 GioHang.belongsTo(Sach, { foreignKey: 'MaSach', as: 'sach' });
 
-NguoiDung.belongsToMany(Sach, { through: GioHang, foreignKey: 'MaNguoiDung', otherKey: 'MaSach', as: 'sachTrongGio' });
-Sach.belongsToMany(NguoiDung, { through: GioHang, foreignKey: 'MaSach', otherKey: 'MaNguoiDung', as: 'khachCoTrongGio' });
+KhachHang.belongsToMany(Sach, { through: GioHang, foreignKey: 'MaKhachHang', otherKey: 'MaSach', as: 'sachTrongGio' });
+Sach.belongsToMany(KhachHang, { through: GioHang, foreignKey: 'MaSach', otherKey: 'MaKhachHang', as: 'khachCoTrongGio' });
 
 // ==========================================
-// 5. Quan hệ NguoiDung & Sach ↔ DanhGia (1 - n)
+// 5. Quan hệ KhachHang & Sach ↔ DanhGia (1 - n)
 // ==========================================
-NguoiDung.hasMany(DanhGia, { foreignKey: 'MaNguoiDung', as: 'danhSachDanhGia' });
-DanhGia.belongsTo(NguoiDung, { foreignKey: 'MaNguoiDung', as: 'nguoiDung' });
+KhachHang.hasMany(DanhGia, { foreignKey: 'MaKhachHang', as: 'danhSachDanhGia' });
+DanhGia.belongsTo(KhachHang, { foreignKey: 'MaKhachHang', as: 'khachHang' });
 
 Sach.hasMany(DanhGia, { foreignKey: 'MaSach', as: 'danhSachDanhGia' });
 DanhGia.belongsTo(Sach, { foreignKey: 'MaSach', as: 'sach' });
 
 // ==========================================
-// 6. Quan hệ Sach & NguoiDung ↔ LichSuNhapKho (1 - n)
+// 6. Quan hệ Sach & NhanVien ↔ LichSuNhapKho (1 - n)
 // ==========================================
 Sach.hasMany(LichSuNhapKho, { foreignKey: 'MaSach', as: 'lichSuNhapKho' });
 LichSuNhapKho.belongsTo(Sach, { foreignKey: 'MaSach', as: 'sach' });
 
-NguoiDung.hasMany(LichSuNhapKho, { foreignKey: 'MaNguoiNhap', as: 'lichSuNhapKho' });
-LichSuNhapKho.belongsTo(NguoiDung, { foreignKey: 'MaNguoiNhap', as: 'nguoiNhap' });
+NhanVien.hasMany(LichSuNhapKho, { foreignKey: 'MaNhanVienNhap', as: 'lichSuNhapKho' });
+LichSuNhapKho.belongsTo(NhanVien, { foreignKey: 'MaNhanVienNhap', as: 'nhanVienNhap' });
 
 // ==========================================
-// 7. Quan hệ DonHang & NguoiDung ↔ LichSuTrangThaiDonHang (1 - n)
+// 7. Quan hệ DonHang ↔ LichSuTrangThaiDonHang (1 - n); người thực hiện là khách hoặc nhân viên
 // ==========================================
 DonHang.hasMany(LichSuTrangThaiDonHang, { foreignKey: 'MaDonHang', as: 'lichSuTrangThai' });
 LichSuTrangThaiDonHang.belongsTo(DonHang, { foreignKey: 'MaDonHang', as: 'donHang' });
 
-NguoiDung.hasMany(LichSuTrangThaiDonHang, { foreignKey: 'MaNguoiThucHien', as: 'lichSuCapNhatDon' });
-LichSuTrangThaiDonHang.belongsTo(NguoiDung, { foreignKey: 'MaNguoiThucHien', as: 'nguoiThucHien' });
+KhachHang.hasMany(LichSuTrangThaiDonHang, { foreignKey: 'MaKhachHangThucHien', as: 'lichSuCapNhatDon' });
+LichSuTrangThaiDonHang.belongsTo(KhachHang, { foreignKey: 'MaKhachHangThucHien', as: 'khachHangThucHien' });
+
+NhanVien.hasMany(LichSuTrangThaiDonHang, { foreignKey: 'MaNhanVienThucHien', as: 'lichSuCapNhatDon' });
+LichSuTrangThaiDonHang.belongsTo(NhanVien, { foreignKey: 'MaNhanVienThucHien', as: 'nhanVienThucHien' });
 
 module.exports = {
   sequelize,
-  NguoiDung,
+  NhanVien,
+  KhachHang,
   DanhMuc,
   Sach,
   GioHang,

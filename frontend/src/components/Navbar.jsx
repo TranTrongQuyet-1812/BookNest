@@ -43,7 +43,7 @@ export const Navbar = () => {
 
   // Lấy giỏ hàng qua Zustand Store (Hỗ trợ cả Khách vãng lai lẫn Khách hàng)
   useEffect(() => {
-    const laNhanSu = user && ['admin', 'librarian', 'order_staff'].includes(user.role);
+    const laNhanSu = user && ['quan_tri', 'thu_kho', 'thu_thu'].includes(user.role);
     if (!laNhanSu) {
       layGioHang();
     }
@@ -62,7 +62,7 @@ export const Navbar = () => {
     }
   };
 
-  const laNhanSu = user && ['admin', 'librarian', 'order_staff'].includes(user.role);
+  const laNhanSu = user && ['quan_tri', 'thu_kho', 'thu_thu'].includes(user.role);
 
   // Hiệu ứng giọt mực loang chuyển theme (Chuẩn nguyên bản Portfolio Profile)
   const dangChuyenThemeRef = useRef(false);
@@ -374,7 +374,7 @@ export const Navbar = () => {
             </Link>
           )}
 
-          {(!user || user.role === 'customer') && (
+          {(!user || user.role === 'khach_hang') && (
             <Link
               to="/cart"
               style={{
