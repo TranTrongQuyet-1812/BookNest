@@ -129,14 +129,14 @@ export const ThanhToan = () => {
 
         const maDonHang = res.data.data?.MaDonHang;
 
-        // Xóa sạch state giỏ hàng tập trung
-        xoaTrangState();
-
+        // Chưa xóa state giỏ ở đây: tạo QR mất 1-2 giây, giỏ rỗng trong lúc chờ sẽ làm màn "Giỏ hàng trống" lóe lên.
+        // Chỉ xóa sau khi đã biết kết quả (khung QR đã mở, hoặc chuyển sang trang đơn hàng).
         if (phuongThucThanhToan === 'CHUYEN_KHOAN_QR') {
           try {
             const resQr = await api.post(`/payments/create-qr/${maDonHang}`);
             setDuLieuQR(resQr.data.data);
             setHienModalQR(true);
+            xoaTrangState();
             return; // Dừng lại ở modal để khách quét mã QR
           } catch (errQr) {
             // Hiện đúng lý do máy chủ trả về (khóa sai, payOS từ chối...) thay vì một câu chung chung
@@ -148,6 +148,7 @@ export const ThanhToan = () => {
           alert('Kính chúc quý độc giả nhiều niềm vui! Đơn hàng của bạn đã được khởi tạo thành công.');
         }
 
+        xoaTrangState();
         navigate(`/orders/${maDonHang}`, { state: { from: '/orders' }, replace: true });
       } else {
         // --- Nhánh Khách vãng lai (Guest Checkout): không tạo tài khoản, không lưu thông tin ---
@@ -164,9 +165,12 @@ export const ThanhToan = () => {
           }))
         });
 
-        // Xóa sạch giỏ hàng Guest trong localStorage
-        localStorage.removeItem('booknest_guest_cart');
-        xoaTrangState();
+        // Xóa giỏ hàng Guest (localStorage) và state tập trung. Chỉ gọi sau khi đã biết kết quả tạo QR,
+        // không gọi ngay sau khi đặt đơn, để giỏ rỗng không làm màn "Giỏ hàng trống" lóe lên lúc chờ payOS
+        const xoaGioKhach = () => {
+          localStorage.removeItem('booknest_guest_cart');
+          xoaTrangState();
+        };
 
         const maDonHang = res.data.data?.MaDonHang;
         if (phuongThucThanhToan === 'CHUYEN_KHOAN_QR' && maDonHang) {
@@ -175,14 +179,17 @@ export const ThanhToan = () => {
             const resQr = await api.post(`/payments/create-qr/${maDonHang}`);
             setDuLieuQR(resQr.data.data);
             setHienModalQR(true);
+            xoaGioKhach();
             return; // Dừng lại ở modal để khách quét mã QR
           } catch (errQr) {
             const lyDo = errQr.response?.data?.message || errQr.message;
             console.warn('Không thể tạo mã VietQR cho khách vãng lai:', lyDo, errQr);
             alert(`Không thể tạo mã VietQR: ${lyDo}. Đơn hàng của bạn đã được lưu với phương thức COD!`);
+            xoaGioKhach();
             setDonVuaDat(res.data.data);
           }
         } else {
+          xoaGioKhach();
           setDonVuaDat(res.data.data);
         }
       }
