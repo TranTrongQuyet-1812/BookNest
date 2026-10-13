@@ -9,6 +9,7 @@ import PaperBackgroundCanvas from './components/canvas/PaperBackgroundCanvas';
 // Components Chung
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ChatbotWidget from './components/ChatbotWidget';
 
 // Pages Storefront
 import TrangChu from './pages/TrangChu';
@@ -24,13 +25,14 @@ import KhongCoQuyen from './pages/KhongCoQuyen';
 import DieuKhoanDichVu from './pages/DieuKhoanDichVu';
 import ChinhSachBaoMat from './pages/ChinhSachBaoMat';
 
-// Layout chung cho Storefront (có Navbar & Footer)
+// Layout chung cho Storefront (có Navbar, Footer & Trợ lý AI Chatbot)
 const StorefrontLayout = ({ children }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', position: 'relative', zIndex: 1 }}>
       <Navbar />
       <main style={{ flex: 1 }}>{children}</main>
       <Footer />
+      <ChatbotWidget />
     </div>
   );
 };

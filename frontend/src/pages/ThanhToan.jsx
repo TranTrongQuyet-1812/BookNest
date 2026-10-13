@@ -77,6 +77,25 @@ export const ThanhToan = () => {
             console.warn('Không thể nạp hồ sơ người dùng, chuyển sang chế độ điền tay:', errProfile);
           }
         }
+
+        // Tự động điền thông tin nếu có bản nháp từ trợ lý AI Chatbot
+        try {
+          const rawDraft = sessionStorage.getItem('booknest_checkout_draft');
+          if (rawDraft) {
+            const draft = JSON.parse(rawDraft);
+            setForm((formCu) => ({
+              ...formCu,
+              tenNguoiNhan: draft.tenNguoiNhan || formCu.tenNguoiNhan,
+              soDienThoaiNhan: draft.soDienThoai || formCu.soDienThoaiNhan,
+              email: draft.email || formCu.email,
+              diaChiGiaoHang: draft.diaChiGiaoHang || formCu.diaChiGiaoHang
+            }));
+            sessionStorage.removeItem('booknest_checkout_draft');
+          }
+        } catch (errDraft) {
+          console.warn('Không thể đọc bản nháp checkout từ AI Chatbot:', errDraft);
+        }
+
         // Kiểm tra trạng thái khả dụng của cổng thanh toán VietQR payOS
         try {
           const resCheck = await api.get('/payments/status-check');
