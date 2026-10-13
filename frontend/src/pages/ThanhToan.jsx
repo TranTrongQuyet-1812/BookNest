@@ -31,6 +31,7 @@ export const ThanhToan = () => {
   const [loi, setLoi] = useState('');
   // Đơn vừa đặt của khách vãng lai: khách không có trang xem đơn nên hiện kết quả ngay tại đây
   const [donVuaDat, setDonVuaDat] = useState(null);
+  const [donVangLaiTam, setDonVangLaiTam] = useState(null);
 
   // Phương thức thanh toán: COD hoặc CHUYEN_KHOAN_QR
   const [phuongThucThanhToan, setPhuongThucThanhToan] = useState('COD');
@@ -164,10 +165,10 @@ export const ThanhToan = () => {
         // Xóa sạch giỏ hàng Guest trong localStorage
         localStorage.removeItem('booknest_guest_cart');
         xoaTrangState();
-        setDonVuaDat(res.data.data);
 
         const maDonHang = res.data.data?.MaDonHang;
         if (phuongThucThanhToan === 'CHUYEN_KHOAN_QR' && maDonHang) {
+          setDonVangLaiTam(res.data.data);
           try {
             const resQr = await api.post(`/payments/create-qr/${maDonHang}`);
             setDuLieuQR(resQr.data.data);
@@ -176,7 +177,10 @@ export const ThanhToan = () => {
           } catch (errQr) {
             console.warn('Không thể tạo mã VietQR cho khách vãng lai:', errQr);
             alert('Cổng thanh toán VietQR payOS hiện chưa kích hoạt khóa API. Đơn hàng của bạn đã được lưu với phương thức COD!');
+            setDonVuaDat(res.data.data);
           }
+        } else {
+          setDonVuaDat(res.data.data);
         }
       }
     } catch (err) {
@@ -725,12 +729,16 @@ export const ThanhToan = () => {
             setHienModalQR(false);
             if (daDangNhap) {
               navigate(`/orders/${duLieuQR.maDonHang}`, { state: { from: '/orders' }, replace: true });
+            } else if (donVangLaiTam) {
+              setDonVuaDat(donVangLaiTam);
             }
           }}
           onDong={() => {
             setHienModalQR(false);
             if (daDangNhap) {
               navigate(`/orders/${duLieuQR.maDonHang}`, { state: { from: '/orders' }, replace: true });
+            } else if (donVangLaiTam) {
+              setDonVuaDat(donVangLaiTam);
             }
           }}
           onDoiSangCOD={() => {
@@ -738,6 +746,8 @@ export const ThanhToan = () => {
             alert(`Đơn hàng #${duLieuQR.maDonHang} của bạn đã chuyển sang hình thức thanh toán khi nhận hàng (COD)!`);
             if (daDangNhap) {
               navigate(`/orders/${duLieuQR.maDonHang}`, { state: { from: '/orders' }, replace: true });
+            } else if (donVangLaiTam) {
+              setDonVuaDat(donVangLaiTam);
             }
           }}
         />
