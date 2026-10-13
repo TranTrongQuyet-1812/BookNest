@@ -46,6 +46,9 @@ function khoiDongChuyenBay(sv, ctx, dich, batDau, huongNe, heSoNang) {
   sv.tienTrinh = 0;
   sv.trangThai = 'BAY';
   sv.daVeTuThe = false;
+  // Đặt vị trí ngay lúc bật hiện: vị trí mặc định của con vật là tâm màn hình, nếu để đến khung sau
+  // thì khung hình đầu vẽ nó giữa màn hình rồi mới nhảy về điểm xuất phát (chớp một cái mỗi lần bay vào)
+  ctx.doiSangThree(batDau.x, batDau.y - ctx.scrollY, batDau.z, sv.goc.position);
   sv.goc.visible = true;
   chuyenHanhDong(sv, 'bay', 0.12);
 }
