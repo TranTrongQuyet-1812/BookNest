@@ -79,7 +79,8 @@ const swaggerDefinition = {
       DonHang: {
         type: 'object',
         properties: {
-          MaDonHang: { type: 'integer', example: 101 },
+          MaDonHang: { type: 'integer', example: 101, description: 'Số thứ tự nội bộ, chỉ Back-Office thấy; phía khách bị ẩn' },
+          MaTraCuu: { type: 'string', example: 'BN-7K3F9Q', description: 'Mã công khai khó đoán, khách dùng để tra cứu và thanh toán' },
           TenNguoiNhan: { type: 'string', example: 'Hoàng Khách Hàng' },
           SoDienThoaiNhan: { type: 'string', example: '0914444555' },
           DiaChiGiaoHang: { type: 'string', example: '123 Biên Hòa, Đồng Nai' },

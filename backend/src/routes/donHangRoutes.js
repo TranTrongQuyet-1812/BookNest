@@ -246,8 +246,9 @@ router.get('/my-orders', kiemTraDuLieu(luatTruyVanDonKhach, 'query'), batLoiAsyn
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
- *         description: Mã đơn hàng
+ *           type: string
+ *           example: BN-7K3F9Q
+ *         description: Mã tra cứu của đơn (không dùng số thứ tự nội bộ)
  *     responses:
  *       200:
  *         description: Chi tiết đơn hàng và lịch sử luân chuyển trạng thái
@@ -273,8 +274,9 @@ router.get('/my-orders/:id', kiemTraChuDon, batLoiAsync(donHangController.xuLyLa
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
- *         description: Mã đơn hàng
+ *           type: string
+ *           example: BN-7K3F9Q
+ *         description: Mã tra cứu của đơn (không dùng số thứ tự nội bộ)
  *     requestBody:
  *       content:
  *         application/json:

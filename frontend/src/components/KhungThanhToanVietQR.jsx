@@ -70,11 +70,11 @@ export const KhungThanhToanVietQR = ({
 
   // Hàm kiểm tra trạng thái thanh toán từ backend
   const kiemTraTrangThai = async (chuDong = false) => {
-    if (!duLieuQR?.maDonHang || thanhToanThanhCong) return;
+    if (!duLieuQR?.maTraCuu || thanhToanThanhCong) return;
     if (chuDong) setDangKiemTra(true);
 
     try {
-      const res = await api.get(`/payments/order/${duLieuQR.maDonHang}`);
+      const res = await api.get(`/payments/order/${duLieuQR.maTraCuu}`);
       const tt = res.data?.data;
 
       if (tt && (tt.trangThaiThanhToan === 'DA_THANH_TOAN' || tt.trangThaiDonHang === 'DA_XAC_NHAN' || tt.trangThaiDonHang === 'DANG_GIAO')) {
@@ -99,15 +99,15 @@ export const KhungThanhToanVietQR = ({
 
   // Khởi động đồng hồ đếm ngược, Socket.IO Realtime và Polling dự phòng mỗi 3 giây
   useEffect(() => {
-    const maDonHang = duLieuQR?.maDonHang;
-    if (!maDonHang) return;
+    const maTraCuu = duLieuQR?.maTraCuu;
+    if (!maTraCuu) return;
 
     // 1. Tham gia phòng theo dõi đơn hàng qua WebSocket
-    thamGiaDonHang(maDonHang);
+    thamGiaDonHang(maTraCuu);
     const socket = laySocket();
 
     const xuLyThanhToanRealtime = (duLieu) => {
-      if (String(duLieu?.maDonHang) === String(maDonHang)) {
+      if (String(duLieu?.maTraCuu) === String(maTraCuu)) {
         setThanhToanThanhCong(true);
         if (timerRef.current) clearInterval(timerRef.current);
         if (pollingRef.current) clearInterval(pollingRef.current);
@@ -142,16 +142,16 @@ export const KhungThanhToanVietQR = ({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       if (pollingRef.current) clearInterval(pollingRef.current);
-      roiDonHang(maDonHang);
+      roiDonHang(maTraCuu);
       socket.off('thanhToan:daThanhToan', xuLyThanhToanRealtime);
     };
-  }, [duLieuQR?.maDonHang]);
+  }, [duLieuQR?.maTraCuu]);
 
   // Tạo URL ảnh VietQR chuẩn EMVCo hiển thị tức thì
   const urlAnhVietQR = duLieuQR?.qrCode?.startsWith('http') || duLieuQR?.qrCode?.startsWith('data:')
     ? duLieuQR.qrCode
     : duLieuQR?.accountNumber
-      ? `https://img.vietqr.io/image/${duLieuQR?.bin || '970422'}-${duLieuQR.accountNumber}-compact2.png?amount=${duLieuQR?.soTien || 0}&addInfo=${encodeURIComponent(duLieuQR?.noiDungChuyenKhoan || `DON HANG #${duLieuQR?.maDonHang}`)}&accountName=${encodeURIComponent(duLieuQR?.accountName || 'BOOKNEST')}`
+      ? `https://img.vietqr.io/image/${duLieuQR?.bin || '970422'}-${duLieuQR.accountNumber}-compact2.png?amount=${duLieuQR?.soTien || 0}&addInfo=${encodeURIComponent(duLieuQR?.noiDungChuyenKhoan || String(duLieuQR?.maTraCuu || '').replace(/-/g, ''))}&accountName=${encodeURIComponent(duLieuQR?.accountName || 'BOOKNEST')}`
       : `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(duLieuQR?.qrCode || '')}`;
 
   return (
@@ -205,7 +205,7 @@ export const KhungThanhToanVietQR = ({
                 Thanh Toán Chuyển Khoản VietQR
               </h3>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                Đơn hàng #{duLieuQR?.maDonHang} • Xác nhận tự động qua cổng payOS
+                Đơn hàng {duLieuQR?.maTraCuu} • Xác nhận tự động qua cổng payOS
               </p>
             </div>
           </div>
@@ -253,7 +253,7 @@ export const KhungThanhToanVietQR = ({
                 Thanh Toán Thành Công!
               </h4>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '420px', margin: '0 auto 1.5rem' }}>
-                Hệ thống BookNest đã nhận được số tiền <strong>{dinhDangTien(duLieuQR?.soTien)}</strong> cho đơn hàng #{duLieuQR?.maDonHang}.
+                Hệ thống BookNest đã nhận được số tiền <strong>{dinhDangTien(duLieuQR?.soTien)}</strong> cho đơn hàng {duLieuQR?.maTraCuu}.
               </p>
               <div style={{
                 display: 'inline-flex',
@@ -360,7 +360,7 @@ export const KhungThanhToanVietQR = ({
                   }}>
                     <img
                       src={urlAnhVietQR}
-                      alt={`Mã QR Thanh toán đơn hàng #${duLieuQR?.maDonHang}`}
+                      alt={`Mã QR Thanh toán đơn hàng ${duLieuQR?.maTraCuu}`}
                       style={{
                         width: '100%',
                         height: 'auto',
@@ -418,11 +418,11 @@ export const KhungThanhToanVietQR = ({
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '0.5px' }}>
-                        {duLieuQR?.noiDungChuyenKhoan || `DON HANG #${duLieuQR?.maDonHang}`}
+                        {duLieuQR?.noiDungChuyenKhoan || String(duLieuQR?.maTraCuu || '').replace(/-/g, '')}
                       </span>
                       <button
                         type="button"
-                        onClick={() => handleSaoChep(duLieuQR?.noiDungChuyenKhoan || `DON HANG #${duLieuQR?.maDonHang}`, 'NOIDUNG')}
+                        onClick={() => handleSaoChep(duLieuQR?.noiDungChuyenKhoan || String(duLieuQR?.maTraCuu || '').replace(/-/g, ''), 'NOIDUNG')}
                         className="btn btn-primary"
                         style={{ padding: '4px 8px', fontSize: '0.75rem', borderRadius: '4px' }}
                       >

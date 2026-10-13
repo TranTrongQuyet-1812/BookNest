@@ -94,7 +94,7 @@ export const ChiTietDonHang = () => {
   if (dangTai) {
     return (
       <div className="container py-12 flex justify-center">
-        <p className="font-serif" style={{ color: 'var(--text-muted)' }}>Đang nạp chi tiết đơn hàng #{id}...</p>
+        <p className="font-serif" style={{ color: 'var(--text-muted)' }}>Đang nạp chi tiết đơn hàng {id}...</p>
       </div>
     );
   }
@@ -122,7 +122,8 @@ export const ChiTietDonHang = () => {
   ];
 
   const trangThaiDon = donHang.TrangThai;
-  const maDonHang = donHang.MaDonHang ?? id;
+  // id trên đường dẫn chính là mã tra cứu; MaDonHang tăng dần bị ẩn khỏi API phía khách
+  const maHienThi = donHang.MaTraCuu ?? id;
   const ngayTaoDon = donHang.NgayDat;
   const danhSachMon = donHang.chiTietDonHang;
   // Lý do hủy nằm trong ghi chú của dòng lịch sử chuyển sang DA_HUY
@@ -144,7 +145,7 @@ export const ChiTietDonHang = () => {
       <div className="flex items-center justify-between flex-wrap gap-2 mb-6">
         <div>
           <h1 className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700 }}>
-            Chi Tiết Đơn Hàng #{maDonHang}
+            Chi Tiết Đơn Hàng {maHienThi}
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
             Đặt vào lúc: {ngayTaoDon ? new Date(ngayTaoDon).toLocaleString('vi-VN') : ''}

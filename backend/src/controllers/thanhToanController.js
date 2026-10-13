@@ -4,6 +4,15 @@
 const payosService = require('../services/payosService');
 const { DonHang, ChiTietDonHang, Sach } = require('../models');
 const { phanHoiThanhCong, phanHoiLoi } = require('../middlewares/phanHoi');
+const { chuanHoaMaTraCuu } = require('../utils/maTraCuu');
+
+// API thanh toán không cần đăng nhập nên chỉ nhận MaTraCuu (khó đoán), không nhận MaDonHang tăng dần,
+// nếu không ai cũng dò được từng đơn và đếm được số đơn. Mã sai định dạng hay không tồn tại đều trả cùng một 404.
+async function timDonTheoMaTraCuu(chuoiMa, tuyChon = {}) {
+  const maTraCuu = chuanHoaMaTraCuu(chuoiMa);
+  if (!maTraCuu) return null;
+  return DonHang.findOne({ where: { MaTraCuu: maTraCuu }, ...tuyChon });
+}
 
 /**
  * Kiểm tra xem tính năng thanh toán QR có đang khả dụng không
@@ -25,8 +34,7 @@ async function kiemTraKhaDung(req, res, next) {
  */
 async function taoQrThanhToan(req, res, next) {
   try {
-    const { maDonHang } = req.params;
-    const donHang = await DonHang.findByPk(maDonHang, {
+    const donHang = await timDonTheoMaTraCuu(req.params.maTraCuu, {
       include: [{
         model: ChiTietDonHang,
         as: 'chiTietDonHang',
@@ -86,8 +94,14 @@ async function xuLyWebhook(req, res) {
  */
 async function layTrangThaiThanhToan(req, res, next) {
   try {
-    const { maDonHang } = req.params;
-    const ketQua = await payosService.layThongTinThanhToanTheoDon(maDonHang);
+    const donHang = await timDonTheoMaTraCuu(req.params.maTraCuu);
+    if (!donHang) {
+      return phanHoiLoi(res, {
+        thongDiep: 'Không tìm thấy thông tin đơn hàng',
+        maTrangThai: 404
+      });
+    }
+    const ketQua = await payosService.layThongTinThanhToanTheoDon(donHang);
     return phanHoiThanhCong(res, {
       duLieu: ketQua,
       thongDiep: 'Lấy trạng thái thanh toán thành công'

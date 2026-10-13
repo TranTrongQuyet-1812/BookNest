@@ -26,14 +26,14 @@ function xacThucTuyChon(req, res, next) {
 router.get('/status-check', thanhToanController.kiemTraKhaDung);
 router.get('/options', thanhToanController.kiemTraKhaDung);
 
-// Tạo liên kết và mã QR VietQR cho đơn hàng
-router.post('/create-qr/:maDonHang', xacThucTuyChon, thanhToanController.taoQrThanhToan);
+// Tạo liên kết và mã QR VietQR cho đơn hàng (định danh bằng mã tra cứu, xem thanhToanController)
+router.post('/create-qr/:maTraCuu', xacThucTuyChon, thanhToanController.taoQrThanhToan);
 
 // Endpoint nhận Webhook trực tiếp từ payOS
 router.post('/payos-webhook', thanhToanController.xuLyWebhook);
 router.post('/webhook', thanhToanController.xuLyWebhook);
 
 // Tra cứu thông tin và trạng thái thanh toán của một đơn hàng
-router.get('/order/:maDonHang', thanhToanController.layTrangThaiThanhToan);
+router.get('/order/:maTraCuu', thanhToanController.layTrangThaiThanhToan);
 
 module.exports = router;

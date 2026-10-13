@@ -12,6 +12,13 @@ const DonHang = sequelize.define('DonHang', {
     autoIncrement: true,
     allowNull: false
   },
+  // Mã công khai khó đoán (BN-7K3F9Q) dùng cho mọi thứ khách nhìn thấy hoặc gọi được; MaDonHang chỉ dùng nội bộ
+  // vì tăng dần nên lộ số đơn của cửa hàng. Xem utils/maTraCuu.js.
+  MaTraCuu: {
+    type: DataTypes.STRING(12),
+    allowNull: true,
+    unique: true
+  },
   // NULL = đơn của khách vãng lai (không có tài khoản, thông tin giao hàng nằm ngay trên đơn)
   MaKhachHang: {
     type: DataTypes.INTEGER,

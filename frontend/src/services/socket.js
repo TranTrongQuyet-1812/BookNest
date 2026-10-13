@@ -38,14 +38,14 @@ export function laySocket() {
 /**
  * Tham gia phòng theo dõi trạng thái thanh toán của một đơn hàng
  */
-export function thamGiaDonHang(maDonHang) {
-  if (!maDonHang) return;
+export function thamGiaDonHang(maTraCuu) {
+  if (!maTraCuu) return;
   const socket = laySocket();
   if (socket.connected) {
-    socket.emit('tham_gia_don_hang', maDonHang);
+    socket.emit('tham_gia_don_hang', maTraCuu);
   } else {
     socket.once('connect', () => {
-      socket.emit('tham_gia_don_hang', maDonHang);
+      socket.emit('tham_gia_don_hang', maTraCuu);
     });
   }
 }
@@ -53,9 +53,9 @@ export function thamGiaDonHang(maDonHang) {
 /**
  * Rời phòng theo dõi đơn hàng khi đóng màn hình
  */
-export function roiDonHang(maDonHang) {
-  if (!maDonHang || !socketInstance) return;
-  socketInstance.emit('roi_don_hang', maDonHang);
+export function roiDonHang(maTraCuu) {
+  if (!maTraCuu || !socketInstance) return;
+  socketInstance.emit('roi_don_hang', maTraCuu);
 }
 
 /**

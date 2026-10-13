@@ -14,6 +14,21 @@ const {
   NhanVien
 } = require('../models');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
+const { sinhMaTraCuu } = require('../utils/maTraCuu');
+
+// Số lần thử sinh mã tra cứu khác khi gặp mã trùng (cực hiếm: hơn 1 tỷ tổ hợp, chỉ mục duy nhất chặn trùng)
+const SO_LAN_THU_SINH_MA = 5;
+
+// Tạo đơn kèm mã tra cứu ngẫu nhiên khó đoán (MaDonHang tăng dần chỉ dùng nội bộ, không đưa cho khách)
+async function taoDonHangCoMa(thongTinDon, tuyChon) {
+  for (let lan = 1; ; lan += 1) {
+    try {
+      return await DonHang.create({ ...thongTinDon, MaTraCuu: sinhMaTraCuu() }, tuyChon);
+    } catch (loi) {
+      if (loi.name !== 'SequelizeUniqueConstraintError' || lan >= SO_LAN_THU_SINH_MA) throw loi;
+    }
+  }
+}
 
 // Hàm thuần kiểm tra tính hợp lệ của việc chuyển đổi trạng thái đơn hàng (State Machine)
 function kiemTraChuyenTrangThai(trangThaiCu, trangThaiMoi) {
@@ -85,7 +100,7 @@ async function datHang(maKhachHang, thongTinGiaoHang) {
     const { tongTien, danhSachChiTiet } = await truTonKhoVaChotChiTiet(cacMonTrongGio, t);
 
     // Tạo đơn hàng mới ở trạng thái chờ duyệt (CHO_DUYET)
-    const donHangMoi = await DonHang.create(
+    const donHangMoi = await taoDonHangCoMa(
       {
         MaKhachHang: maKhachHang,
         TenNguoiNhan: thongTinGiaoHang.tenNguoiNhan,
@@ -160,7 +175,7 @@ async function datHangKhachVangLai(thongTinDatHang) {
     const { tongTien, danhSachChiTiet } = await truTonKhoVaChotChiTiet(cacMon, t);
 
     // Tạo đơn hàng mới ở trạng thái chờ duyệt (CHO_DUYET)
-    const donHangMoi = await DonHang.create(
+    const donHangMoi = await taoDonHangCoMa(
       {
         MaKhachHang: null,
         TenNguoiNhan: tenNguoiNhan,
@@ -226,7 +241,7 @@ async function taoDonQuay(duLieu, maNhanVien) {
     }
 
     const { tongTien, danhSachChiTiet } = await truTonKhoVaChotChiTiet(cacMon, t);
-    const donHang = await DonHang.create({
+    const donHang = await taoDonHangCoMa({
       MaKhachHang: maKhachHang,
       KenhBan: 'TAI_QUAY',
       MaNhanVienLap: maNhanVien,

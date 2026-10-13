@@ -205,7 +205,7 @@ export const QuanLyDonHang = () => {
 
                 return (
                   <tr key={maDon}>
-                    <td style={{ fontWeight: 700, color: 'var(--adm-primary)' }} className="tabular-nums">#{maDon}</td>
+                    <td style={{ fontWeight: 700, color: 'var(--adm-primary)' }} className="tabular-nums">#{maDon}<div style={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.7 }}>{don.MaTraCuu}</div></td>
                     <td style={{ fontSize: '0.825rem', color: 'var(--adm-text-muted)' }} className="tabular-nums">
                       {ngay ? new Date(ngay).toLocaleString('vi-VN') : '—'}
                     </td>

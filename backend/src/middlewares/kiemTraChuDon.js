@@ -1,19 +1,17 @@
 /**
  * Middleware kiểm tra quyền sở hữu đơn hàng (chống lỗ hổng IDOR - Insecure Direct Object References).
- * Nếu người dùng là khách hàng (khach_hang), chỉ được xem/hủy đơn của chính mình.
- * Nếu đơn không tồn tại hoặc thuộc khách hàng khác, trả về mã 404 (không tiết lộ sự tồn tại của đơn hàng).
+ * Phía khách chỉ gọi đơn bằng MaTraCuu (BN-7K3F9Q), không dùng MaDonHang tăng dần vì nó lộ số đơn của cửa hàng
+ * và cho phép dò từng đơn. Nếu người dùng là khách hàng (khach_hang), chỉ được xem/hủy đơn của chính mình.
+ * Mã sai định dạng, đơn không tồn tại hay thuộc khách khác đều trả cùng một 404 (không tiết lộ đơn nào tồn tại).
  */
 const { DonHang } = require('../models');
 const LoiNghiepVu = require('./loiNghiepVu');
+const { chuanHoaMaTraCuu } = require('../utils/maTraCuu');
 
 async function kiemTraChuDon(req, res, next) {
   try {
-    const maDonHang = parseInt(req.params.id, 10);
-    if (!maDonHang) {
-      throw LoiNghiepVu.yeuCauKhongHopLe('Mã đơn hàng không hợp lệ');
-    }
-
-    const donHang = await DonHang.findByPk(maDonHang);
+    const maTraCuu = chuanHoaMaTraCuu(req.params.id);
+    const donHang = maTraCuu ? await DonHang.findOne({ where: { MaTraCuu: maTraCuu } }) : null;
     if (!donHang) {
       throw LoiNghiepVu.khongTimThay('Không tìm thấy đơn hàng yêu cầu');
     }

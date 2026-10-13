@@ -162,7 +162,8 @@ export const DonHangCuaToi = () => {
       ) : (
         <div className="flex flex-col gap-4">
           {donHangList.map((don) => {
-            const maDon = don.MaDonHang;
+            // Mã tra cứu (BN-7K3F9Q): vừa hiển thị, vừa là định danh trên đường dẫn và khi hủy đơn
+            const maDon = don.MaTraCuu;
             const ngay = don.NgayDat;
             const trangThai = don.TrangThai;
             const nguoiNhan = don.TenNguoiNhan;
@@ -175,7 +176,7 @@ export const DonHangCuaToi = () => {
                 <div className="flex items-center justify-between flex-wrap gap-2 pb-3" style={{ borderBottom: '1px solid var(--border)' }}>
                   <div className="flex items-center gap-3">
                     <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--primary)' }}>
-                      #{maDon}
+                      {maDon}
                     </span>
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                       {ngay ? new Date(ngay).toLocaleString('vi-VN') : ''}

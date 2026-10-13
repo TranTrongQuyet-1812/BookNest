@@ -127,13 +127,13 @@ export const ThanhToan = () => {
           phuongThucThanhToan
         });
 
-        const maDonHang = res.data.data?.MaDonHang;
+        const maTraCuu = res.data.data?.MaTraCuu;
 
         // Chưa xóa state giỏ ở đây: tạo QR mất 1-2 giây, giỏ rỗng trong lúc chờ sẽ làm màn "Giỏ hàng trống" lóe lên.
         // Chỉ xóa sau khi đã biết kết quả (khung QR đã mở, hoặc chuyển sang trang đơn hàng).
         if (phuongThucThanhToan === 'CHUYEN_KHOAN_QR') {
           try {
-            const resQr = await api.post(`/payments/create-qr/${maDonHang}`);
+            const resQr = await api.post(`/payments/create-qr/${maTraCuu}`);
             setDuLieuQR(resQr.data.data);
             setHienModalQR(true);
             xoaTrangState();
@@ -149,7 +149,7 @@ export const ThanhToan = () => {
         }
 
         xoaTrangState();
-        navigate(`/orders/${maDonHang}`, { state: { from: '/orders' }, replace: true });
+        navigate(`/orders/${maTraCuu}`, { state: { from: '/orders' }, replace: true });
       } else {
         // --- Nhánh Khách vãng lai (Guest Checkout): không tạo tài khoản, không lưu thông tin ---
         const res = await api.post('/orders/guest', {
@@ -172,11 +172,11 @@ export const ThanhToan = () => {
           xoaTrangState();
         };
 
-        const maDonHang = res.data.data?.MaDonHang;
-        if (phuongThucThanhToan === 'CHUYEN_KHOAN_QR' && maDonHang) {
+        const maTraCuu = res.data.data?.MaTraCuu;
+        if (phuongThucThanhToan === 'CHUYEN_KHOAN_QR' && maTraCuu) {
           setDonVangLaiTam(res.data.data);
           try {
-            const resQr = await api.post(`/payments/create-qr/${maDonHang}`);
+            const resQr = await api.post(`/payments/create-qr/${maTraCuu}`);
             setDuLieuQR(resQr.data.data);
             setHienModalQR(true);
             xoaGioKhach();
@@ -247,7 +247,7 @@ export const ThanhToan = () => {
             Đặt hàng thành công
           </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-            Mã đơn của bạn là <strong>#{donVuaDat.MaDonHang}</strong>, hãy ghi lại để tiện liên hệ.
+            Mã đơn của bạn là <strong>{donVuaDat.MaTraCuu}</strong>, hãy ghi lại để tiện liên hệ.
             Vì bạn đặt hàng không đăng nhập nên thông tin này sẽ không được lưu cho lần sau.
           </p>
           <div style={{ textAlign: 'left', fontSize: '0.9rem', lineHeight: 1.8, marginBottom: '1.75rem' }}>
@@ -753,7 +753,7 @@ export const ThanhToan = () => {
           onThanhToanThanhCong={() => {
             setHienModalQR(false);
             if (daDangNhap) {
-              navigate(`/orders/${duLieuQR.maDonHang}`, { state: { from: '/orders' }, replace: true });
+              navigate(`/orders/${duLieuQR.maTraCuu}`, { state: { from: '/orders' }, replace: true });
             } else if (donVangLaiTam) {
               setDonVuaDat(donVangLaiTam);
             }
@@ -761,16 +761,16 @@ export const ThanhToan = () => {
           onDong={() => {
             setHienModalQR(false);
             if (daDangNhap) {
-              navigate(`/orders/${duLieuQR.maDonHang}`, { state: { from: '/orders' }, replace: true });
+              navigate(`/orders/${duLieuQR.maTraCuu}`, { state: { from: '/orders' }, replace: true });
             } else if (donVangLaiTam) {
               setDonVuaDat(donVangLaiTam);
             }
           }}
           onDoiSangCOD={() => {
             setHienModalQR(false);
-            alert(`Đơn hàng #${duLieuQR.maDonHang} của bạn đã chuyển sang hình thức thanh toán khi nhận hàng (COD)!`);
+            alert(`Đơn hàng ${duLieuQR.maTraCuu} của bạn đã chuyển sang hình thức thanh toán khi nhận hàng (COD)!`);
             if (daDangNhap) {
-              navigate(`/orders/${duLieuQR.maDonHang}`, { state: { from: '/orders' }, replace: true });
+              navigate(`/orders/${duLieuQR.maTraCuu}`, { state: { from: '/orders' }, replace: true });
             } else if (donVangLaiTam) {
               setDonVuaDat(donVangLaiTam);
             }

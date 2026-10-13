@@ -3,12 +3,13 @@
  */
 const donHangService = require('../services/donHangService');
 const { phanHoiThanhCong } = require('../middlewares/phanHoi');
+const { anMaNoiBoDonHang } = require('../utils/maTraCuu');
 
 // Khách hàng đặt hàng từ giỏ hàng
 async function xuLyDatHang(req, res) {
   const donHang = await donHangService.datHang(req.user.id, req.body);
   return phanHoiThanhCong(res, {
-    duLieu: donHang,
+    duLieu: anMaNoiBoDonHang(donHang),
     thongDiep: 'Đặt hàng thành công',
     maTrangThai: 201
   });
@@ -18,7 +19,7 @@ async function xuLyDatHang(req, res) {
 async function xuLyDatHangKhachVangLai(req, res) {
   const ketQua = await donHangService.datHangKhachVangLai(req.body);
   return phanHoiThanhCong(res, {
-    duLieu: ketQua,
+    duLieu: anMaNoiBoDonHang(ketQua),
     thongDiep: 'Đặt hàng thành công',
     maTrangThai: 201
   });
@@ -28,25 +29,26 @@ async function xuLyDatHangKhachVangLai(req, res) {
 async function xuLyLayDanhSachDonCuaKhach(req, res) {
   const ketQua = await donHangService.layDanhSachDonKhach(req.user.id, req.query);
   return phanHoiThanhCong(res, {
-    duLieu: ketQua,
+    duLieu: anMaNoiBoDonHang(ketQua),
     thongDiep: 'Lấy danh sách đơn hàng thành công'
   });
 }
 
 // Khách hàng xem chi tiết đơn hàng (đã qua middleware kiemTraChuDon)
 async function xuLyLayChiTietDonCuaKhach(req, res) {
-  const donHang = await donHangService.layChiTietDonHang(req.params.id);
+  // req.params.id là mã tra cứu; middleware đã tìm sẵn đơn nên dùng mã nội bộ từ req.donHang
+  const donHang = await donHangService.layChiTietDonHang(req.donHang.MaDonHang);
   return phanHoiThanhCong(res, {
-    duLieu: donHang,
+    duLieu: anMaNoiBoDonHang(donHang),
     thongDiep: 'Lấy chi tiết đơn hàng thành công'
   });
 }
 
 // Khách hàng tự hủy đơn hàng
 async function xuLyKhachHuyDon(req, res) {
-  const donHang = await donHangService.khachHuyDon(req.params.id, req.user.id, req.body.lyDo);
+  const donHang = await donHangService.khachHuyDon(req.donHang.MaDonHang, req.user.id, req.body.lyDo);
   return phanHoiThanhCong(res, {
-    duLieu: donHang,
+    duLieu: anMaNoiBoDonHang(donHang),
     thongDiep: 'Hủy đơn hàng thành công'
   });
 }

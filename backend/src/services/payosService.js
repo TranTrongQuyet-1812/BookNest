@@ -2,7 +2,9 @@
  * Dịch vụ xử lý thanh toán VietQR qua payOS.
  * Tuân thủ nghiêm ngặt nguyên tắc bảo mật và quy trình trong docs/KE_HOACH_THANH_TOAN_QR_PAYOS.md.
  */
+const crypto = require('crypto');
 const { PayOS } = require('@payos/node');
+const { maRutGonChoChuyenKhoan } = require('../utils/maTraCuu');
 const cauHinh = require('../config/cauHinh');
 const { 
   sequelize, 
@@ -48,13 +50,12 @@ async function kiemTraCongTacQRDangBat() {
 }
 
 /**
- * Sinh mã giao dịch orderCode kiểu số nguyên duy nhất cho payOS (tối đa 9007199254740991)
+ * Sinh mã giao dịch orderCode kiểu số nguyên duy nhất cho payOS (tối đa 9007199254740991).
+ * Không dùng MaDonHang để orderCode (hiện trên trang payOS/sao kê) không lộ số đơn của cửa hàng:
+ * mili giây * 1000 + 3 số ngẫu nhiên (khoảng 16 chữ số, vẫn dưới giới hạn); cột MaGiaoDichPayos có ràng buộc duy nhất.
  */
-function sinhMaGiaoDich(maDonHang) {
-  // Lấy 8 chữ số cuối timestamp + mã đơn hàng (đảm bảo là số duy nhất)
-  const prefix = String(Date.now()).slice(-7);
-  const suffix = String(maDonHang % 10000).padStart(4, '0');
-  return parseInt(`${prefix}${suffix}`, 10);
+function sinhMaGiaoDich() {
+  return Date.now() * 1000 + crypto.randomInt(1000);
 }
 
 /**
@@ -97,21 +98,24 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
   if (banGhiThanhToan && banGhiThanhToan.DuongDanThanhToan && banGhiThanhToan.NgayHetHan > new Date()) {
     const thongTinTrich = trichXuatThongTinTuQr(banGhiThanhToan.QrCode);
     return {
-      maThanhToan: banGhiThanhToan.MaThanhToan,
-      maDonHang: banGhiThanhToan.MaDonHang,
+      maTraCuu: donHang.MaTraCuu,
       orderCode: banGhiThanhToan.MaGiaoDichPayos,
       checkoutUrl: banGhiThanhToan.DuongDanThanhToan,
       qrCode: banGhiThanhToan.QrCode,
       bin: thongTinTrich.bin || '970422',
       accountNumber: thongTinTrich.accountNumber,
-      noiDungChuyenKhoan: thongTinTrich.noiDungChuyenKhoan || `DON HANG #${maDonHang}`,
+      noiDungChuyenKhoan: thongTinTrich.noiDungChuyenKhoan || maRutGonChoChuyenKhoan(donHang.MaTraCuu),
       soTien: banGhiThanhToan.SoTien,
       ngayHetHan: banGhiThanhToan.NgayHetHan
     };
   }
 
-  const orderCode = sinhMaGiaoDich(maDonHang);
-  const moTa = `DON HANG #${maDonHang}`.slice(0, 25); // payOS yêu cầu description tối đa 25 ký tự không dấu
+  if (!donHang.MaTraCuu) {
+    throw new Error('Đơn hàng chưa có mã tra cứu nên chưa thể tạo thanh toán');
+  }
+  const orderCode = sinhMaGiaoDich();
+  // Nội dung chuyển khoản dùng mã tra cứu (BN7K3F9Q), không dùng MaDonHang tăng dần để khỏi lộ số đơn
+  const moTa = maRutGonChoChuyenKhoan(donHang.MaTraCuu).slice(0, 25); // payOS: description tối đa 25 ký tự không dấu
 
   const items = Array.isArray(danhSachMon) && danhSachMon.length > 0
     ? danhSachMon.map(mon => ({
@@ -119,7 +123,7 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
         quantity: parseInt(mon.soLuong || mon.SoLuong, 10) || 1,
         price: Math.round(Number(mon.donGia || mon.DonGia || 0))
       }))
-    : [{ name: `Đơn hàng #${maDonHang}`, quantity: 1, price: soTien }];
+    : [{ name: `Đơn hàng ${donHang.MaTraCuu}`, quantity: 1, price: soTien }];
 
   const domainClient = cauHinh.corsStorefront[0] || 'http://localhost:3000';
   const duLieuPayos = {
@@ -127,8 +131,8 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
     amount: soTien,
     description: moTa,
     items,
-    returnUrl: `${domainClient}/orders/${maDonHang}?payment=success`,
-    cancelUrl: `${domainClient}/orders/${maDonHang}?payment=cancelled`
+    returnUrl: `${domainClient}/orders/${donHang.MaTraCuu}?payment=success`,
+    cancelUrl: `${domainClient}/orders/${donHang.MaTraCuu}?payment=cancelled`
   };
 
   const paymentLinkRes = await payOSClient.paymentRequests.create(duLieuPayos);
@@ -162,8 +166,7 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
   }
 
   return {
-    maThanhToan: banGhiThanhToan.MaThanhToan,
-    maDonHang: banGhiThanhToan.MaDonHang,
+    maTraCuu: donHang.MaTraCuu,
     orderCode: paymentLinkRes.orderCode,
     checkoutUrl: paymentLinkRes.checkoutUrl,
     qrCode: paymentLinkRes.qrCode,
@@ -284,6 +287,7 @@ async function xuLyWebhookPayOS(webhookBody) {
     try {
       phatThanhToanThanhCong({
         maDonHang: thanhToan.MaDonHang,
+        maTraCuu: donHang?.MaTraCuu,
         soTien: thanhToan.SoTien,
         maGiaoDichPayos: orderCode
       });
@@ -301,7 +305,8 @@ async function xuLyWebhookPayOS(webhookBody) {
 /**
  * Tra cứu trạng thái thanh toán hiện tại của một đơn hàng
  */
-async function layThongTinThanhToanTheoDon(maDonHang) {
+async function layThongTinThanhToanTheoDon(donHangTraCuu) {
+  const maDonHang = donHangTraCuu.MaDonHang;
   const thanhToan = await ThanhToan.findOne({
     where: { MaDonHang: maDonHang }
   });
@@ -339,8 +344,7 @@ async function layThongTinThanhToanTheoDon(maDonHang) {
   const thongTinTrich = trichXuatThongTinTuQr(thanhToan.QrCode);
   return {
     coThanhToan: true,
-    maThanhToan: thanhToan.MaThanhToan,
-    maDonHang: thanhToan.MaDonHang,
+    maTraCuu: donHangTraCuu.MaTraCuu,
     phuongThuc: thanhToan.PhuongThuc,
     trangThai: thanhToan.TrangThai,
     soTien: thanhToan.SoTien,
@@ -349,7 +353,7 @@ async function layThongTinThanhToanTheoDon(maDonHang) {
     qrCode: thanhToan.QrCode,
     bin: thongTinTrich.bin || '970422',
     accountNumber: thongTinTrich.accountNumber,
-    noiDungChuyenKhoan: thongTinTrich.noiDungChuyenKhoan || `DON HANG #${maDonHang}`,
+    noiDungChuyenKhoan: thongTinTrich.noiDungChuyenKhoan || maRutGonChoChuyenKhoan(donHangTraCuu.MaTraCuu),
     ngayHetHan: thanhToan.NgayHetHan,
     ngayThanhToan: thanhToan.NgayThanhToan
   };

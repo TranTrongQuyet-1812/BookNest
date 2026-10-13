@@ -4,6 +4,7 @@
  */
 const { Server } = require('socket.io');
 const cauHinh = require('../config/cauHinh');
+const { chuanHoaMaTraCuu } = require('../utils/maTraCuu');
 
 let io = null;
 
@@ -36,20 +37,17 @@ function khoiTaoSocket(httpServer) {
   });
 
   io.on('connection', (socket) => {
-    // Khách hàng hoặc giao diện tham gia phòng theo dõi đơn hàng
-    socket.on('tham_gia_don_hang', (maDonHang) => {
-      if (maDonHang) {
-        const phong = `don_hang:${maDonHang}`;
-        socket.join(phong);
-      }
+    // Khách hàng hoặc giao diện tham gia phòng theo dõi đơn hàng. Phòng đặt tên theo MÃ TRA CỨU (khó đoán),
+    // chỉ ai biết mã mới nghe được; mã sai định dạng bị bỏ qua
+    socket.on('tham_gia_don_hang', (maTraCuu) => {
+      const ma = chuanHoaMaTraCuu(maTraCuu);
+      if (ma) socket.join(`don_hang:${ma}`);
     });
 
     // Rời phòng theo dõi đơn hàng
-    socket.on('roi_don_hang', (maDonHang) => {
-      if (maDonHang) {
-        const phong = `don_hang:${maDonHang}`;
-        socket.leave(phong);
-      }
+    socket.on('roi_don_hang', (maTraCuu) => {
+      const ma = chuanHoaMaTraCuu(maTraCuu);
+      if (ma) socket.leave(`don_hang:${ma}`);
     });
 
     // Nhân viên tham gia phòng quản trị
@@ -89,25 +87,29 @@ function phatSuKien(tenSuKien, duLieu = {}, phong = null) {
 }
 
 /**
- * Phát sự kiện thanh toán thành công tức thì tới phòng đơn hàng
+ * Phát sự kiện thanh toán thành công tức thì tới phòng đơn hàng.
+ * Phòng của khách chỉ nhận mã tra cứu (không có MaDonHang tăng dần); phòng nhân viên nhận cả hai để cập nhật danh sách.
  */
 function phatThanhToanThanhCong(duLieu) {
-  const { maDonHang, soTien, maGiaoDichPayos } = duLieu;
-  phatSuKien(
-    'thanhToan:daThanhToan',
-    {
-      maDonHang,
-      trangThai: 'DA_THANH_TOAN',
-      soTien,
-      maGiaoDichPayos,
-      thoiGian: new Date().toISOString()
-    },
-    `don_hang:${maDonHang}`
-  );
+  const { maDonHang, maTraCuu, soTien, maGiaoDichPayos } = duLieu;
+  if (maTraCuu) {
+    phatSuKien(
+      'thanhToan:daThanhToan',
+      {
+        maTraCuu,
+        trangThai: 'DA_THANH_TOAN',
+        soTien,
+        maGiaoDichPayos,
+        thoiGian: new Date().toISOString()
+      },
+      `don_hang:${maTraCuu}`
+    );
+  }
 
   // Đồng thời báo cho phòng nhân viên để cập nhật danh sách đơn
   phatSuKien('donHang:capNhatTrangThai', {
     maDonHang,
+    maTraCuu,
     trangThaiDonHang: 'DA_XAC_NHAN',
     trangThaiThanhToan: 'DA_THANH_TOAN'
   }, 'nhan_vien');
