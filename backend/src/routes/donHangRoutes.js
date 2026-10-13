@@ -9,6 +9,7 @@ const xacThucToken = require('../middlewares/xacThucToken');
 const phanQuyen = require('../middlewares/phanQuyen');
 const kiemTraDuLieu = require('../middlewares/kiemTraDuLieu');
 const kiemTraChuDon = require('../middlewares/kiemTraChuDon');
+const { gioiHanDatDonVangLai, gioiHanDoMaDon } = require('../middlewares/gioiHanTanSuat');
 
 const router = express.Router();
 
@@ -102,7 +103,7 @@ const luatDatHangKhachVangLai = Joi.object({
  *       409:
  *         description: Sách hết tồn kho hoặc đã ngừng kinh doanh
  */
-router.post('/guest', kiemTraDuLieu(luatDatHangKhachVangLai), batLoiAsync(donHangController.xuLyDatHangKhachVangLai));
+router.post('/guest', gioiHanDatDonVangLai, kiemTraDuLieu(luatDatHangKhachVangLai), batLoiAsync(donHangController.xuLyDatHangKhachVangLai));
 
 // Tất cả các route bên dưới của khách đều cần đăng nhập với vai trò khach_hang
 router.use(xacThucToken, phanQuyen('khach_hang'));
@@ -259,7 +260,7 @@ router.get('/my-orders', kiemTraDuLieu(luatTruyVanDonKhach, 'query'), batLoiAsyn
  *       404:
  *         description: Không tìm thấy đơn hàng (hoặc không phải đơn của người dùng - chống dò ID)
  */
-router.get('/my-orders/:id', kiemTraChuDon, batLoiAsync(donHangController.xuLyLayChiTietDonCuaKhach));
+router.get('/my-orders/:id', gioiHanDoMaDon, kiemTraChuDon, batLoiAsync(donHangController.xuLyLayChiTietDonCuaKhach));
 
 /**
  * @swagger
@@ -298,6 +299,6 @@ router.get('/my-orders/:id', kiemTraChuDon, batLoiAsync(donHangController.xuLyLa
  *       409:
  *         description: Đơn hàng không ở trạng thái CHO_DUYET
  */
-router.put('/:id/cancel', kiemTraChuDon, kiemTraDuLieu(luatKhachHuyDon), batLoiAsync(donHangController.xuLyKhachHuyDon));
+router.put('/:id/cancel', gioiHanDoMaDon, kiemTraChuDon, kiemTraDuLieu(luatKhachHuyDon), batLoiAsync(donHangController.xuLyKhachHuyDon));
 
 module.exports = router;

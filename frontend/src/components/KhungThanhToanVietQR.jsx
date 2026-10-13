@@ -77,7 +77,8 @@ export const KhungThanhToanVietQR = ({
       const res = await api.get(`/payments/order/${duLieuQR.maTraCuu}`);
       const tt = res.data?.data;
 
-      if (tt && (tt.trangThaiThanhToan === 'DA_THANH_TOAN' || tt.trangThaiDonHang === 'DA_XAC_NHAN' || tt.trangThaiDonHang === 'DANG_GIAO')) {
+      // API trả trường trangThai (trạng thái của khoản thanh toán); trước đây so sánh nhầm tên trường nên thăm dò dự phòng không bao giờ nhận ra
+      if (tt && tt.trangThai === 'DA_THANH_TOAN') {
         setThanhToanThanhCong(true);
         clearInterval(pollingRef.current);
         clearInterval(timerRef.current);

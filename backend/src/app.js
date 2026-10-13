@@ -19,6 +19,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const gioHangRoutes = require('./routes/gioHangRoutes');
 const donHangRoutes = require('./routes/donHangRoutes');
 const thanhToanRoutes = require('./routes/thanhToanRoutes');
+const { gioiHanChung } = require('./middlewares/gioiHanTanSuat');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 
@@ -67,6 +68,9 @@ app.get('/api/suc-khoe', (req, res) => {
 });
 
 // Gắn các tuyến đường API
+// Lưới an toàn chung cho mọi API (từng API công khai nhạy cảm còn có bộ giới hạn riêng, xem gioiHanTanSuat.js)
+app.use('/api', gioiHanChung);
+
 app.use('/api/auth', xacThucKhachRoutes);
 app.use('/api/admin/auth', xacThucNhanVienRoutes);
 app.use('/api/users', nguoiDungRoutes);
