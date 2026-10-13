@@ -4,7 +4,7 @@
  * Tối ưu hóa token và an toàn chỉ đọc dữ liệu.
  */
 const { Op } = require('sequelize');
-const { sequelize, Sach, DanhMuc, DonHang, ChiTietDonHang, LichSuTrangThaiDonHang } = require('../models');
+const { sequelize, Sach, DanhMuc, DonHang, ChiTietDonHang, LichSuTrangThaiDonHang, ThanhToan } = require('../models');
 const { chuaTuKhoa } = require('../utils/timKiem');
 const { goiNhaCungCapAI } = require('./trinhCungCapAI');
 
@@ -151,7 +151,7 @@ async function thucThiTimSach({ tu_khoa, the_loai, gia_toi_da }) {
       include: includeOptions,
       limit: 5, // Giới hạn 5 cuốn để tiết kiệm token
       order: [['NgayTao', 'DESC']],
-      attributes: ['MaSach', 'TenSach', 'TacGia', 'GiaBan', 'SoLuongTon', 'HinhAnh', 'MoTa']
+      attributes: ['MaSach', 'TenSach', 'TacGia', 'GiaBan', 'SoLuongTon', 'AnhBia', 'MoTa']
     });
 
     if (danhSach.length === 0) {
@@ -169,7 +169,7 @@ async function thucThiTimSach({ tu_khoa, the_loai, gia_toi_da }) {
         conHang: s.SoLuongTon > 0,
         soLuongTon: s.SoLuongTon,
         theLoai: s.danhMuc?.TenDanhMuc || 'Khác',
-        hinhAnh: s.HinhAnh,
+        hinhAnh: s.AnhBia,
         moTaNgan: s.MoTa ? s.MoTa.substring(0, 100) + '...' : ''
       }))
     };
@@ -311,12 +311,17 @@ async function thucThiTraCuuDonHang({ ma_tra_cuu }, maKhachHangContext) {
           {
             model: ChiTietDonHang,
             as: 'chiTietDonHang',
-            include: [{ model: Sach, as: 'sach', attributes: ['TenSach', 'HinhAnh'] }]
+            include: [{ model: Sach, as: 'sach', attributes: ['TenSach', 'AnhBia'] }]
           },
           {
             model: LichSuTrangThaiDonHang,
             as: 'lichSuTrangThai',
-            attributes: ['TrangThaiMoi', 'NgayTao', 'GhiChu']
+            attributes: ['TrangThaiMoi', 'NgayThayDoi', 'GhiChu']
+          },
+          {
+            model: ThanhToan,
+            as: 'thanhToan',
+            attributes: ['PhuongThuc', 'TrangThai']
           }
         ]
       });
@@ -325,15 +330,18 @@ async function thucThiTraCuuDonHang({ ma_tra_cuu }, maKhachHangContext) {
         return { timThay: false, thongDiep: `Không tìm thấy đơn hàng nào với mã tra cứu "${maChuan}". Vui lòng kiểm tra lại mã trên hóa đơn hoặc tin nhắn.` };
       }
 
+      const phuongThuc = donHang.thanhToan?.PhuongThuc || 'COD';
+      const trangThaiTT = donHang.thanhToan?.TrangThai || 'CHO_THANH_TOAN';
+
       return {
         timThay: true,
         donHang: {
           maTraCuu: donHang.MaTraCuu,
           trangThai: dichTrangThaiDonHang(donHang.TrangThai),
-          ngayDat: donHang.NgayTao,
+          ngayDat: donHang.NgayDat,
           tongTien: donHang.TongTien,
-          phuongThucThanhToan: donHang.PhuongThucThanhToan === 'CHUYEN_KHOAN_QR' ? 'Chuyển khoản VietQR' : 'Thanh toán tiền mặt khi nhận (COD)',
-          trangThaiThanhToan: donHang.TrangThaiThanhToan === 'DA_THANH_TOAN' ? 'Đã thanh toán' : 'Chưa thanh toán',
+          phuongThucThanhToan: phuongThuc === 'CHUYEN_KHOAN_QR' ? 'Chuyển khoản VietQR' : 'Thanh toán tiền mặt khi nhận (COD)',
+          trangThaiThanhToan: trangThaiTT === 'DA_THANH_TOAN' ? 'Đã thanh toán' : 'Chưa thanh toán',
           danhSachSach: donHang.chiTietDonHang.map(ct => ({
             tenSach: ct.sach?.TenSach || `Sách #${ct.MaSach}`,
             soLuong: ct.SoLuong,
@@ -341,7 +349,7 @@ async function thucThiTraCuuDonHang({ ma_tra_cuu }, maKhachHangContext) {
           })),
           lichSuXuLy: (donHang.lichSuTrangThai || []).map(ls => ({
             trangThai: dichTrangThaiDonHang(ls.TrangThaiMoi),
-            thoiGian: ls.NgayTao
+            thoiGian: ls.NgayThayDoi
           }))
         }
       };
@@ -352,8 +360,8 @@ async function thucThiTraCuuDonHang({ ma_tra_cuu }, maKhachHangContext) {
       const cacDon = await DonHang.findAll({
         where: { MaKhachHang: maKhachHangContext },
         limit: 3,
-        order: [['NgayTao', 'DESC']],
-        attributes: ['MaTraCuu', 'TrangThai', 'TongTien', 'NgayTao']
+        order: [['NgayDat', 'DESC']],
+        attributes: ['MaTraCuu', 'TrangThai', 'TongTien', 'NgayDat']
       });
 
       if (cacDon.length === 0) {
@@ -367,7 +375,7 @@ async function thucThiTraCuuDonHang({ ma_tra_cuu }, maKhachHangContext) {
           maTraCuu: d.MaTraCuu,
           trangThai: dichTrangThaiDonHang(d.TrangThai),
           tongTien: d.TongTien,
-          ngayDat: d.NgayTao
+          ngayDat: d.NgayDat
         }))
       };
     }
