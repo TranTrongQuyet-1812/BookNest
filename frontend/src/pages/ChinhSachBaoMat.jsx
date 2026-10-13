@@ -228,7 +228,8 @@ export const ChinhSachBaoMat = () => {
           border: '1px solid var(--border)',
           marginTop: '2rem'
         }}>
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+          <h3 className="flex items-center gap-2" style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+            <GraduationCap size={18} style={{ color: 'var(--price)' }} />
             Thông Tin Phụ Trách Dữ Liệu & Bản Quyền
           </h3>
           <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>

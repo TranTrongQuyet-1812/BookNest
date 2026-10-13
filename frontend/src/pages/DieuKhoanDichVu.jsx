@@ -5,10 +5,8 @@ import {
   Truck, 
   RotateCcw, 
   CreditCard, 
-  ShieldAlert, 
   CheckCircle2, 
   ArrowLeft,
-  Mail,
   GraduationCap
 } from 'lucide-react';
 
