@@ -75,6 +75,13 @@ const gioiHanWebhook = taoGioiHan({
   thongDiep: 'Quá nhiều yêu cầu webhook.'
 });
 
+// Giới hạn tần suất cho AI Chatbot: tránh spam câu hỏi làm cạn token và quá tải server (20 câu hỏi/phút/IP)
+const gioiHanChatbot = taoGioiHan({
+  cuaSoPhut: 1,
+  toiDa: 20,
+  thongDiep: 'Bạn gửi câu hỏi quá nhanh. Vui lòng đợi ít phút trước khi trò chuyện tiếp cùng BookNest AI.'
+});
+
 module.exports = {
   taoGioiHan,
   gioiHanChung,
@@ -82,5 +89,6 @@ module.exports = {
   gioiHanDatDonVangLai,
   gioiHanTaoQr,
   gioiHanTraTrangThaiThanhToan,
-  gioiHanWebhook
+  gioiHanWebhook,
+  gioiHanChatbot
 };
