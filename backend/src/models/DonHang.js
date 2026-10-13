@@ -17,13 +17,22 @@ const DonHang = sequelize.define('DonHang', {
     type: DataTypes.INTEGER,
     allowNull: true
   },
+  KenhBan: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    defaultValue: 'TRUC_TUYEN'
+  },
+  MaNhanVienLap: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
   TenNguoiNhan: {
     type: DataTypes.STRING(100),
-    allowNull: false
+    allowNull: true
   },
   SoDienThoaiNhan: {
     type: DataTypes.STRING(15),
-    allowNull: false
+    allowNull: true
   },
   // Email nhận thông báo trạng thái đơn (API bắt buộc, DB cho NULL vì đơn cũ chưa có)
   EmailNhan: {
@@ -32,7 +41,7 @@ const DonHang = sequelize.define('DonHang', {
   },
   DiaChiGiaoHang: {
     type: DataTypes.STRING(255),
-    allowNull: false
+    allowNull: true
   },
   GhiChu: {
     type: DataTypes.STRING(500),

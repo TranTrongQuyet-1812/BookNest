@@ -47,13 +47,14 @@ Project_MonBE/
 │   │   ├── routes/             # Định tuyến API theo phân hệ (7 router files)
 │   │   ├── app.js              # Express Application, Helmet & Routing
 │   │   └── server.js           # Khởi động máy chủ cổng 5000
-├── frontend/                   # Ứng dụng giao diện khách hàng & quản trị (Vite React)
+├── frontend/                   # Ứng dụng khách hàng (Vite React)
 │   ├── src/
 │   │   ├── components/         # Navbar, Footer, Route Guards, Star Rating
 │   │   ├── context/            # AuthContext (JWT, User Profile, Theme switch)
 │   │   ├── pages/              # Storefront (Trang chủ, Chi tiết sách, Giỏ hàng, Đơn hàng)
-│   │   └── pages/admin/        # Back-Office (Dashboard thống kê, Sách, Kho, Đơn hàng, Nhân sự)
 │   └── vite.config.js          # Proxy /api sang backend port 5000
+├── frontend-admin/             # Ứng dụng Back-Office độc lập (Vite React)
+├── packages/shared/            # API client và xác thực dùng chung qua npm workspace
 └── README.md                   # Hướng dẫn cài đặt và sử dụng hệ thống
 ```
 
@@ -80,7 +81,7 @@ Project_MonBE/
    # Hoặc trên Windows PowerShell:
    copy .env.example .env
    ```
-   *Sau đó mở file `.env` vừa tạo để điền thông tin kết nối SQL Server trên máy của bạn (`DB_USER`, `DB_PASSWORD`, `JWT_SECRET`). Có thể đặt thêm `CORS_ORIGIN` (địa chỉ frontend được gọi API, mặc định `http://localhost:5173`) và `TRUST_PROXY` khi chạy sau reverse proxy.*
+   *Sau đó mở file `.env` vừa tạo để điền thông tin kết nối SQL Server trên máy của bạn (`DB_USER`, `DB_PASSWORD`, `JWT_SECRET`). Cấu hình `CORS_STOREFRONT_ORIGIN`, `CORS_BACKOFFICE_ORIGIN` và `TRUST_PROXY` theo môi trường triển khai.*
 3. Cài đặt các gói phụ thuộc:
    ```bash
    npm install
@@ -91,14 +92,23 @@ Project_MonBE/
    # Backend chạy tại: http://localhost:5000
    ```
 
-### Bước 3: Khởi chạy Giao diện Frontend
-1. Mở một terminal mới và di chuyển vào thư mục `frontend`:
+### Bước 3: Cài workspace và khởi chạy giao diện
+1. Tại thư mục gốc dự án, cài các gói giao diện và package dùng chung một lần:
    ```bash
-   cd frontend
    npm install
-   npm run dev
    ```
-2. Truy cập ứng dụng tại: **`http://localhost:3000`**
+2. Mở terminal mới tại thư mục gốc để chạy cổng khách hàng:
+   ```bash
+   npm run dev --workspace frontend
+   ```
+3. Mở terminal khác để chạy cổng nhân viên:
+   ```bash
+   npm run dev --workspace booknest-backoffice
+   ```
+4. Truy cập khách hàng tại **`http://localhost:3000`** và Back-Office tại **`http://localhost:5174`**. Hai ứng dụng gọi chung backend và CSDL.
+
+### Triển khai trên một máy chủ
+Có thể đặt storefront, Back-Office, backend và SQL Server trên cùng một máy. Caddy hoặc Nginx chạy cùng máy làm reverse proxy và cấp HTTPS; Caddy là lựa chọn gọn nếu chưa có yêu cầu cấu hình đặc thù. Chỉ công khai cổng web cần thiết; SQL Server nên chỉ nhận kết nối nội bộ. Khai báo hai origin frontend trong cấu hình backend và bật `TRUST_PROXY` khi backend nhận request qua proxy.
 
 ---
 

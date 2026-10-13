@@ -53,11 +53,31 @@ async function xuLyKhachHuyDon(req, res) {
 
 // Back-Office: Nhân viên/Admin xem danh sách đơn toàn hệ thống
 async function xuLyAdminLayDanhSachDon(req, res) {
-  const ketQua = await donHangService.adminLayDanhSachDon(req.query);
+  const ketQua = await donHangService.adminLayDanhSachDon({ ...req.query, vaiTro: req.user.role });
   return phanHoiThanhCong(res, {
     duLieu: ketQua,
     thongDiep: 'Lấy danh sách đơn hàng hệ thống thành công'
   });
+}
+
+// Bán tại quầy bằng tài khoản nhân viên.
+async function xuLyTaoDonQuay(req, res) {
+  const donHang = await donHangService.taoDonQuay(req.body, req.user.id);
+  return phanHoiThanhCong(res, {
+    duLieu: donHang,
+    thongDiep: 'Bán hàng tại quầy thành công',
+    maTrangThai: 201
+  });
+}
+
+async function xuLyLayDanhSachDonQuay(req, res) {
+  const ketQua = await donHangService.layDanhSachDonQuay(req.user.id, req.user.role, req.query);
+  return phanHoiThanhCong(res, { duLieu: ketQua, thongDiep: 'Lấy lịch sử bán tại quầy thành công' });
+}
+
+async function xuLyLayChiTietDonQuay(req, res) {
+  const donHang = await donHangService.layChiTietDonQuay(req.params.id, req.user.id, req.user.role);
+  return phanHoiThanhCong(res, { duLieu: donHang, thongDiep: 'Lấy chi tiết đơn quầy thành công' });
 }
 
 // Back-Office: Nhân viên/Admin xem chi tiết một đơn hàng
@@ -104,6 +124,9 @@ module.exports = {
   xuLyLayChiTietDonCuaKhach,
   xuLyKhachHuyDon,
   xuLyAdminLayDanhSachDon,
+  xuLyTaoDonQuay,
+  xuLyLayDanhSachDonQuay,
+  xuLyLayChiTietDonQuay,
   xuLyAdminLayChiTietDon,
   xuLyAdminCapNhatTrangThai,
   xuLyAdminHuyDon

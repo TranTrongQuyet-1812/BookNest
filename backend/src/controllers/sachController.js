@@ -44,7 +44,7 @@ async function xuLyTao(req, res) {
 
 // Cập nhật thông tin sách
 async function xuLyCapNhat(req, res) {
-  const sach = await sachService.capNhatSach(req.params.id, req.body);
+  const sach = await sachService.capNhatSach(req.params.id, req.body, req.user.id);
   return phanHoiThanhCong(res, {
     duLieu: sach,
     thongDiep: 'Cập nhật sách thành công'
@@ -53,7 +53,7 @@ async function xuLyCapNhat(req, res) {
 
 // Xóa mềm sách
 async function xuLyXoa(req, res) {
-  await sachService.xoaMemSach(req.params.id);
+  await sachService.xoaMemSach(req.params.id, req.user.id);
   return phanHoiThanhCong(res, {
     thongDiep: 'Xóa sách thành công'
   });
@@ -89,11 +89,21 @@ async function xuLyTatCaLichSuNhapKho(req, res) {
 
 // Lấy danh sách sách sắp hết hàng
 async function xuLySapHetHang(req, res) {
-  const danhSach = await sachService.layDanhSachSapHetHang();
+  const danhSach = await sachService.layDanhSachSapHetHang(req.query);
   return phanHoiThanhCong(res, {
     duLieu: danhSach,
     thongDiep: 'Lấy danh sách sách sắp hết hàng thành công'
   });
+}
+
+async function xuLyDieuChinhTonKho(req, res) {
+  const sach = await sachService.dieuChinhTonKho(req.params.id, req.body, req.user.id);
+  return phanHoiThanhCong(res, { duLieu: sach, thongDiep: 'Điều chỉnh tồn kho thành công' });
+}
+
+async function xuLyLayLichSuDieuChinhKho(req, res) {
+  const duLieu = await sachService.layLichSuDieuChinhKho(req.query);
+  return phanHoiThanhCong(res, { duLieu, thongDiep: 'Lấy lịch sử điều chỉnh tồn kho thành công' });
 }
 
 module.exports = {
@@ -106,5 +116,7 @@ module.exports = {
   xuLyNhapKho,
   xuLyLichSuNhapKho,
   xuLyTatCaLichSuNhapKho,
-  xuLySapHetHang
+  xuLySapHetHang,
+  xuLyDieuChinhTonKho,
+  xuLyLayLichSuDieuChinhKho
 };

@@ -13,11 +13,11 @@ const kiemTraDuLieu = require('../middlewares/kiemTraDuLieu');
 const routerKhach = express.Router();
 const routerNhanVien = express.Router();
 
-// Giới hạn tần suất gọi API đăng nhập để chống brute-force (10 lần / 15 phút trên mỗi IP)
-// Trong môi trường kiểm thử (test), nâng giới hạn để không gây nghẽn test tự động
-const gioiHanDangNhap = rateLimit({
+// Tách bộ đếm theo cổng để một khu không làm khóa đăng nhập của khu còn lại.
+function taoGioiHanDangNhap(soLanToiDa) {
+  return rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'test' ? 1000 : 10,
+  max: process.env.NODE_ENV === 'test' ? 1000 : soLanToiDa,
   skipSuccessfulRequests: true, // Không tính các lần đăng nhập thành công vào giới hạn
   standardHeaders: true,
   legacyHeaders: false,
@@ -25,7 +25,11 @@ const gioiHanDangNhap = rateLimit({
     success: false,
     message: 'Bạn đã thử đăng nhập thất bại quá nhiều lần. Vui lòng thử lại sau 15 phút.'
   }
-});
+  });
+}
+
+const gioiHanDangNhapKhach = taoGioiHanDangNhap(10);
+const gioiHanDangNhapNhanVien = taoGioiHanDangNhap(5);
 
 // Schema kiểm tra dữ liệu đăng ký
 const luatDangKy = Joi.object({
@@ -146,7 +150,7 @@ routerKhach.post('/register', kiemTraDuLieu(luatDangKy), batLoiAsync(xacThucCont
  *       403:
  *         description: Tài khoản đã bị khóa
  */
-routerKhach.post('/login', gioiHanDangNhap, kiemTraDuLieu(luatDangNhap), batLoiAsync(xacThucController.xuLyDangNhapKhachHang));
+routerKhach.post('/login', gioiHanDangNhapKhach, kiemTraDuLieu(luatDangNhap), batLoiAsync(xacThucController.xuLyDangNhapKhachHang));
 
 /**
  * @swagger
@@ -183,6 +187,6 @@ routerKhach.post('/login', gioiHanDangNhap, kiemTraDuLieu(luatDangNhap), batLoiA
  *       403:
  *         description: Tài khoản đã bị khóa
  */
-routerNhanVien.post('/login', gioiHanDangNhap, kiemTraDuLieu(luatDangNhap), batLoiAsync(xacThucController.xuLyDangNhapNhanVien));
+routerNhanVien.post('/login', gioiHanDangNhapNhanVien, kiemTraDuLieu(luatDangNhap), batLoiAsync(xacThucController.xuLyDangNhapNhanVien));
 
 module.exports = { routerKhach, routerNhanVien };

@@ -1,0 +1,16 @@
+{
+  "name": "booknest-backoffice",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": { "dev": "vite --host 0.0.0.0", "build": "vite build", "preview": "vite preview --host 0.0.0.0" },
+  "dependencies": {
+    "@booknest/shared": "1.0.0",
+    "lucide-react": "^1.55.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.4",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": { "@vitejs/plugin-react": "^6.1.0", "vite": "^8.3.0" }
+}

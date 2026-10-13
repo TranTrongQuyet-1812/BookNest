@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import LogoBookNest from '../../components/LogoBookNest';
 import { 
@@ -8,8 +8,10 @@ import {
   ClipboardList, 
   Users, 
   LogOut, 
-  ArrowUpRight, 
-  Boxes 
+  ArrowUpRight,
+  Boxes,
+  ShoppingCart,
+  History
 } from 'lucide-react';
 
 export const AdminLayout = () => {
@@ -66,6 +68,8 @@ export const AdminLayout = () => {
     if (p.includes('/admin/books')) return laThuThu ? 'Tra Cứu Sách & Tồn Kho' : 'Quản Lý Sách & Thể Loại';
     if (p.includes('/admin/inventory')) return 'Nhập Kho & Tồn Kho';
     if (p.includes('/admin/orders')) return 'Xử Lý Đơn Hàng';
+    if (p.includes('/admin/counter-sales')) return 'Bán Hàng Tại Quầy';
+    if (p.includes('/admin/change-history')) return 'Lịch Sử Thay Đổi';
     if (p.includes('/admin/users')) return 'Quản Lý Nhân Sự & Khách';
     return 'Bảng Điều Hành';
   };
@@ -193,6 +197,16 @@ export const AdminLayout = () => {
               </div>
             )}
 
+            {coQuyenXuLyDon && (
+              <div className="admindash-nav-group">
+                <div className="admindash-group-label">Bán Hàng</div>
+                <NavLink to="/admin/counter-sales" className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}>
+                  <ShoppingCart size={16} />
+                  <span>Bán tại quầy</span>
+                </NavLink>
+              </div>
+            )}
+
             {laQuanTri && (
               <div className="admindash-nav-group">
                 <div className="admindash-group-label">Hệ Thống</div>
@@ -203,6 +217,10 @@ export const AdminLayout = () => {
                   <Users size={16} />
                   <span>Quản Lý Nhân Sự & Khách</span>
                 </NavLink>
+                <NavLink to="/admin/change-history" className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}>
+                  <History size={16} />
+                  <span>Lịch Sử Thay Đổi</span>
+                </NavLink>
               </div>
             )}
           </nav>
@@ -210,14 +228,14 @@ export const AdminLayout = () => {
 
         {/* Khối Tiện Ích Dưới Sidebar */}
         <div style={{ paddingTop: '0.75rem', borderTop: '1px solid var(--adm-sidebar-border)', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-          <Link
-            to="/"
+          <a
+            href={`${import.meta.env.VITE_STOREFRONT_URL || 'http://localhost:3000'}/`}
             className="admindash-nav-link"
             style={{ fontSize: '0.8rem' }}
           >
             <ArrowUpRight size={15} />
             <span>Xem Cửa Hàng Storefront</span>
-          </Link>
+          </a>
 
           <button
             onClick={handleDangXuat}

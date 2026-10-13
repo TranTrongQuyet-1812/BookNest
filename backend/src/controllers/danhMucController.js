@@ -24,7 +24,7 @@ async function xuLyLayChiTiet(req, res) {
 
 // Tạo danh mục mới
 async function xuLyTao(req, res) {
-  const danhMucMoi = await danhMucService.taoDanhMuc(req.body);
+  const danhMucMoi = await danhMucService.taoDanhMuc(req.body, req.user.id);
   return phanHoiThanhCong(res, {
     duLieu: danhMucMoi,
     thongDiep: 'Tạo danh mục mới thành công',
@@ -34,7 +34,7 @@ async function xuLyTao(req, res) {
 
 // Cập nhật danh mục
 async function xuLyCapNhat(req, res) {
-  const danhMuc = await danhMucService.capNhatDanhMuc(req.params.id, req.body);
+  const danhMuc = await danhMucService.capNhatDanhMuc(req.params.id, req.body, req.user.id);
   return phanHoiThanhCong(res, {
     duLieu: danhMuc,
     thongDiep: 'Cập nhật danh mục thành công'
@@ -43,7 +43,7 @@ async function xuLyCapNhat(req, res) {
 
 // Xóa danh mục
 async function xuLyXoa(req, res) {
-  await danhMucService.xoaDanhMuc(req.params.id);
+  await danhMucService.xoaDanhMuc(req.params.id, req.user.id);
   return phanHoiThanhCong(res, {
     thongDiep: 'Xóa danh mục thành công'
   });

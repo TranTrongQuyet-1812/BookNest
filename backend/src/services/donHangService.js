@@ -25,6 +25,44 @@ function kiemTraChuyenTrangThai(trangThaiCu, trangThaiMoi) {
   return Boolean(maTranChuyen[trangThaiCu] && maTranChuyen[trangThaiCu].includes(trangThaiMoi));
 }
 
+// Trừ kho và chốt đơn giá dùng chung cho đơn trực tuyến lẫn đơn tại quầy.
+async function truTonKhoVaChotChiTiet(cacMon, transaction) {
+  let tongTien = 0;
+  const danhSachChiTiet = [];
+  const cacMonSapXep = [...cacMon].sort((a, b) => (a.MaSach ?? a.maSach) - (b.MaSach ?? b.maSach));
+
+  for (const mon of cacMonSapXep) {
+    const maSach = Number(mon.MaSach ?? mon.maSach);
+    const soLuong = Number(mon.SoLuong ?? mon.soLuong);
+    const sach = await Sach.findByPk(maSach, { transaction });
+    if (!sach || sach.DaAn) {
+      throw LoiNghiepVu.xungDot(`Cuốn sách "${sach?.TenSach || maSach}" đã ngừng kinh doanh`);
+    }
+    if (!Number.isInteger(soLuong) || soLuong < 1) {
+      throw LoiNghiepVu.yeuCauKhongHopLe('Số lượng mỗi sách phải là số nguyên dương');
+    }
+
+    const ketQua = await Sach.decrement('SoLuongTon', {
+      by: soLuong,
+      where: { MaSach: maSach, SoLuongTon: { [Op.gte]: soLuong }, DaAn: false },
+      transaction
+    });
+    const [[, soDongCapNhat]] = ketQua;
+    if (soDongCapNhat === 0) {
+      const sachHienTai = await Sach.findByPk(maSach, { transaction });
+      throw LoiNghiepVu.xungDot(
+        `Sách "${sach.TenSach}" không đủ số lượng tồn kho (chỉ còn ${sachHienTai?.SoLuongTon || 0} cuốn)`
+      );
+    }
+
+    const donGia = Number(sach.GiaBan);
+    tongTien += donGia * soLuong;
+    danhSachChiTiet.push({ MaSach: maSach, SoLuong: soLuong, DonGia: donGia });
+  }
+
+  return { tongTien, danhSachChiTiet };
+}
+
 // 1. Đặt hàng trong một Transaction (ACID, chống race condition và bán âm kho)
 async function datHang(maKhachHang, thongTinGiaoHang) {
   const t = await sequelize.transaction();
@@ -44,51 +82,7 @@ async function datHang(maKhachHang, thongTinGiaoHang) {
       throw LoiNghiepVu.yeuCauKhongHopLe('Giỏ hàng đang trống, vui lòng chọn sách trước khi đặt hàng');
     }
 
-    let tongTien = 0;
-    const danhSachChiTiet = [];
-
-    // Sắp xếp các món theo MaSach ASC để chuẩn hóa thứ tự khóa dòng (Row lock ordering), triệt tiêu nguy cơ Deadlock 1205
-    const cacMonSapXep = [...cacMonTrongGio].sort((a, b) => a.MaSach - b.MaSach);
-
-    // Kiểm tra từng cuốn sách và trừ kho bằng câu lệnh UPDATE có điều kiện
-    for (const mon of cacMonSapXep) {
-      const sach = mon.sach;
-      if (!sach || sach.DaAn) {
-        throw LoiNghiepVu.xungDot(`Cuốn sách "${sach ? sach.TenSach : mon.MaSach}" đã ngừng kinh doanh`);
-      }
-
-      // Trừ tồn kho nguyên tử bằng API decrement của Sequelize (SoLuongTon >= SoLuong, DaAn = false)
-      const ketQua = await Sach.decrement('SoLuongTon', {
-        by: mon.SoLuong,
-        where: {
-          MaSach: mon.MaSach,
-          SoLuongTon: { [Op.gte]: mon.SoLuong },
-          DaAn: false
-        },
-        transaction: t
-      });
-
-      // Với MSSQL, Sequelize trả về [[dữ liệu, số dòng bị ảnh hưởng]]
-      const [[, soDongCapNhat]] = ketQua;
-
-      if (soDongCapNhat === 0) {
-        // Đọc lại số lượng tồn kho mới nhất trong DB để báo lỗi chính xác
-        const sachHienTai = await Sach.findByPk(mon.MaSach, { transaction: t });
-        const tonHienTai = sachHienTai ? sachHienTai.SoLuongTon : 0;
-        throw LoiNghiepVu.xungDot(
-          `Sách "${sach.TenSach}" không đủ số lượng tồn kho (chỉ còn ${tonHienTai} cuốn)`
-        );
-      }
-
-      // Đơn giá được chốt từ CSDL phía Server, không tin tưởng giá từ Client
-      const donGia = parseFloat(sach.GiaBan);
-      tongTien += donGia * mon.SoLuong;
-      danhSachChiTiet.push({
-        MaSach: mon.MaSach,
-        SoLuong: mon.SoLuong,
-        DonGia: donGia
-      });
-    }
+    const { tongTien, danhSachChiTiet } = await truTonKhoVaChotChiTiet(cacMonTrongGio, t);
 
     // Tạo đơn hàng mới ở trạng thái chờ duyệt (CHO_DUYET)
     const donHangMoi = await DonHang.create(
@@ -163,48 +157,7 @@ async function datHangKhachVangLai(thongTinDatHang) {
   try {
     // Khách vãng lai không có tài khoản: đơn lưu MaKhachHang = NULL, thông tin giao hàng nằm ngay trên đơn.
     // Hệ thống không lưu hồ sơ khách, lần sau khách phải nhập lại.
-    let tongTien = 0;
-    const danhSachChiTiet = [];
-
-    // Sắp xếp các món theo maSach ASC để triệt tiêu Deadlock 1205
-    const cacMonSapXep = [...cacMon].sort((a, b) => a.maSach - b.maSach);
-
-    for (const mon of cacMonSapXep) {
-      const soLuong = parseInt(mon.soLuong, 10);
-      if (soLuong <= 0) continue;
-
-      // Trừ tồn kho nguyên tử bằng Sequelize decrement
-      const ketQua = await Sach.decrement('SoLuongTon', {
-        by: soLuong,
-        where: {
-          MaSach: mon.maSach,
-          SoLuongTon: { [Op.gte]: soLuong },
-          DaAn: false
-        },
-        transaction: t
-      });
-
-      const [[, soDongCapNhat]] = ketQua;
-
-      if (soDongCapNhat === 0) {
-        const sachHienTai = await Sach.findByPk(mon.maSach, { transaction: t });
-        if (!sachHienTai || sachHienTai.DaAn) {
-          throw LoiNghiepVu.xungDot(`Cuốn sách mã số ${mon.maSach} hiện đã ngừng kinh doanh`);
-        }
-        throw LoiNghiepVu.xungDot(
-          `Sách "${sachHienTai.TenSach}" không đủ số lượng tồn kho (chỉ còn ${sachHienTai.SoLuongTon} cuốn)`
-        );
-      }
-
-      const sachChotGia = await Sach.findByPk(mon.maSach, { transaction: t });
-      const donGia = parseFloat(sachChotGia.GiaBan);
-      tongTien += donGia * soLuong;
-      danhSachChiTiet.push({
-        MaSach: mon.maSach,
-        SoLuong: soLuong,
-        DonGia: donGia
-      });
-    }
+    const { tongTien, danhSachChiTiet } = await truTonKhoVaChotChiTiet(cacMon, t);
 
     // Tạo đơn hàng mới ở trạng thái chờ duyệt (CHO_DUYET)
     const donHangMoi = await DonHang.create(
@@ -251,6 +204,61 @@ async function datHangKhachVangLai(thongTinDatHang) {
   }
 }
 
+// Lập đơn tại quầy; tồn kho, đơn, chi tiết và lịch sử cùng commit hoặc rollback.
+async function taoDonQuay(duLieu, maNhanVien) {
+  const cacMon = duLieu.cacMon || [];
+  if (!cacMon.length) throw LoiNghiepVu.yeuCauKhongHopLe('Vui lòng chọn ít nhất một cuốn sách');
+  const maSachDaChon = cacMon.map(mon => Number(mon.maSach));
+  if (new Set(maSachDaChon).size !== maSachDaChon.length) {
+    throw LoiNghiepVu.yeuCauKhongHopLe('Mỗi cuốn sách chỉ được xuất hiện một lần trong đơn');
+  }
+
+  const t = await sequelize.transaction();
+  try {
+    let maKhachHang = null;
+    if (duLieu.maKhachHang) {
+      const khachHang = await KhachHang.findOne({
+        where: { MaKhachHang: duLieu.maKhachHang, DangHoatDong: true },
+        transaction: t
+      });
+      if (!khachHang) throw LoiNghiepVu.yeuCauKhongHopLe('Khách hàng không tồn tại hoặc đã bị khóa');
+      maKhachHang = khachHang.MaKhachHang;
+    }
+
+    const { tongTien, danhSachChiTiet } = await truTonKhoVaChotChiTiet(cacMon, t);
+    const donHang = await DonHang.create({
+      MaKhachHang: maKhachHang,
+      KenhBan: 'TAI_QUAY',
+      MaNhanVienLap: maNhanVien,
+      TenNguoiNhan: duLieu.tenKhach || null,
+      SoDienThoaiNhan: duLieu.soDienThoaiKhach || null,
+      EmailNhan: null,
+      DiaChiGiaoHang: null,
+      GhiChu: null,
+      TongTien: tongTien,
+      TrangThai: 'DA_GIAO'
+    }, { transaction: t });
+
+    await ChiTietDonHang.bulkCreate(danhSachChiTiet.map(chiTiet => ({
+      ...chiTiet,
+      MaDonHang: donHang.MaDonHang
+    })), { transaction: t });
+    await LichSuTrangThaiDonHang.create({
+      MaDonHang: donHang.MaDonHang,
+      TrangThaiCu: null,
+      TrangThaiMoi: 'DA_GIAO',
+      MaNhanVienThucHien: maNhanVien,
+      GhiChu: 'Bán hàng tại quầy'
+    }, { transaction: t });
+
+    await t.commit();
+    return layChiTietDonHang(donHang.MaDonHang);
+  } catch (loi) {
+    await t.rollback();
+    throw loi;
+  }
+}
+
 // 2. Lấy chi tiết đầy đủ của một đơn hàng kèm chi tiết sách và lịch sử trạng thái
 async function layChiTietDonHang(maDonHang) {
   const donHang = await DonHang.findByPk(maDonHang, {
@@ -273,6 +281,11 @@ async function layChiTietDonHang(maDonHang) {
         model: KhachHang,
         as: 'khachHang',
         attributes: ['MaKhachHang', 'HoTen', 'Email', 'SoDienThoai']
+      },
+      {
+        model: NhanVien,
+        as: 'nhanVienLap',
+        attributes: ['MaNhanVien', 'HoTen', 'VaiTro']
       }
     ]
   });
@@ -382,13 +395,15 @@ async function khachHuyDon(maDonHang, maKhachHang, lyDo) {
 }
 
 // 5. Back-Office: Danh sách toàn bộ đơn hàng của hệ thống
-async function adminLayDanhSachDon({ page = 1, limit = 10, status, tuNgay, denNgay }) {
+async function adminLayDanhSachDon({ page = 1, limit = 10, status, tuNgay, denNgay, kenhBan, maNhanVien, vaiTro }) {
   const trang = Math.max(1, parseInt(page, 10) || 1);
   const gioiHan = Math.min(50, Math.max(1, parseInt(limit, 10) || 10));
   const viTri = (trang - 1) * gioiHan;
 
   const dieuKien = {};
   if (status) dieuKien.TrangThai = status;
+  if (kenhBan) dieuKien.KenhBan = kenhBan;
+  if (vaiTro !== 'quan_tri' && maNhanVien) dieuKien.MaNhanVienLap = maNhanVien;
   if (tuNgay || denNgay) {
     dieuKien.NgayDat = {};
     if (tuNgay) dieuKien.NgayDat[Op.gte] = new Date(tuNgay);
@@ -407,11 +422,18 @@ async function adminLayDanhSachDon({ page = 1, limit = 10, status, tuNgay, denNg
         attributes: ['MaKhachHang', 'HoTen', 'Email', 'SoDienThoai']
       },
       {
+        model: NhanVien,
+        as: 'nhanVienLap',
+        attributes: ['MaNhanVien', 'HoTen', 'VaiTro']
+      },
+      {
         model: ChiTietDonHang,
         as: 'chiTietDonHang',
         include: [{ model: Sach, as: 'sach', attributes: ['MaSach', 'TenSach'] }]
       }
-    ]
+    ],
+    distinct: true,
+    col: 'MaDonHang'
   });
 
   return {
@@ -423,6 +445,20 @@ async function adminLayDanhSachDon({ page = 1, limit = 10, status, tuNgay, denNg
       soBanGhiMoiTrang: gioiHan
     }
   };
+}
+
+// Danh sách quầy luôn lọc đúng kênh; thủ thư chỉ xem đơn do mình lập.
+async function layDanhSachDonQuay(maNhanVien, vaiTro, truyVan) {
+  return adminLayDanhSachDon({ ...truyVan, kenhBan: 'TAI_QUAY', maNhanVien, vaiTro });
+}
+
+async function layChiTietDonQuay(maDonHang, maNhanVien, vaiTro) {
+  const donHang = await layChiTietDonHang(maDonHang);
+  if (donHang.KenhBan !== 'TAI_QUAY') throw LoiNghiepVu.khongTimThay('Không tìm thấy đơn bán tại quầy');
+  if (vaiTro !== 'quan_tri' && donHang.MaNhanVienLap !== maNhanVien) {
+    throw LoiNghiepVu.khongTimThay('Không tìm thấy đơn bán tại quầy');
+  }
+  return donHang;
 }
 
 // 6. Back-Office: Chuyển trạng thái đơn hàng (Optimistic Lock)
@@ -528,7 +564,10 @@ module.exports = {
   kiemTraChuyenTrangThai,
   datHang,
   datHangKhachVangLai,
+  taoDonQuay,
   layChiTietDonHang,
+  layDanhSachDonQuay,
+  layChiTietDonQuay,
   layDanhSachDonKhach,
   khachHuyDon,
   adminLayDanhSachDon,

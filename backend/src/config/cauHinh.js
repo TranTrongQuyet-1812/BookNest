@@ -35,8 +35,9 @@ const cauHinh = {
     biMat: process.env.JWT_SECRET,
     hanDung: process.env.JWT_EXPIRES_IN || '7d'
   },
-  // Nguồn frontend được phép gọi API (CORS), cách nhau bằng dấu phẩy
-  corsNguon: (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map(nguon => nguon.trim()),
+  // Tách nguồn gọi API theo khu; CORS_ORIGIN giữ tương thích với cấu hình cũ.
+  corsStorefront: (process.env.CORS_STOREFRONT_ORIGIN || process.env.CORS_ORIGIN || 'http://localhost:3000').split(',').map(nguon => nguon.trim()),
+  corsBackOffice: (process.env.CORS_BACKOFFICE_ORIGIN || 'http://localhost:5174').split(',').map(nguon => nguon.trim()),
   // Số lớp reverse proxy đứng trước server (0 nếu chạy trực tiếp), dùng để rate limit nhận đúng IP
   soLopProxy: parseInt(process.env.TRUST_PROXY, 10) || 0
 };

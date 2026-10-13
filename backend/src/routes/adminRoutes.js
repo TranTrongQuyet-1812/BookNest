@@ -11,6 +11,7 @@ const batLoiAsync = require('../middlewares/batLoiAsync');
 const xacThucToken = require('../middlewares/xacThucToken');
 const phanQuyen = require('../middlewares/phanQuyen');
 const kiemTraDuLieu = require('../middlewares/kiemTraDuLieu');
+const lichSuQuanTriController = require('../controllers/lichSuQuanTriController');
 
 const router = express.Router();
 
@@ -82,7 +83,31 @@ const luatTruyVanAdminDonHang = Joi.object({
   limit: Joi.number().integer().min(1).max(50).default(10),
   status: Joi.string().valid('CHO_DUYET', 'DA_XAC_NHAN', 'DANG_GIAO', 'DA_GIAO', 'DA_HUY'),
   tuNgay: Joi.date().iso(),
+  denNgay: Joi.date().iso(),
+  kenhBan: Joi.string().valid('TRUC_TUYEN', 'TAI_QUAY')
+});
+
+const luatTaoDonQuay = Joi.object({
+  cacMon: Joi.array().min(1).max(30).items(Joi.object({
+    maSach: Joi.number().integer().positive().required(),
+    soLuong: Joi.number().integer().min(1).required()
+  })).required(),
+  maKhachHang: Joi.number().integer().positive().allow(null),
+  tenKhach: Joi.string().trim().max(100).allow('', null),
+  soDienThoaiKhach: Joi.string().trim().max(15).allow('', null)
+});
+
+const luatTruyVanLichSu = Joi.object({
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(30),
+  loaiDoiTuong: Joi.string().valid('SACH', 'DANH_MUC'),
+  truongDuLieu: Joi.string().max(50),
+  tuNgay: Joi.date().iso(),
   denNgay: Joi.date().iso()
+});
+
+const luatDonDepLichSu = Joi.object({
+  truocNgay: Joi.date().iso().required()
 });
 
 const luatCapNhatTrangThai = Joi.object({
@@ -153,6 +178,39 @@ router.get(
   phanQuyen('quan_tri', 'thu_thu'),
   kiemTraDuLieu(luatTruyVanAdminDonHang, 'query'),
   batLoiAsync(donHangController.xuLyAdminLayDanhSachDon)
+);
+
+/** @swagger
+ * /api/admin/counter-orders:
+ *   post:
+ *     summary: Hoàn tất bán hàng tại quầy (Quản trị viên, Thủ thư)
+ *     tags: [Bán tại quầy]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       201: { description: Đơn quầy đã tạo, trừ kho và lưu lịch sử trong một transaction }
+ *       409: { description: Không đủ tồn kho }
+ */
+router.post(
+  '/counter-orders',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_thu'),
+  kiemTraDuLieu(luatTaoDonQuay),
+  batLoiAsync(donHangController.xuLyTaoDonQuay)
+);
+
+router.get(
+  '/counter-orders',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_thu'),
+  kiemTraDuLieu(luatTruyVanAdminDonHang, 'query'),
+  batLoiAsync(donHangController.xuLyLayDanhSachDonQuay)
+);
+
+router.get(
+  '/counter-orders/:id',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_thu'),
+  batLoiAsync(donHangController.xuLyLayChiTietDonQuay)
 );
 
 /**
@@ -686,6 +744,37 @@ router.get(
   xacThucToken,
   phanQuyen('quan_tri'),
   batLoiAsync(thongKeController.xuLyLayTyLeDon)
+);
+
+router.get(
+  '/stats/inventory',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_kho'),
+  batLoiAsync(thongKeController.xuLyLayBaoCaoKho)
+);
+
+router.get(
+  '/change-history',
+  xacThucToken,
+  phanQuyen('quan_tri'),
+  kiemTraDuLieu(luatTruyVanLichSu, 'query'),
+  batLoiAsync(lichSuQuanTriController.xuLyLayDanhSach)
+);
+
+router.post(
+  '/change-history/cleanup-preview',
+  xacThucToken,
+  phanQuyen('quan_tri'),
+  kiemTraDuLieu(luatDonDepLichSu),
+  batLoiAsync(lichSuQuanTriController.xuLyXemTruocDonDep)
+);
+
+router.post(
+  '/change-history/cleanup',
+  xacThucToken,
+  phanQuyen('quan_tri'),
+  kiemTraDuLieu(luatDonDepLichSu),
+  batLoiAsync(lichSuQuanTriController.xuLyDonDep)
 );
 
 module.exports = router;

@@ -23,7 +23,7 @@ const swaggerSpec = require('./config/swagger');
 
 const app = express();
 
-// Tin cậy reverse proxy (Nginx / Cloudflare) để rate limiting nhận đúng IP của Client
+// Tin cậy reverse proxy để rate limiting nhận đúng IP của Client
 // Chỉ bật khi có proxy thật (TRUST_PROXY trong .env), nếu không client có thể giả header X-Forwarded-For
 app.set('trust proxy', cauHinh.soLopProxy);
 
@@ -40,8 +40,14 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Chỉ cho phép giao diện Storefront và Back-Office (nguồn khai báo trong .env) gọi API chéo domain
-app.use(cors({ origin: cauHinh.corsNguon }));
+// Giới hạn origin theo khu; API vẫn kiểm tra JWT và vai trò cho từng request.
+app.use(cors((req, callback) => {
+  const origin = req.get('Origin');
+  if (!origin) return callback(null, { origin: false });
+  const laBackOffice = req.path.startsWith('/api/admin');
+  const danhSachNguon = laBackOffice ? cauHinh.corsBackOffice : cauHinh.corsStorefront;
+  return callback(null, { origin: danhSachNguon.includes(origin) });
+}));
 
 // Tuyến đường kiểm tra tình trạng dịch vụ gốc (Root Health Check)
 app.get('/', (req, res) => {

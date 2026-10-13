@@ -81,6 +81,22 @@ const luatNhapKho = Joi.object({
   ghiChu: Joi.string().trim().max(500).allow(null, '')
 });
 
+const luatTruyVanSapHetHang = Joi.object({
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(20)
+});
+
+const luatDieuChinhKho = Joi.object({
+  soLuongThayDoi: Joi.number().integer().min(-100000).max(100000).invalid(0).required(),
+  loaiDieuChinh: Joi.string().valid('KIEM_KE', 'HU_HONG', 'THAT_LAC', 'KHAC').required(),
+  lyDo: Joi.string().trim().min(3).max(500).required()
+}).custom((value, helpers) => {
+  if (value.soLuongThayDoi > 0 && !['KIEM_KE', 'KHAC'].includes(value.loaiDieuChinh)) {
+    return helpers.message('Chỉ kiểm kê hoặc lý do khác mới được phép tăng tồn kho');
+  }
+  return value;
+});
+
 /**
  * @swagger
  * /api/books:
@@ -160,8 +176,25 @@ router.get('/', kiemTraDuLieu(luatTruyVanSach, 'query'), batLoiAsync(sachControl
 router.get(
   '/low-stock',
   xacThucToken,
-  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
+  phanQuyen('quan_tri', 'thu_kho'),
+  kiemTraDuLieu(luatTruyVanSapHetHang, 'query'),
   batLoiAsync(sachController.xuLySapHetHang)
+);
+
+router.post(
+  '/:id/stock-adjustment',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_kho'),
+  kiemTraDuLieu(luatDieuChinhKho),
+  batLoiAsync(sachController.xuLyDieuChinhTonKho)
+);
+
+router.get(
+  '/inventory/adjustments',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_kho'),
+  kiemTraDuLieu(luatTruyVanSapHetHang, 'query'),
+  batLoiAsync(sachController.xuLyLayLichSuDieuChinhKho)
 );
 
 /**

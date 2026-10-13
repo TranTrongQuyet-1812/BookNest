@@ -13,6 +13,8 @@ const ChiTietDonHang = require('./ChiTietDonHang');
 const DanhGia = require('./DanhGia');
 const LichSuNhapKho = require('./LichSuNhapKho');
 const LichSuTrangThaiDonHang = require('./LichSuTrangThaiDonHang');
+const LichSuThayDoi = require('./LichSuThayDoi');
+const LichSuDieuChinhKho = require('./LichSuDieuChinhKho');
 
 // ==========================================
 // 1. Quan hệ DanhMuc ↔ Sach (1 - n)
@@ -25,6 +27,8 @@ Sach.belongsTo(DanhMuc, { foreignKey: 'MaDanhMuc', as: 'danhMuc' });
 // ==========================================
 KhachHang.hasMany(DonHang, { foreignKey: 'MaKhachHang', as: 'danhSachDonHang' });
 DonHang.belongsTo(KhachHang, { foreignKey: 'MaKhachHang', as: 'khachHang' });
+NhanVien.hasMany(DonHang, { foreignKey: 'MaNhanVienLap', as: 'donHangLap' });
+DonHang.belongsTo(NhanVien, { foreignKey: 'MaNhanVienLap', as: 'nhanVienLap' });
 
 // ==========================================
 // 3. Quan hệ DonHang ↔ ChiTietDonHang ↔ Sach (n - n)
@@ -80,6 +84,16 @@ LichSuTrangThaiDonHang.belongsTo(KhachHang, { foreignKey: 'MaKhachHangThucHien',
 NhanVien.hasMany(LichSuTrangThaiDonHang, { foreignKey: 'MaNhanVienThucHien', as: 'lichSuCapNhatDon' });
 LichSuTrangThaiDonHang.belongsTo(NhanVien, { foreignKey: 'MaNhanVienThucHien', as: 'nhanVienThucHien' });
 
+// ==========================================
+// 8. Lịch sử thay đổi dữ liệu và điều chỉnh tồn kho
+// ==========================================
+NhanVien.hasMany(LichSuThayDoi, { foreignKey: 'MaNhanVienThayDoi', as: 'lichSuThayDoi' });
+LichSuThayDoi.belongsTo(NhanVien, { foreignKey: 'MaNhanVienThayDoi', as: 'nhanVienThayDoi' });
+Sach.hasMany(LichSuDieuChinhKho, { foreignKey: 'MaSach', as: 'lichSuDieuChinhKho' });
+LichSuDieuChinhKho.belongsTo(Sach, { foreignKey: 'MaSach', as: 'sach' });
+NhanVien.hasMany(LichSuDieuChinhKho, { foreignKey: 'MaNhanVienDieuChinh', as: 'lichSuDieuChinhKho' });
+LichSuDieuChinhKho.belongsTo(NhanVien, { foreignKey: 'MaNhanVienDieuChinh', as: 'nhanVienDieuChinh' });
+
 module.exports = {
   sequelize,
   NhanVien,
@@ -91,5 +105,7 @@ module.exports = {
   ChiTietDonHang,
   DanhGia,
   LichSuNhapKho,
-  LichSuTrangThaiDonHang
+  LichSuTrangThaiDonHang,
+  LichSuThayDoi,
+  LichSuDieuChinhKho
 };

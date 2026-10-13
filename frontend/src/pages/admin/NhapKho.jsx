@@ -12,6 +12,10 @@ import {
 export const NhapKho = () => {
   const [sachSapHet, setSachSapHet] = useState([]);
   const [lichSuNhap, setLichSuNhap] = useState([]);
+  const [lichSuDieuChinh, setLichSuDieuChinh] = useState([]);
+  const [baoCaoKho, setBaoCaoKho] = useState(null);
+  const [phanTrangSapHet, setPhanTrangSapHet] = useState(null);
+  const [trangSapHet, setTrangSapHet] = useState(1);
   const [dangTai, setDangTai] = useState(true);
   const [thongBao, setThongBao] = useState('');
   const [loi, setLoi] = useState('');
@@ -29,19 +33,26 @@ export const NhapKho = () => {
     ghiChu: ''
   });
   const [dangNhapKho, setDangNhapKho] = useState(false);
+  const [formDieuChinh, setFormDieuChinh] = useState({ soLuongThayDoi: -1, loaiDieuChinh: 'HU_HONG', lyDo: '' });
+  const [dangDieuChinh, setDangDieuChinh] = useState(false);
 
   // Tải cảnh báo sắp hết hàng và lịch sử nhập kho gần đây
   useEffect(() => {
     let daHuy = false;
     const nap = async () => {
       try {
-        const [resSapHet, resLichSu] = await Promise.all([
-          api.get('/books/low-stock'),
-          api.get('/books/inventory/history')
+        const [resSapHet, resLichSu, resDieuChinh, resBaoCao] = await Promise.all([
+          api.get('/books/low-stock', { params: { page: trangSapHet, limit: 20 } }),
+          api.get('/books/inventory/history'),
+          api.get('/books/inventory/adjustments', { params: { page: 1, limit: 20 } }),
+          api.get('/admin/stats/inventory')
         ]);
         if (daHuy) return;
-        setSachSapHet(resSapHet.data.data);
+        setSachSapHet(resSapHet.data.data.danhSach);
+        setPhanTrangSapHet(resSapHet.data.data.phanTrang);
         setLichSuNhap(resLichSu.data.data);
+        setLichSuDieuChinh(resDieuChinh.data.data.danhSach);
+        setBaoCaoKho(resBaoCao.data.data);
       } catch (err) {
         if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải dữ liệu nhập kho');
       } finally {
@@ -52,7 +63,7 @@ export const NhapKho = () => {
     return () => {
       daHuy = true;
     };
-  }, [lanTai]);
+  }, [lanTai, trangSapHet]);
 
   // Tìm sách theo từ khóa (đợi 300ms sau lần gõ cuối để không gọi server liên tục)
   useEffect(() => {
@@ -100,6 +111,23 @@ export const NhapKho = () => {
     }
   };
 
+  const handleDieuChinhKho = async (e) => {
+    e.preventDefault();
+    setThongBao('');
+    setLoi('');
+    if (!sachDangChon) return setLoi('Vui lòng chọn cuốn sách cần điều chỉnh.');
+    setDangDieuChinh(true);
+    try {
+      const soLuongThayDoi = Number(formDieuChinh.soLuongThayDoi);
+      await api.post(`/books/${sachDangChon.MaSach}/stock-adjustment`, { ...formDieuChinh, soLuongThayDoi });
+      setThongBao(`Đã điều chỉnh tồn kho của "${sachDangChon.TenSach}".`);
+      setFormDieuChinh({ soLuongThayDoi: -1, loaiDieuChinh: 'HU_HONG', lyDo: '' });
+      setSachDangChon(null);
+      setLanTai(n => n + 1);
+    } catch (err) { setLoi(err.response?.data?.message || 'Điều chỉnh tồn kho thất bại.'); }
+    finally { setDangDieuChinh(false); }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
@@ -124,17 +152,29 @@ export const NhapKho = () => {
         </div>
       )}
 
+      {baoCaoKho && (
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
+          {[
+            ['Đầu sách đang bán', baoCaoKho.tongDauSach],
+            ['Tổng tồn kho', baoCaoKho.tongSoLuongTon],
+            ['Giá trị tồn kho', `${Number(baoCaoKho.giaTriTonKho).toLocaleString('vi-VN')} đ`],
+            ['Sắp hết hàng', baoCaoKho.soSachSapHet],
+            ['Đã hết hàng', baoCaoKho.soSachHetHang]
+          ].map(([nhan, giaTri]) => <div className="card" key={nhan} style={{ padding: '0.85rem 1rem' }}><small style={{ color: 'var(--adm-text-muted)' }}>{nhan}</small><strong style={{ display: 'block', marginTop: '.35rem', fontSize: '1.15rem' }}>{giaTri}</strong></div>)}
+        </div>
+      )}
+
       {/* Cảnh Báo Sách Sắp Hết Hàng */}
       {sachSapHet.length > 0 && (
         <div className="card mb-6" style={{ borderLeft: '3px solid var(--adm-danger)', padding: '1rem 1.25rem' }}>
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle size={18} style={{ color: 'var(--adm-danger)' }} />
             <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--adm-danger)', margin: 0 }}>
-              Cảnh Báo: Có {sachSapHet.length} tác phẩm chạm ngưỡng sắp hết hàng
+              Cảnh Báo: Có {phanTrangSapHet?.tongSoBanGhi ?? sachSapHet.length} tác phẩm chạm ngưỡng sắp hết hàng
             </h3>
           </div>
           <div className="flex flex-wrap gap-1.5 mt-2.5">
-            {sachSapHet.slice(0, 12).map((s) => {
+            {sachSapHet.map((s) => {
               const ma = s.MaSach;
               const ten = s.TenSach;
               const ton = s.SoLuongTon ?? 0;
@@ -150,12 +190,12 @@ export const NhapKho = () => {
                 </span>
               );
             })}
-            {sachSapHet.length > 12 && (
-              <span style={{ fontSize: '0.85rem', color: 'var(--adm-text-muted)', alignSelf: 'center' }}>
-                và {sachSapHet.length - 12} tác phẩm khác...
-              </span>
-            )}
           </div>
+          {phanTrangSapHet?.tongSoTrang > 1 && <div className="flex items-center justify-end gap-2 mt-3">
+            <button className="btn btn-outline" disabled={trangSapHet <= 1} onClick={() => setTrangSapHet(page => page - 1)}>Trước</button>
+            <small style={{ color: 'var(--adm-text-muted)' }}>Trang {trangSapHet}/{phanTrangSapHet.tongSoTrang}</small>
+            <button className="btn btn-outline" disabled={trangSapHet >= phanTrangSapHet.tongSoTrang} onClick={() => setTrangSapHet(page => page + 1)}>Sau</button>
+          </div>}
         </div>
       )}
 
@@ -301,6 +341,26 @@ export const NhapKho = () => {
               </table>
             </div>
           )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        <div className="card" style={{ padding: '1.25rem' }}>
+          <div className="flex items-center gap-2 mb-4"><AlertTriangle size={18} style={{ color: 'var(--adm-warning)' }}/><h3 style={{ margin: 0, fontSize: '1rem' }}>Điều chỉnh tồn kho</h3></div>
+          <form onSubmit={handleDieuChinhKho}>
+            <div className="form-group"><label className="form-label">Sách đã chọn</label><div className="form-input" style={{ minHeight: 40 }}>{sachDangChon ? `#${sachDangChon.MaSach} · ${sachDangChon.TenSach}` : 'Chọn trong ô tìm sách bên trên'}</div></div>
+            <div className="form-group"><label className="form-label">Số lượng thay đổi (+/-)</label><input className="form-input" type="number" step="1" required value={formDieuChinh.soLuongThayDoi} onChange={e => setFormDieuChinh({ ...formDieuChinh, soLuongThayDoi: e.target.value })}/><small style={{ color: 'var(--adm-text-muted)' }}>Tăng kho chỉ dành cho kiểm kê hoặc lý do khác.</small></div>
+            <div className="form-group"><label className="form-label">Loại điều chỉnh</label><select className="form-input" value={formDieuChinh.loaiDieuChinh} onChange={e => setFormDieuChinh({ ...formDieuChinh, loaiDieuChinh: e.target.value })}><option value="KIEM_KE">Kiểm kê</option><option value="HU_HONG">Hư hỏng</option><option value="THAT_LAC">Thất lạc</option><option value="KHAC">Khác</option></select></div>
+            <div className="form-group"><label className="form-label">Lý do *</label><textarea className="form-input" required minLength="3" maxLength="500" value={formDieuChinh.lyDo} onChange={e => setFormDieuChinh({ ...formDieuChinh, lyDo: e.target.value })} placeholder="Ví dụ: kiểm kê cuối tháng"/></div>
+            <button className="btn btn-primary w-full" disabled={dangDieuChinh}>{dangDieuChinh ? 'Đang cập nhật…' : 'Ghi nhận điều chỉnh'}</button>
+          </form>
+        </div>
+        <div className="card lg:col-span-2" style={{ padding: '1.25rem' }}>
+          <div className="flex items-center gap-2 mb-4"><History size={18} style={{ color: 'var(--adm-primary)' }}/><h3 style={{ margin: 0, fontSize: '1rem' }}>Lịch sử điều chỉnh gần đây</h3></div>
+          <div className="admindash-table-wrap"><table className="admindash-table"><thead><tr><th>Ngày</th><th>Sách</th><th>Thay đổi</th><th>Tồn trước → sau</th><th>Lý do · Nhân viên</th></tr></thead><tbody>
+            {lichSuDieuChinh.map(item => <tr key={item.MaDieuChinhKho}><td>{new Date(item.NgayDieuChinh).toLocaleDateString('vi-VN')}</td><td>{item.sach?.TenSach || `#${item.MaSach}`}</td><td style={{ color: item.SoLuongThayDoi > 0 ? 'var(--adm-success)' : 'var(--adm-danger)' }}>{item.SoLuongThayDoi > 0 ? '+' : ''}{item.SoLuongThayDoi}</td><td>{item.TonTruoc} → {item.TonSau}</td><td>{item.LyDo}<small style={{ display: 'block', color: 'var(--adm-text-muted)' }}>{item.nhanVienDieuChinh?.HoTen || 'Nhân viên'}</small></td></tr>)}
+            {!lichSuDieuChinh.length && <tr><td colSpan="5">Chưa có lần điều chỉnh nào.</td></tr>}
+          </tbody></table></div>
         </div>
       </div>
     </div>

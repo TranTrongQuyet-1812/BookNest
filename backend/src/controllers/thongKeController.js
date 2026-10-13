@@ -2,6 +2,7 @@
  * Tầng Controller điều phối các yêu cầu thống kê báo cáo cho Admin.
  */
 const thongKeService = require('../services/thongKeService');
+const sachService = require('../services/sachService');
 const { phanHoiThanhCong } = require('../middlewares/phanHoi');
 
 // Xem tổng quan doanh thu
@@ -31,8 +32,14 @@ async function xuLyLayTyLeDon(req, res) {
   });
 }
 
+async function xuLyLayBaoCaoKho(req, res) {
+  const ketQua = await sachService.layBaoCaoKho();
+  return phanHoiThanhCong(res, { duLieu: ketQua, thongDiep: 'Lấy báo cáo tồn kho thành công' });
+}
+
 module.exports = {
   xuLyLayTongQuan,
   xuLyLayTopSach,
-  xuLyLayTyLeDon
+  xuLyLayTyLeDon,
+  xuLyLayBaoCaoKho
 };
