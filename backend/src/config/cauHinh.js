@@ -55,7 +55,7 @@ const cauHinh = {
   ai: {
     nhaCungCap: process.env.AI_PROVIDER || 'nvidia',
     khoaApi: process.env.AI_API_KEY || '',
-    moHinh: process.env.AI_MODEL || 'meta/llama-3.3-70b-instruct',
+    moHinh: process.env.AI_MODEL || 'meta/llama-3.2-11b-vision-instruct',
     diaChiGoc: process.env.AI_BASE_URL || 'https://integrate.api.nvidia.com/v1',
     daBat: process.env.AI_CHATBOT_BAT !== 'false',
     daCauHinh: Boolean(
