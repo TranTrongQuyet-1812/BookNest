@@ -62,6 +62,22 @@ const cauHinh = {
       process.env.AI_API_KEY &&
       process.env.AI_API_KEY !== 'your_nvidia_nim_api_key_here'
     )
+  },
+  // Dịch vụ gửi Email (SMTP / Nodemailer)
+  email: {
+    mayChu: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    cong: parseInt(process.env.EMAIL_PORT, 10) || 587,
+    baoMat: process.env.EMAIL_SECURE === 'true',
+    nguoiDung: (process.env.EMAIL_USER || '').trim(),
+    matKhau: (process.env.EMAIL_PASS || '').replace(/\s+/g, ''),
+    nguoiGui: process.env.EMAIL_FROM || 'BookNest Bookstore <noreply@booknest.vn>',
+    giaLap: process.env.EMAIL_MOCK === 'true',
+    daCauHinh: Boolean(
+      process.env.EMAIL_USER &&
+      process.env.EMAIL_PASS &&
+      process.env.EMAIL_USER !== 'your_email@gmail.com' &&
+      process.env.EMAIL_MOCK !== 'true'
+    )
   }
 };
 

@@ -7,8 +7,18 @@ const { phanHoiThanhCong } = require('../middlewares/phanHoi');
 // Lấy thông tin hồ sơ của người dùng đang đăng nhập (khách hoặc nhân viên, theo aud của token)
 async function xuLyLayHoSo(req, res) {
   const ketQua = await nguoiDungService.layThongTinHoSo(req.user.aud, req.user.id);
+  const banGhi = ketQua.toJSON ? ketQua.toJSON() : ketQua;
+  const laKhach = req.user.aud === 'khach_hang';
+  const thongTin = {
+    ...banGhi,
+    id: laKhach ? banGhi.MaKhachHang : banGhi.MaNhanVien,
+    email: banGhi.Email,
+    fullName: banGhi.HoTen,
+    role: laKhach ? 'khach_hang' : banGhi.VaiTro,
+    aud: req.user.aud
+  };
   return phanHoiThanhCong(res, {
-    duLieu: ketQua,
+    duLieu: thongTin,
     thongDiep: 'Lấy thông tin hồ sơ thành công'
   });
 }

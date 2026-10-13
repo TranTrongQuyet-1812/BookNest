@@ -12,8 +12,15 @@ import BanHangQuay from './pages/BanHangQuay.jsx';
 import LichSuThayDoi from './pages/LichSuThayDoi.jsx';
 
 function BaoVeNhanVien({ children, vaiTro }) {
-  const { user, daDangNhap } = useAuth();
+  const { user, daDangNhap, loading } = useAuth();
   const location = useLocation();
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'sans-serif', color: '#64748B' }}>
+        Đang nạp dữ liệu nhân viên BookNest...
+      </div>
+    );
+  }
   if (!daDangNhap) return <Navigate to="/admin/login" state={{ from: location }} replace />;
   if (!user?.aud || user.aud !== 'nhan_vien') return <Navigate to="/admin/login" replace />;
   if (vaiTro && !vaiTro.includes(user.role)) return <Navigate to="/admin" replace />;
@@ -21,7 +28,8 @@ function BaoVeNhanVien({ children, vaiTro }) {
 }
 
 function AdminIndexRedirect() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return null;
   if (user?.role === 'quan_tri') return <Navigate to="/admin/dashboard" replace />;
   if (user?.role === 'thu_kho') return <Navigate to="/admin/inventory" replace />;
   if (user?.role === 'thu_thu') return <Navigate to="/admin/counter-sales" replace />;

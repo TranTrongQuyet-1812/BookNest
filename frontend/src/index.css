@@ -49,6 +49,8 @@
   --radius-full: 9999px;
   --navbar-bg: rgba(252, 240, 218, 0.94);
   --price: #B45309;               /* Màu giá tiền trên nền sáng */
+  --link-accent: #92400E;         /* Nâu cam hổ phách đậm (Amber-800) - Tương phản cực cao WCAG AAA trên nền sáng/trắng */
+  --link-accent-hover: #78350F;   /* Nâu hổ phách trầm khi hover */
 
   /* Biến màu Logo BookNest SVG (Đổi màu theo Theme) */
   --logo-vang: #F6C15C;           /* Cánh sách sáng - Vàng hổ phách */
@@ -87,6 +89,8 @@
   --info-light: #18283E;
 
   --price: #F2C46A;               /* Giá tiền màu vàng hổ phách ấm sáng rực rỡ trên nền tối */
+  --link-accent: #FBBF24;         /* Vàng hổ phách sáng ấm áp (Amber-400) - Tương phản cực cao WCAG AAA trên nền tối */
+  --link-accent-hover: #FDE68A;   /* Vàng sáng rực rỡ khi hover */
 
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(243, 244, 244, 0.08);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(243, 244, 244, 0.12);
@@ -309,6 +313,22 @@ textarea::placeholder {
 .btn-icon {
   padding: 0.5rem;
   border-radius: var(--radius-full);
+}
+
+/* Link Quên mật khẩu & Link hành động phụ tương phản cao (Light & Dark) */
+.link-quen-mat-khau {
+  color: var(--link-accent, #92400E);
+  font-size: 0.825rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.18s ease, text-decoration 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+}
+.link-quen-mat-khau:hover {
+  color: var(--link-accent-hover, #78350F);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 /* Forms & Inputs */

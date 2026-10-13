@@ -35,8 +35,44 @@ async function xuLyDangNhapNhanVien(req, res) {
   });
 }
 
+// Xử lý gửi mã OTP quên mật khẩu
+async function xuLyQuenMatKhau(req, res) {
+  const { email } = req.body;
+  const ketQua = await xacThucService.guiOtpQuenMatKhau(email);
+  return phanHoiThanhCong(res, {
+    duLieu: ketQua,
+    thongDiep: ketQua.thongBao,
+    maTrangThai: 200
+  });
+}
+
+// Xử lý kiểm tra mã OTP
+async function xuLyXacMinhOtp(req, res) {
+  const { email, maOtp } = req.body;
+  const ketQua = await xacThucService.xacMinhOtpQuenMatKhau(email, maOtp);
+  return phanHoiThanhCong(res, {
+    duLieu: ketQua,
+    thongDiep: 'Mã xác nhận hợp lệ',
+    maTrangThai: 200
+  });
+}
+
+// Xử lý đặt lại mật khẩu mới
+async function xuLyDatLaiMatKhau(req, res) {
+  const { email, maOtp, matKhauMoi } = req.body;
+  const ketQua = await xacThucService.datLaiMatKhau(email, maOtp, matKhauMoi);
+  return phanHoiThanhCong(res, {
+    duLieu: ketQua,
+    thongDiep: ketQua.thongBao,
+    maTrangThai: 200
+  });
+}
+
 module.exports = {
   xuLyDangKy,
   xuLyDangNhapKhachHang,
-  xuLyDangNhapNhanVien
+  xuLyDangNhapNhanVien,
+  xuLyQuenMatKhau,
+  xuLyXacMinhOtp,
+  xuLyDatLaiMatKhau
 };

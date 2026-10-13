@@ -56,7 +56,8 @@ export const DangKy = () => {
         navigate('/login', { state: location.state });
       }, 1800);
     } catch (err) {
-      setLoi(err.response?.data?.message || 'Đăng ký tài khoản không thành công. Vui lòng kiểm tra lại');
+      const loiChiTiet = err.response?.data?.errors?.[0]?.thongDiep;
+      setLoi(loiChiTiet || err.response?.data?.message || 'Đăng ký tài khoản không thành công. Vui lòng kiểm tra lại');
     } finally {
       setDangXuLy(false);
     }
@@ -240,7 +241,7 @@ export const DangKy = () => {
                     required
                     className="form-input"
                     style={{ paddingRight: '36px', fontSize: '0.9rem' }}
-                    placeholder="Tối thiểu 8 ký tự"
+                    placeholder="Tối thiểu 8 ký tự, có chữ và số"
                     value={form.matKhau}
                     onChange={handleChange}
                   />
@@ -341,7 +342,7 @@ export const DangKy = () => {
                 textAlign: 'center'
               }}
             >
-              {dangXuLy ? 'Đang khởi tạo tài khoản...' : 'Tạo Tài Khoản Bạn Đọc'}
+              {dangXuLy ? 'Đang khởi tạo tài khoản...' : 'Tạo Tài Khoản'}
             </button>
 
             <p style={{

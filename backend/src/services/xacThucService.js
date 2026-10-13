@@ -74,8 +74,128 @@ function dangNhapNhanVien(thongTin) {
   return dangNhapTrenBang(NhanVien, AUD_NHAN_VIEN, thongTin);
 }
 
+// ==========================================
+// Nghiệp vụ Quên Mật Khẩu qua Email OTP
+// ==========================================
+const emailService = require('./emailService');
+const khoLuuOtpQuenMatKhau = new Map();
+
+/**
+ * Gửi mã OTP xác nhận về email khi khách yêu cầu đặt lại mật khẩu
+ */
+async function guiOtpQuenMatKhau(email) {
+  const emailChuanHoa = email.trim().toLowerCase();
+  const khachHang = await KhachHang.findOne({ where: { Email: emailChuanHoa } });
+
+  // Bảo mật chống dò email: Trả về thông báo thành công chung ngay cả khi email không có trong DB
+  if (!khachHang) {
+    return {
+      thanhCong: true,
+      thongBao: 'Nếu địa chỉ email tồn tại trên hệ thống, mã xác nhận đã được gửi thành công.'
+    };
+  }
+
+  if (!khachHang.DangHoatDong) {
+    throw LoiNghiepVu.camTruyCap('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ ban quản trị để được hỗ trợ.');
+  }
+
+  // Chống gửi dồn dập (thời gian giãn cách tối thiểu 60 giây giữa các lần gửi mã)
+  const banGhiCu = khoLuuOtpQuenMatKhau.get(emailChuanHoa);
+  const now = Date.now();
+  if (banGhiCu && now - banGhiCu.taoLuc < 60 * 1000) {
+    const soGiayConLai = Math.ceil((60 * 1000 - (now - banGhiCu.taoLuc)) / 1000);
+    throw LoiNghiepVu.yeuCauKhongHopLe(`Vui lòng chờ ${soGiayConLai} giây trước khi yêu cầu gửi lại mã xác thực.`);
+  }
+
+  // Sinh mã OTP ngẫu nhiên 6 chữ số
+  const maOtp = Math.floor(100000 + Math.random() * 900000).toString();
+  const thoiHanPhut = 15;
+  const hetHanLuc = now + thoiHanPhut * 60 * 1000;
+
+  khoLuuOtpQuenMatKhau.set(emailChuanHoa, {
+    maOtp,
+    taoLuc: now,
+    hetHanLuc,
+    soLanThu: 0
+  });
+
+  // Gửi email bất đồng bộ
+  await emailService.guiEmailMaXacNhan(khachHang.Email, maOtp, thoiHanPhut);
+
+  return {
+    thanhCong: true,
+    thongBao: 'Mã xác nhận 6 chữ số đã được gửi đến email của bạn. Vui lòng kiểm tra hòm thư.'
+  };
+}
+
+/**
+ * Kiểm tra tính hợp lệ của mã OTP
+ */
+async function xacMinhOtpQuenMatKhau(email, maOtp) {
+  const emailChuanHoa = email.trim().toLowerCase();
+  const banGhi = khoLuuOtpQuenMatKhau.get(emailChuanHoa);
+
+  if (!banGhi || Date.now() > banGhi.hetHanLuc) {
+    khoLuuOtpQuenMatKhau.delete(emailChuanHoa);
+    throw LoiNghiepVu.yeuCauKhongHopLe('Mã xác nhận không tồn tại hoặc đã hết hạn. Vui lòng yêu cầu mã mới.');
+  }
+
+  if (banGhi.soLanThu >= 5) {
+    khoLuuOtpQuenMatKhau.delete(emailChuanHoa);
+    throw LoiNghiepVu.yeuCauKhongHopLe('Bạn đã nhập sai mã xác nhận quá 5 lần. Mã này đã bị hủy vì lý do an toàn.');
+  }
+
+  if (banGhi.maOtp !== String(maOtp).trim()) {
+    banGhi.soLanThu += 1;
+    throw LoiNghiepVu.yeuCauKhongHopLe('Mã xác nhận không chính xác. Vui lòng kiểm tra lại.');
+  }
+
+  return { hopLe: true };
+}
+
+/**
+ * Xác thực mã OTP và đặt lại mật khẩu mới cho khách hàng
+ */
+async function datLaiMatKhau(email, maOtp, matKhauMoi) {
+  const emailChuanHoa = email.trim().toLowerCase();
+  
+  // Kiểm tra mã OTP trước khi cập nhật
+  await xacMinhOtpQuenMatKhau(emailChuanHoa, maOtp);
+
+  const khachHang = await KhachHang.findOne({ where: { Email: emailChuanHoa } });
+  if (!khachHang) {
+    throw LoiNghiepVu.khongTimThay('Không tìm thấy tài khoản người dùng.');
+  }
+
+  // Mã hóa mật khẩu mới bằng bcrypt salt rounds = 10
+  const matKhauHash = await bcrypt.hash(matKhauMoi, 10);
+  await khachHang.update({ MatKhauHash: matKhauHash });
+
+  // Hủy mã OTP sau khi đổi mật khẩu thành công
+  khoLuuOtpQuenMatKhau.delete(emailChuanHoa);
+
+  return {
+    thanhCong: true,
+    thongBao: 'Đặt lại mật khẩu thành công! Bạn có thể sử dụng mật khẩu mới để đăng nhập ngay bây giờ.'
+  };
+}
+
+function layOtpChoTest(email) {
+  const banGhi = khoLuuOtpQuenMatKhau.get(email.trim().toLowerCase());
+  return banGhi?.maOtp || null;
+}
+
+function xoaTatCaOtpChoTest() {
+  khoLuuOtpQuenMatKhau.clear();
+}
+
 module.exports = {
   dangKy,
   dangNhapKhachHang,
-  dangNhapNhanVien
+  dangNhapNhanVien,
+  guiOtpQuenMatKhau,
+  xacMinhOtpQuenMatKhau,
+  datLaiMatKhau,
+  layOtpChoTest,
+  xoaTatCaOtpChoTest
 };

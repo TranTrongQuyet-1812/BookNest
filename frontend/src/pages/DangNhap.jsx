@@ -214,6 +214,17 @@ export const DangNhap = ({ choNhanVien = false }) => {
                   {hienMatKhau ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+
+              {!choNhanVien && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                  <Link
+                    to="/forgot-password"
+                    className="link-quen-mat-khau"
+                  >
+                    Quên mật khẩu?
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Nút bấm Submit */}

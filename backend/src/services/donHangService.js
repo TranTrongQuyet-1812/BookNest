@@ -15,6 +15,7 @@ const {
 } = require('../models');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 const { sinhMaTraCuu } = require('../utils/maTraCuu');
+const emailService = require('./emailService');
 
 // Số lần thử sinh mã tra cứu khác khi gặp mã trùng (cực hiếm: hơn 1 tỷ tổ hợp, chỉ mục duy nhất chặn trùng)
 const SO_LAN_THU_SINH_MA = 5;
@@ -152,7 +153,9 @@ async function datHang(maKhachHang, thongTinGiaoHang) {
     }
 
     await t.commit();
-    return layChiTietDonHang(donHangMoi.MaDonHang);
+    const chiTietDon = await layChiTietDonHang(donHangMoi.MaDonHang);
+    emailService.guiEmailHoaDonDonHang(chiTietDon).catch(err => console.error('[Lỗi Gửi Email Hóa Đơn]', err.message));
+    return chiTietDon;
   } catch (loi) {
     await t.rollback();
     throw loi;
@@ -212,7 +215,9 @@ async function datHangKhachVangLai(thongTinDatHang) {
     await t.commit();
 
     // Không cấp token: khách vãng lai không có phiên đăng nhập
-    return layChiTietDonHang(donHangMoi.MaDonHang);
+    const chiTietDon = await layChiTietDonHang(donHangMoi.MaDonHang);
+    emailService.guiEmailHoaDonDonHang(chiTietDon).catch(err => console.error('[Lỗi Gửi Email Hóa Đơn]', err.message));
+    return chiTietDon;
   } catch (loi) {
     await t.rollback();
     throw loi;
@@ -402,7 +407,9 @@ async function khachHuyDon(maDonHang, maKhachHang, lyDo) {
     );
 
     await t.commit();
-    return layChiTietDonHang(maDonHang);
+    const chiTietDon = await layChiTietDonHang(maDonHang);
+    emailService.guiEmailCapNhatTrangThai(chiTietDon, 'DA_HUY', lyDo || 'Khách hàng tự hủy đơn').catch(err => console.error('[Lỗi Gửi Email Hủy Đơn]', err.message));
+    return chiTietDon;
   } catch (loi) {
     await t.rollback();
     throw loi;
@@ -516,7 +523,9 @@ async function adminCapNhatTrangThai(maDonHang, trangThaiMoi, ghiChu, maNhanVien
     );
 
     await t.commit();
-    return layChiTietDonHang(maDonHang);
+    const chiTietDon = await layChiTietDonHang(maDonHang);
+    emailService.guiEmailCapNhatTrangThai(chiTietDon, trangThaiMoi, ghiChu).catch(err => console.error('[Lỗi Gửi Email Cập Nhật]', err.message));
+    return chiTietDon;
   } catch (loi) {
     await t.rollback();
     throw loi;
@@ -568,7 +577,9 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
     );
 
     await t.commit();
-    return layChiTietDonHang(maDonHang);
+    const chiTietDon = await layChiTietDonHang(maDonHang);
+    emailService.guiEmailCapNhatTrangThai(chiTietDon, 'DA_HUY', lyDo).catch(err => console.error('[Lỗi Gửi Email Hủy Đơn]', err.message));
+    return chiTietDon;
   } catch (loi) {
     await t.rollback();
     throw loi;

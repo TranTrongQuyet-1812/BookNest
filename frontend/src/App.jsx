@@ -22,6 +22,7 @@ import HoSo from './pages/HoSo';
 import DangNhap from './pages/DangNhap';
 import DangKy from './pages/DangKy';
 import KhongCoQuyen from './pages/KhongCoQuyen';
+import QuenMatKhau from './pages/QuenMatKhau';
 import DieuKhoanDichVu from './pages/DieuKhoanDichVu';
 import ChinhSachBaoMat from './pages/ChinhSachBaoMat';
 
@@ -83,6 +84,8 @@ const AppContent = () => {
         <Route path="/books/:id" element={<StorefrontLayout><ChiTietSach /></StorefrontLayout>} />
         <Route path="/login" element={<StorefrontLayout><DangNhap /></StorefrontLayout>} />
         <Route path="/register" element={<StorefrontLayout><DangKy /></StorefrontLayout>} />
+        <Route path="/forgot-password" element={<StorefrontLayout><QuenMatKhau /></StorefrontLayout>} />
+        <Route path="/quen-mat-khau" element={<Navigate to="/forgot-password" replace />} />
         <Route path="/unauthorized" element={<StorefrontLayout><KhongCoQuyen /></StorefrontLayout>} />
 
         {/* Tuyến đường Giỏ Hàng và Thanh Toán: Công khai cho cả Khách vãng lai (Guest) và Khách hàng */}

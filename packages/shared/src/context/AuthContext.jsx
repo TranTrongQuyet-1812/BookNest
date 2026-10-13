@@ -4,10 +4,10 @@ import api from '../api.js';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('booknest_user')) || null; } catch { return null; }
-  });
+  // Chỉ lưu thông tin user trong bộ nhớ RAM của React (State), TUYỆT ĐỐI KHÔNG LƯU VÀO LOCALSTORAGE
+  const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem('booknest_token') || null);
+  const [loading, setLoading] = useState(Boolean(localStorage.getItem('booknest_token')));
   const [theme, setTheme] = useState(() => {
     try {
       const value = localStorage.getItem('booknest_theme');
@@ -26,8 +26,57 @@ export const AuthProvider = ({ children }) => {
     } else daKhoiTaoThemeRef.current = true;
   }, [theme]);
 
+  // Luôn nạp dữ liệu người dùng trực tiếp từ CSDL thông qua token, không lưu plain text ở Client
   useEffect(() => {
-    const handleUnauthorized = () => { setUser(null); setToken(null); };
+    let daHuy = false;
+
+    // Xóa ngay tàn dư booknest_user nếu còn lưu trong localStorage từ phiên bản cũ
+    try {
+      localStorage.removeItem('booknest_user');
+    } catch (e) {}
+
+    const napThongTinUserTuDb = async () => {
+      const currentToken = localStorage.getItem('booknest_token');
+      if (!currentToken) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const res = await api.get('/users/profile');
+        if (!daHuy) {
+          const profile = res.data?.data || res.data;
+          setUser(profile);
+        }
+      } catch (err) {
+        // Token không hợp lệ hoặc tài khoản bị khóa trong DB
+        if (!daHuy) {
+          localStorage.removeItem('booknest_token');
+          setToken(null);
+          setUser(null);
+        }
+      } finally {
+        if (!daHuy) {
+          setLoading(false);
+        }
+      }
+    };
+
+    napThongTinUserTuDb();
+
+    return () => {
+      daHuy = true;
+    };
+  }, [token]);
+
+  useEffect(() => {
+    const handleUnauthorized = () => { 
+      setUser(null); 
+      setToken(null); 
+      try { localStorage.removeItem('booknest_user'); } catch (e) {}
+    };
     window.addEventListener('booknest_unauthorized', handleUnauthorized);
     return () => window.removeEventListener('booknest_unauthorized', handleUnauthorized);
   }, []);
@@ -35,8 +84,11 @@ export const AuthProvider = ({ children }) => {
   const dangNhapTaiCong = async (duongDan, email, matKhau) => {
     const res = await api.post(duongDan, { email, matKhau });
     const { token: jwtToken, user: nguoiDung } = res.data.data;
+    
+    // CHỈ LƯU DUY NHẤT TOKEN VÀO LOCALSTORAGE, KHÔNG LƯU THÔNG TIN USER
     localStorage.setItem('booknest_token', jwtToken);
-    localStorage.setItem('booknest_user', JSON.stringify(nguoiDung));
+    try { localStorage.removeItem('booknest_user'); } catch (e) {}
+    
     setToken(jwtToken);
     setUser(nguoiDung);
     return nguoiDung;
@@ -44,19 +96,18 @@ export const AuthProvider = ({ children }) => {
 
   const dangXuat = () => {
     localStorage.removeItem('booknest_token');
-    localStorage.removeItem('booknest_user');
+    try { localStorage.removeItem('booknest_user'); } catch (e) {}
     setUser(null);
     setToken(null);
   };
+
   const capNhatUser = (thongTinMoi) => {
-    const nguoiDungCapNhat = { ...user, ...thongTinMoi };
-    localStorage.setItem('booknest_user', JSON.stringify(nguoiDungCapNhat));
-    setUser(nguoiDungCapNhat);
+    setUser(prev => ({ ...prev, ...thongTinMoi }));
   };
 
   return (
     <AuthContext.Provider value={{
-      user, token, loading: false, theme, toggleTheme: () => setTheme(prev => prev === 'light' ? 'dark' : 'light'),
+      user, token, loading, theme, toggleTheme: () => setTheme(prev => prev === 'light' ? 'dark' : 'light'),
       dangNhap: (email, matKhau) => dangNhapTaiCong('/auth/login', email, matKhau),
       dangNhapNhanVien: (email, matKhau) => dangNhapTaiCong('/admin/auth/login', email, matKhau),
       dangKy: async (duLieu) => (await api.post('/auth/register', duLieu)).data,

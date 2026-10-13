@@ -15,18 +15,30 @@ const [{ defineConfig }, { default: react }] = await Promise.all([
   import(pathToFileURL(timModule('@vitejs/plugin-react')))
 ]);
 
+import fs from 'node:fs';
+
+const timDuongDanModule = (ten) => {
+  const oAdmin = path.join(thuMucDuAn, 'frontend-admin/node_modules', ten);
+  if (fs.existsSync(oAdmin)) return oAdmin;
+  const oStorefront = path.join(thuMucStorefront, 'node_modules', ten);
+  if (fs.existsSync(oStorefront)) return oStorefront;
+  const oRoot = path.join(thuMucDuAn, 'node_modules', ten);
+  if (fs.existsSync(oRoot)) return oRoot;
+  return ten;
+};
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
       '@booknest/shared/api': path.join(thuMucDuAn, 'packages/shared/src/api.js'),
       '@booknest/shared/auth': path.join(thuMucDuAn, 'packages/shared/src/context/AuthContext.jsx'),
-      react: path.join(thuMucStorefront, 'node_modules/react'),
-      'react-dom': path.join(thuMucStorefront, 'node_modules/react-dom'),
-      'react-router-dom': path.join(thuMucStorefront, 'node_modules/react-router-dom'),
-      axios: path.join(thuMucStorefront, 'node_modules/axios'),
-      'lucide-react': path.join(thuMucStorefront, 'node_modules/lucide-react'),
-      zustand: path.join(thuMucStorefront, 'node_modules/zustand')
+      react: timDuongDanModule('react'),
+      'react-dom': timDuongDanModule('react-dom'),
+      'react-router-dom': timDuongDanModule('react-router-dom'),
+      axios: timDuongDanModule('axios'),
+      'lucide-react': timDuongDanModule('lucide-react'),
+      zustand: timDuongDanModule('zustand')
     }
   },
   server: {

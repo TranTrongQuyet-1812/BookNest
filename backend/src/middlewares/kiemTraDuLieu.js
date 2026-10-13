@@ -17,7 +17,10 @@ function kiemTraDuLieu(luatKiemTra, nguon = 'body') {
         thongDiep: chiTiet.message.replace(/['"]/g, '')
       }));
 
-      return next(LoiNghiepVu.yeuCauKhongHopLe('Dữ liệu gửi lên không hợp lệ', danhSachLoi));
+      // Ưu tiên lấy thông điệp lỗi cụ thể của trường đầu tiên (vd: Mật khẩu phải chứa ít nhất một chữ cái và một chữ số)
+      const thongDiepChinh = danhSachLoi[0]?.thongDiep || 'Dữ liệu gửi lên không hợp lệ';
+
+      return next(LoiNghiepVu.yeuCauKhongHopLe(thongDiepChinh, danhSachLoi));
     }
 
     // Gán lại dữ liệu đã qua làm sạch và chuyển kiểu đúng
