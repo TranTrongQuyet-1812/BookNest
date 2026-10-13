@@ -41,10 +41,35 @@ const StorefrontLayout = ({ children }) => {
   );
 };
 
-// Component điều hướng thông minh khi vào /admin
+// Component điều hướng thông minh khi vào /admin (nhớ tab gần nhất nếu có quyền)
 const AdminIndexRedirect = () => {
   const { user } = useAuth();
   if (!user) return <Navigate to="/admin/login" replace />;
+
+  const lastPath = (() => {
+    try {
+      return localStorage.getItem('booknest_last_admin_path');
+    } catch {
+      return null;
+    }
+  })();
+
+  if (lastPath && lastPath.startsWith('/admin')) {
+    const cleanPath = lastPath.split('?')[0];
+    const quyenMap = {
+      '/admin/dashboard': ['quan_tri'],
+      '/admin/books': ['quan_tri', 'thu_kho', 'thu_thu'],
+      '/admin/inventory': ['quan_tri', 'thu_kho'],
+      '/admin/orders': ['quan_tri', 'thu_thu'],
+      '/admin/users': ['quan_tri']
+    };
+    const allowedRoles = quyenMap[cleanPath];
+    if (allowedRoles && allowedRoles.includes(user.role)) {
+      return <Navigate to={lastPath} replace />;
+    }
+  }
+
+  // Fallback mặc định theo vai trò nếu chưa có lịch sử hoặc không đủ quyền
   if (user.role === 'quan_tri') return <Navigate to="/admin/dashboard" replace />;
   if (user.role === 'thu_kho') return <Navigate to="/admin/inventory" replace />;
   if (user.role === 'thu_thu') return <Navigate to="/admin/orders" replace />;

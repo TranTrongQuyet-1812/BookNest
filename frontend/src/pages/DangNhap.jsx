@@ -27,15 +27,30 @@ export const DangNhap = ({ choNhanVien = false }) => {
     setLoi('');
     setDangXuLy(true);
 
+    const laDuongDanNoiBoHopLe = (p) => typeof p === 'string' && p.startsWith('/') && !p.startsWith('//');
+
     try {
       if (choNhanVien) {
         await dangNhapNhanVien(email, matKhau);
-        navigate('/admin');
+        const fromState = location.state?.from;
+        let duongDanAdminCu = '/admin';
+        if (typeof fromState === 'string' && laDuongDanNoiBoHopLe(fromState)) {
+          duongDanAdminCu = fromState;
+        } else if (fromState?.pathname && laDuongDanNoiBoHopLe(fromState.pathname)) {
+          duongDanAdminCu = fromState.pathname + (fromState.search || '') + (fromState.hash || '');
+        }
+        navigate(duongDanAdminCu);
       } else {
         await dangNhap(email, matKhau);
         // Tự động đồng bộ giỏ hàng khách vãng lai lên server nếu có
         await dongBoGioHangGuestLenServer();
-        const duongDanCu = location.state?.from?.pathname || '/';
+        const fromState = location.state?.from;
+        let duongDanCu = '/';
+        if (typeof fromState === 'string' && laDuongDanNoiBoHopLe(fromState)) {
+          duongDanCu = fromState;
+        } else if (fromState?.pathname && laDuongDanNoiBoHopLe(fromState.pathname)) {
+          duongDanCu = fromState.pathname + (fromState.search || '') + (fromState.hash || '');
+        }
         navigate(duongDanCu);
       }
     } catch (err) {
@@ -229,6 +244,7 @@ export const DangNhap = ({ choNhanVien = false }) => {
             {choNhanVien ? 'Bạn là khách hàng?' : 'Bạn chưa có tài khoản?'}{' '}
             <Link 
               to={choNhanVien ? '/login' : '/register'} 
+              state={location.state}
               style={{ 
                 color: 'var(--primary-dark)', 
                 fontWeight: 600,

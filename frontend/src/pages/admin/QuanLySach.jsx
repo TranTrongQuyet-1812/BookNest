@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import PhanTrang from '../../components/PhanTrang';
@@ -20,12 +21,19 @@ export const QuanLySach = () => {
   // Chỉ Quản trị viên và Thủ kho mới được quyền thêm, sửa, đổi giá và ẩn sách
   const coQuyenSuaSach = ['quan_tri', 'thu_kho'].includes(vaiTro);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const trang = parseInt(searchParams.get('page') || '1', 10);
+  const tuKhoaDaLoc = searchParams.get('search') || '';
+  const [timKiem, setTimKiem] = useState(tuKhoaDaLoc);
+
+  // Đồng bộ ô input tìm kiếm khi URL thay đổi (Back/Forward)
+  useEffect(() => {
+    setTimKiem(tuKhoaDaLoc);
+  }, [tuKhoaDaLoc]);
+
   const [sachList, setSachList] = useState([]);
   const [danhMucList, setDanhMucList] = useState([]);
   const [dangTai, setDangTai] = useState(true);
-  const [timKiem, setTimKiem] = useState('');
-  const [tuKhoaDaLoc, setTuKhoaDaLoc] = useState('');
-  const [trang, setTrang] = useState(1);
   const [phanTrang, setPhanTrang] = useState(null);
   // Tăng số này để tải lại dữ liệu sau khi thêm, sửa, ẩn sách hoặc thêm thể loại
   const [lanTai, setLanTai] = useState(0);
@@ -94,8 +102,20 @@ export const QuanLySach = () => {
 
   const handleTimKiem = (e) => {
     e.preventDefault();
-    setTuKhoaDaLoc(timKiem.trim());
-    setTrang(1);
+    const params = new URLSearchParams(searchParams);
+    if (timKiem.trim()) {
+      params.set('search', timKiem.trim());
+    } else {
+      params.delete('search');
+    }
+    params.set('page', '1');
+    setSearchParams(params);
+  };
+
+  const handleChuyenTrang = (trangMoi) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', trangMoi);
+    setSearchParams(params);
   };
 
   // Mở modal thêm sách mới
@@ -363,7 +383,7 @@ export const QuanLySach = () => {
         </div>
       )}
 
-      <PhanTrang phanTrang={phanTrang} onChuyenTrang={setTrang} donVi="cuốn" />
+      <PhanTrang phanTrang={phanTrang} onChuyenTrang={handleChuyenTrang} donVi="cuốn" />
 
       {/* Modal Thêm/Sửa/Xem Sách */}
       {modalSachMo && (

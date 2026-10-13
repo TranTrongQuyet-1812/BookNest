@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import PhanTrang from '../../components/PhanTrang';
@@ -16,14 +17,23 @@ import {
 export const QuanLyNhanSu = () => {
   const { user: adminHienTai } = useAuth();
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const trang = parseInt(searchParams.get('page') || '1', 10);
+  const vaiTroLoc = searchParams.get('role') || '';
+  const tuKhoaDaLoc = searchParams.get('search') || '';
+
   const [nguoiDungList, setNguoiDungList] = useState([]);
   const [dangTai, setDangTai] = useState(true);
-  const [vaiTroLoc, setVaiTroLoc] = useState('');
-  const [timKiem, setTimKiem] = useState('');
-  const [trang, setTrang] = useState(1);
+  const [timKiem, setTimKiem] = useState(tuKhoaDaLoc);
   const [phanTrang, setPhanTrang] = useState(null);
   const [thongBao, setThongBao] = useState('');
   const [loi, setLoi] = useState('');
+  const [lanTai, setLanTai] = useState(0);
+
+  // Đồng bộ ô input tìm kiếm khi URL thay đổi (Back/Forward)
+  useEffect(() => {
+    setTimKiem(tuKhoaDaLoc);
+  }, [tuKhoaDaLoc]);
 
   // Modal tạo nhân sự mới
   const [modalMo, setModalMo] = useState(false);
@@ -40,30 +50,16 @@ export const QuanLyNhanSu = () => {
   const laKhach = vaiTroLoc === 'khach_hang';
   const duongDanDanhSach = laKhach ? '/admin/customers' : '/admin/staff';
 
-  const taiNguoiDung = async (trangCanTai = trang) => {
-    setDangTai(true);
-    try {
-      const params = { page: trangCanTai, limit: 20 };
-      if (vaiTroLoc && !laKhach) params.role = vaiTroLoc;
-      if (timKiem.trim()) params.search = timKiem.trim();
-
-      const res = await api.get(duongDanDanhSach, { params });
-      const ds = res.data.data.danhSach;
-      setNguoiDungList(Array.isArray(ds) ? ds : []);
-      setPhanTrang(res.data.data.phanTrang);
-    } catch (err) {
-      setLoi(err.response?.data?.message || 'Không thể tải danh sách tài khoản');
-    } finally {
-      setDangTai(false);
-    }
-  };
+  const taiLai = () => setLanTai((n) => n + 1);
 
   useEffect(() => {
     let daHuy = false;
     const nap = async () => {
+      setDangTai(true);
       try {
         const params = { page: trang, limit: 20 };
         if (vaiTroLoc && !laKhach) params.role = vaiTroLoc;
+        if (tuKhoaDaLoc) params.search = tuKhoaDaLoc;
 
         const res = await api.get(duongDanDanhSach, { params });
         if (daHuy) return;
@@ -80,12 +76,35 @@ export const QuanLyNhanSu = () => {
     return () => {
       daHuy = true;
     };
-  }, [vaiTroLoc, trang, laKhach, duongDanDanhSach]);
+  }, [vaiTroLoc, trang, laKhach, duongDanDanhSach, tuKhoaDaLoc, lanTai]);
 
   const handleTimKiem = (e) => {
     e.preventDefault();
-    setTrang(1);
-    taiNguoiDung(1);
+    const params = new URLSearchParams(searchParams);
+    if (timKiem.trim()) {
+      params.set('search', timKiem.trim());
+    } else {
+      params.delete('search');
+    }
+    params.set('page', '1');
+    setSearchParams(params);
+  };
+
+  const handleLocVaiTro = (role) => {
+    const params = new URLSearchParams(searchParams);
+    if (role) {
+      params.set('role', role);
+    } else {
+      params.delete('role');
+    }
+    params.set('page', '1');
+    setSearchParams(params);
+  };
+
+  const handleChuyenTrang = (trangMoi) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', trangMoi);
+    setSearchParams(params);
   };
 
   // Khóa hoặc mở khóa tài khoản
@@ -106,7 +125,7 @@ export const QuanLyNhanSu = () => {
       const trangThaiMoi = !dangHoatDong;
       await api.put(`${duongDanDanhSach}/${userId}/status`, { dangHoatDong: trangThaiMoi });
       setThongBao(`Đã ${hanhDong} tài khoản ${email} thành công`);
-      taiNguoiDung();
+      taiLai();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi khi cập nhật trạng thái người dùng');
@@ -134,7 +153,7 @@ export const QuanLyNhanSu = () => {
         vaiTro: 'thu_thu',
         soDienThoai: ''
       });
-      taiNguoiDung();
+      taiLai();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi khi tạo tài khoản nhân sự');
@@ -227,10 +246,7 @@ export const QuanLyNhanSu = () => {
             <select
               className="form-input w-full"
               value={vaiTroLoc}
-              onChange={(e) => {
-                setVaiTroLoc(e.target.value);
-                setTrang(1);
-              }}
+              onChange={(e) => handleLocVaiTro(e.target.value)}
             >
               <option value="">Tất cả nhân viên</option>
               <option value="quan_tri">Quản trị viên</option>
@@ -415,7 +431,7 @@ export const QuanLyNhanSu = () => {
         </div>
       )}
 
-      <PhanTrang phanTrang={phanTrang} onChuyenTrang={setTrang} donVi="tài khoản" />
+      <PhanTrang phanTrang={phanTrang} onChuyenTrang={handleChuyenTrang} donVi="tài khoản" />
     </div>
   );
 };

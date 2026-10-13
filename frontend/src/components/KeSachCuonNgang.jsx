@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -19,6 +19,7 @@ export const KeSachCuonNgang = ({
   onThemVaoGio,
   extraAction
 }) => {
+  const location = useLocation();
   const shelfRef = useRef(null);
   const titleRef = useRef(null);
   const scrollRef = useRef(null);
@@ -269,7 +270,11 @@ export const KeSachCuonNgang = ({
               }}
             >
               {/* Ảnh bìa sách & Tag số tập */}
-              <Link to={`/books/${sach.MaSach}`} style={{ display: 'block', position: 'relative' }}>
+              <Link 
+                to={`/books/${sach.MaSach}`} 
+                state={{ from: location.pathname + location.search }}
+                style={{ display: 'block', position: 'relative' }}
+              >
                 <div style={{
                   width: '100%',
                   aspectRatio: '3 / 4',

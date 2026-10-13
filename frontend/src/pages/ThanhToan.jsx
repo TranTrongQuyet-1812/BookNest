@@ -113,7 +113,7 @@ export const ThanhToan = () => {
         xoaTrangState();
 
         alert('Kính chúc quý độc giả nhiều niềm vui! Đơn hàng của bạn đã được khởi tạo thành công.');
-        navigate(`/orders/${maDonHang}`);
+        navigate(`/orders/${maDonHang}`, { state: { from: '/orders' }, replace: true });
       } else {
         // --- Nhánh Khách vãng lai (Guest Checkout): không tạo tài khoản, không lưu thông tin ---
         const res = await api.post('/orders/guest', {

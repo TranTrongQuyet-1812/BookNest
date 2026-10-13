@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import useCartStore from '../stores/cartStore';
 import api from '../services/api';
@@ -11,6 +11,7 @@ export const Navbar = () => {
   const { user, daDangNhap, dangXuat, theme, toggleTheme } = useAuth();
   const { tongSoLuong, layGioHang, xoaTrangState } = useCartStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const [danhMucList, setDanhMucList] = useState([]);
   const [moDropdown, setMoDropdown] = useState(false);
   const [tuKhoa, setTuKhoa] = useState('');
@@ -532,6 +533,7 @@ export const Navbar = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Link
                 to="/login"
+                state={!['/login', '/register'].includes(location.pathname) ? { from: location } : undefined}
                 style={{
                   padding: '0.45rem 0.85rem',
                   borderRadius: '8px',
@@ -547,6 +549,7 @@ export const Navbar = () => {
               </Link>
               <Link
                 to="/register"
+                state={!['/login', '/register'].includes(location.pathname) ? { from: location } : undefined}
                 style={{
                   padding: '0.45rem 0.95rem',
                   borderRadius: '8px',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import useCartStore from '../stores/cartStore';
@@ -15,8 +15,22 @@ import { giaiMaHtmlEntities } from '../utils/text';
 export const ChiTietSach = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { daDangNhap } = useAuth();
   const { themVaoGio } = useCartStore();
+
+  // Xử lý quay lại đúng trang và bộ lọc trước đó (ví dụ ?categoryId=7&page=2)
+  const handleQuayLai = () => {
+    if (location.state?.from) {
+      navigate(location.state.from);
+      return;
+    }
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate('/');
+  };
 
   const [sach, setSach] = useState(null);
   const [sachCungTheLoai, setSachCungTheLoai] = useState([]);
@@ -182,9 +196,21 @@ export const ChiTietSach = () => {
         }}>
           {loi}
         </div>
-        <Link to="/" style={{ color: 'var(--text-main)', fontWeight: 600, textDecoration: 'underline' }}>
-          &larr; Quay về trang chủ
-        </Link>
+        <button 
+          type="button" 
+          onClick={handleQuayLai} 
+          style={{ 
+            color: 'var(--text-main)', 
+            fontWeight: 600, 
+            textDecoration: 'underline',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '0.95rem'
+          }}
+        >
+          &larr; {location.state?.from ? 'Quay lại danh sách' : 'Trở về trang trước'}
+        </button>
       </div>
     );
   }
@@ -201,8 +227,9 @@ export const ChiTietSach = () => {
     <div className="container" style={{ padding: '2rem 1rem 4rem', maxWidth: '1180px', margin: '0 auto' }}>
       {/* Thanh điều hướng quay về tinh giản */}
       <div style={{ marginBottom: '1.75rem' }}>
-        <Link
-          to="/"
+        <button
+          type="button"
+          onClick={handleQuayLai}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -215,6 +242,7 @@ export const ChiTietSach = () => {
             backgroundColor: 'var(--bg-card)',
             border: '1px solid var(--border)',
             boxShadow: 'var(--shadow-sm)',
+            cursor: 'pointer',
             transition: 'all 0.15s ease'
           }}
           onMouseEnter={(e) => {
@@ -227,8 +255,8 @@ export const ChiTietSach = () => {
           }}
         >
           <span>&larr;</span>
-          <span>Trở về tủ sách</span>
-        </Link>
+          <span>{location.state?.from ? 'Quay lại danh sách' : 'Trở về trang trước'}</span>
+        </button>
       </div>
 
       {/* Thông Báo Thêm Giỏ Hàng Toast Nhẹ */}
@@ -698,6 +726,7 @@ export const ChiTietSach = () => {
                 </p>
                 <Link
                   to="/login"
+                  state={{ from: location.pathname + location.search }}
                   style={{
                     display: 'inline-block',
                     padding: '0.5rem 1.25rem',

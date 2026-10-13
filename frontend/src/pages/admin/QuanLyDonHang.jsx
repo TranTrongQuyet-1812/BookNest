@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import PhanTrang from '../../components/PhanTrang';
 import { 
@@ -15,37 +16,23 @@ import {
 } from 'lucide-react';
 
 export const QuanLyDonHang = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const trang = parseInt(searchParams.get('page') || '1', 10);
+  const trangThaiLoc = searchParams.get('status') || '';
+
   const [donHangList, setDonHangList] = useState([]);
   const [dangTai, setDangTai] = useState(true);
-  const [trangThaiLoc, setTrangThaiLoc] = useState('');
   const [thongBao, setThongBao] = useState('');
   const [loi, setLoi] = useState('');
-  const [trang, setTrang] = useState(1);
   const [phanTrang, setPhanTrang] = useState(null);
+  const [lanTai, setLanTai] = useState(0);
 
-  const taiDonHang = async () => {
-    setDangTai(true);
-    try {
-      const params = {
-        page: trang,
-        limit: 15
-      };
-      if (trangThaiLoc) params.status = trangThaiLoc;
-
-      const res = await api.get('/admin/orders', { params });
-      const ds = res.data.data.danhSach;
-      setDonHangList(Array.isArray(ds) ? ds : []);
-      setPhanTrang(res.data.data.phanTrang);
-    } catch (err) {
-      setLoi(err.response?.data?.message || 'Không thể tải danh sách đơn hàng');
-    } finally {
-      setDangTai(false);
-    }
-  };
+  const taiLai = () => setLanTai((n) => n + 1);
 
   useEffect(() => {
     let daHuy = false;
     const nap = async () => {
+      setDangTai(true);
       try {
         const params = {
           page: trang,
@@ -68,7 +55,24 @@ export const QuanLyDonHang = () => {
     return () => {
       daHuy = true;
     };
-  }, [trang, trangThaiLoc]);
+  }, [trang, trangThaiLoc, lanTai]);
+
+  const handleLocTrangThai = (status) => {
+    const params = new URLSearchParams(searchParams);
+    if (status) {
+      params.set('status', status);
+    } else {
+      params.delete('status');
+    }
+    params.set('page', '1');
+    setSearchParams(params);
+  };
+
+  const handleChuyenTrang = (trangMoi) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', trangMoi);
+    setSearchParams(params);
+  };
 
   // Luân chuyển trạng thái đơn hàng kế tiếp (State Machine)
   const handleChuyenTrangThai = async (maDonHang, trangThaiMoi, tenHanhDong) => {
@@ -77,7 +81,7 @@ export const QuanLyDonHang = () => {
     try {
       await api.put(`/admin/orders/${maDonHang}/status`, { trangThaiMoi });
       setThongBao(`Đã chuyển đơn hàng #${maDonHang} sang trạng thái: ${trangThaiMoi}`);
-      taiDonHang();
+      taiLai();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
       alert(err.response?.data?.message || 'Chuyển trạng thái thất bại');
@@ -96,7 +100,7 @@ export const QuanLyDonHang = () => {
     try {
       await api.put(`/admin/orders/${maDonHang}/cancel`, { lyDo: lyDo.trim() });
       setThongBao(`Đã hủy đơn hàng #${maDonHang} và hoàn lại sách vào kho.`);
-      taiDonHang();
+      taiLai();
       setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
       alert(err.response?.data?.message || 'Không thể hủy đơn hàng này');
@@ -143,10 +147,7 @@ export const QuanLyDonHang = () => {
             className="form-input"
             style={{ width: '170px', padding: '0.4rem 0.65rem', fontSize: '0.825rem' }}
             value={trangThaiLoc}
-            onChange={(e) => {
-              setTrangThaiLoc(e.target.value);
-              setTrang(1);
-            }}
+            onChange={(e) => handleLocTrangThai(e.target.value)}
           >
             <option value="">Tất cả trạng thái</option>
             <option value="CHO_DUYET">Chờ duyệt</option>
@@ -270,7 +271,7 @@ export const QuanLyDonHang = () => {
         </div>
       )}
 
-      <PhanTrang phanTrang={phanTrang} onChuyenTrang={setTrang} donVi="đơn" />
+      <PhanTrang phanTrang={phanTrang} onChuyenTrang={handleChuyenTrang} donVi="đơn" />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import LogoBookNest from '../components/LogoBookNest';
 import { 
@@ -12,6 +12,7 @@ import {
 export const DangKy = () => {
   const { dangKy } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [form, setForm] = useState({
     hoTen: '',
@@ -52,7 +53,7 @@ export const DangKy = () => {
 
       setThanhCong(true);
       setTimeout(() => {
-        navigate('/login');
+        navigate('/login', { state: location.state });
       }, 1800);
     } catch (err) {
       setLoi(err.response?.data?.message || 'Đăng ký tài khoản không thành công. Vui lòng kiểm tra lại');
@@ -354,6 +355,7 @@ export const DangKy = () => {
             Bạn đã có tài khoản BookNest?{' '}
             <Link 
               to="/login" 
+              state={location.state}
               style={{ 
                 color: 'var(--primary-dark)', 
                 fontWeight: 600,

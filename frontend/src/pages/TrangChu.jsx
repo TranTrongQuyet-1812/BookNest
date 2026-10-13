@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState, useEffect, useRef } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import api from '../services/api';
@@ -45,6 +45,7 @@ const DANH_NGON_SACH = [
 
 export const TrangChu = () => {
   const { themVaoGio } = useCartStore();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const heroRef = useRef(null);
   const [giamChuyenDong] = useGiamChuyenDong();
@@ -371,7 +372,11 @@ export const TrangChu = () => {
                   (() => {
                     const sachVip = sachSpotlight || sachVanHoc[0] || sachMoi[0];
                     return (
-                      <Link to={`/books/${sachVip.MaSach}`} style={{ display: 'block' }}>
+                      <Link 
+                        to={`/books/${sachVip.MaSach}`} 
+                        state={{ from: location.pathname + location.search }}
+                        style={{ display: 'block' }}
+                      >
                         <div style={{
                           width: '180px',
                           aspectRatio: '3 / 4',
@@ -608,7 +613,11 @@ export const TrangChu = () => {
                         e.currentTarget.style.boxShadow = 'none';
                       }}
                     >
-                      <Link to={`/books/${sach.MaSach}`} style={{ display: 'block', position: 'relative' }}>
+                      <Link 
+                        to={`/books/${sach.MaSach}`} 
+                        state={{ from: location.pathname + location.search }}
+                        style={{ display: 'block', position: 'relative' }}
+                      >
                         <div style={{
                           width: '100%',
                           aspectRatio: '3 / 4',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { 
   ArrowLeft, 
@@ -17,6 +17,20 @@ import {
 
 export const ChiTietDonHang = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleQuayLai = () => {
+    if (location.state?.from) {
+      navigate(location.state.from);
+      return;
+    }
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate('/orders');
+  };
   const [donHang, setDonHang] = useState(null);
   const [dangTai, setDangTai] = useState(true);
   const [loi, setLoi] = useState('');
@@ -59,9 +73,9 @@ export const ChiTietDonHang = () => {
           <AlertCircle size={18} />
           <span>{loi}</span>
         </div>
-        <Link to="/orders" className="btn btn-outline">
+        <button type="button" onClick={handleQuayLai} className="btn btn-outline">
           <ArrowLeft size={16} /> Quay lại danh sách đơn hàng
-        </Link>
+        </button>
       </div>
     );
   }
@@ -86,9 +100,13 @@ export const ChiTietDonHang = () => {
 
   return (
     <div className="container py-8">
-      <Link to="/orders" className="btn btn-outline btn-sm mb-6 inline-flex items-center gap-1">
-        <ArrowLeft size={16} /> Danh sách đơn hàng của tôi
-      </Link>
+      <button 
+        type="button" 
+        onClick={handleQuayLai} 
+        className="btn btn-outline btn-sm mb-6 inline-flex items-center gap-1"
+      >
+        <ArrowLeft size={16} /> Quay lại danh sách đơn hàng
+      </button>
 
       <div className="flex items-center justify-between flex-wrap gap-2 mb-6">
         <div>

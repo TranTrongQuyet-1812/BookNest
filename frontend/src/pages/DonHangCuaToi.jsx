@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import PhanTrang from '../components/PhanTrang';
 import { 
@@ -14,34 +14,23 @@ import {
 } from 'lucide-react';
 
 export const DonHangCuaToi = () => {
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const trang = parseInt(searchParams.get('page') || '1', 10);
+  const trangThaiLoc = searchParams.get('status') || '';
+
   const [donHangList, setDonHangList] = useState([]);
   const [dangTai, setDangTai] = useState(true);
   const [loi, setLoi] = useState('');
-  const [trangThaiLoc, setTrangThaiLoc] = useState('');
-  const [trang, setTrang] = useState(1);
   const [phanTrang, setPhanTrang] = useState(null);
+  const [lanTai, setLanTai] = useState(0);
 
-  // Tải danh sách đơn hàng của chính mình
-  const taiDonHang = async () => {
-    setDangTai(true);
-    try {
-      const params = { page: trang, limit: 10 };
-      if (trangThaiLoc) params.status = trangThaiLoc;
-
-      const res = await api.get('/orders/my-orders', { params });
-      const ds = res.data.data.danhSach;
-      setDonHangList(Array.isArray(ds) ? ds : []);
-      setPhanTrang(res.data.data.phanTrang);
-    } catch (err) {
-      setLoi(err.response?.data?.message || 'Không thể tải danh sách đơn hàng');
-    } finally {
-      setDangTai(false);
-    }
-  };
+  const taiLai = () => setLanTai((n) => n + 1);
 
   useEffect(() => {
     let daHuy = false;
     const nap = async () => {
+      setDangTai(true);
       try {
         const params = { page: trang, limit: 10 };
         if (trangThaiLoc) params.status = trangThaiLoc;
@@ -61,7 +50,24 @@ export const DonHangCuaToi = () => {
     return () => {
       daHuy = true;
     };
-  }, [trangThaiLoc, trang]);
+  }, [trangThaiLoc, trang, lanTai]);
+
+  const handleLocTrangThai = (status) => {
+    const params = new URLSearchParams(searchParams);
+    if (status) {
+      params.set('status', status);
+    } else {
+      params.delete('status');
+    }
+    params.set('page', '1');
+    setSearchParams(params);
+  };
+
+  const handleChuyenTrang = (trangMoi) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', trangMoi);
+    setSearchParams(params);
+  };
 
   // Hủy đơn hàng CHO_DUYET
   const handleHuyDon = async (maDonHang) => {
@@ -73,7 +79,7 @@ export const DonHangCuaToi = () => {
         lyDo: lyDo.trim() || 'Khách hàng yêu cầu hủy đơn'
       });
       alert('Đã hủy đơn hàng thành công. Số lượng sách đã được hoàn trả lại vào kho.');
-      taiDonHang();
+      taiLai();
     } catch (err) {
       alert(err.response?.data?.message || 'Không thể hủy đơn hàng này');
     }
@@ -119,10 +125,7 @@ export const DonHangCuaToi = () => {
             className="form-input"
             style={{ width: '180px', padding: '0.45rem 0.75rem' }}
             value={trangThaiLoc}
-            onChange={(e) => {
-              setTrangThaiLoc(e.target.value);
-              setTrang(1);
-            }}
+            onChange={(e) => handleLocTrangThai(e.target.value)}
           >
             <option value="">Tất cả trạng thái</option>
             <option value="CHO_DUYET">Chờ duyệt</option>
@@ -212,7 +215,11 @@ export const DonHangCuaToi = () => {
                       Hủy Đơn Hàng
                     </button>
                   )}
-                  <Link to={`/orders/${maDon}`} className="btn btn-primary btn-sm">
+                  <Link 
+                    to={`/orders/${maDon}`} 
+                    state={{ from: location.pathname + location.search }}
+                    className="btn btn-primary btn-sm"
+                  >
                     Xem Chi Tiết <ArrowRight size={14} />
                   </Link>
                 </div>
@@ -222,7 +229,7 @@ export const DonHangCuaToi = () => {
         </div>
       )}
 
-      <PhanTrang phanTrang={phanTrang} onChuyenTrang={setTrang} donVi="đơn" />
+      <PhanTrang phanTrang={phanTrang} onChuyenTrang={handleChuyenTrang} donVi="đơn" />
     </div>
   );
 };

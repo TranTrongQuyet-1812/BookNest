@@ -18,9 +18,26 @@ export const AdminLayout = () => {
   const location = useLocation();
 
   const handleDangXuat = () => {
+    try {
+      localStorage.removeItem('booknest_last_admin_path');
+    } catch (e) {}
     dangXuat();
     navigate('/admin/login');
   };
+
+  // Lưu lại tab admin hiện tại kèm bộ lọc để khôi phục khi truy cập lại /admin
+  React.useEffect(() => {
+    if (
+      location.pathname.startsWith('/admin') &&
+      location.pathname !== '/admin' &&
+      location.pathname !== '/admin/' &&
+      location.pathname !== '/admin/login'
+    ) {
+      try {
+        localStorage.setItem('booknest_last_admin_path', location.pathname + location.search);
+      } catch (e) {}
+    }
+  }, [location.pathname, location.search]);
 
   const vaiTro = user?.role;
   const laQuanTri = vaiTro === 'quan_tri';
