@@ -18,6 +18,7 @@ const sachRoutes = require('./routes/sachRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const gioHangRoutes = require('./routes/gioHangRoutes');
 const donHangRoutes = require('./routes/donHangRoutes');
+const thanhToanRoutes = require('./routes/thanhToanRoutes');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 
@@ -74,6 +75,8 @@ app.use('/api/books', sachRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/cart', gioHangRoutes);
 app.use('/api/orders', donHangRoutes);
+app.use('/api/payments', thanhToanRoutes);
+app.use('/api/payos', thanhToanRoutes);
 
 // Tuyến đường tài liệu Swagger UI (T19)
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

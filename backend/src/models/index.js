@@ -15,6 +15,9 @@ const LichSuNhapKho = require('./LichSuNhapKho');
 const LichSuTrangThaiDonHang = require('./LichSuTrangThaiDonHang');
 const LichSuThayDoi = require('./LichSuThayDoi');
 const LichSuDieuChinhKho = require('./LichSuDieuChinhKho');
+const ThanhToan = require('./ThanhToan');
+const NhatKyWebhookPayos = require('./NhatKyWebhookPayos');
+const CauHinhHeThong = require('./CauHinhHeThong');
 
 // ==========================================
 // 1. Quan hệ DanhMuc ↔ Sach (1 - n)
@@ -94,6 +97,15 @@ LichSuDieuChinhKho.belongsTo(Sach, { foreignKey: 'MaSach', as: 'sach' });
 NhanVien.hasMany(LichSuDieuChinhKho, { foreignKey: 'MaNhanVienDieuChinh', as: 'lichSuDieuChinhKho' });
 LichSuDieuChinhKho.belongsTo(NhanVien, { foreignKey: 'MaNhanVienDieuChinh', as: 'nhanVienDieuChinh' });
 
+// ==========================================
+// 9. Quan hệ DonHang ↔ ThanhToan (1 - 1 hoặc 1 - n)
+// ==========================================
+DonHang.hasOne(ThanhToan, { foreignKey: 'MaDonHang', as: 'thanhToan' });
+ThanhToan.belongsTo(DonHang, { foreignKey: 'MaDonHang', as: 'donHang' });
+
+NhanVien.hasMany(CauHinhHeThong, { foreignKey: 'MaNhanVienCapNhat', as: 'cauHinhCapNhat' });
+CauHinhHeThong.belongsTo(NhanVien, { foreignKey: 'MaNhanVienCapNhat', as: 'nhanVienCapNhat' });
+
 module.exports = {
   sequelize,
   NhanVien,
@@ -107,5 +119,8 @@ module.exports = {
   LichSuNhapKho,
   LichSuTrangThaiDonHang,
   LichSuThayDoi,
-  LichSuDieuChinhKho
+  LichSuDieuChinhKho,
+  ThanhToan,
+  NhatKyWebhookPayos,
+  CauHinhHeThong
 };
