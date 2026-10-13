@@ -13,15 +13,15 @@ import {
   ExternalLink,
   Check,
   Truck,
-  Search,
-  CheckCircle2
+  Search
 } from 'lucide-react';
 import api from '../services/api';
 import useCartStore from '../stores/cartStore';
+import { useAuth } from '../context/AuthContext';
 
 const KEY_CHAT_SESSION = 'booknest_chat_history';
 
-// 4 câu hỏi gợi ý nhanh kèm icon chuyên biệt chuẩn phong cách hiệu sách
+// 4 câu hỏi gợi ý nhanh kèm icon chuyên biệt
 const CAU_HOI_GOI_Y = [
   { text: 'Gợi ý sách văn học kinh điển', icon: Sparkles },
   { text: 'Sách kỹ năng sống bán chạy', icon: BookOpen },
@@ -32,12 +32,13 @@ const CAU_HOI_GOI_Y = [
 export const ChatbotWidget = () => {
   const navigate = useNavigate();
   const { themVaoGio } = useCartStore();
+  const { theme } = useAuth();
+  const laDark = theme === 'dark';
 
   const [moChat, setMoChat] = useState(false);
   const [tinNhanMoi, setTinNhanMoi] = useState('');
   const [dangGui, setDangGui] = useState(false);
   const [daThemGio, setDaThemGio] = useState({});
-  const [thongBaoBadge, setThongBaoBadge] = useState(true);
 
   // Danh sách tin nhắn trong phiên trò chuyện
   const [danhSachTinNhan, setDanhSachTinNhan] = useState(() => {
@@ -80,7 +81,6 @@ export const ChatbotWidget = () => {
   // Focus ô nhập khi mở
   useEffect(() => {
     if (moChat) {
-      setThongBaoBadge(false);
       setTimeout(() => inputRef.current?.focus(), 250);
     }
   }, [moChat]);
@@ -202,70 +202,50 @@ export const ChatbotWidget = () => {
     }
   };
 
+  // Phối màu theo Dark/Light Theme & Vết Mực Loang
+  const mauHeader = laDark 
+    ? 'linear-gradient(135deg, #612D53 0%, #3A1E32 100%)' 
+    : 'linear-gradient(135deg, #4C4541 0%, #352F2D 100%)';
+
+  const mauFab = laDark
+    ? 'linear-gradient(135deg, #9E4463 0%, #612D53 100%)'
+    : 'linear-gradient(135deg, #F6C15C 0%, #D97706 100%)';
+
+  const shadowFab = laDark
+    ? '0 8px 26px rgba(97, 45, 83, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4)'
+    : '0 8px 24px rgba(217, 119, 6, 0.38), 0 2px 6px rgba(76, 69, 65, 0.12)';
+
+  const mauIconChip = laDark ? '#F2C46A' : '#7C2D12'; // Vàng rực trên nền tối, Nâu hổ phách đậm trên nền sáng
+  const bgChip = laDark ? '#3A3238' : '#FFFFFF';
+  const borderChip = laDark ? '#63535F' : '#E8DCC4';
+
   return (
     <>
-      {/* ================= NÚT FLOATING NỔI (FAB) ================= */}
+      {/* ================= NÚT FLOATING NỔI (FAB DUY NHẤT) ================= */}
       <div 
+        className="card-theme-wave"
         style={{
           position: 'fixed',
           bottom: '24px',
           right: '24px',
           zIndex: 9999,
           display: 'flex',
-          alignItems: 'center',
-          gap: '12px'
+          alignItems: 'center'
         }}
       >
-        {/* Bong bóng chào mời thanh nhã */}
-        {!moChat && thongBaoBadge && (
-          <div 
-            onClick={() => setMoChat(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 14px',
-              borderRadius: '9999px',
-              backgroundColor: 'var(--bg-card, #FFFFFF)',
-              color: 'var(--text-main, #4C4541)',
-              fontSize: '0.82rem',
-              fontWeight: 600,
-              boxShadow: '0 4px 16px rgba(76, 69, 65, 0.12)',
-              border: '1px solid var(--border, #E8DCC4)',
-              cursor: 'pointer',
-              userSelect: 'none',
-              transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              whiteSpace: 'nowrap'
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-          >
-            <span 
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: '#10B981',
-                boxShadow: '0 0 6px rgba(16, 185, 129, 0.8)'
-              }} 
-            />
-            <span style={{ letterSpacing: '0.01em' }}>Tư vấn cùng BookNest AI</span>
-          </div>
-        )}
-
-        {/* Nút tròn kích hoạt chính */}
         <button
           onClick={() => setMoChat(!moChat)}
           aria-label={moChat ? 'Đóng trợ lý AI' : 'Mở trợ lý AI BookNest'}
+          className="card-theme-wave"
           style={{
             position: 'relative',
-            width: '56px',
-            height: '56px',
+            width: '58px',
+            height: '58px',
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #F6C15C 0%, #D97706 100%)',
+            background: mauFab,
             color: '#FFFFFF',
-            border: '2px solid rgba(255, 255, 255, 0.7)',
-            boxShadow: '0 8px 24px rgba(217, 119, 6, 0.35), 0 2px 6px rgba(76, 69, 65, 0.1)',
+            border: laDark ? '2px solid rgba(243, 244, 244, 0.4)' : '2px solid rgba(255, 255, 255, 0.75)',
+            boxShadow: shadowFab,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -275,18 +255,16 @@ export const ChatbotWidget = () => {
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'scale(1.08)';
-            e.currentTarget.style.boxShadow = '0 12px 28px rgba(217, 119, 6, 0.48)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'scale(1)';
-            e.currentTarget.style.boxShadow = '0 8px 24px rgba(217, 119, 6, 0.35)';
           }}
         >
           {moChat ? (
-            <X style={{ width: '24px', height: '24px', strokeWidth: 2.2 }} />
+            <X style={{ width: '25px', height: '25px', strokeWidth: 2.3 }} />
           ) : (
             <>
-              <MessageSquare style={{ width: '24px', height: '24px', strokeWidth: 1.9 }} />
+              <MessageSquare style={{ width: '25px', height: '25px', strokeWidth: 2.1 }} />
               <span 
                 style={{
                   position: 'absolute',
@@ -299,10 +277,11 @@ export const ChatbotWidget = () => {
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
                 }}
               >
-                <Sparkles style={{ width: '10px', height: '10px', color: '#FFFFFF', strokeWidth: 2.2 }} />
+                <Sparkles style={{ width: '10px', height: '10px', color: '#FFFFFF', strokeWidth: 2.4 }} />
               </span>
             </>
           )}
@@ -312,6 +291,7 @@ export const ChatbotWidget = () => {
       {/* ================= KHUNG CỬA SỔ TRÒ CHUYỆN ================= */}
       {moChat && (
         <div 
+          className="card-theme-wave"
           style={{
             position: 'fixed',
             bottom: '94px',
@@ -324,7 +304,9 @@ export const ChatbotWidget = () => {
             borderRadius: '16px',
             backgroundColor: 'var(--bg-card, #FFFFFF)',
             border: '1px solid var(--border, #E8DCC4)',
-            boxShadow: '0 18px 48px rgba(76, 69, 65, 0.2), 0 4px 12px rgba(76, 69, 65, 0.08)',
+            boxShadow: laDark 
+              ? '0 20px 50px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(243, 244, 244, 0.12)' 
+              : '0 18px 48px rgba(76, 69, 65, 0.2), 0 4px 12px rgba(76, 69, 65, 0.08)',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
@@ -334,14 +316,15 @@ export const ChatbotWidget = () => {
         >
           {/* Header Cửa Sổ */}
           <div 
+            className="card-theme-wave"
             style={{
               padding: '12px 16px',
-              background: 'linear-gradient(135deg, #4C4541 0%, #352F2D 100%)',
+              background: mauHeader,
               color: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderBottom: '1px solid rgba(0, 0, 0, 0.12)'
+              borderBottom: '1px solid rgba(0, 0, 0, 0.15)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -350,7 +333,7 @@ export const ChatbotWidget = () => {
                   width: '36px',
                   height: '36px',
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #F6C15C, #D97706)',
+                  background: mauFab,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -361,61 +344,61 @@ export const ChatbotWidget = () => {
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, letterSpacing: '-0.01em' }}>BookNest AI</h3>
-                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#10B981' }} />
+                  <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, letterSpacing: '-0.01em', color: '#FFFFFF' }}>BookNest AI</h3>
+                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#10B981', boxShadow: '0 0 6px #10B981' }} />
                 </div>
-                <p style={{ margin: 0, fontSize: '0.72rem', color: '#FDF4E1', opacity: 0.82 }}>Trợ lý tư vấn & hỗ trợ bạn đọc</p>
+                <p style={{ margin: 0, fontSize: '0.72rem', color: '#FDF4E1', opacity: 0.85 }}>Trợ lý tư vấn & hỗ trợ bạn đọc</p>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+            {/* Các nút hành động Header: Nổi bật, tương phản cao */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <button
                 onClick={handleLamMoi}
                 title="Làm mới cuộc trò chuyện"
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#FDF4E1',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  border: '1px solid rgba(255, 255, 255, 0.25)',
+                  color: '#FFFFFF',
                   padding: '6px',
                   borderRadius: '6px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  opacity: 0.85,
-                  transition: 'opacity 0.15s, background-color 0.15s'
+                  transition: 'all 0.15s ease'
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.85'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)'; }}
               >
-                <RotateCcw style={{ width: '15px', height: '15px', strokeWidth: 1.9 }} />
+                <RotateCcw style={{ width: '15px', height: '15px', strokeWidth: 2.2, color: '#FFFFFF' }} />
               </button>
               <button
                 onClick={() => setMoChat(false)}
                 title="Thu nhỏ"
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#FDF4E1',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  border: '1px solid rgba(255, 255, 255, 0.25)',
+                  color: '#FFFFFF',
                   padding: '6px',
                   borderRadius: '6px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  opacity: 0.85,
-                  transition: 'opacity 0.15s, background-color 0.15s'
+                  transition: 'all 0.15s ease'
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.85'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)'; }}
               >
-                <Minus style={{ width: '16px', height: '16px', strokeWidth: 2.2 }} />
+                <Minus style={{ width: '15px', height: '15px', strokeWidth: 2.5, color: '#FFFFFF' }} />
               </button>
             </div>
           </div>
 
           {/* Body Tin Nhắn (Scrollable) */}
           <div 
+            className="card-theme-wave"
             style={{
               flex: 1,
               overflowY: 'auto',
@@ -437,14 +420,17 @@ export const ChatbotWidget = () => {
               >
                 {/* Bong bóng tin nhắn */}
                 <div
+                  className="card-theme-wave"
                   style={{
                     maxWidth: '85%',
                     padding: '10px 14px',
                     borderRadius: msg.role === 'user' ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
-                    backgroundColor: msg.role === 'user' ? 'var(--primary-dark, #4C4541)' : 'var(--bg-card, #FFFFFF)',
+                    backgroundColor: msg.role === 'user' 
+                      ? (laDark ? '#853953' : 'var(--primary-dark, #4C4541)') 
+                      : 'var(--bg-card, #FFFFFF)',
                     color: msg.role === 'user' ? '#FFFFFF' : 'var(--text-main, #4C4541)',
                     border: msg.role === 'user' ? 'none' : '1px solid var(--border, #E8DCC4)',
-                    boxShadow: '0 1px 3px rgba(76, 69, 65, 0.05)',
+                    boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)',
                     fontSize: '0.86rem',
                     lineHeight: 1.55,
                     whiteSpace: 'pre-wrap'
@@ -453,16 +439,17 @@ export const ChatbotWidget = () => {
                   {msg.content}
                 </div>
 
-                {/* Thẻ Sách Gợi Ý Tương Tác (từ tool tim_sach) */}
+                {/* Thẻ Sách Gợi Ý Tương Tác */}
                 {msg.duLieuKemTheo?.danhSachSach && msg.duLieuKemTheo.danhSachSach.length > 0 && (
                   <div style={{ width: '100%', marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <p style={{ margin: '2px 0', fontSize: '0.74rem', fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <BookOpen style={{ width: '13px', height: '13px', color: 'var(--price, #B45309)', strokeWidth: 1.9 }} /> 
+                      <BookOpen style={{ width: '13px', height: '13px', color: 'var(--price, #B45309)', strokeWidth: 2 }} /> 
                       Tác phẩm tìm thấy trong kho sách:
                     </p>
                     {msg.duLieuKemTheo.danhSachSach.map((sach) => (
                       <div
                         key={sach.maSach}
+                        className="card-theme-wave"
                         style={{
                           padding: '10px',
                           borderRadius: '12px',
@@ -472,7 +459,7 @@ export const ChatbotWidget = () => {
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           gap: '10px',
-                          boxShadow: '0 2px 6px rgba(76, 69, 65, 0.04)'
+                          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)'
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
@@ -486,12 +473,12 @@ export const ChatbotWidget = () => {
                                 objectFit: 'cover', 
                                 borderRadius: '4px', 
                                 border: '1px solid var(--border)',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.08)'
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                               }}
                             />
                           ) : (
                             <div style={{ width: '42px', height: '58px', backgroundColor: 'var(--bg-surface)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <BookOpen style={{ width: '18px', height: '18px', color: 'var(--primary)', strokeWidth: 1.8 }} />
+                              <BookOpen style={{ width: '18px', height: '18px', color: 'var(--primary)', strokeWidth: 2 }} />
                             </div>
                           )}
                           <div style={{ minWidth: 0 }}>
@@ -525,7 +512,7 @@ export const ChatbotWidget = () => {
                               alignItems: 'center',
                               justifyContent: 'center',
                               gap: '4px',
-                              padding: '4px 8px',
+                              padding: '5px 8px',
                               fontSize: '0.72rem',
                               fontWeight: 600,
                               borderRadius: '6px',
@@ -535,7 +522,7 @@ export const ChatbotWidget = () => {
                               cursor: 'pointer'
                             }}
                           >
-                            <ExternalLink style={{ width: '11px', height: '11px', strokeWidth: 2 }} /> Xem
+                            <ExternalLink style={{ width: '12px', height: '12px', strokeWidth: 2.2, color: 'var(--text-main)' }} /> Xem
                           </button>
                           <button
                             disabled={!sach.conHang}
@@ -545,12 +532,16 @@ export const ChatbotWidget = () => {
                               alignItems: 'center',
                               justifyContent: 'center',
                               gap: '4px',
-                              padding: '4px 8px',
+                              padding: '5px 8px',
                               fontSize: '0.72rem',
                               fontWeight: 600,
                               borderRadius: '6px',
-                              backgroundColor: daThemGio[sach.maSach] ? '#10B981' : 'var(--primary, #F2C46A)',
-                              color: daThemGio[sach.maSach] ? '#FFFFFF' : 'var(--primary-text, #4C4541)',
+                              backgroundColor: daThemGio[sach.maSach] 
+                                ? '#10B981' 
+                                : (laDark ? '#853953' : 'var(--primary, #F2C46A)'),
+                              color: daThemGio[sach.maSach] 
+                                ? '#FFFFFF' 
+                                : (laDark ? '#FFFFFF' : 'var(--primary-text, #4C4541)'),
                               border: 'none',
                               cursor: sach.conHang ? 'pointer' : 'not-allowed',
                               opacity: sach.conHang ? 1 : 0.5,
@@ -559,11 +550,11 @@ export const ChatbotWidget = () => {
                           >
                             {daThemGio[sach.maSach] ? (
                               <>
-                                <Check style={{ width: '11px', height: '11px', strokeWidth: 2.5 }} /> Đã thêm
+                                <Check style={{ width: '12px', height: '12px', strokeWidth: 2.5 }} /> Đã thêm
                               </>
                             ) : (
                               <>
-                                <ShoppingBag style={{ width: '11px', height: '11px', strokeWidth: 2 }} /> + Giỏ
+                                <ShoppingBag style={{ width: '12px', height: '12px', strokeWidth: 2.2 }} /> + Giỏ
                               </>
                             )}
                           </button>
@@ -573,24 +564,25 @@ export const ChatbotWidget = () => {
                   </div>
                 )}
 
-                {/* Thẻ Bản Nháp Thanh Toán (từ tool soan_thong_tin_thanh_toan) */}
+                {/* Thẻ Bản Nháp Thanh Toán */}
                 {msg.duLieuKemTheo?.thongTinThanhToan && (
                   <div 
+                    className="card-theme-wave"
                     style={{
                       width: '100%',
                       marginTop: '6px',
                       padding: '12px',
                       borderRadius: '12px',
-                      backgroundColor: 'var(--primary-light, #FDF4E1)',
-                      border: '1px dashed var(--primary, #F2C46A)',
-                      boxShadow: '0 2px 8px rgba(217, 119, 6, 0.08)'
+                      backgroundColor: laDark ? '#4A2837' : 'var(--primary-light, #FDF4E1)',
+                      border: laDark ? '1px dashed #853953' : '1px dashed var(--primary, #F2C46A)',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '8px', borderBottom: '1px solid rgba(232, 220, 196, 0.8)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '8px', borderBottom: '1px solid var(--border)' }}>
                       <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <ShoppingBag style={{ width: '14px', height: '14px', color: '#B45309', strokeWidth: 2 }} /> Bản nháp thanh toán
+                        <ShoppingBag style={{ width: '15px', height: '15px', color: laDark ? '#F2C46A' : '#B45309', strokeWidth: 2.2 }} /> Bản nháp thanh toán
                       </span>
-                      <span style={{ fontSize: '0.74rem', fontWeight: 600, color: msg.duLieuKemTheo.thongTinThanhToan.mienPhiShip ? '#10B981' : '#B45309' }}>
+                      <span style={{ fontSize: '0.74rem', fontWeight: 600, color: msg.duLieuKemTheo.thongTinThanhToan.mienPhiShip ? '#10B981' : 'var(--price)' }}>
                         {msg.duLieuKemTheo.thongTinThanhToan.mienPhiShip ? 'Freeship 0đ' : '+25k Phí ship'}
                       </span>
                     </div>
@@ -614,7 +606,7 @@ export const ChatbotWidget = () => {
                         width: '100%',
                         padding: '9px 12px',
                         borderRadius: '8px',
-                        backgroundColor: 'var(--primary-dark, #4C4541)',
+                        backgroundColor: laDark ? '#853953' : 'var(--primary-dark, #4C4541)',
                         color: '#FFFFFF',
                         fontWeight: 600,
                         fontSize: '0.8rem',
@@ -626,17 +618,16 @@ export const ChatbotWidget = () => {
                         gap: '6px',
                         transition: 'background-color 0.15s ease'
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#38322F'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--primary-dark, #4C4541)'; }}
                     >
-                      Mở trang thanh toán điền sẵn <ArrowRight style={{ width: '14px', height: '14px', strokeWidth: 2 }} />
+                      Mở trang thanh toán điền sẵn <ArrowRight style={{ width: '14px', height: '14px', strokeWidth: 2.2 }} />
                     </button>
                   </div>
                 )}
 
-                {/* Thẻ Tra Cứu Đơn Hàng (từ tool tra_cuu_don_hang) */}
+                {/* Thẻ Tra Cứu Đơn Hàng */}
                 {msg.duLieuKemTheo?.thongTinDonHang && (
                   <div 
+                    className="card-theme-wave"
                     style={{
                       width: '100%',
                       marginTop: '6px',
@@ -645,13 +636,13 @@ export const ChatbotWidget = () => {
                       backgroundColor: 'var(--bg-card, #FFFFFF)',
                       border: '1px solid var(--border, #E8DCC4)',
                       fontSize: '0.8rem',
-                      boxShadow: '0 2px 6px rgba(76, 69, 65, 0.04)'
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)'
                     }}
                   >
                     {msg.duLieuKemTheo.thongTinDonHang.maTraCuu ? (
                       <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '6px', borderBottom: '1px solid var(--border)' }}>
-                          <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--price, #B45309)', fontSize: '0.85rem' }}>
+                          <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--price, #B45309)', fontSize: '0.88rem' }}>
                             {msg.duLieuKemTheo.thongTinDonHang.maTraCuu}
                           </span>
                           <span style={{ padding: '2px 8px', borderRadius: '12px', backgroundColor: 'var(--bg-surface)', fontWeight: 600, fontSize: '0.72rem', color: 'var(--text-main)' }}>
@@ -676,6 +667,7 @@ export const ChatbotWidget = () => {
             {/* Hiệu ứng đang tra cứu (Typing indicator) */}
             {dangGui && (
               <div 
+                className="card-theme-wave"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -689,7 +681,7 @@ export const ChatbotWidget = () => {
                   color: 'var(--text-muted)'
                 }}
               >
-                <Sparkles style={{ width: '13px', height: '13px', color: 'var(--primary, #D97706)', strokeWidth: 2 }} />
+                <Sparkles style={{ width: '14px', height: '14px', color: laDark ? '#F2C46A' : '#D97706', strokeWidth: 2.2 }} />
                 <span>BookNest AI đang tra cứu kho sách...</span>
               </div>
             )}
@@ -697,8 +689,9 @@ export const ChatbotWidget = () => {
             <div ref={tinNhanCuoiRef} />
           </div>
 
-          {/* Gợi Ý Nhanh (Quick Chips) với Icon Đồng Bộ */}
+          {/* Gợi Ý Nhanh (Quick Chips): ICON TƯƠNG PHẢN RỰC RỠ, RÕ RÀNG 100% */}
           <div 
+            className="card-theme-wave"
             style={{
               padding: '8px 12px',
               backgroundColor: 'var(--bg-surface, #F5E8CD)',
@@ -716,39 +709,42 @@ export const ChatbotWidget = () => {
                   key={idx}
                   disabled={dangGui}
                   onClick={() => handleGuiTinNhan(item.text)}
+                  className="card-theme-wave"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '5px',
-                    padding: '5px 10px',
+                    gap: '6px',
+                    padding: '5px 11px',
                     borderRadius: '16px',
                     fontSize: '0.72rem',
                     fontWeight: 600,
-                    backgroundColor: 'var(--bg-card, #FFFFFF)',
+                    backgroundColor: bgChip,
                     color: 'var(--text-main, #4C4541)',
-                    border: '1px solid var(--border, #E8DCC4)',
+                    border: `1px solid ${borderChip}`,
                     cursor: 'pointer',
                     flexShrink: 0,
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
                     transition: 'all 0.15s ease'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--primary-light, #FDF4E1)';
-                    e.currentTarget.style.borderColor = 'var(--primary, #F2C46A)';
+                    e.currentTarget.style.backgroundColor = laDark ? '#483E46' : 'var(--primary-light, #FDF4E1)';
+                    e.currentTarget.style.borderColor = laDark ? '#853953' : 'var(--primary, #F2C46A)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--bg-card, #FFFFFF)';
-                    e.currentTarget.style.borderColor = 'var(--border, #E8DCC4)';
+                    e.currentTarget.style.backgroundColor = bgChip;
+                    e.currentTarget.style.borderColor = borderChip;
                   }}
                 >
-                  <IconComponent style={{ width: '12px', height: '12px', color: 'var(--primary, #D97706)', strokeWidth: 2 }} />
+                  <IconComponent style={{ width: '13px', height: '13px', color: mauIconChip, strokeWidth: 2.2 }} />
                   <span>{item.text}</span>
                 </button>
               );
             })}
           </div>
 
-          {/* Footer Input */}
+          {/* Footer Input: Nút Gửi Màu Rực Rỡ & Icon Trắng Sắc Nét */}
           <div 
+            className="card-theme-wave"
             style={{
               padding: '10px 14px',
               backgroundColor: 'var(--bg-card, #FFFFFF)',
@@ -768,6 +764,7 @@ export const ChatbotWidget = () => {
                 onKeyDown={handleKeyPress}
                 placeholder="Hỏi về sách, tồn kho, đơn hàng..."
                 maxLength={500}
+                className="card-theme-wave"
                 style={{
                   flex: 1,
                   padding: '9px 14px',
@@ -780,8 +777,10 @@ export const ChatbotWidget = () => {
                   transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
                 }}
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--primary, #D97706)';
-                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217, 119, 6, 0.15)';
+                  e.currentTarget.style.borderColor = laDark ? '#853953' : 'var(--primary, #D97706)';
+                  e.currentTarget.style.boxShadow = laDark 
+                    ? '0 0 0 2px rgba(133, 57, 83, 0.35)' 
+                    : '0 0 0 2px rgba(217, 119, 6, 0.2)';
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.borderColor = 'var(--border, #E8DCC4)';
@@ -793,10 +792,12 @@ export const ChatbotWidget = () => {
                 disabled={dangGui || !tinNhanMoi.trim()}
                 title="Gửi tin nhắn"
                 style={{
-                  width: '36px',
-                  height: '36px',
+                  width: '38px',
+                  height: '38px',
                   borderRadius: '50%',
-                  backgroundColor: 'var(--primary-dark, #4C4541)',
+                  backgroundColor: laDark 
+                    ? '#853953' 
+                    : 'var(--primary-dark, #4C4541)',
                   color: '#FFFFFF',
                   border: 'none',
                   display: 'flex',
@@ -804,20 +805,21 @@ export const ChatbotWidget = () => {
                   justifyContent: 'center',
                   cursor: (!dangGui && tinNhanMoi.trim()) ? 'pointer' : 'not-allowed',
                   opacity: (!dangGui && tinNhanMoi.trim()) ? 1 : 0.4,
+                  boxShadow: laDark ? '0 2px 8px rgba(133, 57, 83, 0.4)' : '0 2px 6px rgba(76, 69, 65, 0.2)',
                   transition: 'transform 0.15s ease, background-color 0.15s ease'
                 }}
                 onMouseEnter={(e) => {
-                  if (!dangGui && tinNhanMoi.trim()) e.currentTarget.style.transform = 'scale(1.05)';
+                  if (!dangGui && tinNhanMoi.trim()) e.currentTarget.style.transform = 'scale(1.08)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'scale(1)';
                 }}
               >
-                <Send style={{ width: '14px', height: '14px', strokeWidth: 2 }} />
+                <Send style={{ width: '16px', height: '16px', strokeWidth: 2.3, color: '#FFFFFF' }} />
               </button>
             </div>
             <p style={{ margin: '2px 0 0 0', fontSize: '0.65rem', color: 'var(--text-sub)', textAlign: 'center' }}>
-              BookNest AI chỉ tư vấn & soạn nháp. Khách hàng kiểm tra lại thông tin trước khi thanh toán.
+              BookNest AI chỉ tư vấn & soạn nháp. Bạn luôn kiểm tra lại ở bước thanh toán.
             </p>
           </div>
         </div>
