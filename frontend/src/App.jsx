@@ -25,14 +25,13 @@ import KhongCoQuyen from './pages/KhongCoQuyen';
 import DieuKhoanDichVu from './pages/DieuKhoanDichVu';
 import ChinhSachBaoMat from './pages/ChinhSachBaoMat';
 
-// Layout chung cho Storefront (có Navbar, Footer & Trợ lý AI Chatbot)
+// Layout chung cho Storefront (có Navbar & Footer)
 const StorefrontLayout = ({ children }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', position: 'relative', zIndex: 1 }}>
       <Navbar />
       <main style={{ flex: 1 }}>{children}</main>
       <Footer />
-      <ChatbotWidget />
     </div>
   );
 };
@@ -118,6 +117,9 @@ const AppContent = () => {
         {/* Bắt các đường dẫn không tồn tại */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+
+      {/* Trợ lý AI Chatbot nổi toàn Storefront (không hiển thị trong khu BackOffice) */}
+      {!laKhuAdmin && <ChatbotWidget />}
     </>
   );
 };
