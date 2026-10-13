@@ -195,7 +195,19 @@ export const ThanhToan = () => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(soTien || 0);
   };
 
-  const items = cacMon || gioHang?.cacMon || [];
+  // Lấy danh sách món đa tầng: Ưu tiên state Zustand, sau đó fallback trực tiếp vào localStorage
+  const items = (cacMon && cacMon.length > 0)
+    ? cacMon
+    : (gioHang?.cacMon && gioHang.cacMon.length > 0)
+      ? gioHang.cacMon
+      : (() => {
+          try {
+            const raw = localStorage.getItem('booknest_guest_cart');
+            return raw ? JSON.parse(raw) : [];
+          } catch {
+            return [];
+          }
+        })();
 
   if (dangTai) {
     return (

@@ -22,6 +22,20 @@ const luuGuestCart = (cacMon) => {
   }
 };
 
+// Kiểm tra xem phiên hiện tại có phải là khách hàng hợp lệ (Customer) để gọi API Server không
+const laKhachHangHopLe = () => {
+  const token = localStorage.getItem('booknest_token');
+  if (!token) return false;
+  try {
+    const userRaw = localStorage.getItem('booknest_user');
+    if (!userRaw) return false;
+    const user = JSON.parse(userRaw);
+    return user && user.role === 'khach_hang';
+  } catch {
+    return false;
+  }
+};
+
 // Tính toán tổng số lượng và tổng tiền từ danh sách món của khách vãng lai
 const tinhTongGuest = (cacMon) => {
   const tongSoLuong = cacMon.reduce((sum, mon) => sum + (mon.soLuong || 0), 0);
@@ -41,8 +55,8 @@ const tinhTongGuest = (cacMon) => {
 /**
  * useCartStore - Quản lý State giỏ hàng tập trung bằng Zustand
  * Hỗ trợ đồng thời 2 vai trò:
- * 1. Khách vãng lai (Guest - Chưa đăng nhập): Lưu trữ trong Client localStorage (key: booknest_guest_cart).
- * 2. Khách hàng (Customer - Đã đăng nhập): Lưu trữ trên CSDL Server qua REST API.
+ * 1. Khách vãng lai (Guest - Chưa đăng nhập hoặc tài khoản quản trị): Lưu trữ trong Client localStorage (key: booknest_guest_cart).
+ * 2. Khách hàng (Customer - Đã đăng nhập vai trò khach_hang): Lưu trữ trên CSDL Server qua REST API.
  * 3. Đồng bộ (Merge Cart): Khi khách đăng nhập, tự động gom toàn bộ sách từ Guest Cart đẩy lên Server.
  */
 export const useCartStore = create((set, get) => ({
@@ -57,10 +71,8 @@ export const useCartStore = create((set, get) => ({
 
   // 1. Tải giỏ hàng (Tự động nhận diện Guest hay Customer)
   layGioHang: async () => {
-    const token = localStorage.getItem('booknest_token');
-
-    // Chế độ Guest: Đọc trực tiếp từ localStorage
-    if (!token) {
+    // Chế độ Guest hoặc Nhân sự Back-office duyệt trang: Đọc trực tiếp từ localStorage
+    if (!laKhachHangHopLe()) {
       const items = docGuestCart();
       const tong = tinhTongGuest(items);
       set({
@@ -89,42 +101,51 @@ export const useCartStore = create((set, get) => ({
       });
       return data;
     } catch (err) {
-      const msg = err.response?.data?.message || 'Không thể tải giỏ hàng';
-      set({ loi: msg, dangTai: false, daKhoiTao: true });
-      return null;
+      console.warn('Lỗi tải giỏ hàng server, chuyển sang giỏ hàng cục bộ:', err.message);
+      // Fallback về giỏ hàng khách vãng lai thay vì để rỗng
+      const items = docGuestCart();
+      const tong = tinhTongGuest(items);
+      set({
+        ...tong,
+        dangTai: false,
+        daKhoiTao: true,
+        loi: null
+      });
+      return tong.gioHang;
     }
   },
 
   // 2. Thêm sách vào giỏ
   themVaoGio: async (maSach, soLuong = 1, thongTinSach = null) => {
-    const token = localStorage.getItem('booknest_token');
+    const maSachSo = Number(maSach);
+    if (!maSachSo) return { thanhCong: false, thongDiep: 'Mã sách không hợp lệ' };
 
     // --- Chế độ Guest (Lưu Client localStorage) ---
-    if (!token) {
+    if (!laKhachHangHopLe()) {
       try {
         let book = thongTinSach;
         // Nếu chưa có sẵn thông tin sách, gọi API lấy thông tin sách
         if (!book) {
-          const res = await api.get(`/books/${maSach}`);
+          const res = await api.get(`/books/${maSachSo}`);
           book = res.data.data;
         }
 
         const items = docGuestCart();
-        const viTri = items.findIndex(item => item.maSach === maSach);
-        const donGia = book.giaBan ?? book.GiaBan ?? 0;
-        const tonKho = book.soLuongTon ?? book.SoLuongTon ?? 99;
+        const viTri = items.findIndex(item => Number(item.maSach) === maSachSo);
+        const donGia = Number(book.giaBan ?? book.GiaBan ?? 0);
+        const tonKho = Number(book.soLuongTon ?? book.SoLuongTon ?? 99);
 
         if (viTri >= 0) {
           items[viTri].soLuong += soLuong;
           items[viTri].thanhTien = items[viTri].soLuong * donGia;
         } else {
           items.push({
-            maSach,
+            maSach: maSachSo,
             soLuong,
             donGia,
             thanhTien: donGia * soLuong,
             sach: {
-              maSach,
+              maSach: maSachSo,
               tenSach: book.tenSach || book.TenSach || 'Sách BookNest',
               anhBia: book.anhBia || book.AnhBia || null,
               tacGia: book.tacGia || book.TacGia || 'Đang cập nhật',
@@ -146,10 +167,40 @@ export const useCartStore = create((set, get) => ({
 
     // --- Chế độ Customer (Gửi API Server) ---
     try {
-      await api.post('/cart/items', { maSach, soLuong });
+      await api.post('/cart/items', { maSach: maSachSo, soLuong });
       await get().layGioHang();
       return { thanhCong: true };
     } catch (err) {
+      // Nếu server từ chối vì token lỗi hoặc 403, fallback lưu vào localStorage
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        console.warn('Lỗi xác thực giỏ hàng server, thêm dự phòng vào giỏ hàng khách vãng lai:', err.message);
+        const items = docGuestCart();
+        const viTri = items.findIndex(item => Number(item.maSach) === maSachSo);
+        const donGia = Number(thongTinSach?.giaBan ?? thongTinSach?.GiaBan ?? 0);
+        if (viTri >= 0) {
+          items[viTri].soLuong += soLuong;
+          items[viTri].thanhTien = items[viTri].soLuong * donGia;
+        } else {
+          items.push({
+            maSach: maSachSo,
+            soLuong,
+            donGia,
+            thanhTien: donGia * soLuong,
+            sach: {
+              maSach: maSachSo,
+              tenSach: thongTinSach?.tenSach || thongTinSach?.TenSach || 'Sách BookNest',
+              anhBia: thongTinSach?.anhBia || thongTinSach?.AnhBia || null,
+              tacGia: thongTinSach?.tacGia || thongTinSach?.TacGia || 'Đang cập nhật',
+              giaBan: donGia,
+              soLuongTon: 99
+            }
+          });
+        }
+        luuGuestCart(items);
+        const tong = tinhTongGuest(items);
+        set({ ...tong, daKhoiTao: true });
+        return { thanhCong: true };
+      }
       const thongDiep = err.response?.data?.message || 'Lỗi khi thêm sách vào giỏ hàng';
       return { thanhCong: false, thongDiep };
     }
@@ -158,12 +209,12 @@ export const useCartStore = create((set, get) => ({
   // 3. Cập nhật số lượng sách trong giỏ
   capNhatSoLuong: async (maSach, soLuong) => {
     if (soLuong < 1) return { thanhCong: false, thongDiep: 'Số lượng phải từ 1' };
-    const token = localStorage.getItem('booknest_token');
+    const maSachSo = Number(maSach);
 
     // --- Chế độ Guest ---
-    if (!token) {
+    if (!laKhachHangHopLe()) {
       const items = docGuestCart();
-      const viTri = items.findIndex(item => item.maSach === maSach);
+      const viTri = items.findIndex(item => Number(item.maSach) === maSachSo);
       if (viTri >= 0) {
         items[viTri].soLuong = soLuong;
         items[viTri].thanhTien = items[viTri].soLuong * items[viTri].donGia;
@@ -178,7 +229,7 @@ export const useCartStore = create((set, get) => ({
     set({ dangCapNhat: true });
     const cacMonCu = get().cacMon;
     const cacMonMoi = cacMonCu.map(mon => 
-      mon.maSach === maSach ? { ...mon, soLuong, thanhTien: soLuong * (mon.donGia || 0) } : mon
+      Number(mon.maSach) === maSachSo ? { ...mon, soLuong, thanhTien: soLuong * (mon.donGia || 0) } : mon
     );
     const tongTienMoi = cacMonMoi.reduce((sum, mon) => sum + (mon.soLuong * (mon.donGia || 0)), 0);
     const tongSoLuongMoi = cacMonMoi.reduce((sum, mon) => sum + mon.soLuong, 0);
@@ -190,7 +241,7 @@ export const useCartStore = create((set, get) => ({
     });
 
     try {
-      await api.put(`/cart/items/${maSach}`, { soLuong });
+      await api.put(`/cart/items/${maSachSo}`, { soLuong });
       set({ dangCapNhat: false });
       return { thanhCong: true };
     } catch (err) {
@@ -202,11 +253,11 @@ export const useCartStore = create((set, get) => ({
 
   // 4. Xóa một cuốn sách khỏi giỏ
   xoaMon: async (maSach) => {
-    const token = localStorage.getItem('booknest_token');
+    const maSachSo = Number(maSach);
 
     // --- Chế độ Guest ---
-    if (!token) {
-      const items = docGuestCart().filter(item => item.maSach !== maSach);
+    if (!laKhachHangHopLe()) {
+      const items = docGuestCart().filter(item => Number(item.maSach) !== maSachSo);
       luuGuestCart(items);
       const tong = tinhTongGuest(items);
       set(tong);
@@ -215,7 +266,7 @@ export const useCartStore = create((set, get) => ({
 
     // --- Chế độ Customer ---
     try {
-      await api.delete(`/cart/items/${maSach}`);
+      await api.delete(`/cart/items/${maSachSo}`);
       await get().layGioHang();
       return { thanhCong: true };
     } catch (err) {
@@ -226,10 +277,8 @@ export const useCartStore = create((set, get) => ({
 
   // 5. Xóa sạch giỏ hàng
   xoaToanBoGio: async () => {
-    const token = localStorage.getItem('booknest_token');
-
     // --- Chế độ Guest ---
-    if (!token) {
+    if (!laKhachHangHopLe()) {
       localStorage.removeItem(KEY_GUEST_CART);
       set({
         gioHang: null,

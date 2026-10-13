@@ -107,11 +107,12 @@ export const ChiTietSach = () => {
     }
   };
 
-  // Mua ngay (Thêm vào giỏ và chuyển thẳng sang Giỏ hàng)
+  // Mua ngay (Thêm vào giỏ và chuyển thẳng sang Trang thanh toán)
   const handleMuaNgay = async () => {
-    const ketQua = await themVaoGio(sach?.MaSach, soLuong, sach);
+    const ma = sach?.MaSach || sach?.maSach || Number(id);
+    const ketQua = await themVaoGio(ma, soLuong, sach);
     if (ketQua.thanhCong) {
-      navigate('/cart');
+      navigate('/checkout');
     } else {
       setLoi(ketQua.thongDiep || 'Không thể thực hiện mua ngay lúc này');
     }
