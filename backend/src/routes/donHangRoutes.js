@@ -37,6 +37,7 @@ const luatDatHangKhachVangLai = Joi.object({
     'any.required': 'Địa chỉ giao hàng là bắt buộc'
   }),
   ghiChu: Joi.string().trim().max(500).allow(null, ''),
+  phuongThucThanhToan: Joi.string().valid('COD', 'CHUYEN_KHOAN_QR').default('COD'),
   cacMon: Joi.array().items(
     Joi.object({
       maSach: Joi.number().integer().positive().required(),
@@ -131,6 +132,7 @@ const luatDatHang = Joi.object({
     'any.required': 'Địa chỉ giao hàng là bắt buộc'
   }),
   ghiChu: Joi.string().trim().max(500).allow(null, ''),
+  phuongThucThanhToan: Joi.string().valid('COD', 'CHUYEN_KHOAN_QR').default('COD'),
   luuMacDinh: Joi.boolean().default(true)
 });
 

@@ -12,8 +12,12 @@ import {
   MapPin, 
   Phone, 
   User, 
-  BookOpen 
+  BookOpen,
+  QrCode,
+  CreditCard,
+  ShieldCheck
 } from 'lucide-react';
+import { KhungThanhToanVietQR } from '../components/KhungThanhToanVietQR';
 
 export const ChiTietDonHang = () => {
   const { id } = useParams();
@@ -34,6 +38,34 @@ export const ChiTietDonHang = () => {
   const [donHang, setDonHang] = useState(null);
   const [dangTai, setDangTai] = useState(true);
   const [loi, setLoi] = useState('');
+  const [thongTinThanhToan, setThongTinThanhToan] = useState(null);
+  const [hienModalQR, setHienModalQR] = useState(false);
+  const [duLieuQR, setDuLieuQR] = useState(null);
+  const [dangTaoQR, setDangTaoQR] = useState(false);
+
+  const napThongTinThanhToan = async () => {
+    try {
+      const resPay = await api.get(`/payments/order/${id}`);
+      if (resPay.data?.data) {
+        setThongTinThanhToan(resPay.data.data);
+      }
+    } catch (err) {
+      console.warn('Đơn hàng chưa có thông tin thanh toán QR hoặc dùng COD');
+    }
+  };
+
+  const handleMoQRThanhToan = async () => {
+    setDangTaoQR(true);
+    try {
+      const res = await api.post(`/payments/create-qr/${id}`);
+      setDuLieuQR(res.data?.data);
+      setHienModalQR(true);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Không thể tạo mã QR thanh toán lúc này');
+    } finally {
+      setDangTaoQR(false);
+    }
+  };
 
   useEffect(() => {
     let daHuy = false;
@@ -42,6 +74,7 @@ export const ChiTietDonHang = () => {
         const res = await api.get(`/orders/my-orders/${id}`);
         if (daHuy) return;
         setDonHang(res.data.data);
+        napThongTinThanhToan();
       } catch (err) {
         if (!daHuy) setLoi(err.response?.data?.message || 'Không tìm thấy thông tin đơn hàng này (IDOR Protected)');
       } finally {
@@ -290,8 +323,104 @@ export const ChiTietDonHang = () => {
               )}
             </div>
           </div>
+
+          {/* Card Thanh Toán */}
+          <div className="card mt-4" style={{ padding: '1.5rem' }}>
+            <h3 className="font-serif" style={{ fontSize: '1.15rem', fontWeight: 600, marginBottom: '1rem' }}>
+              Phương Thức Thanh Toán
+            </h3>
+
+              <div className="flex flex-col gap-3" style={{ fontSize: '0.9rem' }}>
+                <div className="flex items-start gap-2">
+                  <CreditCard size={16} style={{ color: 'var(--primary)', marginTop: '3px' }} />
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Hình thức:</span>
+                    <div style={{ fontWeight: 600 }}>
+                      {thongTinThanhToan?.phuongThuc === 'CHUYEN_KHOAN_QR' 
+                        ? 'Chuyển khoản VietQR (payOS)' 
+                        : 'Thanh toán tiền mặt khi nhận hàng (COD)'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <ShieldCheck size={16} style={{ color: 'var(--primary)', marginTop: '3px' }} />
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Tình trạng:</span>
+                    <div>
+                      {thongTinThanhToan?.trangThaiThanhToan === 'DA_THANH_TOAN' ? (
+                        <span style={{
+                          display: 'inline-block',
+                          backgroundColor: '#e6f4ea',
+                          color: '#137333',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '4px'
+                        }}>
+                          ✓ Đã thanh toán
+                        </span>
+                      ) : thongTinThanhToan?.phuongThuc === 'CHUYEN_KHOAN_QR' ? (
+                        <span style={{
+                          display: 'inline-block',
+                          backgroundColor: '#fef7e0',
+                          color: '#b06000',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '4px'
+                        }}>
+                          ⏳ Chờ chuyển khoản
+                        </span>
+                      ) : (
+                        <span style={{
+                          display: 'inline-block',
+                          backgroundColor: 'var(--bg-surface)',
+                          color: 'var(--text-muted)',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          padding: '2px 8px',
+                          borderRadius: '4px'
+                        }}>
+                          Thanh toán khi nhận hàng
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Nếu là đơn chuyển khoản và chưa thanh toán, cho phép mở lại mã QR */}
+                {thongTinThanhToan?.phuongThuc === 'CHUYEN_KHOAN_QR' && 
+                 thongTinThanhToan?.trangThaiThanhToan === 'CHO_THANH_TOAN' && 
+                 !['DA_HUY', 'DA_GIAO'].includes(donHang.TrangThai) && (
+                  <button
+                    type="button"
+                    disabled={dangTaoQR}
+                    onClick={handleMoQRThanhToan}
+                    className="btn btn-primary mt-2"
+                    style={{ padding: '0.6rem 1rem', fontSize: '0.85rem', borderRadius: '6px' }}
+                  >
+                    <QrCode size={15} />
+                    {dangTaoQR ? 'Đang tải mã...' : 'Xem Mã QR Thanh Toán'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+
+      {/* Modal / Khung hiển thị thanh toán VietQR payOS */}
+      {hienModalQR && duLieuQR && (
+        <KhungThanhToanVietQR
+          duLieuQR={duLieuQR}
+          onThanhToanThanhCong={() => {
+            setHienModalQR(false);
+            napThongTinThanhToan();
+          }}
+          onDong={() => setHienModalQR(false)}
+          onDoiSangCOD={() => setHienModalQR(false)}
+        />
+      )}
     </div>
   );
 };

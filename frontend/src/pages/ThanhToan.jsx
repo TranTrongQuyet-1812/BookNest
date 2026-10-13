@@ -15,8 +15,11 @@ import {
   Phone, 
   Truck,
   Sparkles,
-  Lock
+  Lock,
+  QrCode,
+  CreditCard
 } from 'lucide-react';
+import { KhungThanhToanVietQR } from '../components/KhungThanhToanVietQR';
 
 export const ThanhToan = () => {
   const navigate = useNavigate();
@@ -28,6 +31,12 @@ export const ThanhToan = () => {
   const [loi, setLoi] = useState('');
   // Đơn vừa đặt của khách vãng lai: khách không có trang xem đơn nên hiện kết quả ngay tại đây
   const [donVuaDat, setDonVuaDat] = useState(null);
+
+  // Phương thức thanh toán: COD hoặc CHUYEN_KHOAN_QR
+  const [phuongThucThanhToan, setPhuongThucThanhToan] = useState('COD');
+  const [congQrKhaDung, setCongQrKhaDung] = useState(true);
+  const [hienModalQR, setHienModalQR] = useState(false);
+  const [duLieuQR, setDuLieuQR] = useState(null);
 
   // Form thông tin nhận hàng
   const [form, setForm] = useState({
@@ -67,6 +76,15 @@ export const ThanhToan = () => {
             console.warn('Không thể nạp hồ sơ người dùng, chuyển sang chế độ điền tay:', errProfile);
           }
         }
+        // Kiểm tra trạng thái khả dụng của cổng thanh toán VietQR payOS
+        try {
+          const resCheck = await api.get('/payments/status-check');
+          if (!daHuy && resCheck.data?.data) {
+            setCongQrKhaDung(!!resCheck.data.data.khaDung);
+          }
+        } catch (errCheck) {
+          console.warn('Không thể kiểm tra cổng QR, dùng mặc định:', errCheck);
+        }
       } catch (errGio) {
         console.error('Lỗi tải giỏ hàng:', errGio);
         if (!daHuy) setLoi('Không thể tải thông tin giỏ hàng');
@@ -104,7 +122,8 @@ export const ThanhToan = () => {
           emailNhan: form.email,
           diaChiGiaoHang: form.diaChiGiaoHang,
           ghiChu: form.ghiChu || undefined,
-          luuMacDinh: form.luuMacDinh
+          luuMacDinh: form.luuMacDinh,
+          phuongThucThanhToan
         });
 
         const maDonHang = res.data.data?.MaDonHang;
@@ -112,7 +131,20 @@ export const ThanhToan = () => {
         // Xóa sạch state giỏ hàng tập trung
         xoaTrangState();
 
-        alert('Kính chúc quý độc giả nhiều niềm vui! Đơn hàng của bạn đã được khởi tạo thành công.');
+        if (phuongThucThanhToan === 'CHUYEN_KHOAN_QR') {
+          try {
+            const resQr = await api.post(`/payments/create-qr/${maDonHang}`);
+            setDuLieuQR(resQr.data.data);
+            setHienModalQR(true);
+            return; // Dừng lại ở modal để khách quét mã QR
+          } catch (errQr) {
+            console.warn('Không thể tạo mã VietQR:', errQr);
+            alert('Cổng thanh toán VietQR payOS hiện đang bảo trì hoặc chưa nạp khóa API. Đơn hàng của bạn đã được lưu với phương thức COD (thanh toán khi nhận hàng)!');
+          }
+        } else {
+          alert('Kính chúc quý độc giả nhiều niềm vui! Đơn hàng của bạn đã được khởi tạo thành công.');
+        }
+
         navigate(`/orders/${maDonHang}`, { state: { from: '/orders' }, replace: true });
       } else {
         // --- Nhánh Khách vãng lai (Guest Checkout): không tạo tài khoản, không lưu thông tin ---
@@ -122,6 +154,7 @@ export const ThanhToan = () => {
           emailNhan: form.email,
           diaChiGiaoHang: form.diaChiGiaoHang,
           ghiChu: form.ghiChu || undefined,
+          phuongThucThanhToan,
           cacMon: danhSachMon.map(mon => ({
             maSach: mon.maSach,
             soLuong: mon.soLuong
@@ -132,6 +165,19 @@ export const ThanhToan = () => {
         localStorage.removeItem('booknest_guest_cart');
         xoaTrangState();
         setDonVuaDat(res.data.data);
+
+        const maDonHang = res.data.data?.MaDonHang;
+        if (phuongThucThanhToan === 'CHUYEN_KHOAN_QR' && maDonHang) {
+          try {
+            const resQr = await api.post(`/payments/create-qr/${maDonHang}`);
+            setDuLieuQR(resQr.data.data);
+            setHienModalQR(true);
+            return; // Dừng lại ở modal để khách quét mã QR
+          } catch (errQr) {
+            console.warn('Không thể tạo mã VietQR cho khách vãng lai:', errQr);
+            alert('Cổng thanh toán VietQR payOS hiện chưa kích hoạt khóa API. Đơn hàng của bạn đã được lưu với phương thức COD!');
+          }
+        }
       }
     } catch (err) {
       const msg = err.response?.data?.message || 'Đặt hàng thất bại. Vui lòng kiểm tra lại thông tin nhận hàng';
@@ -429,27 +475,88 @@ export const ThanhToan = () => {
                 </div>
               )}
 
-              {/* Thông tin phương thức thanh toán */}
-              <div style={{
-                marginTop: '1.5rem',
-                padding: '1.15rem',
-                backgroundColor: 'var(--bg-surface)',
-                borderRadius: '8px',
-                border: '1px solid var(--border)',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px',
-                fontSize: '0.85rem',
-                color: 'var(--text-muted)'
-              }}>
-                <ShieldCheck size={22} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: '2px' }} />
-                <div>
-                  <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '3px' }}>
-                    Phương thức thanh toán: Nhận hàng rồi mới thanh toán (COD)
-                  </div>
-                  <span>
-                    Bạn được toàn quyền đồng kiểm tra ngoại quan sách nguyên vẹn từ nhân viên giao hàng của BookNest trước khi thanh toán tiền mặt.
-                  </span>
+              {/* Lựa chọn Phương thức Thanh toán */}
+              <div style={{ marginTop: '1.75rem' }}>
+                <label className="form-label" style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', display: 'block' }}>
+                  Phương Thức Thanh Toán <span style={{ color: 'var(--danger)' }}>*</span>
+                </label>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+                  {/* Tùy chọn 1: COD */}
+                  <label style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px',
+                    padding: '1rem',
+                    borderRadius: '10px',
+                    border: `2px solid ${phuongThucThanhToan === 'COD' ? 'var(--primary)' : 'var(--border)'}`,
+                    backgroundColor: phuongThucThanhToan === 'COD' ? 'rgba(139, 69, 19, 0.04)' : 'var(--bg-surface)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}>
+                    <input
+                      type="radio"
+                      name="phuongThucThanhToan"
+                      value="COD"
+                      checked={phuongThucThanhToan === 'COD'}
+                      onChange={() => setPhuongThucThanhToan('COD')}
+                      style={{ marginTop: '3px', accentColor: 'var(--primary)', cursor: 'pointer' }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div className="flex items-center gap-1.5" style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.9rem', marginBottom: '4px' }}>
+                        <Truck size={17} style={{ color: 'var(--accent)' }} />
+                        <span>Thanh toán khi nhận hàng (COD)</span>
+                      </div>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                        Kiểm tra sách nguyên vẹn khi nhận rồi mới thanh toán tiền mặt cho bưu tá.
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Tùy chọn 2: VietQR qua payOS */}
+                  <label style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px',
+                    padding: '1rem',
+                    borderRadius: '10px',
+                    border: `2px solid ${phuongThucThanhToan === 'CHUYEN_KHOAN_QR' ? 'var(--primary)' : 'var(--border)'}`,
+                    backgroundColor: phuongThucThanhToan === 'CHUYEN_KHOAN_QR' ? 'rgba(139, 69, 19, 0.04)' : 'var(--bg-surface)',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    transition: 'all 0.2s ease',
+                    opacity: congQrKhaDung ? 1 : 0.6
+                  }}>
+                    <input
+                      type="radio"
+                      name="phuongThucThanhToan"
+                      value="CHUYEN_KHOAN_QR"
+                      checked={phuongThucThanhToan === 'CHUYEN_KHOAN_QR'}
+                      onChange={() => setPhuongThucThanhToan('CHUYEN_KHOAN_QR')}
+                      style={{ marginTop: '3px', accentColor: 'var(--primary)', cursor: 'pointer' }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <div className="flex items-center gap-1.5" style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.9rem' }}>
+                          <QrCode size={17} style={{ color: 'var(--primary)' }} />
+                          <span>Chuyển khoản VietQR</span>
+                        </div>
+                        <span style={{
+                          fontSize: '0.68rem',
+                          backgroundColor: '#e6f4ea',
+                          color: '#137333',
+                          fontWeight: 700,
+                          padding: '2px 6px',
+                          borderRadius: '4px'
+                        }}>
+                          Tự động 24/7
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                        Quét mã QR bằng mọi app Ngân hàng & MoMo. Hệ thống tự động duyệt trong 3 giây.
+                      </p>
+                    </div>
+                  </label>
                 </div>
               </div>
             </div>
@@ -590,9 +697,13 @@ export const ThanhToan = () => {
                     }} />
                     Đang khởi tạo đơn hàng...
                   </span>
+                ) : phuongThucThanhToan === 'CHUYEN_KHOAN_QR' ? (
+                  <span className="inline-flex items-center gap-2">
+                    <QrCode size={18} /> Đặt Hàng & Quét Mã VietQR
+                  </span>
                 ) : (
                   <span className="inline-flex items-center gap-2">
-                    <CheckCircle size={18} /> Xác Nhận Đặt Hàng
+                    <CheckCircle size={18} /> Xác Nhận Đặt Hàng (COD)
                   </span>
                 )}
               </button>
@@ -605,6 +716,32 @@ export const ThanhToan = () => {
           </div>
         </div>
       </form>
+
+      {/* Modal / Khung hiển thị thanh toán VietQR payOS */}
+      {hienModalQR && duLieuQR && (
+        <KhungThanhToanVietQR
+          duLieuQR={duLieuQR}
+          onThanhToanThanhCong={() => {
+            setHienModalQR(false);
+            if (daDangNhap) {
+              navigate(`/orders/${duLieuQR.maDonHang}`, { state: { from: '/orders' }, replace: true });
+            }
+          }}
+          onDong={() => {
+            setHienModalQR(false);
+            if (daDangNhap) {
+              navigate(`/orders/${duLieuQR.maDonHang}`, { state: { from: '/orders' }, replace: true });
+            }
+          }}
+          onDoiSangCOD={() => {
+            setHienModalQR(false);
+            alert(`Đơn hàng #${duLieuQR.maDonHang} của bạn đã chuyển sang hình thức thanh toán khi nhận hàng (COD)!`);
+            if (daDangNhap) {
+              navigate(`/orders/${duLieuQR.maDonHang}`, { state: { from: '/orders' }, replace: true });
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

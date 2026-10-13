@@ -150,6 +150,7 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
     accountNumber: paymentLinkRes.accountNumber,
     accountName: paymentLinkRes.accountName,
     bin: paymentLinkRes.bin,
+    noiDungChuyenKhoan: moTa,
     soTien,
     ngayHetHan
   };
