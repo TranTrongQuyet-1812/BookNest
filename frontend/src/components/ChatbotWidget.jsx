@@ -202,20 +202,12 @@ export const ChatbotWidget = () => {
     }
   };
 
-  // Phối màu theo Dark/Light Theme & Vết Mực Loang
-  const mauHeader = laDark 
-    ? 'linear-gradient(135deg, #612D53 0%, #3A1E32 100%)' 
-    : 'linear-gradient(135deg, #4C4541 0%, #352F2D 100%)';
-
-  const mauFab = laDark
-    ? 'linear-gradient(135deg, #9E4463 0%, #612D53 100%)'
-    : 'linear-gradient(135deg, #F6C15C 0%, #D97706 100%)';
-
+  // Shadow theo theme
   const shadowFab = laDark
     ? '0 8px 26px rgba(97, 45, 83, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4)'
     : '0 8px 24px rgba(217, 119, 6, 0.38), 0 2px 6px rgba(76, 69, 65, 0.12)';
 
-  const mauIconChip = laDark ? '#F2C46A' : '#7C2D12'; // Vàng rực trên nền tối, Nâu hổ phách đậm trên nền sáng
+  const mauIconChip = laDark ? '#F2C46A' : '#7C2D12';
   const bgChip = laDark ? '#3A3238' : '#FFFFFF';
   const borderChip = laDark ? '#63535F' : '#E8DCC4';
 
@@ -223,7 +215,6 @@ export const ChatbotWidget = () => {
     <>
       {/* ================= NÚT FLOATING NỔI (FAB DUY NHẤT) ================= */}
       <div 
-        className="card-theme-wave"
         style={{
           position: 'fixed',
           bottom: '24px',
@@ -236,22 +227,22 @@ export const ChatbotWidget = () => {
         <button
           onClick={() => setMoChat(!moChat)}
           aria-label={moChat ? 'Đóng trợ lý AI' : 'Mở trợ lý AI BookNest'}
-          className="card-theme-wave"
           style={{
             position: 'relative',
             width: '58px',
             height: '58px',
             borderRadius: '50%',
-            background: mauFab,
             color: '#FFFFFF',
-            border: laDark ? '2px solid rgba(243, 244, 244, 0.4)' : '2px solid rgba(255, 255, 255, 0.75)',
+            border: laDark ? '2px solid rgba(243, 244, 244, 0.45)' : '2px solid rgba(255, 255, 255, 0.75)',
             boxShadow: shadowFab,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease',
-            outline: 'none'
+            overflow: 'hidden',
+            outline: 'none',
+            // Đồng bộ độ trễ vết mực loang 800ms và chuyển màu chậm êm đềm 1600ms
+            transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms, border-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'scale(1.08)';
@@ -260,38 +251,44 @@ export const ChatbotWidget = () => {
             e.currentTarget.style.transform = 'scale(1)';
           }}
         >
-          {moChat ? (
-            <X style={{ width: '25px', height: '25px', strokeWidth: 2.3 }} />
-          ) : (
-            <>
+          {/* Layer 1: Light Gradient (Vàng Hổ Phách) */}
+          <span 
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(135deg, #F6C15C 0%, #D97706 100%)',
+              opacity: laDark ? 0 : 1,
+              transition: 'opacity 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms',
+              pointerEvents: 'none'
+            }}
+          />
+
+          {/* Layer 2: Dark Gradient (Đỏ Rượu Vang & Tím Mận Đêm) */}
+          <span 
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(135deg, #9E4463 0%, #612D53 100%)',
+              opacity: laDark ? 1 : 0,
+              transition: 'opacity 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms',
+              pointerEvents: 'none'
+            }}
+          />
+
+          {/* Nội dung icon nổi sắc nét ở tầng trên */}
+          <span style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {moChat ? (
+              <X style={{ width: '25px', height: '25px', strokeWidth: 2.3 }} />
+            ) : (
               <MessageSquare style={{ width: '25px', height: '25px', strokeWidth: 2.1 }} />
-              <span 
-                style={{
-                  position: 'absolute',
-                  top: '-3px',
-                  right: '-3px',
-                  width: '18px',
-                  height: '18px',
-                  backgroundColor: '#10B981',
-                  border: '2px solid #FFFFFF',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
-                }}
-              >
-                <Sparkles style={{ width: '10px', height: '10px', color: '#FFFFFF', strokeWidth: 2.4 }} />
-              </span>
-            </>
-          )}
+            )}
+          </span>
         </button>
       </div>
 
       {/* ================= KHUNG CỬA SỔ TRÒ CHUYỆN ================= */}
       {moChat && (
         <div 
-          className="card-theme-wave"
           style={{
             position: 'fixed',
             bottom: '94px',
@@ -311,36 +308,65 @@ export const ChatbotWidget = () => {
             flexDirection: 'column',
             overflow: 'hidden',
             fontFamily: 'var(--font-sans)',
-            animation: 'fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
+            animation: 'fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+            // Chuyển màu êm đềm đồng bộ sóng mực
+            transition: 'background-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms, border-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms, box-shadow 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms'
           }}
         >
           {/* Header Cửa Sổ */}
           <div 
-            className="card-theme-wave"
             style={{
+              position: 'relative',
               padding: '12px 16px',
-              background: mauHeader,
               color: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderBottom: '1px solid rgba(0, 0, 0, 0.15)'
+              borderBottom: '1px solid rgba(0, 0, 0, 0.15)',
+              overflow: 'hidden'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {/* Header Layer Light */}
+            <span 
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'linear-gradient(135deg, #4C4541 0%, #352F2D 100%)',
+                opacity: laDark ? 0 : 1,
+                transition: 'opacity 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms',
+                pointerEvents: 'none'
+              }}
+            />
+
+            {/* Header Layer Dark */}
+            <span 
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'linear-gradient(135deg, #612D53 0%, #3A1E32 100%)',
+                opacity: laDark ? 1 : 0,
+                transition: 'opacity 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms',
+                pointerEvents: 'none'
+              }}
+            />
+
+            <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div 
                 style={{
+                  position: 'relative',
                   width: '36px',
                   height: '36px',
                   borderRadius: '50%',
-                  background: mauFab,
+                  overflow: 'hidden',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.4)'
                 }}
               >
-                <Sparkles style={{ width: '18px', height: '18px', color: '#FFFFFF', strokeWidth: 2 }} />
+                <span style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #F6C15C, #D97706)', opacity: laDark ? 0 : 1, transition: 'opacity 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms' }} />
+                <span style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #9E4463, #612D53)', opacity: laDark ? 1 : 0, transition: 'opacity 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms' }} />
+                <Sparkles style={{ position: 'relative', zIndex: 2, width: '18px', height: '18px', color: '#FFFFFF', strokeWidth: 2 }} />
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -351,8 +377,8 @@ export const ChatbotWidget = () => {
               </div>
             </div>
 
-            {/* Các nút hành động Header: Nổi bật, tương phản cao */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            {/* Các nút hành động Header */}
+            <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '4px' }}>
               <button
                 onClick={handleLamMoi}
                 title="Làm mới cuộc trò chuyện"
@@ -398,7 +424,6 @@ export const ChatbotWidget = () => {
 
           {/* Body Tin Nhắn (Scrollable) */}
           <div 
-            className="card-theme-wave"
             style={{
               flex: 1,
               overflowY: 'auto',
@@ -406,7 +431,8 @@ export const ChatbotWidget = () => {
               display: 'flex',
               flexDirection: 'column',
               gap: '12px',
-              backgroundColor: 'var(--bg-app, #FCF0DA)'
+              backgroundColor: 'var(--bg-app, #FCF0DA)',
+              transition: 'background-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms'
             }}
           >
             {danhSachTinNhan.map((msg) => (
@@ -420,7 +446,6 @@ export const ChatbotWidget = () => {
               >
                 {/* Bong bóng tin nhắn */}
                 <div
-                  className="card-theme-wave"
                   style={{
                     maxWidth: '85%',
                     padding: '10px 14px',
@@ -433,7 +458,8 @@ export const ChatbotWidget = () => {
                     boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)',
                     fontSize: '0.86rem',
                     lineHeight: 1.55,
-                    whiteSpace: 'pre-wrap'
+                    whiteSpace: 'pre-wrap',
+                    transition: 'background-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms, color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms, border-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms'
                   }}
                 >
                   {msg.content}
@@ -449,7 +475,6 @@ export const ChatbotWidget = () => {
                     {msg.duLieuKemTheo.danhSachSach.map((sach) => (
                       <div
                         key={sach.maSach}
-                        className="card-theme-wave"
                         style={{
                           padding: '10px',
                           borderRadius: '12px',
@@ -459,7 +484,8 @@ export const ChatbotWidget = () => {
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           gap: '10px',
-                          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)'
+                          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)',
+                          transition: 'background-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms, border-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms'
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
@@ -567,7 +593,6 @@ export const ChatbotWidget = () => {
                 {/* Thẻ Bản Nháp Thanh Toán */}
                 {msg.duLieuKemTheo?.thongTinThanhToan && (
                   <div 
-                    className="card-theme-wave"
                     style={{
                       width: '100%',
                       marginTop: '6px',
@@ -575,7 +600,8 @@ export const ChatbotWidget = () => {
                       borderRadius: '12px',
                       backgroundColor: laDark ? '#4A2837' : 'var(--primary-light, #FDF4E1)',
                       border: laDark ? '1px dashed #853953' : '1px dashed var(--primary, #F2C46A)',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                      transition: 'background-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms, border-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms'
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '8px', borderBottom: '1px solid var(--border)' }}>
@@ -616,7 +642,7 @@ export const ChatbotWidget = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '6px',
-                        transition: 'background-color 0.15s ease'
+                        transition: 'background-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms'
                       }}
                     >
                       Mở trang thanh toán điền sẵn <ArrowRight style={{ width: '14px', height: '14px', strokeWidth: 2.2 }} />
@@ -627,7 +653,6 @@ export const ChatbotWidget = () => {
                 {/* Thẻ Tra Cứu Đơn Hàng */}
                 {msg.duLieuKemTheo?.thongTinDonHang && (
                   <div 
-                    className="card-theme-wave"
                     style={{
                       width: '100%',
                       marginTop: '6px',
@@ -636,7 +661,8 @@ export const ChatbotWidget = () => {
                       backgroundColor: 'var(--bg-card, #FFFFFF)',
                       border: '1px solid var(--border, #E8DCC4)',
                       fontSize: '0.8rem',
-                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)'
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)',
+                      transition: 'background-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms, border-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms'
                     }}
                   >
                     {msg.duLieuKemTheo.thongTinDonHang.maTraCuu ? (
@@ -667,7 +693,6 @@ export const ChatbotWidget = () => {
             {/* Hiệu ứng đang tra cứu (Typing indicator) */}
             {dangGui && (
               <div 
-                className="card-theme-wave"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -689,9 +714,8 @@ export const ChatbotWidget = () => {
             <div ref={tinNhanCuoiRef} />
           </div>
 
-          {/* Gợi Ý Nhanh (Quick Chips): ICON TƯƠNG PHẢN RỰC RỠ, RÕ RÀNG 100% */}
+          {/* Gợi Ý Nhanh (Quick Chips): TƯƠNG PHẢN RỰC RỠ */}
           <div 
-            className="card-theme-wave"
             style={{
               padding: '8px 12px',
               backgroundColor: 'var(--bg-surface, #F5E8CD)',
@@ -699,7 +723,8 @@ export const ChatbotWidget = () => {
               display: 'flex',
               gap: '6px',
               overflowX: 'auto',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              transition: 'background-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms, border-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms'
             }}
           >
             {CAU_HOI_GOI_Y.map((item, idx) => {
@@ -709,7 +734,6 @@ export const ChatbotWidget = () => {
                   key={idx}
                   disabled={dangGui}
                   onClick={() => handleGuiTinNhan(item.text)}
-                  className="card-theme-wave"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -742,16 +766,16 @@ export const ChatbotWidget = () => {
             })}
           </div>
 
-          {/* Footer Input: Nút Gửi Màu Rực Rỡ & Icon Trắng Sắc Nét */}
+          {/* Footer Input */}
           <div 
-            className="card-theme-wave"
             style={{
               padding: '10px 14px',
               backgroundColor: 'var(--bg-card, #FFFFFF)',
               borderTop: '1px solid var(--border)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '4px'
+              gap: '4px',
+              transition: 'background-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms, border-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -764,7 +788,6 @@ export const ChatbotWidget = () => {
                 onKeyDown={handleKeyPress}
                 placeholder="Hỏi về sách, tồn kho, đơn hàng..."
                 maxLength={500}
-                className="card-theme-wave"
                 style={{
                   flex: 1,
                   padding: '9px 14px',
@@ -774,7 +797,7 @@ export const ChatbotWidget = () => {
                   color: 'var(--text-main, #4C4541)',
                   border: '1px solid var(--border, #E8DCC4)',
                   outline: 'none',
-                  transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
+                  transition: 'border-color 0.2s ease, box-shadow 0.2s ease, background-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms, color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms'
                 }}
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = laDark ? '#853953' : 'var(--primary, #D97706)';
@@ -806,7 +829,7 @@ export const ChatbotWidget = () => {
                   cursor: (!dangGui && tinNhanMoi.trim()) ? 'pointer' : 'not-allowed',
                   opacity: (!dangGui && tinNhanMoi.trim()) ? 1 : 0.4,
                   boxShadow: laDark ? '0 2px 8px rgba(133, 57, 83, 0.4)' : '0 2px 6px rgba(76, 69, 65, 0.2)',
-                  transition: 'transform 0.15s ease, background-color 0.15s ease'
+                  transition: 'transform 0.15s ease, background-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms'
                 }}
                 onMouseEnter={(e) => {
                   if (!dangGui && tinNhanMoi.trim()) e.currentTarget.style.transform = 'scale(1.08)';
