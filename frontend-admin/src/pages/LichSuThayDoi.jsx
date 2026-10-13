@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Archive, History, RefreshCw } from 'lucide-react';
+import { History, RefreshCw, Trash2 } from 'lucide-react';
 import api from '@booknest/shared/api';
 
 const nhan = (value) => value == null || value === '' ? '—' : value;
@@ -54,10 +54,10 @@ export default function LichSuThayDoi() {
       <div className="bo-page-heading"><div><span className="bo-eyebrow">THEO DÕI NGHIỆP VỤ</span><h1>Lịch sử thay đổi</h1><p>Nhật ký sách và danh mục, gồm người thực hiện, thời điểm và giá trị trước/sau.</p></div><button className="bo-secondary-button" onClick={taiLichSu}><RefreshCw size={15}/> Làm mới</button></div>
       {loi && <div className="bo-alert" role="alert">{loi}</div>}
       <section className="bo-panel history-cleanup">
-        <div className="history-cleanup-copy"><span className="history-icon"><Archive size={18}/></span><div><strong>Dọn lịch sử cũ</strong><p>Sao lưu có kiểm tra SHA-256 trước khi xóa. Lịch sử đơn đã giao được giữ để bảo toàn báo cáo.</p></div></div>
+        <div className="history-cleanup-copy"><span className="history-icon"><Trash2 size={18}/></span><div><strong>Dọn lịch sử cũ</strong><p>Dữ liệu trước mốc đã chọn sẽ bị xóa vĩnh viễn. Lịch sử đơn đã giao được giữ để bảo toàn báo cáo.</p></div></div>
         <div className="history-cleanup-controls"><label>Từ trước ngày<input type="date" value={truocNgay} onChange={e => { setTruocNgay(e.target.value); setXemTruoc(null); }}/></label><button className="bo-secondary-button" onClick={kiemTraDonDep}>Xem trước</button></div>
-        {xemTruoc && <div className="history-preview"><span>Sẽ lưu trữ và xóa <strong>{xemTruoc.soDongDuKien.toLocaleString('vi-VN')}</strong> dòng.</span><span>Giữ lại <strong>{xemTruoc.soDongDaGiaoGiuLai.toLocaleString('vi-VN')}</strong> dòng giao thành công.</span><button className="bo-danger-button" disabled={dangDon || !xemTruoc.soDongDuKien} onClick={xacNhanDonDep}>{dangDon ? 'Đang lưu trữ…' : 'Lưu trữ và dọn'}</button></div>}
-        {ketQuaDon?.luuTru && <div className="history-success">Đã lưu trữ tại <code>{ketQuaDon.luuTru.thuMuc}\{ketQuaDon.luuTru.tenFile}</code> · SHA-256 <code>{ketQuaDon.luuTru.sha256}</code></div>}
+        {xemTruoc && <div className="history-preview"><div><strong>Sẽ xóa vĩnh viễn {xemTruoc.soDongDuKien.toLocaleString('vi-VN')} dòng:</strong><small>Thay đổi: {xemTruoc.theoBang.LichSuThayDoi.toLocaleString('vi-VN')} · Nhập kho: {xemTruoc.theoBang.LichSuNhapKho.toLocaleString('vi-VN')} · Điều chỉnh kho: {xemTruoc.theoBang.LichSuDieuChinhKho.toLocaleString('vi-VN')} · Trạng thái đơn: {xemTruoc.theoBang.LichSuTrangThaiDonHang.toLocaleString('vi-VN')}</small></div><span>Giữ lại <strong>{xemTruoc.soDongDaGiaoGiuLai.toLocaleString('vi-VN')}</strong> dòng giao thành công.</span><button className="bo-danger-button" disabled={dangDon || !xemTruoc.soDongDuKien} onClick={xacNhanDonDep}>{dangDon ? 'Đang xóa…' : 'Xác nhận xóa vĩnh viễn'}</button></div>}
+        {ketQuaDon && <div className="history-success">Đã xóa vĩnh viễn {Object.values(ketQuaDon.daXoa || {}).reduce((tong, soDong) => tong + soDong, 0).toLocaleString('vi-VN')} dòng lịch sử.</div>}
       </section>
       <section className="bo-panel history-table-panel">
         <div className="bo-panel-title"><div><h2><History size={18}/> Gần đây</h2><p>{danhSach.length} mục ở trang {page}/{tongSoTrang}</p></div></div>
