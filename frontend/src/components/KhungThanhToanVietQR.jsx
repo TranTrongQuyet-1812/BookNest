@@ -11,8 +11,10 @@ import {
   CheckCircle2, 
   X,
   ExternalLink,
-  Download
+  Download,
+  Wifi
 } from 'lucide-react';
+import { laySocket, thamGiaDonHang, roiDonHang } from '../services/socket';
 
 /**
  * Component Modal / Khung hiển thị thanh toán VietQR (payOS)
@@ -95,13 +97,36 @@ export const KhungThanhToanVietQR = ({
     }
   };
 
-  // Khởi động đồng hồ đếm ngược và Polling tự động mỗi 3 giây
+  // Khởi động đồng hồ đếm ngược, Socket.IO Realtime và Polling dự phòng mỗi 3 giây
   useEffect(() => {
+    const maDonHang = duLieuQR?.maDonHang;
+    if (!maDonHang) return;
+
+    // 1. Tham gia phòng theo dõi đơn hàng qua WebSocket
+    thamGiaDonHang(maDonHang);
+    const socket = laySocket();
+
+    const xuLyThanhToanRealtime = (duLieu) => {
+      if (String(duLieu?.maDonHang) === String(maDonHang)) {
+        setThanhToanThanhCong(true);
+        if (timerRef.current) clearInterval(timerRef.current);
+        if (pollingRef.current) clearInterval(pollingRef.current);
+        if (onThanhToanThanhCong) {
+          setTimeout(() => {
+            onThanhToanThanhCong(duLieu);
+          }, 2000);
+        }
+      }
+    };
+
+    socket.on('thanhToan:daThanhToan', xuLyThanhToanRealtime);
+
+    // 2. Đồng hồ đếm ngược
     timerRef.current = setInterval(() => {
       setGiayConLai((prev) => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
-          clearInterval(pollingRef.current);
+          if (pollingRef.current) clearInterval(pollingRef.current);
           setDaHetHan(true);
           return 0;
         }
@@ -109,13 +134,16 @@ export const KhungThanhToanVietQR = ({
       });
     }, 1000);
 
+    // 3. Polling dự phòng mỗi 3 giây (nếu WebSocket rớt mạng)
     pollingRef.current = setInterval(() => {
       kiemTraTrangThai(false);
     }, 3000);
 
     return () => {
-      clearInterval(timerRef.current);
-      clearInterval(pollingRef.current);
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      roiDonHang(maDonHang);
+      socket.off('thanhToan:daThanhToan', xuLyThanhToanRealtime);
     };
   }, [duLieuQR?.maDonHang]);
 

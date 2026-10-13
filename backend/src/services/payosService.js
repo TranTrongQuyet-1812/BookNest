@@ -12,6 +12,7 @@ const {
   CauHinhHeThong, 
   LichSuTrangThaiDonHang 
 } = require('../models');
+const { phatThanhToanThanhCong } = require('../realtime/socket');
 
 // Khởi tạo client SDK payOS nếu đã cung cấp đủ 3 khóa trong .env
 let payOSClient = null;
@@ -259,6 +260,18 @@ async function xuLyWebhookPayOS(webhookBody) {
     }, { transaction: t });
 
     await t.commit();
+
+    // Phát sự kiện thời gian thực Socket.IO tới phòng đơn hàng và quản trị viên (T43)
+    try {
+      phatThanhToanThanhCong({
+        maDonHang: thanhToan.MaDonHang,
+        soTien: thanhToan.SoTien,
+        maGiaoDichPayos: orderCode
+      });
+    } catch (errSocket) {
+      console.warn('[Socket.IO] Không thể phát sự kiện thanh toán:', errSocket.message);
+    }
+
     return { thanhCong: true, maDonHang: thanhToan.MaDonHang };
   } catch (err) {
     await t.rollback();
