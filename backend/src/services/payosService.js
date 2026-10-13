@@ -2,7 +2,7 @@
  * Dịch vụ xử lý thanh toán VietQR qua payOS.
  * Tuân thủ nghiêm ngặt nguyên tắc bảo mật và quy trình trong docs/KE_HOACH_THANH_TOAN_QR_PAYOS.md.
  */
-const PayOS = require('@payos/node');
+const { PayOS } = require('@payos/node');
 const cauHinh = require('../config/cauHinh');
 const { 
   sequelize, 
@@ -18,11 +18,11 @@ const { phatThanhToanThanhCong } = require('../realtime/socket');
 let payOSClient = null;
 if (cauHinh.payos.daCauHinh) {
   try {
-    payOSClient = new PayOS(
-      cauHinh.payos.clientId,
-      cauHinh.payos.apiKey,
-      cauHinh.payos.checksumKey
-    );
+    payOSClient = new PayOS({
+      clientId: cauHinh.payos.clientId,
+      apiKey: cauHinh.payos.apiKey,
+      checksumKey: cauHinh.payos.checksumKey
+    });
   } catch (err) {
     console.warn('[payOS] Không thể khởi tạo SDK payOS:', err.message);
   }
@@ -58,6 +58,21 @@ function sinhMaGiaoDich(maDonHang) {
 }
 
 /**
+ * Trích xuất mã định danh ngân hàng (BIN), STK và nội dung chuyển khoản từ chuỗi QR EMVCo
+ */
+function trichXuatThongTinTuQr(qr) {
+  if (!qr || typeof qr !== 'string') return {};
+  const binMatch = qr.match(/0006(\d{6})/);
+  const accMatch = qr.match(/0006\d{6}01\d{2}([A-Z0-9]+?)0208QRIBFTTA/);
+  const descMatch = qr.match(/08\d{2}([A-Z0-9 ]+?)6304/);
+  return {
+    bin: binMatch ? binMatch[1] : '970422',
+    accountNumber: accMatch ? accMatch[1] : undefined,
+    noiDungChuyenKhoan: descMatch ? descMatch[1] : undefined
+  };
+}
+
+/**
  * Tạo link và mã QR thanh toán payOS cho đơn hàng
  */
 async function taoThanhToanQR(donHang, danhSachMon = []) {
@@ -80,12 +95,16 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
 
   // Nếu đã có link và chưa hết hạn, có thể tái sử dụng
   if (banGhiThanhToan && banGhiThanhToan.DuongDanThanhToan && banGhiThanhToan.NgayHetHan > new Date()) {
+    const thongTinTrich = trichXuatThongTinTuQr(banGhiThanhToan.QrCode);
     return {
       maThanhToan: banGhiThanhToan.MaThanhToan,
       maDonHang: banGhiThanhToan.MaDonHang,
       orderCode: banGhiThanhToan.MaGiaoDichPayos,
       checkoutUrl: banGhiThanhToan.DuongDanThanhToan,
       qrCode: banGhiThanhToan.QrCode,
+      bin: thongTinTrich.bin || '970422',
+      accountNumber: thongTinTrich.accountNumber,
+      noiDungChuyenKhoan: thongTinTrich.noiDungChuyenKhoan || `DON HANG #${maDonHang}`,
       soTien: banGhiThanhToan.SoTien,
       ngayHetHan: banGhiThanhToan.NgayHetHan
     };
@@ -112,7 +131,7 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
     cancelUrl: `${domainClient}/orders/${maDonHang}?payment=cancelled`
   };
 
-  const paymentLinkRes = await payOSClient.createPaymentLink(duLieuPayos);
+  const paymentLinkRes = await payOSClient.paymentRequests.create(duLieuPayos);
 
   // Hạn thanh toán mặc định 15 phút
   const ngayHetHan = new Date(Date.now() + 15 * 60 * 1000);
@@ -176,7 +195,7 @@ async function xuLyWebhookPayOS(webhookBody) {
   }
 
   try {
-    duLieuXacThuc = payOSClient.verifyPaymentWebhookData(webhookBody);
+    duLieuXacThuc = await payOSClient.webhooks.verify(webhookBody);
     chuKyHopLe = true;
   } catch (err) {
     chuKyHopLe = false;
@@ -294,8 +313,8 @@ async function layThongTinThanhToanTheoDon(maDonHang) {
   // Nếu đang chờ thanh toán và có client SDK, có thể chủ động kiểm tra trạng thái bên payOS
   if (thanhToan.TrangThai === 'CHO_THANH_TOAN' && thanhToan.MaGiaoDichPayos && payOSClient) {
     try {
-      const thongTinPayos = await payOSClient.getPaymentLinkInformation(thanhToan.MaGiaoDichPayos);
-      if (thongTinPayos.status === 'PAID') {
+      const thongTinPayos = await payOSClient.paymentRequests.get(thanhToan.MaGiaoDichPayos);
+      if (thongTinPayos && thongTinPayos.status === 'PAID') {
         // Đồng bộ trạng thái nếu payOS báo đã trả tiền mà webhook chưa tới
         await thanhToan.update({
           TrangThai: 'DA_THANH_TOAN',
@@ -317,6 +336,7 @@ async function layThongTinThanhToanTheoDon(maDonHang) {
     }
   }
 
+  const thongTinTrich = trichXuatThongTinTuQr(thanhToan.QrCode);
   return {
     coThanhToan: true,
     maThanhToan: thanhToan.MaThanhToan,
@@ -327,14 +347,28 @@ async function layThongTinThanhToanTheoDon(maDonHang) {
     maGiaoDichPayos: thanhToan.MaGiaoDichPayos,
     checkoutUrl: thanhToan.DuongDanThanhToan,
     qrCode: thanhToan.QrCode,
+    bin: thongTinTrich.bin || '970422',
+    accountNumber: thongTinTrich.accountNumber,
+    noiDungChuyenKhoan: thongTinTrich.noiDungChuyenKhoan || `DON HANG #${maDonHang}`,
     ngayHetHan: thanhToan.NgayHetHan,
     ngayThanhToan: thanhToan.NgayThanhToan
   };
+}
+
+/**
+ * Đăng ký và xác thực Webhook URL với payOS
+ */
+async function xacNhanWebhookUrl(webhookUrl) {
+  if (!payOSClient) {
+    throw new Error('Chưa cấu hình khóa PayOS trong hệ thống');
+  }
+  return await payOSClient.webhooks.confirm(webhookUrl);
 }
 
 module.exports = {
   kiemTraCongTacQRDangBat,
   taoThanhToanQR,
   xuLyWebhookPayOS,
-  layThongTinThanhToanTheoDon
+  layThongTinThanhToanTheoDon,
+  xacNhanWebhookUrl
 };

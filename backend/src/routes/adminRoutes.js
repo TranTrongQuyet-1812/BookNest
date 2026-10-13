@@ -198,6 +198,18 @@ router.post(
   batLoiAsync(donHangController.xuLyTaoDonQuay)
 );
 
+/**
+ * @swagger
+ * /api/admin/counter-orders:
+ *   get:
+ *     summary: Xem danh sách đơn bán tại quầy (Quản trị viên, Thủ thư)
+ *     tags: [Bán tại quầy]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Danh sách đơn hàng tại quầy
+ */
 router.get(
   '/counter-orders',
   xacThucToken,
@@ -206,6 +218,24 @@ router.get(
   batLoiAsync(donHangController.xuLyLayDanhSachDonQuay)
 );
 
+/**
+ * @swagger
+ * /api/admin/counter-orders/{id}:
+ *   get:
+ *     summary: Xem chi tiết đơn hàng bán tại quầy (Quản trị viên, Thủ thư)
+ *     tags: [Bán tại quầy]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Chi tiết đơn hàng tại quầy
+ */
 router.get(
   '/counter-orders/:id',
   xacThucToken,
@@ -767,6 +797,18 @@ router.get(
   batLoiAsync(thongKeController.xuLyLayBaoCaoKho)
 );
 
+/**
+ * @swagger
+ * /api/admin/change-history:
+ *   get:
+ *     summary: Xem nhật ký lịch sử thay đổi quản trị (Chỉ Quản trị viên)
+ *     tags: [Quản trị (Admin)]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Danh sách bản ghi lịch sử thay đổi
+ */
 router.get(
   '/change-history',
   xacThucToken,
@@ -775,6 +817,18 @@ router.get(
   batLoiAsync(lichSuQuanTriController.xuLyLayDanhSach)
 );
 
+/**
+ * @swagger
+ * /api/admin/change-history/cleanup-preview:
+ *   post:
+ *     summary: Xem trước số lượng bản ghi lịch sử sẽ dọn dẹp (Chỉ Quản trị viên)
+ *     tags: [Quản trị (Admin)]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Kết quả xem trước dọn dẹp
+ */
 router.post(
   '/change-history/cleanup-preview',
   xacThucToken,
@@ -783,6 +837,18 @@ router.post(
   batLoiAsync(lichSuQuanTriController.xuLyXemTruocDonDep)
 );
 
+/**
+ * @swagger
+ * /api/admin/change-history/cleanup:
+ *   post:
+ *     summary: Thực hiện dọn dẹp nhật ký lịch sử thay đổi (Chỉ Quản trị viên)
+ *     tags: [Quản trị (Admin)]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Dọn dẹp thành công
+ */
 router.post(
   '/change-history/cleanup',
   xacThucToken,

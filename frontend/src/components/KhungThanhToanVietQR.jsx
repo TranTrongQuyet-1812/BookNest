@@ -150,7 +150,9 @@ export const KhungThanhToanVietQR = ({
   // Tạo URL ảnh VietQR chuẩn EMVCo hiển thị tức thì
   const urlAnhVietQR = duLieuQR?.qrCode?.startsWith('http') || duLieuQR?.qrCode?.startsWith('data:')
     ? duLieuQR.qrCode
-    : `https://img.vietqr.io/image/${duLieuQR?.bin || '970422'}-${duLieuQR?.accountNumber || ''}-compact2.png?amount=${duLieuQR?.soTien || 0}&addInfo=${encodeURIComponent(duLieuQR?.noiDungChuyenKhoan || `DON HANG #${duLieuQR?.maDonHang}`)}&accountName=${encodeURIComponent(duLieuQR?.accountName || 'BOOKNEST')}`;
+    : duLieuQR?.accountNumber
+      ? `https://img.vietqr.io/image/${duLieuQR?.bin || '970422'}-${duLieuQR.accountNumber}-compact2.png?amount=${duLieuQR?.soTien || 0}&addInfo=${encodeURIComponent(duLieuQR?.noiDungChuyenKhoan || `DON HANG #${duLieuQR?.maDonHang}`)}&accountName=${encodeURIComponent(duLieuQR?.accountName || 'BOOKNEST')}`
+      : `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(duLieuQR?.qrCode || '')}`;
 
   return (
     <div style={{
