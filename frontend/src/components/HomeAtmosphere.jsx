@@ -45,7 +45,10 @@ export default function HomeAtmosphere({ heroRef }) {
 
   useGSAP(() => {
     const root = rootRef.current;
-    const hero = heroRef.current;
+    // Effect của component con chạy TRƯỚC khi React gắn ref cho thẻ section cha, nên heroRef.current còn rỗng ở lần
+    // chạy đầu. Nếu thoát ở đây thì effect không bao giờ chạy lại (heroRef là object không đổi) và trang mở lên
+    // sẽ không có intro, mây trôi, parallax. Lớp này nằm ngay trong section hero nên lấy luôn thẻ cha.
+    const hero = heroRef.current || root?.parentElement;
     if (!root || !hero) return undefined;
 
     const giam = giamChuyenDong;
@@ -69,15 +72,18 @@ export default function HomeAtmosphere({ heroRef }) {
     let huyChoRem = () => {};
     if (!giam && !daVaoCanhRef.current) {
       const denLong = root.querySelectorAll('.home-lantern');
+      // Rèm easing power4.inOut nên 0,2 giây đầu mới hé khoảng 7% màn hình; bắt đầu trễ chừng đó để phần nhanh nhất
+      // của chuyển động rơi vào lúc trang đã lộ ra, không bị rèm che mất
+      const TRE = 0.2;
       const tlVaoCanh = gsap.timeline({ paused: true, defaults: { ease: 'power3.out' } })
-        .from('.home-branch', { yPercent: -105, opacity: 0, duration: 1.6 }, 0)
-        .from('.home-sun-moon', { xPercent: 35, yPercent: -40, opacity: 0, duration: 1.8 }, 0.1)
-        .from('.home-grass', { yPercent: 45, opacity: 0, duration: 1.5 }, 0.15)
-        .from('.home-cloud--mot', { xPercent: -150, opacity: 0, duration: 2.4, ease: 'power2.out' }, 0.2)
-        .from('.home-cloud--hai', { xPercent: 170, opacity: 0, duration: 2.6, ease: 'power2.out' }, 0.3)
-        .from('.home-cloud--ba', { xPercent: -130, opacity: 0, duration: 2.5, ease: 'power2.out' }, 0.4)
-        .from('.home-pollen', { opacity: 0, duration: 1.6, ease: 'none' }, 0.8);
-      if (denLong.length) tlVaoCanh.from(denLong, { yPercent: -170, duration: 1.4, ease: 'elastic.out(1, 0.55)', stagger: 0.18 }, 0.5);
+        .from('.home-branch', { yPercent: -105, opacity: 0, duration: 1.6 }, TRE)
+        .from('.home-sun-moon', { xPercent: 35, yPercent: -40, opacity: 0, duration: 1.8 }, TRE + 0.1)
+        .from('.home-grass', { yPercent: 45, opacity: 0, duration: 1.5 }, TRE + 0.15)
+        .from('.home-cloud--mot', { xPercent: -150, opacity: 0, duration: 2.4, ease: 'power2.out' }, TRE + 0.2)
+        .from('.home-cloud--hai', { xPercent: 170, opacity: 0, duration: 2.6, ease: 'power2.out' }, TRE + 0.3)
+        .from('.home-cloud--ba', { xPercent: -130, opacity: 0, duration: 2.5, ease: 'power2.out' }, TRE + 0.4)
+        .from('.home-pollen', { opacity: 0, duration: 1.6, ease: 'none' }, TRE + 0.8);
+      if (denLong.length) tlVaoCanh.from(denLong, { yPercent: -170, duration: 1.4, ease: 'elastic.out(1, 0.55)', stagger: 0.18 }, TRE + 0.5);
       huyChoRem = khiRemMo(() => {
         daVaoCanhRef.current = true;
         tlVaoCanh.play();
