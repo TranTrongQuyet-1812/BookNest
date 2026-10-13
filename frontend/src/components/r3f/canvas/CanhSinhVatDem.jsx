@@ -42,10 +42,10 @@ function AnhSang() {
  * - theoNhipGsap: true thì vẽ theo gsap.ticker (khuyên dùng khi đã có Lenis + ScrollTrigger).
  * - tamDung: true thì dừng vẽ (ví dụ khi tab ẩn hoặc người dùng bật "giảm chuyển động").
  */
-export default function CanhSinhVatDem({ children, theoNhipGsap = true, tamDung = false, zIndex = 5 }) {
+export default function CanhSinhVatDem({ children, theoNhipGsap = true, tamDung = false, hienThi = true, zIndex = 5 }) {
   const cheDo = useCheDoGiaoDien();
   const [giamChuyenDong] = useGiamChuyenDong();
-  const dungCanh = tamDung || giamChuyenDong;
+  const dungCanh = tamDung || !hienThi || giamChuyenDong;
   if (cheDo !== 'dark') return null;
 
   return (
@@ -57,7 +57,7 @@ export default function CanhSinhVatDem({ children, theoNhipGsap = true, tamDung 
       frameloop={dungCanh || theoNhipGsap ? 'never' : 'always'}
       eventSource={document.body}
       eventPrefix="client"
-      style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex }}
+      style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex, display: hienThi ? 'block' : 'none' }}
     >
       <AnhSang />
       <Suspense fallback={null}>{children}</Suspense>

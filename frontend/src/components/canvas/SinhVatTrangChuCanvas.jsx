@@ -215,7 +215,8 @@ export const SinhVatTrangChuCanvas = ({ tamDung = false }) => {
         height: '100vh',
         pointerEvents: 'none',
         zIndex: 18,
-        overflow: 'hidden'
+        overflow: 'hidden',
+        visibility: tamDung ? 'hidden' : 'visible'
       }}
     />
   );

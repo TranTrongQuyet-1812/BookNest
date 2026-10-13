@@ -276,7 +276,7 @@ export const TrangChu = () => {
       )}
       {!laCheDoLoc && cheDo === 'dark' && (
         <Suspense fallback={null}>
-          <CanhSinhVatDem zIndex={18} tamDung={!heroDangHien || giamChuyenDong}>
+          <CanhSinhVatDem zIndex={18} tamDung={giamChuyenDong} hienThi={heroDangHien}>
             <DanDomDom soCon={window.innerWidth < 700 ? 6 : 10} doSang={0.9} />
             <Doi position={[-3.1, 1.65, -0.2]} tiLe={1.05} pha={0.2} />
             <Doi position={[3.2, 1.2, -0.4]} tiLe={0.8} pha={0.65} />

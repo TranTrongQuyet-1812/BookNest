@@ -53,10 +53,12 @@ export default function HomeAtmosphere({ heroRef }) {
         gsap.to('.home-cloud--mot', { x: 38, y: -8, duration: 58, repeat: -1, yoyo: true, ease: 'sine.inOut' }),
         gsap.to('.home-cloud--hai', { x: -26, y: 10, duration: 73, repeat: -1, yoyo: true, ease: 'sine.inOut' }),
         gsap.to('.home-sun-moon', { scale: 1.045, duration: 7, repeat: -1, yoyo: true, ease: 'sine.inOut' }),
-        gsap.to('.home-branch', { rotation: 1.4, duration: 5.5, repeat: -1, yoyo: true, transformOrigin: '10% 0%', ease: 'sine.inOut' }),
-        gsap.to('.home-lantern--mot', { rotation: 3, duration: 3.8, repeat: -1, yoyo: true, transformOrigin: '50% 0%', ease: 'sine.inOut' }),
-        gsap.to('.home-lantern--hai', { rotation: -2.4, duration: 4.6, repeat: -1, yoyo: true, transformOrigin: '50% 0%', ease: 'sine.inOut' })
+        gsap.to('.home-branch', { rotation: 1.4, duration: 5.5, repeat: -1, yoyo: true, transformOrigin: '10% 0%', ease: 'sine.inOut' })
       );
+      const denLongMot = root.querySelector('.home-lantern--mot');
+      const denLongHai = root.querySelector('.home-lantern--hai');
+      if (denLongMot) cacVongLap.push(gsap.to(denLongMot, { rotation: 3, duration: 3.8, repeat: -1, yoyo: true, transformOrigin: '50% 0%', ease: 'sine.inOut' }));
+      if (denLongHai) cacVongLap.push(gsap.to(denLongHai, { rotation: -2.4, duration: 4.6, repeat: -1, yoyo: true, transformOrigin: '50% 0%', ease: 'sine.inOut' }));
     }
 
     const vungSang = root.querySelector('.home-pointer-glow');
