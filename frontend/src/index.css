@@ -331,6 +331,18 @@ textarea::placeholder {
   text-underline-offset: 3px;
 }
 
+/* Link hành động tương phản cao (Đăng ký mới, Đăng nhập ngay, Chuyển quyền...) */
+.link-accent {
+  color: var(--link-accent, #92400E);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.18s ease;
+}
+.link-accent:hover {
+  color: var(--link-accent-hover, #78350F);
+}
+
 /* Forms & Inputs */
 .form-group {
   display: flex;
@@ -457,13 +469,51 @@ textarea::placeholder {
   box-shadow: var(--shadow-lg);
 }
 
-/* Tiện ích cuộn ngang mượt mà ẩn scrollbar cho Kệ Sách */
+/* Tiện ích cuộn ngang mượt mà ẩn scrollbar cho Kệ Sách và Quick Chips */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Thanh cuộn siêu mảnh, bo tròn tinh tế cho cửa sổ chat & modal */
+.chat-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(76, 69, 65, 0.25) transparent;
+  overscroll-behavior: contain;
+}
+
+.dark .chat-scrollbar {
+  scrollbar-color: rgba(243, 244, 244, 0.25) transparent;
+}
+
+.chat-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(76, 69, 65, 0.2);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(76, 69, 65, 0.4);
+}
+
+.dark .chat-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(243, 244, 244, 0.2);
+}
+
+.dark .chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(243, 244, 244, 0.4);
 }
 
 /* ==========================================================================

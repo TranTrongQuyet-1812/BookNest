@@ -256,19 +256,17 @@ export const DangNhap = ({ choNhanVien = false }) => {
             <Link 
               to={choNhanVien ? `${import.meta.env.VITE_STOREFRONT_URL || 'http://localhost:3000'}/login` : '/register'}
               state={choNhanVien ? undefined : location.state}
-              style={{ 
-                color: 'var(--primary-dark)', 
-                fontWeight: 600,
-                textDecoration: 'underline',
-                textUnderlineOffset: '3px'
-              }}
+              className="link-accent"
             >
               {choNhanVien ? 'Đăng nhập khách hàng' : 'Đăng ký tài khoản mới'}
             </Link>
             {!choNhanVien && (
               <div style={{ marginTop: '0.5rem' }}>
                 Bạn là nhân viên?{' '}
-                <a href={`${import.meta.env.VITE_BACKOFFICE_URL || 'http://localhost:5174'}/admin/login`} style={{ color: 'var(--primary-dark)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+                <a 
+                  href={`${import.meta.env.VITE_BACKOFFICE_URL || 'http://localhost:5174'}/admin/login`} 
+                  className="link-accent"
+                >
                   Đăng nhập nhân viên
                 </a>
               </div>

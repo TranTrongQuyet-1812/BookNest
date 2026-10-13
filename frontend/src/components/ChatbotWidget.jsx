@@ -29,6 +29,47 @@ const CAU_HOI_GOI_Y = [
   { text: 'Tra cứu tình trạng đơn hàng', icon: Search }
 ];
 
+/**
+ * Chuẩn hóa nội dung phản hồi (bóc tách nếu tin nhắn bị bọc JSON type: text)
+ */
+const chuanHoaNoiDungAI = (noiDung) => {
+  if (!noiDung) return '';
+  if (typeof noiDung !== 'string') {
+    if (Array.isArray(noiDung)) {
+      return noiDung
+        .map(item => item?.text || (typeof item === 'string' ? item : ''))
+        .filter(Boolean)
+        .join('\n')
+        .trim();
+    }
+    if (typeof noiDung === 'object' && noiDung.text) {
+      return String(noiDung.text).trim();
+    }
+    return String(noiDung);
+  }
+
+  const trimmed = noiDung.trim();
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        const textParts = parsed
+          .map(item => item?.text || (typeof item === 'string' ? item : ''))
+          .filter(Boolean);
+        if (textParts.length > 0) return textParts.join('\n').trim();
+      } else if (parsed && typeof parsed === 'object') {
+        if (parsed.text) return String(parsed.text).trim();
+        if (parsed.content) return chuanHoaNoiDungAI(parsed.content);
+        if (parsed.message) return chuanHoaNoiDungAI(parsed.message);
+      }
+    } catch {
+      // Giữ nguyên chuỗi
+    }
+  }
+
+  return trimmed;
+};
+
 export const ChatbotWidget = () => {
   const navigate = useNavigate();
   const { themVaoGio } = useCartStore();
@@ -38,6 +79,7 @@ export const ChatbotWidget = () => {
   const [moChat, setMoChat] = useState(false);
   const [tinNhanMoi, setTinNhanMoi] = useState('');
   const [dangGui, setDangGui] = useState(false);
+  const [trangThaiDangXuLy, setTrangThaiDangXuLy] = useState('BookNest AI đang soạn câu trả lời...');
   const [daThemGio, setDaThemGio] = useState({});
 
   // Danh sách tin nhắn trong phiên trò chuyện
@@ -105,6 +147,20 @@ export const ChatbotWidget = () => {
     const textCanGui = String(noiDung || tinNhanMoi).trim();
     if (!textCanGui || dangGui) return;
 
+    // Xác định thông điệp trạng thái phù hợp ngữ cảnh câu hỏi
+    const textLower = textCanGui.toLowerCase();
+    let thongBao = 'BookNest AI đang soạn câu trả lời...';
+    if (/(\bđơn\b|\bbn-|\btra cứu\b|\bvận chuyển\b|\bkiểm tra đơn\b)/i.test(textLower)) {
+      thongBao = 'BookNest AI đang kiểm tra thông tin đơn hàng...';
+    } else if (/(\btìm\b|\btựa sách\b|\bcuốn sách\b|\btác giả\b|\bkho sách\b|\bgiá\b|\btồn kho\b|\bthể loại\b)/i.test(textLower)) {
+      thongBao = 'BookNest AI đang tra cứu kho sách...';
+    } else if (/(\bthanh toán\b|\bmua\b|\bđặt sách\b|\bgiỏ hàng\b)/i.test(textLower)) {
+      thongBao = 'BookNest AI đang soạn thông tin thanh toán...';
+    } else {
+      thongBao = 'BookNest AI đang suy nghĩ câu trả lời...';
+    }
+    setTrangThaiDangXuLy(thongBao);
+
     const tinNhanUser = {
       id: 'msg_user_' + Date.now(),
       role: 'user',
@@ -132,7 +188,7 @@ export const ChatbotWidget = () => {
       const tinNhanAI = {
         id: 'msg_ai_' + Date.now(),
         role: 'assistant',
-        content: duLieuPhanHoi?.traLoi || 'Dạ, tôi đã nhận được thông tin từ bạn!',
+        content: chuanHoaNoiDungAI(duLieuPhanHoi?.traLoi) || 'Dạ, tôi đã nhận được thông tin từ bạn!',
         thoiGian: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         duLieuKemTheo: duLieuPhanHoi?.duLieuKemTheo || null
       };
@@ -289,6 +345,7 @@ export const ChatbotWidget = () => {
       {/* ================= KHUNG CỬA SỔ TRÒ CHUYỆN ================= */}
       {moChat && (
         <div 
+          data-lenis-prevent
           style={{
             position: 'fixed',
             bottom: '94px',
@@ -307,6 +364,7 @@ export const ChatbotWidget = () => {
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
+            overscrollBehavior: 'contain',
             fontFamily: 'var(--font-sans)',
             animation: 'fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
             // Chuyển màu êm đềm đồng bộ sóng mực
@@ -424,6 +482,8 @@ export const ChatbotWidget = () => {
 
           {/* Body Tin Nhắn (Scrollable) */}
           <div 
+            data-lenis-prevent
+            className="chat-scrollbar"
             style={{
               flex: 1,
               overflowY: 'auto',
@@ -432,6 +492,7 @@ export const ChatbotWidget = () => {
               flexDirection: 'column',
               gap: '12px',
               backgroundColor: 'var(--bg-app, #FCF0DA)',
+              overscrollBehavior: 'contain',
               transition: 'background-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms'
             }}
           >
@@ -462,7 +523,7 @@ export const ChatbotWidget = () => {
                     transition: 'background-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms, color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms, border-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms'
                   }}
                 >
-                  {msg.content}
+                  {chuanHoaNoiDungAI(msg.content)}
                 </div>
 
                 {/* Thẻ Sách Gợi Ý Tương Tác */}
@@ -690,7 +751,7 @@ export const ChatbotWidget = () => {
               </div>
             ))}
 
-            {/* Hiệu ứng đang tra cứu (Typing indicator) */}
+            {/* Hiệu ứng đang xử lý (Typing indicator) */}
             {dangGui && (
               <div 
                 style={{
@@ -703,19 +764,28 @@ export const ChatbotWidget = () => {
                   border: '1px solid var(--border, #E8DCC4)',
                   width: 'fit-content',
                   fontSize: '0.78rem',
-                  color: 'var(--text-muted)'
+                  color: 'var(--text-muted)',
+                  boxShadow: '0 1px 4px rgba(0, 0, 0, 0.05)',
+                  transition: 'background-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms'
                 }}
               >
                 <Sparkles style={{ width: '14px', height: '14px', color: laDark ? '#F2C46A' : '#D97706', strokeWidth: 2.2 }} />
-                <span>BookNest AI đang tra cứu kho sách...</span>
+                <span>{trangThaiDangXuLy}</span>
               </div>
             )}
 
             <div ref={tinNhanCuoiRef} />
           </div>
 
-          {/* Gợi Ý Nhanh (Quick Chips): TƯƠNG PHẢN RỰC RỠ */}
+          {/* Gợi Ý Nhanh (Quick Chips): TƯƠNG PHẢN RỰC RỠ & CUỘN CON LĂN CHUỘT NGANG */}
           <div 
+            data-lenis-prevent
+            className="no-scrollbar"
+            onWheel={(e) => {
+              if (e.deltaY !== 0) {
+                e.currentTarget.scrollLeft += e.deltaY;
+              }
+            }}
             style={{
               padding: '8px 12px',
               backgroundColor: 'var(--bg-surface, #F5E8CD)',
@@ -724,6 +794,7 @@ export const ChatbotWidget = () => {
               gap: '6px',
               overflowX: 'auto',
               whiteSpace: 'nowrap',
+              overscrollBehavior: 'contain',
               transition: 'background-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms, border-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms'
             }}
           >

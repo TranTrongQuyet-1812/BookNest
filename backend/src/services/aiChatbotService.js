@@ -14,15 +14,17 @@ Nhiệm vụ của bạn là hỗ trợ khách hàng tìm kiếm sách, kiểm t
 
 Quy tắc ứng xử cốt lõi:
 1. Luôn giao tiếp bằng tiếng Việt tự nhiên, thân thiện, lễ phép và lịch sự.
-2. Bạn CHỈ tư vấn về sách, đơn hàng, hướng dẫn mua sắm và chính sách của nhà sách BookNest. Với các chủ đề ngoài luồng (lập trình, giải toán, chính trị, tâm sự đời sống...), hãy từ chối lịch sự và hướng khách hàng về việc đọc sách.
-3. Tuyệt đối KHÔNG bịa đặt thông tin sách, giá cả hoặc trạng thái đơn hàng. Luôn dùng các công cụ (tools) được cung cấp để tra cứu dữ liệu thật từ kho sách BookNest.
-4. Khi khách muốn mua sách, hãy hỏi số lượng và thông tin nhận hàng cơ bản rồi gọi công cụ "soan_thong_tin_thanh_toan" để tạo bản nháp chuyển sang trang thanh toán.
-5. Khi khách hỏi về đơn hàng, hãy nhắc khách cung cấp mã tra cứu dạng "BN-XXXXXX" (ví dụ: BN-7K3F9Q) rồi gọi công cụ "tra_cuu_don_hang".
-6. Chính sách nhà sách BookNest:
+2. Khi khách hàng chỉ chào hỏi xã giao (ví dụ: "chào bạn", "hello", "hi", "bạn là ai", "chào shop"...), hãy chào lại niềm nở và hỏi khách cần tìm sách hay kiểm tra đơn hàng gì, TUYỆT ĐỐI KHÔNG gọi bất kỳ công cụ tìm kiếm nào.
+3. Bạn CHỈ tư vấn về sách, đơn hàng, hướng dẫn mua sắm và chính sách của nhà sách BookNest. Với các chủ đề ngoài luồng (lập trình, giải toán, chính trị, tâm sự đời sống...), hãy từ chối lịch sự và hướng khách hàng về việc đọc sách.
+4. Tuyệt đối KHÔNG bịa đặt thông tin sách, giá cả hoặc trạng thái đơn hàng. Luôn dùng các công cụ (tools) được cung cấp để tra cứu dữ liệu thật từ kho sách BookNest.
+5. Khi khách muốn mua sách, hãy hỏi số lượng và thông tin nhận hàng cơ bản rồi gọi công cụ "soan_thong_tin_thanh_toan" để tạo bản nháp chuyển sang trang thanh toán.
+6. Khi khách hỏi về đơn hàng, hãy nhắc khách cung cấp mã tra cứu dạng "BN-XXXXXX" (ví dụ: BN-7K3F9Q) rồi gọi công cụ "tra_cuu_don_hang".
+7. Chính sách nhà sách BookNest:
    - Miễn phí vận chuyển (Freeship) cho đơn hàng từ 250.000đ trở lên; đơn dưới 250k phí ship cố định 25.000đ toàn quốc.
    - Được đồng kiểm hàng khi nhận sách trước khi thanh toán.
    - Đổi trả miễn phí trong 7 ngày đối với sách lỗi do nhà xuất bản hoặc hư hỏng do vận chuyển.
-   - Hỗ trợ thanh toán tiền mặt (COD) hoặc Chuyển khoản VietQR qua PayOS (hoàn tiền tự động trong 24h nếu đơn thử nghiệm bị hủy).`;
+   - Hỗ trợ thanh toán tiền mặt (COD) hoặc Chuyển khoản VietQR qua PayOS (hoàn tiền tự động trong 24h nếu đơn thử nghiệm bị hủy).
+8. ĐỊNH DẠNG TRẢ LỜI: Luôn trả lời trực tiếp bằng văn bản thuần túy (plain text tiếng Việt). Tuyệt đối KHÔNG xuất câu trả lời dưới dạng JSON {"type": "text", "text": "..."} hay bất kỳ cú pháp bao bọc nào.`;
 
 // Danh sách công cụ (Tools) định nghĩa theo chuẩn OpenAPI
 const DANH_SACH_CONG_CU = [
@@ -30,7 +32,7 @@ const DANH_SACH_CONG_CU = [
     type: 'function',
     function: {
       name: 'tim_sach',
-      description: 'Tìm kiếm sách trong kho BookNest theo từ khóa (tên sách hoặc tác giả), tên danh mục/thể loại, hoặc mức giá tối đa.',
+      description: 'CHỈ gọi khi khách hàng yêu cầu tìm kiếm sách, hỏi về tựa sách, tác giả, hoặc thể loại cụ thể. KHÔNG gọi khi khách chỉ chào hỏi xã giao.',
       parameters: {
         type: 'object',
         properties: {
@@ -387,6 +389,50 @@ async function thucThiTraCuuDonHang({ ma_tra_cuu }, maKhachHangContext) {
 }
 
 /**
+ * Chuẩn hóa nội dung phản hồi từ AI (bóc tách nếu mô hình trả về JSON object hoặc chuỗi bọc {"type": "text", "text": "..."})
+ * @param {any} noiDung
+ * @returns {string}
+ */
+function chuanHoaNoiDungAI(noiDung) {
+  if (!noiDung) return '';
+  if (typeof noiDung !== 'string') {
+    if (Array.isArray(noiDung)) {
+      return noiDung
+        .map(item => item?.text || (typeof item === 'string' ? item : ''))
+        .filter(Boolean)
+        .join('\n')
+        .trim();
+    }
+    if (typeof noiDung === 'object' && noiDung.text) {
+      return String(noiDung.text).trim();
+    }
+    return String(noiDung);
+  }
+
+  const trimmed = noiDung.trim();
+  // Nếu nội dung là chuỗi JSON dạng {"type": "text", "text": "..."} hoặc [{"type": "text", "text": "..."}]
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        const textParts = parsed
+          .map(item => item?.text || (typeof item === 'string' ? item : ''))
+          .filter(Boolean);
+        if (textParts.length > 0) return textParts.join('\n').trim();
+      } else if (parsed && typeof parsed === 'object') {
+        if (parsed.text) return String(parsed.text).trim();
+        if (parsed.content) return chuanHoaNoiDungAI(parsed.content);
+        if (parsed.message) return chuanHoaNoiDungAI(parsed.message);
+      }
+    } catch (e) {
+      // Giữ nguyên chuỗi nếu không parse được JSON
+    }
+  }
+
+  return trimmed;
+}
+
+/**
  * Xử lý cuộc hội thoại với AI Chatbot (hỗ trợ vòng lặp Function Calling)
  * @param {Object} options
  * @param {Array} options.lichSuChat - Mảng các tin nhắn [{ role: 'user'|'assistant', content: string }]
@@ -405,8 +451,12 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, maKhachHang = null 
     ...tinNhanHopLe
   ];
 
-  if (tinNhanMoi && tinNhanMoi.trim()) {
-    messages.push({ role: 'user', content: tinNhanMoi.trim() });
+  // Tránh gửi lặp tin nhắn nếu tin nhắn mới đã nằm ở cuối lịch sử
+  const tinCuoi = tinNhanHopLe[tinNhanHopLe.length - 1];
+  const daCoTinCuoi = tinCuoi && tinCuoi.role === 'user' && tinCuoi.content.trim() === String(tinNhanMoi || '').trim();
+
+  if (!daCoTinCuoi && tinNhanMoi && String(tinNhanMoi).trim()) {
+    messages.push({ role: 'user', content: String(tinNhanMoi).trim() });
   }
 
   // Đối tượng lưu dữ liệu tương tác để trả về frontend render UI widgets
@@ -434,7 +484,7 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, maKhachHang = null 
     // Nếu AI không yêu cầu gọi tool -> Đã có câu trả lời cuối cùng cho người dùng
     if (!aiMessage.tool_calls || aiMessage.tool_calls.length === 0) {
       return {
-        traLoi: aiMessage.content || 'Dạ, tôi có thể giúp gì thêm cho bạn về sách và đơn hàng không ạ?',
+        traLoi: chuanHoaNoiDungAI(aiMessage.content) || 'Dạ, tôi có thể giúp gì thêm cho bạn về sách và đơn hàng không ạ?',
         duLieuKemTheo
       };
     }
@@ -490,7 +540,7 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, maKhachHang = null 
   });
 
   return {
-    traLoi: ketQuaCuoi.message?.content || 'Dạ, bạn có cần BookNest tư vấn thêm thông tin nào nữa không ạ?',
+    traLoi: chuanHoaNoiDungAI(ketQuaCuoi.message?.content) || 'Dạ, bạn có cần BookNest tư vấn thêm thông tin nào nữa không ạ?',
     duLieuKemTheo
   };
 }
@@ -498,6 +548,7 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, maKhachHang = null 
 module.exports = {
   LOI_NHAC_HE_THONG,
   DANH_SACH_CONG_CU,
+  chuanHoaNoiDungAI,
   thucThiTimSach,
   thucThiKiemTraTonKho,
   thucThiSoanThanhToan,

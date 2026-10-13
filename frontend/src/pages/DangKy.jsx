@@ -375,12 +375,7 @@ export const DangKy = () => {
             <Link 
               to="/login" 
               state={location.state}
-              style={{ 
-                color: 'var(--primary-dark)', 
-                fontWeight: 600,
-                textDecoration: 'underline',
-                textUnderlineOffset: '3px'
-              }}
+              className="link-accent"
             >
               Đăng nhập ngay
             </Link>

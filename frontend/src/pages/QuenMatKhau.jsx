@@ -126,29 +126,25 @@ export const QuenMatKhau = () => {
       <div style={{
         maxWidth: '500px',
         width: '100%',
-        backgroundColor: 'var(--card-bg, #FFFFFF)',
-        border: '1px solid var(--border, #E2E8F0)',
+        backgroundColor: 'var(--bg-card)',
+        border: '1px solid var(--border)',
         borderRadius: '16px',
-        boxShadow: '0 8px 30px rgba(0,0,0,0.06)',
+        boxShadow: 'var(--shadow-md)',
         padding: '2.5rem 2.25rem',
         position: 'relative'
       }}>
         {/* Nút quay lại đăng nhập */}
         <Link
           to="/login"
+          className="link-accent"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
             fontSize: '0.85rem',
-            color: 'var(--text-muted, #64748B)',
             textDecoration: 'none',
-            marginBottom: '1.5rem',
-            fontWeight: 500,
-            transition: 'color 0.2s'
+            marginBottom: '1.5rem'
           }}
-          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-main, #0F172A)'}
-          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted, #64748B)'}
         >
           <ArrowLeft size={16} />
           <span>Quay lại Đăng nhập</span>
@@ -162,13 +158,13 @@ export const QuenMatKhau = () => {
           <h1 className="font-serif" style={{
             fontSize: '1.65rem',
             fontWeight: 700,
-            color: 'var(--text-main, #0F172A)',
+            color: 'var(--text-main)',
             margin: '0.25rem 0 0.5rem'
           }}>
             {buoc === 1 ? 'Khôi Phục Mật Khẩu' : 'Đặt Lại Mật Khẩu Mới'}
           </h1>
           <p style={{
-            color: 'var(--text-muted, #64748B)',
+            color: 'var(--text-muted)',
             fontSize: '0.875rem',
             lineHeight: 1.5,
             margin: 0
@@ -187,9 +183,9 @@ export const QuenMatKhau = () => {
             gap: '10px',
             padding: '0.75rem 1rem',
             borderRadius: '8px',
-            backgroundColor: '#FEF2F2',
-            border: '1px solid #FCA5A5',
-            color: '#B91C1C',
+            backgroundColor: 'var(--danger-light)',
+            border: '1px solid var(--danger)',
+            color: 'var(--danger)',
             fontSize: '0.875rem',
             marginBottom: '1.25rem'
           }}>
@@ -206,9 +202,9 @@ export const QuenMatKhau = () => {
             gap: '10px',
             padding: '0.75rem 1rem',
             borderRadius: '8px',
-            backgroundColor: '#F0FDF4',
-            border: '1px solid #86EFAC',
-            color: '#15803D',
+            backgroundColor: 'var(--accent-light)',
+            border: '1px solid var(--accent)',
+            color: 'var(--text-main)',
             fontSize: '0.875rem',
             marginBottom: '1.25rem'
           }}>
@@ -225,7 +221,7 @@ export const QuenMatKhau = () => {
                 display: 'block',
                 fontSize: '0.85rem',
                 fontWeight: 600,
-                color: 'var(--text-main, #1E293B)',
+                color: 'var(--text-main)',
                 marginBottom: '0.4rem'
               }}>
                 Địa chỉ Email đã đăng ký
@@ -239,11 +235,7 @@ export const QuenMatKhau = () => {
                     width: '100%',
                     padding: '0.75rem 1rem 0.75rem 2.6rem',
                     borderRadius: '8px',
-                    border: '1px solid var(--border, #CBD5E1)',
-                    backgroundColor: 'var(--bg-input, #FFFFFF)',
-                    color: 'var(--text-main, #0F172A)',
                     fontSize: '0.9rem',
-                    outline: 'none',
                     boxSizing: 'border-box'
                   }}
                   placeholder="nhap.email@vidu.com"
@@ -255,7 +247,7 @@ export const QuenMatKhau = () => {
                   left: '12px',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  color: 'var(--text-muted, #94A3B8)'
+                  color: 'var(--text-muted)'
                 }} />
               </div>
             </div>
@@ -332,14 +324,10 @@ export const QuenMatKhau = () => {
                   width: '100%',
                   padding: '0.75rem',
                   borderRadius: '8px',
-                  border: '1px solid var(--border, #CBD5E1)',
-                  backgroundColor: 'var(--bg-input, #FFFFFF)',
-                  color: 'var(--text-main, #0F172A)',
                   fontSize: '1.35rem',
                   letterSpacing: '8px',
                   fontWeight: 800,
                   textAlign: 'center',
-                  outline: 'none',
                   boxSizing: 'border-box'
                 }}
                 placeholder="000000"
@@ -354,7 +342,7 @@ export const QuenMatKhau = () => {
                 display: 'block',
                 fontSize: '0.85rem',
                 fontWeight: 600,
-                color: 'var(--text-main, #1E293B)',
+                color: 'var(--text-main)',
                 marginBottom: '0.4rem'
               }}>
                 Mật khẩu mới
@@ -368,11 +356,7 @@ export const QuenMatKhau = () => {
                     width: '100%',
                     padding: '0.75rem 2.6rem 0.75rem 1rem',
                     borderRadius: '8px',
-                    border: '1px solid var(--border, #CBD5E1)',
-                    backgroundColor: 'var(--bg-input, #FFFFFF)',
-                    color: 'var(--text-main, #0F172A)',
                     fontSize: '0.9rem',
-                    outline: 'none',
                     boxSizing: 'border-box'
                   }}
                   placeholder="Tối thiểu 8 ký tự, có chữ và số"
@@ -390,7 +374,7 @@ export const QuenMatKhau = () => {
                     background: 'none',
                     border: 'none',
                     padding: '4px',
-                    color: 'var(--text-muted, #94A3B8)',
+                    color: 'var(--text-muted)',
                     cursor: 'pointer'
                   }}
                 >
@@ -405,7 +389,7 @@ export const QuenMatKhau = () => {
                 display: 'block',
                 fontSize: '0.85rem',
                 fontWeight: 600,
-                color: 'var(--text-main, #1E293B)',
+                color: 'var(--text-main)',
                 marginBottom: '0.4rem'
               }}>
                 Xác nhận mật khẩu mới
@@ -418,11 +402,7 @@ export const QuenMatKhau = () => {
                   width: '100%',
                   padding: '0.75rem 1rem',
                   borderRadius: '8px',
-                  border: '1px solid var(--border, #CBD5E1)',
-                  backgroundColor: 'var(--bg-input, #FFFFFF)',
-                  color: 'var(--text-main, #0F172A)',
                   fontSize: '0.9rem',
-                  outline: 'none',
                   boxSizing: 'border-box'
                 }}
                 placeholder="Nhập lại chính xác mật khẩu mới"
@@ -466,13 +446,12 @@ export const QuenMatKhau = () => {
               <button
                 type="button"
                 onClick={() => { setBuoc(1); setLoi(''); setThongBaoThanhCong(''); }}
+                className="link-accent"
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: 'var(--text-muted, #64748B)',
                   fontSize: '0.825rem',
-                  cursor: 'pointer',
-                  textDecoration: 'underline'
+                  cursor: 'pointer'
                 }}
               >
                 Nhập địa chỉ email khác
