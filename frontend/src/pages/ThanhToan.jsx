@@ -139,8 +139,10 @@ export const ThanhToan = () => {
             setHienModalQR(true);
             return; // Dừng lại ở modal để khách quét mã QR
           } catch (errQr) {
-            console.warn('Không thể tạo mã VietQR:', errQr);
-            alert('Cổng thanh toán VietQR payOS hiện đang bảo trì hoặc chưa nạp khóa API. Đơn hàng của bạn đã được lưu với phương thức COD (thanh toán khi nhận hàng)!');
+            // Hiện đúng lý do máy chủ trả về (khóa sai, payOS từ chối...) thay vì một câu chung chung
+            const lyDo = errQr.response?.data?.message || errQr.message;
+            console.warn('Không thể tạo mã VietQR:', lyDo, errQr);
+            alert(`Không thể tạo mã VietQR: ${lyDo}. Đơn hàng của bạn đã được lưu với phương thức COD (thanh toán khi nhận hàng)!`);
           }
         } else {
           alert('Kính chúc quý độc giả nhiều niềm vui! Đơn hàng của bạn đã được khởi tạo thành công.');
@@ -175,8 +177,9 @@ export const ThanhToan = () => {
             setHienModalQR(true);
             return; // Dừng lại ở modal để khách quét mã QR
           } catch (errQr) {
-            console.warn('Không thể tạo mã VietQR cho khách vãng lai:', errQr);
-            alert('Cổng thanh toán VietQR payOS hiện chưa kích hoạt khóa API. Đơn hàng của bạn đã được lưu với phương thức COD!');
+            const lyDo = errQr.response?.data?.message || errQr.message;
+            console.warn('Không thể tạo mã VietQR cho khách vãng lai:', lyDo, errQr);
+            alert(`Không thể tạo mã VietQR: ${lyDo}. Đơn hàng của bạn đã được lưu với phương thức COD!`);
             setDonVuaDat(res.data.data);
           }
         } else {
@@ -260,7 +263,10 @@ export const ThanhToan = () => {
     );
   }
 
-  if (items.length === 0) {
+  // Đặt đơn xong thì giỏ đã bị xóa (items rỗng) nhưng khung QR vẫn phải hiện lên để khách quét mã.
+  // Nếu thoát sớm ở đây, khung QR (dựng ở cuối trang chính) không bao giờ xuất hiện và khách chỉ thấy "Giỏ hàng trống".
+  const dangHienKhungQR = hienModalQR && Boolean(duLieuQR);
+  if (items.length === 0 && !dangHienKhungQR) {
     return (
       <div className="container py-16 text-center">
         <div className="card" style={{ maxWidth: '520px', margin: '0 auto', padding: '2.5rem 2rem', borderRadius: '12px' }}>
