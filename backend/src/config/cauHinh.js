@@ -50,6 +50,18 @@ const cauHinh = {
       process.env.PAYOS_API_KEY &&
       process.env.PAYOS_CHECKSUM_KEY
     )
+  },
+  // AI Chatbot Tư Vấn (NVIDIA NIM)
+  ai: {
+    nhaCungCap: process.env.AI_PROVIDER || 'nvidia',
+    khoaApi: process.env.AI_API_KEY || '',
+    moHinh: process.env.AI_MODEL || 'meta/llama-3.3-70b-instruct',
+    diaChiGoc: process.env.AI_BASE_URL || 'https://integrate.api.nvidia.com/v1',
+    daBat: process.env.AI_CHATBOT_BAT !== 'false',
+    daCauHinh: Boolean(
+      process.env.AI_API_KEY &&
+      process.env.AI_API_KEY !== 'your_nvidia_nim_api_key_here'
+    )
   }
 };
 
