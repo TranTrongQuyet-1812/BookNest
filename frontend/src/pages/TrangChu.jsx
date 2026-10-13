@@ -15,7 +15,7 @@ gsap.registerPlugin(useGSAP);
 
 const CanhSinhVatDem = lazy(() => import('../components/r3f/canvas/CanhSinhVatDem'));
 const DanDomDom = lazy(() => import('../components/r3f/sinhVat/DanDomDom'));
-const Doi = lazy(() => import('../components/r3f/sinhVat/Doi'));
+const DoiTheoNoiDung = lazy(() => import('../components/r3f/sinhVat/DoiTheoNoiDung'));
 const SinhVatTrangChuCanvas = lazy(() => import('../components/canvas/SinhVatTrangChuCanvas'));
 
 // Tuyển tập danh ngôn văn học kinh điển về sách & tri thức
@@ -50,7 +50,6 @@ export const TrangChu = () => {
   const { themVaoGio } = useCartStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const heroRef = useRef(null);
-  const [heroDangHien, datHeroDangHien] = useState(true);
   const cheDo = useCheDoGiaoDien();
   const [giamChuyenDong] = useGiamChuyenDong();
 
@@ -88,16 +87,6 @@ export const TrangChu = () => {
 
   // Kiểm tra xem có đang ở chế độ lọc/tìm kiếm không
   const laCheDoLoc = Boolean(tuKhoaTimKiem || danhMucId);
-
-  useEffect(() => {
-    if (laCheDoLoc || !heroRef.current) {
-      datHeroDangHien(false);
-      return undefined;
-    }
-    const theoDoi = new IntersectionObserver(([entry]) => datHeroDangHien(entry.isIntersecting));
-    theoDoi.observe(heroRef.current);
-    return () => theoDoi.disconnect();
-  }, [laCheDoLoc]);
 
   // Hiệu ứng GSAP mở màn cho Hero Section
   useGSAP(() => {
@@ -272,14 +261,14 @@ export const TrangChu = () => {
     <div className="home-page" style={{ minHeight: '80vh', paddingBottom: '3.5rem' }}>
       {/* Ban ngày giữ đàn cư dân quen thuộc; ban đêm đổi sang cảnh đom đóm để tránh chồng hai hệ 3D. */}
       {!laCheDoLoc && cheDo !== 'dark' && (
-        <Suspense fallback={null}><SinhVatTrangChuCanvas tamDung={!heroDangHien} /></Suspense>
+        <Suspense fallback={null}><SinhVatTrangChuCanvas /></Suspense>
       )}
       {!laCheDoLoc && cheDo === 'dark' && (
         <Suspense fallback={null}>
-          <CanhSinhVatDem zIndex={18} tamDung={giamChuyenDong} hienThi={heroDangHien}>
+          <CanhSinhVatDem zIndex={18} tamDung={giamChuyenDong}>
             <DanDomDom soCon={window.innerWidth < 700 ? 6 : 10} doSang={0.9} />
-            <Doi position={[-3.1, 1.65, -0.2]} tiLe={1.05} pha={0.2} />
-            <Doi position={[3.2, 1.2, -0.4]} tiLe={0.8} pha={0.65} />
+            <DoiTheoNoiDung viTri={0} position={[0, 0, -0.2]} tiLe={1.05} pha={0.2} />
+            <DoiTheoNoiDung viTri={1} position={[0, 0, -0.4]} tiLe={0.8} pha={0.65} />
           </CanhSinhVatDem>
         </Suspense>
       )}

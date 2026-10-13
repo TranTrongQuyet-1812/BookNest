@@ -140,6 +140,7 @@ function khoiDongSinhVat(container, giamRef) {
   let demQuet = 0;
 
   const tick = (_time, deltaMs) => {
+    if (document.hidden) return;
     if (giamRef.current) {
       // Vẫn vẽ một khung đầu để các con vật còn hiện nguyên tại chỗ khi người dùng giảm chuyển động.
       if (!ctx.daVe && ctx.dsSinhVat.length) may.renderer.render(may.scene, may.camera);
