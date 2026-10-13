@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import LogoBookNest from './LogoBookNest';
+import { baoRemMo, baoRemDong } from '../utils/nhipMoTrang';
 
 // Các câu danh ngôn ngắn ngẫu nhiên xuất hiện khi chuyển trang
 const CAU_DANH_NGON = [
@@ -90,7 +91,8 @@ export const PageLoader = ({ location: targetLocation, onCurtainCovered }) => {
     .to(manChe, {
       yPercent: -100,
       duration: 0.65,
-      ease: 'power4.inOut'
+      ease: 'power4.inOut',
+      onStart: baoRemMo // hero và đàn sinh vật vào cảnh đúng lúc rèm bắt đầu hé trang
     }, '-=0.1');
 
     return () => {
@@ -129,6 +131,7 @@ export const PageLoader = ({ location: targetLocation, onCurtainCovered }) => {
     tlHienTaiRef.current = tl;
 
     // Chuẩn bị: Đặt rèm ở dưới đáy màn hình
+    baoRemDong(); // trang cũ sắp bị che, cảnh của trang mới phải chờ rèm mở lại
     gsap.set(manChe, {
       yPercent: 100,
       visibility: 'visible',
@@ -178,6 +181,7 @@ export const PageLoader = ({ location: targetLocation, onCurtainCovered }) => {
       yPercent: -100,
       duration: 0.6,
       ease: 'power4.inOut',
+      onStart: baoRemMo,
       onComplete: () => {
         dangChuyenCanhRef.current = false;
         gsap.set(manChe, { visibility: 'hidden', pointerEvents: 'none' });

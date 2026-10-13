@@ -4,6 +4,7 @@ import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useCheDoGiaoDien } from './r3f/hooks/useCheDoGiaoDien';
 import { useGiamChuyenDong } from '../utils/chuyenDong';
+import { khiRemMo } from '../utils/nhipMoTrang';
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -39,6 +40,8 @@ export default function HomeAtmosphere({ heroRef }) {
   const canvasRef = useRef(null);
   const cheDo = useCheDoGiaoDien();
   const [giamChuyenDong] = useGiamChuyenDong();
+  // Chỉ vào cảnh một lần mỗi lần dựng trang; đổi sáng/tối (effect chạy lại) thì không trượt vào lần nữa
+  const daVaoCanhRef = useRef(false);
 
   useGSAP(() => {
     const root = rootRef.current;
@@ -59,6 +62,26 @@ export default function HomeAtmosphere({ heroRef }) {
       const denLongHai = root.querySelector('.home-lantern--hai');
       if (denLongMot) cacVongLap.push(gsap.to(denLongMot, { rotation: 3, duration: 3.8, repeat: -1, yoyo: true, transformOrigin: '50% 0%', ease: 'sine.inOut' }));
       if (denLongHai) cacVongLap.push(gsap.to(denLongHai, { rotation: -2.4, duration: 4.6, repeat: -1, yoyo: true, transformOrigin: '50% 0%', ease: 'sine.inOut' }));
+    }
+
+    // Vào cảnh khi rèm PageLoader bắt đầu trượt lên: cỏ trồi lên, cành rủ xuống, mặt trời/trăng và đèn lồng trượt ra,
+    // mây trôi vào từ hai bên. Dùng xPercent/yPercent để không đụng x/y/rotation/scale của các vòng lặp và ScrollTrigger.
+    let huyChoRem = () => {};
+    if (!giam && !daVaoCanhRef.current) {
+      const denLong = root.querySelectorAll('.home-lantern');
+      const tlVaoCanh = gsap.timeline({ paused: true, defaults: { ease: 'power3.out' } })
+        .from('.home-branch', { yPercent: -105, opacity: 0, duration: 1.6 }, 0)
+        .from('.home-sun-moon', { xPercent: 35, yPercent: -40, opacity: 0, duration: 1.8 }, 0.1)
+        .from('.home-grass', { yPercent: 45, opacity: 0, duration: 1.5 }, 0.15)
+        .from('.home-cloud--mot', { xPercent: -150, opacity: 0, duration: 2.4, ease: 'power2.out' }, 0.2)
+        .from('.home-cloud--hai', { xPercent: 170, opacity: 0, duration: 2.6, ease: 'power2.out' }, 0.3)
+        .from('.home-cloud--ba', { xPercent: -130, opacity: 0, duration: 2.5, ease: 'power2.out' }, 0.4)
+        .from('.home-pollen', { opacity: 0, duration: 1.6, ease: 'none' }, 0.8);
+      if (denLong.length) tlVaoCanh.from(denLong, { yPercent: -170, duration: 1.4, ease: 'elastic.out(1, 0.55)', stagger: 0.18 }, 0.5);
+      huyChoRem = khiRemMo(() => {
+        daVaoCanhRef.current = true;
+        tlVaoCanh.play();
+      });
     }
 
     const vungSang = root.querySelector('.home-pointer-glow');
@@ -163,6 +186,7 @@ export default function HomeAtmosphere({ heroRef }) {
     window.addEventListener('pointerdown', khiBam, { passive: true });
 
     return () => {
+      huyChoRem();
       window.clearTimeout(hen);
       gsap.ticker.remove(tick);
       cacVongLap.forEach((animation) => animation.kill());

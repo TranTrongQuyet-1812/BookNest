@@ -32,7 +32,7 @@ function vaoTrangThaiDau(sv) {
   sv.demNgoai = 0;
   sv.thoiGianDauToiDa = ngauNhien(...sv.cauHinh.thoiGianDau);
   sv.mienKhoiBay = 1.3; // vừa đáp xuống thì chưa giật mình ngay
-  sv.chiuNgoai = ngauNhien(1.5, 4);
+  sv.chiuNgoai = ngauNhien(0.5, 1.4); // ra khỏi màn hình thì sớm nhường chỗ cho con bay vào, không để trang trống
   sv.demNghieng = ngauNhien(5, 12);
   sv.goc.rotation.set(sv.cauHinh.nghiengDau || 0, sv.quayY, 0);
   sv.goc.visible = true;
@@ -110,9 +110,10 @@ function chuyenSangCho(sv, soGiay) {
 }
 
 function capNhatCho(sv, ctx, delta) {
+  if (!ctx.daMoMan) return; // trang chưa mở màn: chưa con nào được vào cảnh
   sv.choDen -= delta;
   if (sv.choDen > 0) return;
-  if (!batDauBayVao(sv, ctx)) sv.choDen = 2;
+  if (!batDauBayVao(sv, ctx)) sv.choDen = 0.6; // chưa có chỗ đậu nào hợp, lát nữa thử lại
 }
 
 // Chim thỉnh thoảng nghiêng đầu ngó quanh khi đậu yên
@@ -141,7 +142,7 @@ function capNhatDau(sv, ctx, delta) {
   if (ngoaiManHinh) {
     // Người dùng đã cuộn đi chỗ khác: một lúc sau con vật bay vào chỗ họ đang nhìn
     sv.demNgoai += delta;
-    if (sv.demNgoai > sv.chiuNgoai) chuyenSangCho(sv, ngauNhien(0.3, 3));
+    if (sv.demNgoai > sv.chiuNgoai) chuyenSangCho(sv, ngauNhien(0.3, 1.5));
     return;
   }
   sv.demNgoai = 0;
@@ -222,3 +223,23 @@ export function capNhatSinhVat(sv, ctx, delta) {
 
 // Con nào đang hiện trên màn hình (để bỏ qua việc vẽ và dò chuột thừa cho con chưa vào hoặc đã ra ngoài)
 export const dangHienTrenMan = (sv) => sv.trangThai !== 'CHO' && sv.goc.visible;
+
+// Số con tối thiểu luôn có mặt trên màn hình. Ít hơn thì gọi con đang chờ vào sớm (mỗi nhịp một con cho đỡ ùa vào cùng lúc)
+const MUC_TOI_THIEU = 5;
+const MUC_TOI_THIEU_MAN_HEP = 3;
+const NHIP_BO_SUNG = 0.9;
+
+export function giuDuSoLuong(ctx, delta) {
+  if (!ctx.daMoMan) return;
+  ctx.demBoSung -= delta;
+  if (ctx.demBoSung > 0) return;
+
+  const muc = ctx.W < 768 ? MUC_TOI_THIEU_MAN_HEP : MUC_TOI_THIEU;
+  const dangCo = ctx.dsSinhVat.filter((sv) => dangHienTrenMan(sv) || (sv.trangThai === 'CHO' && sv.choDen < 1)).length;
+  if (dangCo >= muc) return;
+
+  const conCho = ctx.dsSinhVat.filter((sv) => sv.trangThai === 'CHO' && sv.choDen >= 1);
+  if (!conCho.length) return;
+  conCho.sort((a, b) => a.choDen - b.choDen)[0].choDen = 0.2;
+  ctx.demBoSung = NHIP_BO_SUNG;
+}

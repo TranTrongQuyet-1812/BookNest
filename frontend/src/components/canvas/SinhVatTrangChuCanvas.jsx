@@ -10,7 +10,8 @@ import {
 } from './sinhVat/cauHinhSinhVat';
 import { napMoHinh, taoSinhVat, huySinhVat } from './sinhVat/taoSinhVat';
 import { quetDiemDau } from './sinhVat/diemDau';
-import { batDauBay, capNhatSinhVat, datNgayLenDiemDau, dangHienTrenMan } from './sinhVat/hanhViSinhVat';
+import { batDauBay, capNhatSinhVat, datNgayLenDiemDau, dangHienTrenMan, giuDuSoLuong } from './sinhVat/hanhViSinhVat';
+import { khiRemMo } from '../../utils/nhipMoTrang';
 import { useCheDoGiaoDien } from '../r3f/hooks/useCheDoGiaoDien';
 import { useGiamChuyenDong } from '../../utils/chuyenDong';
 
@@ -82,11 +83,23 @@ async function napDanSinhVat(ctx, scene, danhSachGoc) {
   });
 }
 
-// Vài con đậu sẵn lúc mở trang, số còn lại bay vào dần theo thời gian
+// Giảm chuyển động: vài con đậu sẵn cho trang không trống, không có chuyến bay nào
 function xepChoLucDau(ctx) {
+  ctx.daMoMan = true;
   ctx.dsSinhVat.forEach((sv, i) => {
     if (i < SO_CON_DAU_NGAY && datNgayLenDiemDau(sv, ctx)) return;
     sv.choDen = 1 + i * 1.8 + Math.random() * 3;
+  });
+}
+
+// Vào cảnh lúc rèm mở: không con nào có sẵn, cả đàn bay vào từ hai bên và từ trên xuống, lần lượt cách nhau.
+// SO_CON_DAU_NGAY con đầu vào dồn dập để hero có sinh khí ngay, số còn lại thưa dần.
+function xepChoMoMan(ctx) {
+  ctx.daMoMan = true;
+  ctx.dsSinhVat.forEach((sv, i) => {
+    sv.choDen = i < SO_CON_DAU_NGAY
+      ? 0.2 + i * 0.45 + Math.random() * 0.3
+      : 3 + (i - SO_CON_DAU_NGAY) * 1.8 + Math.random() * 2;
   });
 }
 
@@ -135,13 +148,14 @@ function veLai(may, ctx) {
 
 function khoiDongSinhVat(container, giamRef, cheDo) {
   const may = taoMayVe(container);
-  const ctx = { W: 1, H: 1, D: 1, heSoMan: 1, scrollY: 0, dsDiemDau: [], dsSinhVat: [], daVe: false };
+  const ctx = { W: 1, H: 1, D: 1, heSoMan: 1, scrollY: 0, dsDiemDau: [], dsSinhVat: [], daVe: false, daMoMan: false, demBoSung: 0 };
   ctx.doiSangThree = (sx, sy, z, ra) => doiSangThree(ctx, sx, sy, z, ra);
   canhKhungNhin(may, ctx);
 
   const { chuot, huy: huyChuot } = theoDoiChuot();
   const tiaDo = { raycaster: new THREE.Raycaster(), ndc: new THREE.Vector2() };
   let daHuy = false;
+  let huyChoRem = () => {};
   let demQuet = 0;
 
   const tick = (_time, deltaMs) => {
@@ -162,6 +176,7 @@ function khoiDongSinhVat(container, giamRef, cheDo) {
     }
     xuLyChuot(chuot, ctx, may, tiaDo);
     ctx.dsSinhVat.forEach((sv) => capNhatSinhVat(sv, ctx, delta));
+    giuDuSoLuong(ctx, delta);
     veLai(may, ctx);
   };
 
@@ -173,7 +188,8 @@ function khoiDongSinhVat(container, giamRef, cheDo) {
       if (daHuy) { dsSinhVat.forEach(huySinhVat); return; }
       ctx.dsSinhVat = dsSinhVat;
       ctx.dsDiemDau = quetDiemDau();
-      xepChoLucDau(ctx);
+      if (giamRef.current) xepChoLucDau(ctx);
+      else huyChoRem = khiRemMo(() => xepChoMoMan(ctx));
     })
     .catch((loi) => console.error('Lỗi tải mô hình sinh vật 3D:', loi));
 
@@ -184,6 +200,7 @@ function khoiDongSinhVat(container, giamRef, cheDo) {
 
   return () => {
     daHuy = true;
+    huyChoRem();
     clearTimeout(hen);
     gsap.ticker.remove(tick);
     huyChuot();

@@ -9,6 +9,7 @@ import PhanTrang from '../components/PhanTrang';
 import HomeAtmosphere from '../components/HomeAtmosphere';
 import { useGiamChuyenDong } from '../utils/chuyenDong';
 import { getLenis } from '../utils/lenis';
+import { khiRemMo } from '../utils/nhipMoTrang';
 
 gsap.registerPlugin(useGSAP);
 
@@ -87,7 +88,8 @@ export const TrangChu = () => {
   useGSAP(() => {
     if (laCheDoLoc || !heroRef.current) return;
 
-    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+    // Tạm dừng để đợi rèm PageLoader trượt lên mới chạy, chữ không diễn xong khi còn bị rèm che
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' }, paused: true });
 
     tl.from('.home-eyebrow', {
       opacity: 0,
@@ -121,7 +123,11 @@ export const TrangChu = () => {
       rotation: -1.2,
       duration: 1
     }, '-=0.9');
-    if (giamChuyenDong) tl.progress(1);
+    if (giamChuyenDong) {
+      tl.progress(1);
+      return undefined;
+    }
+    return khiRemMo(() => tl.play());
   }, { scope: heroRef, dependencies: [laCheDoLoc, giamChuyenDong] });
 
   // Cuộn mượt xuống kệ sách bằng Lenis
