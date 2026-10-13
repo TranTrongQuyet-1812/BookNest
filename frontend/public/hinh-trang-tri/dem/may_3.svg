@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 170" role="img">
+  <title>Mây giấy</title>
+  <g id="may">
+    <g fill="#3F3440" transform="translate(0 8)">
+      <circle cx="70" cy="125" r="32"/>
+      <circle cx="140" cy="100" r="48"/>
+      <circle cx="210" cy="115" r="40"/>
+      <circle cx="300" cy="80" r="60"/>
+      <circle cx="385" cy="110" r="42"/>
+      <circle cx="450" cy="128" r="30"/>
+      <rect x="45" y="120" width="435" height="37" rx="18.5"/>
+    </g>
+    <g fill="#5B4C5C" transform="translate(0 0)">
+      <circle cx="70" cy="125" r="32"/>
+      <circle cx="140" cy="100" r="48"/>
+      <circle cx="210" cy="115" r="40"/>
+      <circle cx="300" cy="80" r="60"/>
+      <circle cx="385" cy="110" r="42"/>
+      <circle cx="450" cy="128" r="30"/>
+      <rect x="45" y="120" width="435" height="37" rx="18.5"/>
+    </g>
+  </g>
+</svg>

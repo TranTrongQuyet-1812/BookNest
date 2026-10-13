@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" role="img">
+  <title>Vầng nắng</title>
+  <defs>
+    <radialGradient id="nang-quang"><stop offset="0.25" stop-color="#F6C15C" stop-opacity="0.55"/><stop offset="1" stop-color="#F6C15C" stop-opacity="0"/></radialGradient>
+  </defs>
+  <circle id="quang" cx="250" cy="250" r="250" fill="url(#nang-quang)"/>
+  <g id="tia" transform="translate(250 250)" fill="#F6C15C" opacity="0.5">
+      <polygon points="-9,-96 9,-96 0,-150" transform="rotate(0)"/>
+      <polygon points="-9,-96 9,-96 0,-124" transform="rotate(25.7)"/>
+      <polygon points="-9,-96 9,-96 0,-150" transform="rotate(51.4)"/>
+      <polygon points="-9,-96 9,-96 0,-124" transform="rotate(77.1)"/>
+      <polygon points="-9,-96 9,-96 0,-150" transform="rotate(102.9)"/>
+      <polygon points="-9,-96 9,-96 0,-124" transform="rotate(128.6)"/>
+      <polygon points="-9,-96 9,-96 0,-150" transform="rotate(154.3)"/>
+      <polygon points="-9,-96 9,-96 0,-124" transform="rotate(180)"/>
+      <polygon points="-9,-96 9,-96 0,-150" transform="rotate(205.7)"/>
+      <polygon points="-9,-96 9,-96 0,-124" transform="rotate(231.4)"/>
+      <polygon points="-9,-96 9,-96 0,-150" transform="rotate(257.1)"/>
+      <polygon points="-9,-96 9,-96 0,-124" transform="rotate(282.9)"/>
+      <polygon points="-9,-96 9,-96 0,-150" transform="rotate(308.6)"/>
+      <polygon points="-9,-96 9,-96 0,-124" transform="rotate(334.3)"/>
+  </g>
+  <circle id="nang" cx="250" cy="250" r="72" fill="#F6C15C"/>
+  <circle cx="250" cy="250" r="54" fill="#F9D58A"/>
+</svg>

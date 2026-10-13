@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img">
+  <title>Sao chấm có quầng</title>
+  <defs>
+    <radialGradient id="sao-quang"><stop offset="0" stop-color="#FFF3D6" stop-opacity="0.9"/><stop offset="0.35" stop-color="#F2C46A" stop-opacity="0.35"/><stop offset="1" stop-color="#F2C46A" stop-opacity="0"/></radialGradient>
+  </defs>
+  <circle id="quang" cx="50" cy="50" r="48" fill="url(#sao-quang)"/>
+  <circle id="sao" cx="50" cy="50" r="7" fill="#FFF3D6"/>
+</svg>

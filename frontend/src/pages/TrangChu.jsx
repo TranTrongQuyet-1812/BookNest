@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -6,10 +6,17 @@ import api from '../services/api';
 import useCartStore from '../stores/cartStore';
 import KeSachCuonNgang from '../components/KeSachCuonNgang';
 import PhanTrang from '../components/PhanTrang';
-import SinhVatTrangChuCanvas from '../components/canvas/SinhVatTrangChuCanvas';
+import HomeAtmosphere from '../components/HomeAtmosphere';
+import { useCheDoGiaoDien } from '../components/r3f/hooks/useCheDoGiaoDien';
+import { useGiamChuyenDong } from '../utils/chuyenDong';
 import { getLenis } from '../utils/lenis';
 
 gsap.registerPlugin(useGSAP);
+
+const CanhSinhVatDem = lazy(() => import('../components/r3f/canvas/CanhSinhVatDem'));
+const DanDomDom = lazy(() => import('../components/r3f/sinhVat/DanDomDom'));
+const Doi = lazy(() => import('../components/r3f/sinhVat/Doi'));
+const SinhVatTrangChuCanvas = lazy(() => import('../components/canvas/SinhVatTrangChuCanvas'));
 
 // Tuyển tập danh ngôn văn học kinh điển về sách & tri thức
 const DANH_NGON_SACH = [
@@ -43,6 +50,9 @@ export const TrangChu = () => {
   const { themVaoGio } = useCartStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const heroRef = useRef(null);
+  const [heroDangHien, datHeroDangHien] = useState(true);
+  const cheDo = useCheDoGiaoDien();
+  const [giamChuyenDong] = useGiamChuyenDong();
 
   // Đọc query param từ URL (tìm kiếm hoặc lọc danh mục từ navbar)
   const tuKhoaTimKiem = searchParams.get('search') || '';
@@ -79,13 +89,28 @@ export const TrangChu = () => {
   // Kiểm tra xem có đang ở chế độ lọc/tìm kiếm không
   const laCheDoLoc = Boolean(tuKhoaTimKiem || danhMucId);
 
+  useEffect(() => {
+    if (laCheDoLoc || !heroRef.current) {
+      datHeroDangHien(false);
+      return undefined;
+    }
+    const theoDoi = new IntersectionObserver(([entry]) => datHeroDangHien(entry.isIntersecting));
+    theoDoi.observe(heroRef.current);
+    return () => theoDoi.disconnect();
+  }, [laCheDoLoc]);
+
   // Hiệu ứng GSAP mở màn cho Hero Section
   useGSAP(() => {
     if (laCheDoLoc || !heroRef.current) return;
 
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
-    tl.from('.hero-brand', {
+    tl.from('.home-eyebrow', {
+      opacity: 0,
+      y: 12,
+      duration: 0.65
+    })
+    .from('.hero-brand', {
       opacity: 0,
       y: 35,
       duration: 1
@@ -109,9 +134,11 @@ export const TrangChu = () => {
       opacity: 0,
       scale: 0.94,
       y: 25,
+      rotation: -1.2,
       duration: 1
     }, '-=0.9');
-  }, { scope: heroRef, dependencies: [laCheDoLoc] });
+    if (giamChuyenDong) tl.progress(1);
+  }, { scope: heroRef, dependencies: [laCheDoLoc, giamChuyenDong] });
 
   // Cuộn mượt xuống kệ sách bằng Lenis
   const handleCuonKeSach = () => {
@@ -242,9 +269,20 @@ export const TrangChu = () => {
   }, [laCheDoLoc, tuKhoaTimKiem, danhMucId, trangHienTai]);
 
   return (
-    <div style={{ minHeight: '80vh', paddingBottom: '3.5rem' }}>
-      {/* Đàn sinh vật 3D chỉ có ở Trang Chủ; chế độ lọc/tìm kiếm không có hero nên không thả */}
-      {!laCheDoLoc && <SinhVatTrangChuCanvas />}
+    <div className="home-page" style={{ minHeight: '80vh', paddingBottom: '3.5rem' }}>
+      {/* Ban ngày giữ đàn cư dân quen thuộc; ban đêm đổi sang cảnh đom đóm để tránh chồng hai hệ 3D. */}
+      {!laCheDoLoc && cheDo !== 'dark' && (
+        <Suspense fallback={null}><SinhVatTrangChuCanvas tamDung={!heroDangHien} /></Suspense>
+      )}
+      {!laCheDoLoc && cheDo === 'dark' && (
+        <Suspense fallback={null}>
+          <CanhSinhVatDem zIndex={18} tamDung={!heroDangHien || giamChuyenDong}>
+            <DanDomDom soCon={window.innerWidth < 700 ? 6 : 10} doSang={0.9} />
+            <Doi position={[-3.1, 1.65, -0.2]} tiLe={1.05} pha={0.2} />
+            <Doi position={[3.2, 1.2, -0.4]} tiLe={0.8} pha={0.65} />
+          </CanhSinhVatDem>
+        </Suspense>
+      )}
 
       {/* Toast thông báo thêm vào giỏ hàng */}
       {thongBaoThem && (
@@ -270,27 +308,13 @@ export const TrangChu = () => {
       {/* HERO SECTION TOÀN MÀN HÌNH (BỐ CỤC 2 CỘT TỐI GIẢN) */}
       {/* ============================================================== */}
       {!laCheDoLoc && (
-        <section ref={heroRef} style={{
-          minHeight: 'calc(100vh - 72px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '2.5rem 1.5rem',
-          maxWidth: '1240px',
-          margin: '0 auto',
-          boxSizing: 'border-box'
-        }}>
+        <section ref={heroRef} className="home-hero">
+          <HomeAtmosphere heroRef={heroRef} />
           {/* Khối nội dung 2 cột: Bên Trái (Thương hiệu & Đoạn thơ) - Bên Phải (Tác phẩm & Danh ngôn) */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-            gap: '3.5rem',
-            alignItems: 'center',
-            width: '100%',
-            padding: '1rem 0'
-          }}>
+          <div className="home-hero-content">
             {/* CỘT TRÁI: Chữ BookNest lớn & Slogan thơ thi vị */}
-            <div>
+            <div className="home-hero-copy">
+              <div className="home-eyebrow"><span /> MỞ MỘT TRANG, CHẠM MỘT THẾ GIỚI</div>
               <h1 className="font-fleur hero-brand" style={{
                 fontSize: 'clamp(4.5rem, 8.5vw, 6.5rem)',
                 lineHeight: 1.05,
@@ -323,31 +347,10 @@ export const TrangChu = () => {
               </p>
 
               {/* Nút điều hướng */}
-              <div className="hero-buttons" style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              <div className="hero-buttons">
                 <button
                   onClick={handleCuonKeSach}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.8rem 1.6rem',
-                    backgroundColor: 'var(--primary)',
-                    color: 'var(--primary-text)',
-                    borderRadius: 'var(--radius-sm)',
-                    fontWeight: 600,
-                    fontSize: '0.95rem',
-                    boxShadow: 'var(--shadow-sm)',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--primary-hover)';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--primary)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
+                  className="home-explore-button"
                 >
                   <span>Khám phá các kệ sách</span>
                   <span>&darr;</span>
@@ -356,16 +359,8 @@ export const TrangChu = () => {
             </div>
 
             {/* CỘT PHẢI: Góc Trưng Bày Cuốn Sách Của Ngày & Danh Ngôn Trang Sách */}
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <div className="hero-spotlight" style={{
-                maxWidth: '380px',
-                width: '100%',
-                backgroundColor: 'var(--bg-card)',
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--radius-md)',
-                padding: '1.75rem',
-                boxShadow: 'var(--shadow-md)'
-              }}>
+            <div className="home-spotlight-wrap">
+              <div className="hero-spotlight home-spotlight">
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',

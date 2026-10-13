@@ -4,7 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import useCartStore from '../stores/cartStore';
 import api from '../services/api';
 import LogoBookNest from './LogoBookNest';
-import { Search, ShoppingCart, User, LogOut, ChevronDown, Sun, Moon } from 'lucide-react';
+import { Search, ShoppingCart, User, LogOut, ChevronDown, Sun, Moon, AudioWaveform } from 'lucide-react';
+import { useGiamChuyenDong } from '../utils/chuyenDong';
 
 export const Navbar = () => {
   const { user, daDangNhap, dangXuat, theme, toggleTheme } = useAuth();
@@ -13,6 +14,7 @@ export const Navbar = () => {
   const [danhMucList, setDanhMucList] = useState([]);
   const [moDropdown, setMoDropdown] = useState(false);
   const [tuKhoa, setTuKhoa] = useState('');
+  const [giamChuyenDong, datGiamChuyenDong] = useGiamChuyenDong();
   const dropdownRef = useRef(null);
 
   // Tải danh mục cho menu dropdown
@@ -453,6 +455,17 @@ export const Navbar = () => {
             ) : (
               <Moon size={17} style={{ color: 'var(--text-main)' }} />
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => datGiamChuyenDong(!giamChuyenDong)}
+            className="navbar-motion-toggle"
+            title={giamChuyenDong ? 'Bật lại chuyển động trong khu vườn' : 'Giảm chuyển động trong khu vườn'}
+            aria-label={giamChuyenDong ? 'Bật lại chuyển động' : 'Giảm chuyển động'}
+            aria-pressed={giamChuyenDong}
+          >
+            <AudioWaveform size={17} />
           </button>
 
           {daDangNhap ? (

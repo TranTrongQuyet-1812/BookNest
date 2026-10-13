@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img">
+  <title>Sao lấp lánh</title>
+  <g transform="translate(50 50)">
+    <path id="sao" d="M 0 -44 Q 5.279999999999999 -5.279999999999999 44 0 Q 5.279999999999999 5.279999999999999 0 44 Q -5.279999999999999 5.279999999999999 -44 0 Q -5.279999999999999 -5.279999999999999 0 -44 Z" fill="#FFF3D6"/>
+    <circle r="5" fill="#F2C46A"/>
+  </g>
+</svg>

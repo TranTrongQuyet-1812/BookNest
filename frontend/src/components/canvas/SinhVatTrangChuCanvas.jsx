@@ -10,6 +10,8 @@ import {
 import { napMoHinh, taoSinhVat, huySinhVat } from './sinhVat/taoSinhVat';
 import { quetDiemDau } from './sinhVat/diemDau';
 import { batDauBay, capNhatSinhVat, datNgayLenDiemDau, dangHienTrenMan } from './sinhVat/hanhViSinhVat';
+import { useCheDoGiaoDien } from '../r3f/hooks/useCheDoGiaoDien';
+import { useGiamChuyenDong } from '../../utils/chuyenDong';
 
 /**
  * Đàn sinh vật 3D ở Trang chủ: đậu trên chữ / card lớn / kệ sách, bị rê chuột hoặc chạm thì bay đi,
@@ -126,7 +128,7 @@ function veLai(may, ctx) {
   ctx.daVe = coCon;
 }
 
-function khoiDongSinhVat(container) {
+function khoiDongSinhVat(container, giamRef) {
   const may = taoMayVe(container);
   const ctx = { W: 1, H: 1, D: 1, heSoMan: 1, scrollY: 0, dsDiemDau: [], dsSinhVat: [], daVe: false };
   ctx.doiSangThree = (sx, sy, z, ra) => doiSangThree(ctx, sx, sy, z, ra);
@@ -138,6 +140,12 @@ function khoiDongSinhVat(container) {
   let demQuet = 0;
 
   const tick = (_time, deltaMs) => {
+    if (giamRef.current) {
+      // Vẫn vẽ một khung đầu để các con vật còn hiện nguyên tại chỗ khi người dùng giảm chuyển động.
+      if (!ctx.daVe && ctx.dsSinhVat.length) may.renderer.render(may.scene, may.camera);
+      ctx.daVe = ctx.dsSinhVat.length > 0;
+      return;
+    }
     const delta = Math.min(deltaMs / 1000, 0.1);
     // Đọc vị trí cuộn trong cùng nhịp với Lenis (xem ghi chú ở dưới) để không lệch một khung hình
     ctx.scrollY = window.scrollY;
@@ -180,16 +188,21 @@ function khoiDongSinhVat(container) {
   };
 }
 
-export const SinhVatTrangChuCanvas = () => {
+export const SinhVatTrangChuCanvas = ({ tamDung = false }) => {
   const mountRef = useRef(null);
+  const cheDo = useCheDoGiaoDien();
+  const [giamChuyenDong] = useGiamChuyenDong();
+  const giamRef = useRef(giamChuyenDong || tamDung);
+
+  useEffect(() => { giamRef.current = giamChuyenDong || tamDung; }, [giamChuyenDong, tamDung]);
 
   useEffect(() => {
     const container = mountRef.current;
     // Không chặn theo prefers-reduced-motion: nhiều máy Windows tắt "hiệu ứng động" nên trình duyệt luôn báo reduce,
     // chặn theo đó thì đàn sinh vật biến mất hoàn toàn dù chủ dự án muốn có
-    if (!container) return undefined;
-    return khoiDongSinhVat(container);
-  }, []);
+    if (!container || cheDo === 'dark') return undefined;
+    return khoiDongSinhVat(container, giamRef);
+  }, [cheDo]);
 
   return (
     <div

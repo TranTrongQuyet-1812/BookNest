@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 240" role="img">
+  <title>Đèn lồng</title>
+  <defs>
+    <radialGradient id="den-sang"><stop offset="0" stop-color="#FFF1C2"/><stop offset="1" stop-color="#F2C46A" stop-opacity="0"/></radialGradient>
+    <radialGradient id="den-quang"><stop offset="0.2" stop-color="#F2C46A" stop-opacity="0.5"/><stop offset="1" stop-color="#F2C46A" stop-opacity="0"/></radialGradient>
+  </defs>
+  <circle id="quang" cx="60" cy="112" r="58" fill="url(#den-quang)"/>
+  <g id="den">
+    <line x1="60" y1="0" x2="60" y2="40" stroke="#2A2226" stroke-width="3" stroke-linecap="round"/>
+    <rect x="35" y="40" width="50" height="12" rx="4" fill="#2A2226"/>
+    <path d="M 38 52 Q 12 110 38 168 L 82 168 Q 108 110 82 52 Z" fill="#F2C46A"/>
+    <ellipse cx="60" cy="110" rx="26" ry="42" fill="url(#den-sang)"/>
+    <g fill="none" stroke="#2A2226" stroke-opacity="0.4" stroke-width="2">
+      <path d="M 60 52 L 60 168"/><path d="M 49 52 Q 35 110 49 168"/><path d="M 71 52 Q 85 110 71 168"/>
+    </g>
+    <rect x="36" y="168" width="48" height="11" rx="4" fill="#2A2226"/>
+    <line x1="60" y1="179" x2="60" y2="218" stroke="#2A2226" stroke-width="3" stroke-linecap="round"/>
+    <path d="M 60 208 L 52 232 M 60 208 L 60 236 M 60 208 L 68 232" stroke="#F2C46A" stroke-width="3" stroke-linecap="round" fill="none"/>
+  </g>
+</svg>
