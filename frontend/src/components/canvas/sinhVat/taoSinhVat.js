@@ -36,8 +36,56 @@ function taoHitbox(cauHinhLoai, heSoMan) {
     new THREE.SphereGeometry(cauHinhLoai.hitboxR * heSoMan, 8, 8),
     new THREE.MeshBasicMaterial({ visible: false })
   );
-  hitbox.position.y = cauHinhLoai.scale * heSoMan * 0.35;
+  // Loài treo ngược có thân thõng xuống dưới chân nên hitbox cũng nằm dưới
+  hitbox.position.y = cauHinhLoai.scale * heSoMan * (cauHinhLoai.treoNguoc ? -0.2 : 0.35);
   return hitbox;
+}
+
+// Vị trí đuôi phát sáng trong hệ của mô hình đom đóm (glTF: y lên, z về phía camera)
+const VI_TRI_QUANG = [0, 0.09, -0.25];
+
+// Quầng sáng dùng chung cho mọi con: texture hình tròn mờ dần, tạo một lần
+let textureQuang = null;
+function layTextureQuang() {
+  if (textureQuang) return textureQuang;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  const dai = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  dai.addColorStop(0, 'rgba(255,255,255,1)');
+  dai.addColorStop(0.25, 'rgba(255,255,255,0.45)');
+  dai.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = dai;
+  ctx.fillRect(0, 0, 128, 128);
+  textureQuang = new THREE.CanvasTexture(canvas);
+  return textureQuang;
+}
+
+// Đuôi đom đóm: chất liệu Bung_PhatSang (đổi emissiveIntensity) + sprite quầng sáng cộng sáng. Mỗi con một nhịp chớp riêng.
+function themPhatSang(model) {
+  let vatLieu = null;
+  model.traverse((con) => {
+    if (!con.isMesh) return;
+    [].concat(con.material).forEach((vl) => { if (vl.name === 'Bung_PhatSang') vatLieu = vl; });
+  });
+  const quang = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: layTextureQuang(), color: 0xC9FF3D, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true
+  }));
+  quang.position.set(...VI_TRI_QUANG);
+  quang.scale.setScalar(0.7);
+  model.add(quang);
+  return { vatLieu, quang, pha: Math.random() * Math.PI * 2, nhip: 1.6 + Math.random() * 1.4 };
+}
+
+/** Nhấp nháy đuôi: sóng sin bình phương nên sáng bừng rồi dịu hẳn, không chớp đều như đèn nháy. */
+export function capNhatPhatSang(sv, delta) {
+  const ps = sv.phatSang;
+  if (!ps) return;
+  ps.pha += delta * ps.nhip;
+  const nhip = 0.5 + 0.5 * Math.sin(ps.pha);
+  const manh = nhip * nhip;
+  if (ps.vatLieu) ps.vatLieu.emissiveIntensity = 0.35 + 1.9 * manh;
+  ps.quang.material.opacity = Math.min(1, 0.25 + 0.55 * manh);
 }
 
 /** Dựng một con: nhân bản mô hình (có xương), đổi màu, gắn hitbox và bộ phát animation. */
@@ -81,7 +129,8 @@ export function taoSinhVat(gltf, cauHinhLoai, loai, bangMau, heSoMan) {
     chiuNgoai: 0,
     demNghieng: 0,
     nghiengXong: 0,
-    daVeTuThe: false
+    daVeTuThe: false,
+    phatSang: cauHinhLoai.phatSang ? themPhatSang(model) : null
   };
   hitbox.userData.sinhVat = sv;
   goc.visible = false;
@@ -108,6 +157,8 @@ export function chayDauLechPha(sv) {
 export function huySinhVat(sv) {
   sv.mixer.stopAllAction();
   sv.goc.traverse((con) => {
+    // Sprite quầng sáng: chỉ hủy vật liệu, texture dùng chung nên giữ lại
+    if (con.isSprite) { con.material.dispose(); return; }
     if (!con.isMesh) return;
     con.geometry?.dispose();
     [].concat(con.material).forEach((vl) => vl?.dispose());

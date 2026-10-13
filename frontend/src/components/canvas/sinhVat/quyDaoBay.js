@@ -25,7 +25,9 @@ const DAC_TINH_BAY = {
   chim: { bienDo: 12, tanSo: 1.1, nhun: 0, dungGiua: false },
   buom: { bienDo: 46, tanSo: 3.0, nhun: 18, dungGiua: false },
   chuon_chuon: { bienDo: 5, tanSo: 2.0, nhun: 0, dungGiua: true },
-  ong: { bienDo: 26, tanSo: 6.5, nhun: 6, dungGiua: false }
+  ong: { bienDo: 26, tanSo: 6.5, nhun: 6, dungGiua: false },
+  dom_dom: { bienDo: 34, tanSo: 1.3, nhun: 12, dungGiua: false },
+  doi: { bienDo: 24, tanSo: 1.9, nhun: 16, dungGiua: false }
 };
 
 // Biến thời gian chuẩn hoá t (0..1) thành tiến độ đường đi u (0..1).

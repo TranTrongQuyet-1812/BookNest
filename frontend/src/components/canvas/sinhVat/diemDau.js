@@ -27,18 +27,24 @@ export function layKhungDau(el, kieu) {
     if (!phamViChu) phamViChu = document.createRange();
     phamViChu.selectNodeContents(el);
     const r = phamViChu.getBoundingClientRect();
-    if (r.width > 0) return { trai: r.left, phai: r.right, tren: r.top };
+    if (r.width > 0) return { trai: r.left, phai: r.right, tren: r.top, duoi: r.bottom };
   }
   const r = el.getBoundingClientRect();
-  return { trai: r.left, phai: r.right, tren: r.top };
+  return { trai: r.left, phai: r.right, tren: r.top, duoi: r.bottom };
 }
 
-/** Điểm đứng hiện tại (toạ độ khung nhìn) của một điểm đậu, lấy trực tiếp từ DOM mỗi khung hình. */
+// Chân con vật treo ngược bám hơi chồm lên mép dưới, để thân không lìa khỏi chữ
+const LECH_TREO = 4;
+
+/**
+ * Điểm đứng hiện tại (toạ độ khung nhìn) của một điểm đậu, lấy trực tiếp từ DOM mỗi khung hình.
+ * Loài treo ngược (dơi) bám vào MÉP DƯỚI phần tử, các loài khác đứng trên mép trên.
+ */
 export function layToaDoDiemDau(diemDau) {
   const khung = layKhungDau(diemDau.el, diemDau.cauHinh.kieu);
   return {
     x: khung.trai + (khung.phai - khung.trai) * diemDau.xFrac,
-    y: khung.tren + diemDau.cauHinh.lech
+    y: diemDau.treo ? khung.duoi - LECH_TREO : khung.tren + diemDau.cauHinh.lech
   };
 }
 
@@ -62,13 +68,16 @@ function timViTriTrong(el, rong, cacConKhac) {
  */
 export function chonDiemDau(cauHinhLoai, dsDiemDau, cacConKhac, tranh = null) {
   const cao = window.innerHeight;
+  const treo = Boolean(cauHinhLoai.treoNguoc);
   let tot = null;
 
   dsDiemDau.forEach(({ el, cauHinh }) => {
     if (el === tranh || !el.isConnected) return;
     const khung = layKhungDau(el, cauHinh.kieu);
     const rong = khung.phai - khung.trai;
-    if (rong < BE_RONG_TOI_THIEU || khung.tren < TREN_TOI_THIEU || khung.tren > cao - DUOI_CHUA_LAI) return;
+    // Loài treo ngược xét theo mép dưới (chỗ chân bám), loài đứng xét theo mép trên
+    const moc = treo ? khung.duoi : khung.tren;
+    if (rong < BE_RONG_TOI_THIEU || moc < TREN_TOI_THIEU || moc > cao - DUOI_CHUA_LAI) return;
 
     const xFrac = timViTriTrong(el, rong, cacConKhac);
     if (xFrac === null) return;
@@ -77,5 +86,5 @@ export function chonDiemDau(cauHinhLoai, dsDiemDau, cacConKhac, tranh = null) {
     if (!tot || diem > tot.diem) tot = { el, cauHinh, xFrac, diem };
   });
 
-  return tot && { el: tot.el, cauHinh: tot.cauHinh, xFrac: tot.xFrac };
+  return tot && { el: tot.el, cauHinh: tot.cauHinh, xFrac: tot.xFrac, treo };
 }

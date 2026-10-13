@@ -61,6 +61,31 @@ export const LOAI_SINH_VAT = {
     thoiGianDau: [8, 16],
     nghiengDau: 0.35,
     uaThich: { nut: 2, chu: 2, card: 1 }
+  },
+  // Hai loài ban đêm (Darkmode). phatSang: có chất liệu Bung_PhatSang nhấp nháy + quầng sáng.
+  // treoNguoc: gốc mô hình ở chân và thân thõng xuống dưới, nên "đậu" nghĩa là treo dưới MÉP DƯỚI phần tử.
+  dom_dom: {
+    file: '/models/dom_dom.glb',
+    scale: 135,
+    doCaoDau: 2,
+    hitboxR: 50,
+    tocDoBay: 170,
+    bienDoZ: 80,
+    thoiGianDau: [9, 18],
+    nghiengDau: 0.6,
+    phatSang: true,
+    uaThich: { chu: 2, card: 1.5, nut: 1.2 }
+  },
+  doi: {
+    file: '/models/doi.glb',
+    scale: 150,
+    doCaoDau: 0,
+    hitboxR: 62,
+    tocDoBay: 380,
+    bienDoZ: 90,
+    thoiGianDau: [14, 26],
+    treoNguoc: true,
+    uaThich: { chu: 3, card: 1.4, nut: 1 }
   }
 };
 
@@ -108,6 +133,24 @@ export const DANH_SACH_SINH_VAT = [
   { loai: 'ong', mau: MAU_ONG_LUC },
   { loai: 'chuon_chuon', mau: MAU_CHUON_TIM },
   { loai: 'buom', mau: MAU_BUOM_VANG }
+];
+
+const MAU_DOI_XANH = { CanhMang: '#6F86B0', Than: '#56688A', Bung: '#A9B8D6', GanCanh: '#43546F' };
+
+// Đàn ban đêm: đom đóm là chủ đạo, vài chú dơi treo ngược. SO_CON_DAU_NGAY con đầu là những con có sẵn lúc mở trang.
+export const DANH_SACH_SINH_VAT_DEM = [
+  { loai: 'dom_dom', mau: null },
+  { loai: 'doi', mau: null },
+  { loai: 'dom_dom', mau: null },
+  { loai: 'dom_dom', mau: null },
+  { loai: 'doi', mau: MAU_DOI_XANH },
+  { loai: 'dom_dom', mau: null },
+  { loai: 'dom_dom', mau: null },
+  { loai: 'dom_dom', mau: null },
+  { loai: 'doi', mau: null },
+  { loai: 'dom_dom', mau: null },
+  { loai: 'dom_dom', mau: null },
+  { loai: 'dom_dom', mau: null }
 ];
 
 /**

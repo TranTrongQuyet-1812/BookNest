@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import gsap from 'gsap';
 import {
   DANH_SACH_SINH_VAT,
+  DANH_SACH_SINH_VAT_DEM,
   LOAI_SINH_VAT,
   SO_CON_DAU_NGAY,
   SO_CON_TOI_DA_MAN_HEP
@@ -16,11 +17,15 @@ import { useGiamChuyenDong } from '../../utils/chuyenDong';
 /**
  * Đàn sinh vật 3D ở Trang chủ: đậu trên chữ / card lớn / kệ sách, bị rê chuột hoặc chạm thì bay đi,
  * đậu lâu cũng tự bay, cuộn trang thì bám theo phần tử mình đang đậu.
+ * Ban ngày là đàn chim, bướm, chuồn chuồn, ong; ban đêm là đom đóm và dơi (cùng một cách đậu, bám cuộn, tránh chuột).
  * Chi tiết từng phần nằm trong thư mục sinhVat/. File này chỉ dựng cảnh, nhận chuột và chạy vòng lặp.
  */
 
 const FOV = 45;
 const CHU_KY_QUET_DIEM_DAU = 0.7; // giây giữa hai lần quét lại các phần tử có thể đậu
+// Đổi sáng/tối: đàn cũ mờ đi ngay, đàn mới chờ sóng mực loang (1350 ms ở PaperBackgroundCanvas) qua rồi mới hiện
+const DO_TRE_DOI_GIAO_DIEN_MS = 1400;
+const THOI_GIAN_MO_MS = 450;
 
 function taoMayVe(container) {
   const scene = new THREE.Scene();
@@ -64,9 +69,9 @@ function doiSangThree(ctx, sx, sy, z, ra) {
   ra.set((sx - ctx.W / 2) * heSo, (ctx.H / 2 - sy) * heSo, z);
 }
 
-async function napDanSinhVat(ctx, scene) {
-  const soCon = ctx.W < 768 ? SO_CON_TOI_DA_MAN_HEP : DANH_SACH_SINH_VAT.length;
-  const danhSach = DANH_SACH_SINH_VAT.slice(0, soCon);
+async function napDanSinhVat(ctx, scene, danhSachGoc) {
+  const soCon = ctx.W < 768 ? SO_CON_TOI_DA_MAN_HEP : danhSachGoc.length;
+  const danhSach = danhSachGoc.slice(0, soCon);
   const gltfTheoFile = await napMoHinh(danhSach.map((d) => LOAI_SINH_VAT[d.loai].file));
 
   return danhSach.map((d) => {
@@ -128,7 +133,7 @@ function veLai(may, ctx) {
   ctx.daVe = coCon;
 }
 
-function khoiDongSinhVat(container, giamRef) {
+function khoiDongSinhVat(container, giamRef, cheDo) {
   const may = taoMayVe(container);
   const ctx = { W: 1, H: 1, D: 1, heSoMan: 1, scrollY: 0, dsDiemDau: [], dsSinhVat: [], daVe: false };
   ctx.doiSangThree = (sx, sy, z, ra) => doiSangThree(ctx, sx, sy, z, ra);
@@ -163,7 +168,7 @@ function khoiDongSinhVat(container, giamRef) {
   const khiDoiKichThuoc = () => canhKhungNhin(may, ctx);
   window.addEventListener('resize', khiDoiKichThuoc, { passive: true });
 
-  napDanSinhVat(ctx, may.scene)
+  napDanSinhVat(ctx, may.scene, cheDo === 'dark' ? DANH_SACH_SINH_VAT_DEM : DANH_SACH_SINH_VAT)
     .then((dsSinhVat) => {
       if (daHuy) { dsSinhVat.forEach(huySinhVat); return; }
       ctx.dsSinhVat = dsSinhVat;
@@ -197,12 +202,34 @@ export const SinhVatTrangChuCanvas = ({ tamDung = false }) => {
 
   useEffect(() => { giamRef.current = giamChuyenDong || tamDung; }, [giamChuyenDong, tamDung]);
 
+  const cheDoTruocRef = useRef(null);
+
   useEffect(() => {
     const container = mountRef.current;
     // Không chặn theo prefers-reduced-motion: nhiều máy Windows tắt "hiệu ứng động" nên trình duyệt luôn báo reduce,
     // chặn theo đó thì đàn sinh vật biến mất hoàn toàn dù chủ dự án muốn có
-    if (!container || cheDo === 'dark') return undefined;
-    return khoiDongSinhVat(container, giamRef);
+    if (!container) return undefined;
+
+    // Mở trang lần đầu thì hiện luôn; chỉ khi giao diện thật sự đổi sáng/tối mới chờ mực loang xong rồi thả đàn mới
+    // (so sánh với chế độ trước thay vì đếm lần chạy, vì StrictMode chạy effect hai lần ở chế độ dev)
+    const doiGiaoDien = cheDoTruocRef.current !== null && cheDoTruocRef.current !== cheDo;
+    cheDoTruocRef.current = cheDo;
+    const delay = doiGiaoDien ? DO_TRE_DOI_GIAO_DIEN_MS : 0;
+    container.style.opacity = '0';
+    let huyDan = null;
+    const henKhoiDong = setTimeout(() => {
+      huyDan = khoiDongSinhVat(container, giamRef, cheDo);
+      container.style.opacity = '1';
+    }, delay);
+
+    return () => {
+      clearTimeout(henKhoiDong);
+      if (!huyDan) return;
+      // Mờ đàn cũ trước rồi mới dỡ, để con vật không biến mất đột ngột giữa lúc đổi giao diện
+      container.style.opacity = '0';
+      const dan = huyDan;
+      setTimeout(dan, THOI_GIAN_MO_MS);
+    };
   }, [cheDo]);
 
   return (
@@ -217,6 +244,8 @@ export const SinhVatTrangChuCanvas = ({ tamDung = false }) => {
         pointerEvents: 'none',
         zIndex: 18,
         overflow: 'hidden',
+        opacity: 0,
+        transition: `opacity ${THOI_GIAN_MO_MS}ms ease`,
         visibility: tamDung ? 'hidden' : 'visible'
       }}
     />

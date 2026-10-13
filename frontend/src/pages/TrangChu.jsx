@@ -7,15 +7,11 @@ import useCartStore from '../stores/cartStore';
 import KeSachCuonNgang from '../components/KeSachCuonNgang';
 import PhanTrang from '../components/PhanTrang';
 import HomeAtmosphere from '../components/HomeAtmosphere';
-import { useCheDoGiaoDien } from '../components/r3f/hooks/useCheDoGiaoDien';
 import { useGiamChuyenDong } from '../utils/chuyenDong';
 import { getLenis } from '../utils/lenis';
 
 gsap.registerPlugin(useGSAP);
 
-const CanhSinhVatDem = lazy(() => import('../components/r3f/canvas/CanhSinhVatDem'));
-const DanDomDom = lazy(() => import('../components/r3f/sinhVat/DanDomDom'));
-const DoiTheoNoiDung = lazy(() => import('../components/r3f/sinhVat/DoiTheoNoiDung'));
 const SinhVatTrangChuCanvas = lazy(() => import('../components/canvas/SinhVatTrangChuCanvas'));
 
 // Tuyển tập danh ngôn văn học kinh điển về sách & tri thức
@@ -50,7 +46,6 @@ export const TrangChu = () => {
   const { themVaoGio } = useCartStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const heroRef = useRef(null);
-  const cheDo = useCheDoGiaoDien();
   const [giamChuyenDong] = useGiamChuyenDong();
 
   // Đọc query param từ URL (tìm kiếm hoặc lọc danh mục từ navbar)
@@ -259,18 +254,9 @@ export const TrangChu = () => {
 
   return (
     <div className="home-page" style={{ minHeight: '80vh', paddingBottom: '3.5rem' }}>
-      {/* Ban ngày giữ đàn cư dân quen thuộc; ban đêm đổi sang cảnh đom đóm để tránh chồng hai hệ 3D. */}
-      {!laCheDoLoc && cheDo !== 'dark' && (
+      {/* Đàn sinh vật 3D: ban ngày chim bướm chuồn chuồn ong, ban đêm đom đóm và dơi (cùng một engine, tự đổi theo giao diện) */}
+      {!laCheDoLoc && (
         <Suspense fallback={null}><SinhVatTrangChuCanvas /></Suspense>
-      )}
-      {!laCheDoLoc && cheDo === 'dark' && (
-        <Suspense fallback={null}>
-          <CanhSinhVatDem zIndex={18} tamDung={giamChuyenDong}>
-            <DanDomDom soCon={window.innerWidth < 700 ? 6 : 10} doSang={0.9} />
-            <DoiTheoNoiDung viTri={0} position={[0, 0, -0.2]} tiLe={1.05} pha={0.2} />
-            <DoiTheoNoiDung viTri={1} position={[0, 0, -0.4]} tiLe={0.8} pha={0.65} />
-          </CanhSinhVatDem>
-        </Suspense>
       )}
 
       {/* Toast thông báo thêm vào giỏ hàng */}

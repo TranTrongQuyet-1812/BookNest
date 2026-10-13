@@ -1,6 +1,6 @@
 import { chonDiemDau, layToaDoDiemDau } from './diemDau';
 import { taoQuyDao, layDiemQuyDao, lamMuot } from './quyDaoBay';
-import { chuyenHanhDong, chayDauLechPha } from './taoSinhVat';
+import { chuyenHanhDong, chayDauLechPha, capNhatPhatSang } from './taoSinhVat';
 
 // Hành vi của một con: CHO (chưa hiện, đợi bay vào) -> BAY -> DAU -> (tới giờ / bị chạm) -> BAY ...
 // ctx do SinhVatTrangChuCanvas dựng mỗi khung hình: { W, H, scrollY, dsDiemDau, dsSinhVat, doiSangThree }.
@@ -217,6 +217,7 @@ export function capNhatSinhVat(sv, ctx, delta) {
   if (sv.trangThai === 'CHO') capNhatCho(sv, ctx, delta);
   else if (sv.trangThai === 'BAY') capNhatBay(sv, ctx, delta);
   else capNhatDau(sv, ctx, delta);
+  capNhatPhatSang(sv, delta);
 }
 
 // Con nào đang hiện trên màn hình (để bỏ qua việc vẽ và dò chuột thừa cho con chưa vào hoặc đã ra ngoài)
