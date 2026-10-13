@@ -15,7 +15,7 @@ export const Footer = () => {
       <div className="container">
         {/* Lưới 4 cột thông tin trang nhã */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
-          {/* Cột 1: Câu chuyện thương hiệu */}
+          {/* Cột 1: Câu chuyện thương hiệu & Đồ án */}
           <div>
             <div className="flex items-center gap-3 mb-3">
               <LogoBookNest height={36} />
@@ -31,6 +31,9 @@ export const Footer = () => {
             <p style={{ fontSize: '0.875rem', lineHeight: '1.7', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
               Một góc nhỏ bình yên dành cho những ai trân quý hương thơm của giấy và những câu chuyện kể. Mỗi cuốn sách trao đi là một lời chúc an lành gửi đến tâm hồn bạn.
             </p>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-sub)', lineHeight: '1.5' }}>
+              Đề tài đồ án môn học • SV Trần Trọng Quyết (ĐH Lạc Hồng)
+            </div>
           </div>
 
           {/* Cột 2: Tủ sách tuyển chọn */}
@@ -74,7 +77,7 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Cột 3: Đồng hành cùng bạn đọc */}
+          {/* Cột 3: Cùng bạn đọc & Chính sách */}
           <div>
             <h4 className="font-serif" style={{ 
               fontWeight: 700, 
@@ -83,7 +86,7 @@ export const Footer = () => {
               fontSize: '1rem',
               letterSpacing: '0.02em'
             }}>
-              Cùng Bạn Đọc
+              Chính Sách & Hỗ Trợ
             </h4>
             <ul style={{ 
               listStyle: 'none', 
@@ -93,16 +96,24 @@ export const Footer = () => {
               gap: '0.55rem' 
             }}>
               <li>
-                <span style={{ color: 'var(--text-muted)' }}>Gói ghém sách cẩn trọng</span>
+                <Link to="/dieu-khoan#van-chuyen" style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }} className="hover:underline">
+                  Giao nhận & Freeship 100%
+                </Link>
               </li>
               <li>
-                <span style={{ color: 'var(--text-muted)' }}>Đổi trả nếu sách có tì vết</span>
+                <Link to="/dieu-khoan#doi-tra" style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }} className="hover:underline">
+                  Đổi trả trong 7 ngày
+                </Link>
               </li>
               <li>
-                <span style={{ color: 'var(--text-muted)' }}>Cảm nhận của bạn đọc mua thật</span>
+                <Link to="/dieu-khoan" style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }} className="hover:underline">
+                  Điều khoản dịch vụ
+                </Link>
               </li>
               <li>
-                <span style={{ color: 'var(--text-muted)' }}>Mở cửa đón đọc: 08:00 – 21:00</span>
+                <Link to="/chinh-sach-bao-mat" style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }} className="hover:underline">
+                  Chính sách bảo mật
+                </Link>
               </li>
             </ul>
           </div>
@@ -123,7 +134,7 @@ export const Footer = () => {
             </p>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: '1.6' }}>
               <div>Thư gửi: <span style={{ color: 'var(--text-muted)' }}>tiemsach@booknest.vn</span></div>
-              <div>Đường dây ấm: <span style={{ color: 'var(--text-muted)' }}>0900 123 456</span></div>
+              <div>Phụ trách: <span style={{ color: 'var(--text-muted)' }}>Trần Trọng Quyết</span></div>
             </div>
           </div>
         </div>
@@ -141,11 +152,19 @@ export const Footer = () => {
           fontSize: '0.825rem',
           color: 'var(--text-muted)'
         }}>
-          <div>
-            © 2026 BookNest. Giữ gìn tình yêu với từng trang sách.
+          <div className="flex items-center gap-2 flex-wrap">
+            <span>© 2026 BookNest. Giữ gìn tình yêu với từng trang sách.</span>
+            <span style={{ color: 'var(--border)' }}>•</span>
+            <Link to="/dieu-khoan" style={{ color: 'var(--text-muted)', textDecoration: 'none' }} className="hover:underline">
+              Điều khoản dịch vụ
+            </Link>
+            <span style={{ color: 'var(--border)' }}>•</span>
+            <Link to="/chinh-sach-bao-mat" style={{ color: 'var(--text-muted)', textDecoration: 'none' }} className="hover:underline">
+              Chính sách bảo mật
+            </Link>
           </div>
-          <div>
-            Được dựng nên từ niềm say mê sách và sự yên ả của tâm hồn.
+          <div style={{ color: 'var(--text-sub)' }}>
+            Dự án học tập phi thương mại • Bản quyền tác phẩm thuộc về Tác giả & NXB
           </div>
         </div>
       </div>

@@ -21,6 +21,8 @@ import HoSo from './pages/HoSo';
 import DangNhap from './pages/DangNhap';
 import DangKy from './pages/DangKy';
 import KhongCoQuyen from './pages/KhongCoQuyen';
+import DieuKhoanDichVu from './pages/DieuKhoanDichVu';
+import ChinhSachBaoMat from './pages/ChinhSachBaoMat';
 
 // Layout chung cho Storefront (có Navbar & Footer)
 const StorefrontLayout = ({ children }) => {
@@ -85,6 +87,11 @@ const AppContent = () => {
         {/* Tuyến đường Giỏ Hàng và Thanh Toán: Công khai cho cả Khách vãng lai (Guest) và Khách hàng */}
         <Route path="/cart" element={<StorefrontLayout><GioHang /></StorefrontLayout>} />
         <Route path="/checkout" element={<StorefrontLayout><ThanhToan /></StorefrontLayout>} />
+
+        {/* Các Tuyến Đường Chính Sách & Pháp Lý */}
+        <Route path="/dieu-khoan" element={<StorefrontLayout><DieuKhoanDichVu /></StorefrontLayout>} />
+        <Route path="/chinh-sach-bao-mat" element={<StorefrontLayout><ChinhSachBaoMat /></StorefrontLayout>} />
+        <Route path="/chinh-sach" element={<Navigate to="/dieu-khoan" replace />} />
 
         {/* Các Route Yêu Cầu Đăng Nhập */}
         <Route path="/orders" element={

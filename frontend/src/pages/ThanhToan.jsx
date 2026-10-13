@@ -741,6 +741,24 @@ export const ThanhToan = () => {
                 <Lock size={13} />
                 <span>Khoá số lượng và đơn giá nguyên tử trong CSDL</span>
               </div>
+
+              <p style={{
+                fontSize: '0.75rem',
+                color: 'var(--text-sub)',
+                textAlign: 'center',
+                marginTop: '0.85rem',
+                lineHeight: 1.5
+              }}>
+                Bằng việc bấm đặt hàng, bạn đồng ý với{' '}
+                <Link to="/dieu-khoan" target="_blank" style={{ color: 'var(--text-muted)', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+                  Điều khoản dịch vụ
+                </Link>{' '}
+                và{' '}
+                <Link to="/chinh-sach-bao-mat" target="_blank" style={{ color: 'var(--text-muted)', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+                  Chính sách bảo mật
+                </Link>{' '}
+                của BookNest.
+              </p>
             </div>
           </div>
         </div>

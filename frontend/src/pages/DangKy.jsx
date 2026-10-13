@@ -343,6 +343,24 @@ export const DangKy = () => {
             >
               {dangXuLy ? 'Đang khởi tạo tài khoản...' : 'Tạo Tài Khoản Bạn Đọc'}
             </button>
+
+            <p style={{
+              fontSize: '0.78rem',
+              color: 'var(--text-sub)',
+              textAlign: 'center',
+              marginTop: '0.9rem',
+              lineHeight: 1.5
+            }}>
+              Bằng việc đăng ký tài khoản, bạn đồng ý với{' '}
+              <Link to="/dieu-khoan" target="_blank" style={{ color: 'var(--text-muted)', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+                Điều khoản dịch vụ
+              </Link>{' '}
+              và{' '}
+              <Link to="/chinh-sach-bao-mat" target="_blank" style={{ color: 'var(--text-muted)', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+                Chính sách bảo mật
+              </Link>{' '}
+              của BookNest.
+            </p>
           </form>
 
           {/* Link chuyển sang Đăng Nhập */}
