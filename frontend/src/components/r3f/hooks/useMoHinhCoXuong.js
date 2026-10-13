@@ -52,7 +52,7 @@ export function useMoHinhCoXuong(duongDan, clipDau = 'bay', pha = 0) {
     if (clip) hienTai.current.time = pha * clip.duration;
     return () => {
       mixer.stopAllAction();
-      mixer.uncacheRoot(model);
+      // StrictMode có thể dựng lại effect ngay sau cleanup; uncacheRoot sẽ làm hỏng binding của action đang cache.
       hienTai.current = null;
     };
     // Chỉ chạy lúc dựng và lúc dọn: đổi clip về sau đi qua chuyenClip
