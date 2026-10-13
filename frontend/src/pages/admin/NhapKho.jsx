@@ -9,6 +9,10 @@ import {
   AlertCircle 
 } from 'lucide-react';
 
+const tenLoaiDieuChinh = {
+  KIEM_KE: 'Kiểm kê', HU_HONG: 'Hư hỏng', THAT_LAC: 'Thất lạc', TRA_NXB: 'Trả nhà xuất bản', KHAC: 'Khác'
+};
+
 export const NhapKho = () => {
   const [sachSapHet, setSachSapHet] = useState([]);
   const [lichSuNhap, setLichSuNhap] = useState([]);
@@ -33,7 +37,7 @@ export const NhapKho = () => {
     ghiChu: ''
   });
   const [dangNhapKho, setDangNhapKho] = useState(false);
-  const [formDieuChinh, setFormDieuChinh] = useState({ soLuongThayDoi: -1, loaiDieuChinh: 'HU_HONG', lyDo: '' });
+  const [formDieuChinh, setFormDieuChinh] = useState({ soLuongThayDoi: -1, loaiDieuChinh: 'HU_HONG', ghiChu: '' });
   const [dangDieuChinh, setDangDieuChinh] = useState(false);
 
   // Tải cảnh báo sắp hết hàng và lịch sử nhập kho gần đây
@@ -121,7 +125,7 @@ export const NhapKho = () => {
       const soLuongThayDoi = Number(formDieuChinh.soLuongThayDoi);
       await api.post(`/books/${sachDangChon.MaSach}/stock-adjustment`, { ...formDieuChinh, soLuongThayDoi });
       setThongBao(`Đã điều chỉnh tồn kho của "${sachDangChon.TenSach}".`);
-      setFormDieuChinh({ soLuongThayDoi: -1, loaiDieuChinh: 'HU_HONG', lyDo: '' });
+      setFormDieuChinh({ soLuongThayDoi: -1, loaiDieuChinh: 'HU_HONG', ghiChu: '' });
       setSachDangChon(null);
       setLanTai(n => n + 1);
     } catch (err) { setLoi(err.response?.data?.message || 'Điều chỉnh tồn kho thất bại.'); }
@@ -153,16 +157,24 @@ export const NhapKho = () => {
       )}
 
       {baoCaoKho && (
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-5">
           {[
             ['Đầu sách đang bán', baoCaoKho.tongDauSach],
             ['Tổng tồn kho', baoCaoKho.tongSoLuongTon],
             ['Giá trị tồn kho', `${Number(baoCaoKho.giaTriTonKho).toLocaleString('vi-VN')} đ`],
             ['Sắp hết hàng', baoCaoKho.soSachSapHet],
-            ['Đã hết hàng', baoCaoKho.soSachHetHang]
+            ['Đã hết hàng', baoCaoKho.soSachHetHang],
+            ['Không bán 90 ngày', baoCaoKho.soSachBanCham]
           ].map(([nhan, giaTri]) => <div className="card" key={nhan} style={{ padding: '0.85rem 1rem' }}><small style={{ color: 'var(--adm-text-muted)' }}>{nhan}</small><strong style={{ display: 'block', marginTop: '.35rem', fontSize: '1.15rem' }}>{giaTri}</strong></div>)}
         </div>
       )}
+
+      {baoCaoKho && <div className="card mb-6" style={{ padding: '1rem 1.25rem' }}>
+        <div className="flex items-center justify-between gap-3 mb-3"><h3 style={{ margin: 0, fontSize: '.95rem' }}>Còn hàng, không có đơn giao thành công trong 90 ngày</h3><small style={{ color: 'var(--adm-text-muted)' }}>{baoCaoKho.soSachBanCham} đầu sách · sắp xếp theo giá trị tồn</small></div>
+        {baoCaoKho.sachBanCham.length ? <div className="admindash-table-wrap"><table className="admindash-table"><thead><tr><th>Sách</th><th>Tồn</th><th>Giá trị tồn</th><th>Lần giao gần nhất</th></tr></thead><tbody>
+          {baoCaoKho.sachBanCham.map(sach => <tr key={sach.maSach}><td>{sach.tenSach}</td><td>{sach.soLuongTon}</td><td>{Number(sach.giaTriTon).toLocaleString('vi-VN')} đ</td><td>{sach.ngayBanGanNhat ? new Date(sach.ngayBanGanNhat).toLocaleDateString('vi-VN') : 'Chưa từng bán'}</td></tr>)}
+        </tbody></table></div> : <p style={{ margin: 0, color: 'var(--adm-text-muted)', fontSize: '.82rem' }}>Không có đầu sách nào thỏa điều kiện.</p>}
+      </div>}
 
       {/* Cảnh Báo Sách Sắp Hết Hàng */}
       {sachSapHet.length > 0 && (
@@ -350,15 +362,15 @@ export const NhapKho = () => {
           <form onSubmit={handleDieuChinhKho}>
             <div className="form-group"><label className="form-label">Sách đã chọn</label><div className="form-input" style={{ minHeight: 40 }}>{sachDangChon ? `#${sachDangChon.MaSach} · ${sachDangChon.TenSach}` : 'Chọn trong ô tìm sách bên trên'}</div></div>
             <div className="form-group"><label className="form-label">Số lượng thay đổi (+/-)</label><input className="form-input" type="number" step="1" required value={formDieuChinh.soLuongThayDoi} onChange={e => setFormDieuChinh({ ...formDieuChinh, soLuongThayDoi: e.target.value })}/><small style={{ color: 'var(--adm-text-muted)' }}>Tăng kho chỉ dành cho kiểm kê hoặc lý do khác.</small></div>
-            <div className="form-group"><label className="form-label">Loại điều chỉnh</label><select className="form-input" value={formDieuChinh.loaiDieuChinh} onChange={e => setFormDieuChinh({ ...formDieuChinh, loaiDieuChinh: e.target.value })}><option value="KIEM_KE">Kiểm kê</option><option value="HU_HONG">Hư hỏng</option><option value="THAT_LAC">Thất lạc</option><option value="KHAC">Khác</option></select></div>
-            <div className="form-group"><label className="form-label">Lý do *</label><textarea className="form-input" required minLength="3" maxLength="500" value={formDieuChinh.lyDo} onChange={e => setFormDieuChinh({ ...formDieuChinh, lyDo: e.target.value })} placeholder="Ví dụ: kiểm kê cuối tháng"/></div>
+            <div className="form-group"><label className="form-label">Loại điều chỉnh</label><select className="form-input" value={formDieuChinh.loaiDieuChinh} onChange={e => setFormDieuChinh({ ...formDieuChinh, loaiDieuChinh: e.target.value })}>{Object.entries(tenLoaiDieuChinh).map(([ma, ten]) => <option key={ma} value={ma}>{ten}</option>)}</select></div>
+            <div className="form-group"><label className="form-label">Ghi chú {formDieuChinh.loaiDieuChinh === 'KHAC' ? '*' : '(tùy chọn)'}</label><textarea className="form-input" required={formDieuChinh.loaiDieuChinh === 'KHAC'} minLength={formDieuChinh.loaiDieuChinh === 'KHAC' ? 1 : undefined} maxLength="500" value={formDieuChinh.ghiChu} onChange={e => setFormDieuChinh({ ...formDieuChinh, ghiChu: e.target.value })} placeholder="Có thể ghi thêm thông tin; bắt buộc khi chọn Khác"/></div>
             <button className="btn btn-primary w-full" disabled={dangDieuChinh}>{dangDieuChinh ? 'Đang cập nhật…' : 'Ghi nhận điều chỉnh'}</button>
           </form>
         </div>
         <div className="card lg:col-span-2" style={{ padding: '1.25rem' }}>
           <div className="flex items-center gap-2 mb-4"><History size={18} style={{ color: 'var(--adm-primary)' }}/><h3 style={{ margin: 0, fontSize: '1rem' }}>Lịch sử điều chỉnh gần đây</h3></div>
-          <div className="admindash-table-wrap"><table className="admindash-table"><thead><tr><th>Ngày</th><th>Sách</th><th>Thay đổi</th><th>Tồn trước → sau</th><th>Lý do · Nhân viên</th></tr></thead><tbody>
-            {lichSuDieuChinh.map(item => <tr key={item.MaDieuChinhKho}><td>{new Date(item.NgayDieuChinh).toLocaleDateString('vi-VN')}</td><td>{item.sach?.TenSach || `#${item.MaSach}`}</td><td style={{ color: item.SoLuongThayDoi > 0 ? 'var(--adm-success)' : 'var(--adm-danger)' }}>{item.SoLuongThayDoi > 0 ? '+' : ''}{item.SoLuongThayDoi}</td><td>{item.TonTruoc} → {item.TonSau}</td><td>{item.LyDo}<small style={{ display: 'block', color: 'var(--adm-text-muted)' }}>{item.nhanVienDieuChinh?.HoTen || 'Nhân viên'}</small></td></tr>)}
+          <div className="admindash-table-wrap"><table className="admindash-table"><thead><tr><th>Ngày</th><th>Sách</th><th>Thay đổi</th><th>Tồn trước → sau</th><th>Loại · ghi chú · nhân viên</th></tr></thead><tbody>
+            {lichSuDieuChinh.map(item => <tr key={item.MaDieuChinhKho}><td>{new Date(item.NgayDieuChinh).toLocaleDateString('vi-VN')}</td><td>{item.sach?.TenSach || `#${item.MaSach}`}</td><td style={{ color: item.SoLuongThayDoi > 0 ? 'var(--adm-success)' : 'var(--adm-danger)' }}>{item.SoLuongThayDoi > 0 ? '+' : ''}{item.SoLuongThayDoi}</td><td>{item.TonTruoc} → {item.TonSau}</td><td>{tenLoaiDieuChinh[item.LoaiDieuChinh] || item.LoaiDieuChinh}{item.GhiChu && <small style={{ display: 'block' }}>{item.GhiChu}</small>}<small style={{ display: 'block', color: 'var(--adm-text-muted)' }}>{item.nhanVienDieuChinh?.HoTen || 'Nhân viên'}</small></td></tr>)}
             {!lichSuDieuChinh.length && <tr><td colSpan="5">Chưa có lần điều chỉnh nào.</td></tr>}
           </tbody></table></div>
         </div>

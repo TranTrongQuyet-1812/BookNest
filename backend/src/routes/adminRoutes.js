@@ -746,6 +746,20 @@ router.get(
   batLoiAsync(thongKeController.xuLyLayTyLeDon)
 );
 
+/**
+ * @swagger
+ * /api/admin/stats/inventory:
+ *   get:
+ *     summary: Xem báo cáo tồn kho và sách không bán trong 90 ngày (Quản trị viên, Thủ kho)
+ *     tags: [Quản trị (Admin)]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Tổng tồn, giá trị tồn và danh sách sách còn hàng không có đơn giao thành công trong 90 ngày gần nhất.
+ *       403:
+ *         description: Không có quyền truy cập.
+ */
 router.get(
   '/stats/inventory',
   xacThucToken,

@@ -9,7 +9,7 @@ const LichSuDieuChinhKho = sequelize.define('LichSuDieuChinhKho', {
   TonTruoc: { type: DataTypes.INTEGER, allowNull: false },
   TonSau: { type: DataTypes.INTEGER, allowNull: false },
   LoaiDieuChinh: { type: DataTypes.STRING(20), allowNull: false },
-  LyDo: { type: DataTypes.STRING(500), allowNull: false },
+  GhiChu: { type: DataTypes.STRING(500), allowNull: true },
   MaNhanVienDieuChinh: { type: DataTypes.INTEGER, allowNull: false },
   NgayDieuChinh: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW }
 }, {

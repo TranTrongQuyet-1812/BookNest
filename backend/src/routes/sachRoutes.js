@@ -88,11 +88,14 @@ const luatTruyVanSapHetHang = Joi.object({
 
 const luatDieuChinhKho = Joi.object({
   soLuongThayDoi: Joi.number().integer().min(-100000).max(100000).invalid(0).required(),
-  loaiDieuChinh: Joi.string().valid('KIEM_KE', 'HU_HONG', 'THAT_LAC', 'KHAC').required(),
-  lyDo: Joi.string().trim().min(3).max(500).required()
+  loaiDieuChinh: Joi.string().valid('KIEM_KE', 'HU_HONG', 'THAT_LAC', 'TRA_NXB', 'KHAC').required(),
+  ghiChu: Joi.string().trim().max(500).allow(null, '')
 }).custom((value, helpers) => {
   if (value.soLuongThayDoi > 0 && !['KIEM_KE', 'KHAC'].includes(value.loaiDieuChinh)) {
     return helpers.message('Chỉ kiểm kê hoặc lý do khác mới được phép tăng tồn kho');
+  }
+  if (value.loaiDieuChinh === 'KHAC' && !value.ghiChu?.trim()) {
+    return helpers.message('Vui lòng ghi chú khi chọn loại điều chỉnh khác');
   }
   return value;
 });
@@ -181,6 +184,46 @@ router.get(
   batLoiAsync(sachController.xuLySapHetHang)
 );
 
+/**
+ * @swagger
+ * /api/books/{id}/stock-adjustment:
+ *   post:
+ *     summary: Điều chỉnh tồn kho bất thường (Quản trị viên, Thủ kho)
+ *     tags: [Sách & Kho (Books)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [soLuongThayDoi, loaiDieuChinh]
+ *             properties:
+ *               soLuongThayDoi:
+ *                 type: integer
+ *                 description: Khác 0; delta dương chỉ dùng KIEM_KE hoặc KHAC.
+ *               loaiDieuChinh:
+ *                 type: string
+ *                 enum: [KIEM_KE, HU_HONG, THAT_LAC, TRA_NXB, KHAC]
+ *               ghiChu:
+ *                 type: string
+ *                 nullable: true
+ *                 description: Tùy chọn, bắt buộc khi loaiDieuChinh là KHAC.
+ *     responses:
+ *       200:
+ *         description: Tồn kho và lịch sử điều chỉnh đã được cập nhật trong cùng transaction.
+ *       400:
+ *         description: Dữ liệu không hợp lệ hoặc giảm vượt số tồn.
+ *       403:
+ *         description: Không có quyền truy cập.
+ */
 router.post(
   '/:id/stock-adjustment',
   xacThucToken,
@@ -189,6 +232,32 @@ router.post(
   batLoiAsync(sachController.xuLyDieuChinhTonKho)
 );
 
+/**
+ * @swagger
+ * /api/books/inventory/adjustments:
+ *   get:
+ *     summary: Xem lịch sử điều chỉnh tồn kho (Quản trị viên, Thủ kho)
+ *     tags: [Sách & Kho (Books)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *     responses:
+ *       200:
+ *         description: Lịch sử điều chỉnh có tên sách, nhân viên và ghi chú nếu có.
+ *       403:
+ *         description: Không có quyền truy cập.
+ */
 router.get(
   '/inventory/adjustments',
   xacThucToken,

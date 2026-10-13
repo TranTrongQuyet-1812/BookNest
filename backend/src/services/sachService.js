@@ -300,12 +300,40 @@ async function layBaoCaoKho() {
       SUM(CASE WHEN SoLuongTon = 0 THEN 1 ELSE 0 END) AS soSachHetHang
     FROM Sach WHERE DaAn = 0
   `, { type: sequelize.QueryTypes.SELECT });
+  const sachBanCham = await sequelize.query(`
+    SELECT s.MaSach AS maSach, s.TenSach AS tenSach, s.SoLuongTon AS soLuongTon,
+      s.GiaBan AS giaBan, s.SoLuongTon * s.GiaBan AS giaTriTon,
+      ban.ngayBanGanNhat,
+      COUNT(*) OVER() AS soSachBanCham
+    FROM Sach s
+    OUTER APPLY (
+      SELECT
+        COUNT(DISTINCT CASE WHEN ls.NgayThayDoi >= DATEADD(DAY, -90, SYSDATETIME()) THEN dh.MaDonHang END) AS soDon90Ngay,
+        MAX(ls.NgayThayDoi) AS ngayBanGanNhat
+      FROM ChiTietDonHang ct
+      INNER JOIN DonHang dh ON dh.MaDonHang = ct.MaDonHang AND dh.TrangThai = 'DA_GIAO'
+      INNER JOIN LichSuTrangThaiDonHang ls ON ls.MaDonHang = dh.MaDonHang AND ls.TrangThaiMoi = 'DA_GIAO'
+      WHERE ct.MaSach = s.MaSach
+    ) ban
+    WHERE s.DaAn = 0 AND s.SoLuongTon > 0 AND ban.soDon90Ngay = 0
+    ORDER BY giaTriTon DESC, s.TenSach ASC
+  `, { type: sequelize.QueryTypes.SELECT });
   return {
     tongDauSach: Number(ketQua.tongDauSach || 0),
     tongSoLuongTon: Number(ketQua.tongSoLuongTon || 0),
     giaTriTonKho: Number(ketQua.giaTriTonKho || 0),
     soSachSapHet: Number(ketQua.soSachSapHet || 0),
-    soSachHetHang: Number(ketQua.soSachHetHang || 0)
+    soSachHetHang: Number(ketQua.soSachHetHang || 0),
+    sachBanCham: sachBanCham.map(sach => ({
+      maSach: sach.maSach,
+      tenSach: sach.tenSach,
+      soLuongTon: Number(sach.soLuongTon),
+      giaBan: Number(sach.giaBan),
+      giaTriTon: Number(sach.giaTriTon),
+      ngayBanGanNhat: sach.ngayBanGanNhat,
+      soNgayKhongBan: 90
+    })),
+    soSachBanCham: Number(sachBanCham[0]?.soSachBanCham || 0)
   };
 }
 
@@ -325,14 +353,19 @@ async function layLichSuDieuChinhKho({ page = 1, limit = 20 } = {}) {
 
 // Điều chỉnh tồn kho có lý do; UPDLOCK giữ số tồn trước/sau nhất quán.
 async function dieuChinhTonKho(maSach, duLieu, maNhanVien) {
-  const { soLuongThayDoi, loaiDieuChinh, lyDo } = duLieu;
+  const { soLuongThayDoi, loaiDieuChinh, ghiChu } = duLieu;
   if (!Number.isInteger(soLuongThayDoi) || soLuongThayDoi === 0) {
     throw LoiNghiepVu.yeuCauKhongHopLe('Số lượng điều chỉnh phải là số nguyên khác 0');
   }
   if (soLuongThayDoi > 0 && !['KIEM_KE', 'KHAC'].includes(loaiDieuChinh)) {
     throw LoiNghiepVu.yeuCauKhongHopLe('Chỉ kiểm kê hoặc lý do khác mới được phép tăng tồn kho');
   }
-  if (!String(lyDo || '').trim()) throw LoiNghiepVu.yeuCauKhongHopLe('Vui lòng ghi lý do điều chỉnh');
+  if (!['KIEM_KE', 'HU_HONG', 'THAT_LAC', 'TRA_NXB', 'KHAC'].includes(loaiDieuChinh)) {
+    throw LoiNghiepVu.yeuCauKhongHopLe('Loại điều chỉnh tồn kho không hợp lệ');
+  }
+  if (loaiDieuChinh === 'KHAC' && !String(ghiChu || '').trim()) {
+    throw LoiNghiepVu.yeuCauKhongHopLe('Vui lòng ghi chú khi chọn loại điều chỉnh khác');
+  }
 
   const t = await sequelize.transaction();
   try {
@@ -350,7 +383,7 @@ async function dieuChinhTonKho(maSach, duLieu, maNhanVien) {
     const tonSau = tonTruoc + soLuongThayDoi;
     await LichSuDieuChinhKho.create({
       MaSach: maSach, SoLuongThayDoi: soLuongThayDoi, TonTruoc: tonTruoc, TonSau: tonSau,
-      LoaiDieuChinh: loaiDieuChinh, LyDo: lyDo.trim(), MaNhanVienDieuChinh: maNhanVien
+      LoaiDieuChinh: loaiDieuChinh, GhiChu: ghiChu?.trim() || null, MaNhanVienDieuChinh: maNhanVien
     }, { transaction: t });
     await t.commit();
     return layChiTietSach(maSach, true);
