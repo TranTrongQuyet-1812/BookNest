@@ -118,6 +118,9 @@ body {
   color: var(--text-main);
   line-height: 1.5;
   min-height: 100vh;
+  /* 100vw tính cả thanh cuộn dọc nên các lớp phủ toàn chiều ngang (home-atmosphere, canvas) dư vài px bên phải
+     và sinh thanh cuộn ngang. Dùng clip thay vì hidden để không biến body thành khung cuộn (giữ sticky/ScrollTrigger) */
+  overflow-x: clip;
   transition: color 0.25s ease;
   -webkit-font-smoothing: antialiased;
 }
