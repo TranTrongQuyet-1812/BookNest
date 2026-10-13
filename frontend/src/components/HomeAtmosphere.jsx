@@ -196,7 +196,8 @@ export default function HomeAtmosphere({ heroRef }) {
       window.clearTimeout(hen);
       gsap.ticker.remove(tick);
       cacVongLap.forEach((animation) => animation.kill());
-      boTheoDoiCuon?.kill();
+      // Giảm chuyển động thì boTheoDoiCuon là false; "?." chỉ chặn null/undefined nên phải kiểm tra thật
+      if (boTheoDoiCuon) boTheoDoiCuon.kill();
       theoDoi.disconnect();
       window.removeEventListener('resize', doiKichThuoc);
       window.removeEventListener('pointermove', khiDiChuyen);
