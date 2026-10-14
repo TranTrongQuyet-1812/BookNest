@@ -251,12 +251,15 @@ export const ThanhToan = () => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(soTien || 0);
   };
 
-  // Lấy danh sách món đa tầng: Ưu tiên state Zustand, sau đó fallback trực tiếp vào localStorage
+  // Lấy danh sách món: ưu tiên state Zustand. Chỉ khách vãng lai mới được fallback vào localStorage; khách đăng nhập
+  // mà đọc giỏ cục bộ thì màn hình hiện sách còn server (nơi đặt đơn đọc giỏ) lại rỗng, đặt đơn sẽ báo 400 "Giỏ hàng đang trống"
   const items = (cacMon && cacMon.length > 0)
     ? cacMon
     : (gioHang?.cacMon && gioHang.cacMon.length > 0)
       ? gioHang.cacMon
-      : (() => {
+      : daDangNhap
+        ? []
+        : (() => {
           try {
             const raw = localStorage.getItem('booknest_guest_cart');
             return raw ? JSON.parse(raw) : [];
