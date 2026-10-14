@@ -290,6 +290,12 @@ export const ThanhToan = () => {
           }
         })();
 
+  const tongTienThucTe = items.reduce((sum, item) => {
+    const gia = Number(item.donGia ?? item.sach?.giaBan ?? 0);
+    const sl = Number(item.soLuong) || 0;
+    return sum + (Number(item.thanhTien) || (sl * gia));
+  }, 0);
+
   if (dangTai || dangChuyenTrang) {
     return (
       <div className="container py-16 text-center" style={{ minHeight: '60vh' }}>
@@ -717,7 +723,7 @@ export const ThanhToan = () => {
                   Tóm Tắt Đơn Hàng
                 </h2>
                 <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                  {gioHang?.tongSoLuong || items.reduce((s, i) => s + (i.soLuong || 0), 0)} cuốn
+                  {items.reduce((s, i) => s + (Number(i.soLuong) || 0), 0)} cuốn
                 </span>
               </div>
 
@@ -794,7 +800,7 @@ export const ThanhToan = () => {
                 <div className="flex justify-between" style={{ color: 'var(--text-muted)' }}>
                   <span>Tạm tính tiền sách:</span>
                   <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>
-                    {dinhDangTien(gioHang?.tongTien)}
+                    {dinhDangTien(tongTienThucTe)}
                   </span>
                 </div>
 
@@ -815,7 +821,7 @@ export const ThanhToan = () => {
                   Tổng thanh toán:
                 </span>
                 <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '1.45rem' }}>
-                  {dinhDangTien(gioHang?.tongTien)}
+                  {dinhDangTien(tongTienThucTe)}
                 </span>
               </div>
 

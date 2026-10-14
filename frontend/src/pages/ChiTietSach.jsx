@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import useCartStore from '../stores/cartStore';
 import StarRating from '../components/StarRating';
 import KeSachCuonNgang from '../components/KeSachCuonNgang';
-import { giaiMaHtmlEntities } from '../utils/text';
+import { giaiMaHtmlEntities, lamSachChuoi } from '../utils/text';
 
 /**
  * ChiTietSach - Trang Chi Tiết Tác Phẩm (Book Detail Page)
@@ -218,7 +218,7 @@ export const ChiTietSach = () => {
 
   const anhBia = sach.AnhBia;
   const tieuDe = sach.TenSach;
-  const tacGia = sach.TacGia;
+  const tacGia = lamSachChuoi(sach.TacGia);
   const giaBan = sach.GiaBan;
   const soLuongTon = sach.SoLuongTon ?? 0;
   const moTaSachSachSe = giaiMaHtmlEntities(sach.MoTa);

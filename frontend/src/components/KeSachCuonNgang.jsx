@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { lamSachChuoi } from '../utils/text';
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -335,7 +336,7 @@ export const KeSachCuonNgang = ({
                   overflow: 'hidden',
                   textOverflow: 'ellipsis'
                 }}>
-                  {sach.TacGia}
+                  {lamSachChuoi(sach.TacGia)}
                 </p>
               </Link>
 

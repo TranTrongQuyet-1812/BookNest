@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
+import { laySocket, thamGiaNhanVien, roiNhanVien } from '../../services/socket';
 import PhanTrang from '../../components/PhanTrang';
 import { 
   ClipboardList, 
@@ -28,6 +29,34 @@ export const QuanLyDonHang = () => {
   const [lanTai, setLanTai] = useState(0);
 
   const taiLai = () => setLanTai((n) => n + 1);
+
+  // Lắng nghe sự kiện realtime đơn hàng từ Socket.IO cho nhân viên quản trị
+  useEffect(() => {
+    const socket = laySocket();
+    const token = localStorage.getItem('booknest_token');
+    thamGiaNhanVien(token);
+
+    const xuLyDonMoi = (duLieu) => {
+      setThongBao(`Có đơn hàng mới #${duLieu?.maDonHang || ''} vừa được tạo!`);
+      taiLai();
+      setTimeout(() => setThongBao(''), 4000);
+    };
+
+    const xuLyCapNhatTrangThai = (duLieu) => {
+      setThongBao(`Đơn hàng #${duLieu?.maDonHang || ''} vừa cập nhật trạng thái: ${duLieu?.trangThaiMoi || ''}`);
+      taiLai();
+      setTimeout(() => setThongBao(''), 4000);
+    };
+
+    socket.on('donHang:donMoi', xuLyDonMoi);
+    socket.on('donHang:capNhatTrangThai', xuLyCapNhatTrangThai);
+
+    return () => {
+      socket.off('donHang:donMoi', xuLyDonMoi);
+      socket.off('donHang:capNhatTrangThai', xuLyCapNhatTrangThai);
+      roiNhanVien();
+    };
+  }, []);
 
   useEffect(() => {
     let daHuy = false;

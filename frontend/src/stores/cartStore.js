@@ -3,11 +3,13 @@ import api from '../services/api';
 
 const KEY_GUEST_CART = 'booknest_guest_cart';
 
-// Đọc danh sách món của khách vãng lai từ localStorage
+// Đọc danh sách món của khách vãng lai từ localStorage (phòng vệ chống crash nếu JSON không phải mảng)
 const docGuestCart = () => {
   try {
     const raw = localStorage.getItem(KEY_GUEST_CART);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
@@ -32,7 +34,9 @@ const laKhachHangHopLe = () => {
   if (!token) return false;
   try {
     const phanDuLieu = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(atob(phanDuLieu)).aud === 'khach_hang';
+    const giaiMa = JSON.parse(atob(phanDuLieu));
+    if (giaiMa.exp && Date.now() >= giaiMa.exp * 1000) return false;
+    return giaiMa.aud === 'khach_hang';
   } catch {
     return false;
   }
@@ -230,25 +234,53 @@ export const useCartStore = create((set, get) => ({
     // --- Chế độ Customer (Optimistic update) ---
     set({ dangCapNhat: true });
     const cacMonCu = get().cacMon;
+    const gioHangCu = get().gioHang;
     const cacMonMoi = cacMonCu.map(mon => 
       Number(mon.maSach) === maSachSo ? { ...mon, soLuong, thanhTien: soLuong * (mon.donGia || 0) } : mon
     );
     const tongTienMoi = cacMonMoi.reduce((sum, mon) => sum + (mon.soLuong * (mon.donGia || 0)), 0);
     const tongSoLuongMoi = cacMonMoi.reduce((sum, mon) => sum + mon.soLuong, 0);
 
+    const gioHangMoi = {
+      ...(gioHangCu || {}),
+      cacMon: cacMonMoi,
+      tongTien: tongTienMoi,
+      tongSoLuong: tongSoLuongMoi
+    };
+
     set({
+      gioHang: gioHangMoi,
       cacMon: cacMonMoi,
       tongTien: tongTienMoi,
       tongSoLuong: tongSoLuongMoi
     });
 
     try {
-      await api.put(`/cart/items/${maSachSo}`, { soLuong });
-      set({ dangCapNhat: false });
+      const res = await api.put(`/cart/items/${maSachSo}`, { soLuong });
+      const dataMoi = res.data?.data;
+      if (dataMoi) {
+        set({
+          gioHang: dataMoi,
+          cacMon: dataMoi.cacMon || cacMonMoi,
+          tongTien: dataMoi.tongTien ?? tongTienMoi,
+          tongSoLuong: dataMoi.tongSoLuong ?? tongSoLuongMoi,
+          dangCapNhat: false
+        });
+      } else {
+        set({ dangCapNhat: false });
+      }
       return { thanhCong: true };
     } catch (err) {
-      set({ cacMon: cacMonCu, dangCapNhat: false });
-      const thongDiep = err.response?.data?.message || 'Lỗi khi cập nhật số lượng';
+      set({
+        gioHang: gioHangCu,
+        cacMon: cacMonCu,
+        tongTien: cacMonCu.reduce((sum, mon) => sum + (mon.soLuong * (mon.donGia || 0)), 0),
+        tongSoLuong: cacMonCu.reduce((sum, mon) => sum + mon.soLuong, 0),
+        dangCapNhat: false
+      });
+      const thongDiep = (err.response?.status === 401 || err.response?.status === 403)
+        ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để cập nhật giỏ hàng.'
+        : (err.response?.data?.message || 'Lỗi khi cập nhật số lượng');
       return { thanhCong: false, thongDiep };
     }
   },
@@ -272,7 +304,9 @@ export const useCartStore = create((set, get) => ({
       await get().layGioHang();
       return { thanhCong: true };
     } catch (err) {
-      const thongDiep = err.response?.data?.message || 'Lỗi khi xóa sản phẩm';
+      const thongDiep = (err.response?.status === 401 || err.response?.status === 403)
+        ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để xóa sản phẩm.'
+        : (err.response?.data?.message || 'Lỗi khi xóa sản phẩm');
       return { thanhCong: false, thongDiep };
     }
   },
@@ -302,7 +336,9 @@ export const useCartStore = create((set, get) => ({
       });
       return { thanhCong: true };
     } catch (err) {
-      const thongDiep = err.response?.data?.message || 'Lỗi khi dọn giỏ hàng';
+      const thongDiep = (err.response?.status === 401 || err.response?.status === 403)
+        ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để dọn giỏ hàng.'
+        : (err.response?.data?.message || 'Lỗi khi dọn giỏ hàng');
       return { thanhCong: false, thongDiep };
     }
   },
@@ -347,6 +383,26 @@ export const useCartStore = create((set, get) => ({
       loi: null,
       daKhoiTao: false
     });
+  },
+
+  // 8. Lắng nghe thay đổi giỏ hàng từ các Tab khác (Cross-Tab Synchronization)
+  kichHoatLangNgheCrossTab: () => {
+    if (typeof window === 'undefined') return;
+
+    const xuLyThayDoiStorage = (e) => {
+      // Chỉ xử lý khi thay đổi đúng key giỏ hàng khách vãng lai và không phải khách hàng đăng nhập
+      if (e.key === KEY_GUEST_CART && !laKhachHangHopLe()) {
+        const itemsMoi = docGuestCart();
+        const tong = tinhTongGuest(itemsMoi);
+        set({
+          ...tong,
+          daKhoiTao: true
+        });
+      }
+    };
+
+    window.addEventListener('storage', xuLyThayDoiStorage);
+    return () => window.removeEventListener('storage', xuLyThayDoiStorage);
   }
 }));
 

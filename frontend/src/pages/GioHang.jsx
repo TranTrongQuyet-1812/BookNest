@@ -69,6 +69,12 @@ export const GioHang = () => {
   };
 
   const items = cacMon || [];
+  const tongSoLuongThucTe = items.reduce((sum, item) => sum + (Number(item.soLuong) || 0), 0);
+  const tongTienThucTe = items.reduce((sum, item) => {
+    const gia = Number(item.donGia ?? item.sach?.giaBan ?? 0);
+    const sl = Number(item.soLuong) || 0;
+    return sum + (Number(item.thanhTien) || (sl * gia));
+  }, 0);
   const coDuLieuSan = items.length > 0;
 
   // Khung xương Skeleton 2 cột chuẩn tỷ lệ - Chỉ hiện khi hoàn toàn chưa có dữ liệu và đang nạp lần đầu
@@ -302,8 +308,8 @@ export const GioHang = () => {
               </h3>
 
               <div className="flex justify-between py-2" style={{ borderBottom: '1px solid var(--border)', fontSize: '0.9rem' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Tổng số mặt hàng:</span>
-                <span style={{ fontWeight: 600 }}>{gioHang?.tongSoLuong || 0} cuốn</span>
+                <span style={{ color: 'var(--text-muted)' }}>Tổng số sản phẩm:</span>
+                <span style={{ fontWeight: 600 }}>{items.length} mặt hàng ({tongSoLuongThucTe} cuốn)</span>
               </div>
 
               <div className="flex justify-between py-2" style={{ borderBottom: '1px solid var(--border)', fontSize: '0.9rem' }}>
@@ -314,7 +320,7 @@ export const GioHang = () => {
               <div className="flex justify-between py-4" style={{ fontSize: '1.1rem' }}>
                 <span style={{ fontWeight: 600 }}>Tổng thanh toán:</span>
                 <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '1.35rem' }}>
-                  {dinhDangTien(gioHang?.tongTien)}
+                  {dinhDangTien(tongTienThucTe)}
                 </span>
               </div>
 

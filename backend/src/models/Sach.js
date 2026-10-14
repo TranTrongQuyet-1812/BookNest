@@ -18,7 +18,12 @@ const Sach = sequelize.define('Sach', {
   },
   TacGia: {
     type: DataTypes.STRING(150),
-    allowNull: false
+    allowNull: false,
+    get() {
+      const raw = this.getDataValue('TacGia');
+      if (!raw || typeof raw !== 'string') return raw;
+      return raw.replace(/&nbsp;?/gi, ' ').replace(/nbsp;?/gi, ' ').replace(/\s+/g, ' ').trim();
+    }
   },
   MoTa: {
     type: DataTypes.TEXT,

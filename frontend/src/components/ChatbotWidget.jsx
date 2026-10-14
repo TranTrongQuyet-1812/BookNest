@@ -61,6 +61,7 @@ const chuanHoaNoiDungAI = (noiDung) => {
         if (parsed.text) return String(parsed.text).trim();
         if (parsed.content) return chuanHoaNoiDungAI(parsed.content);
         if (parsed.message) return chuanHoaNoiDungAI(parsed.message);
+        if (parsed.name || parsed.parameters) return '';
       }
     } catch {
       // Giữ nguyên chuỗi
@@ -73,7 +74,7 @@ const chuanHoaNoiDungAI = (noiDung) => {
 export const ChatbotWidget = () => {
   const navigate = useNavigate();
   const { themVaoGio } = useCartStore();
-  const { theme } = useAuth();
+  const { theme, daDangNhap, user } = useAuth();
   const laDark = theme === 'dark';
 
   const [moChat, setMoChat] = useState(false);
@@ -174,14 +175,18 @@ export const ChatbotWidget = () => {
     setDangGui(true);
 
     try {
-      const payloadMessages = lichSuCapNhat.map(m => ({
-        role: m.role,
-        content: m.content
-      }));
+      const payloadMessages = lichSuCapNhat
+        .map(m => ({
+          role: m.role,
+          content: m.content
+        }))
+        .slice(-8);
 
       const res = await api.post('/chat', {
         messages: payloadMessages,
-        tinNhan: textCanGui
+        tinNhan: textCanGui,
+        daDangNhap: Boolean(daDangNhap),
+        tenKhachHang: user?.fullName || user?.HoTen || user?.name || ''
       });
 
       const duLieuPhanHoi = res.data?.data;
@@ -194,6 +199,26 @@ export const ChatbotWidget = () => {
       };
 
       setDanhSachTinNhan([...lichSuCapNhat, tinNhanAI]);
+
+      // Nếu AI trả về hành động thêm giỏ hàng (dành cho User đã đăng nhập)
+      if (duLieuPhanHoi?.duLieuKemTheo?.themVaoGioHang) {
+        const item = duLieuPhanHoi.duLieuKemTheo.themVaoGioHang;
+        try {
+          await themVaoGio(item.maSach, item.soLuong || 1, {
+            TenSach: item.tenSach,
+            GiaBan: item.giaBan,
+            HinhAnh: item.hinhAnh
+          });
+          if (item.chuyenTrangGioHang) {
+            setTimeout(() => {
+              setMoChat(false);
+              navigate('/cart');
+            }, 800);
+          }
+        } catch (e) {
+          console.error('Lỗi tự động thêm giỏ từ AI:', e);
+        }
+      }
     } catch (err) {
       console.error('Lỗi gửi tin nhắn AI:', err);
       const tinNhanLoi = {
@@ -648,6 +673,63 @@ export const ChatbotWidget = () => {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Thẻ Xác Nhận Đã Thêm Vào Giỏ Hàng (Dành cho User) */}
+                {msg.duLieuKemTheo?.themVaoGioHang && (
+                  <div
+                    style={{
+                      width: '100%',
+                      marginTop: '6px',
+                      padding: '10px 12px',
+                      borderRadius: '12px',
+                      backgroundColor: laDark ? '#483E46' : 'var(--primary-light, #FDF4E1)',
+                      border: laDark ? '1px solid #853953' : '1px solid var(--primary, #F2C46A)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '10px',
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)',
+                      transition: 'background-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms, border-color 1600ms cubic-bezier(0.4, 0, 0.2, 1) 800ms'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Check style={{ width: '16px', height: '16px', color: '#FFFFFF', strokeWidth: 2.5 }} />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          Đã thêm: {msg.duLieuKemTheo.themVaoGioHang.tenSach}
+                        </p>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                          Số lượng: {msg.duLieuKemTheo.themVaoGioHang.soLuong} cuốn • {Number(msg.duLieuKemTheo.themVaoGioHang.giaBan || 0).toLocaleString('vi-VN')}đ
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setMoChat(false);
+                        navigate('/cart');
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '0.74rem',
+                        fontWeight: 600,
+                        borderRadius: '6px',
+                        backgroundColor: laDark ? '#853953' : 'var(--primary-dark, #4C4541)',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        flexShrink: 0,
+                        transition: 'background-color 0.15s ease'
+                      }}
+                    >
+                      Xem giỏ <ArrowRight style={{ width: '13px', height: '13px', strokeWidth: 2.2 }} />
+                    </button>
                   </div>
                 )}
 

@@ -10,6 +10,7 @@ import HomeAtmosphere from '../components/HomeAtmosphere';
 import { useGiamChuyenDong } from '../utils/chuyenDong';
 import { getLenis } from '../utils/lenis';
 import { khiRemMo } from '../utils/nhipMoTrang';
+import { lamSachChuoi } from '../utils/text';
 
 gsap.registerPlugin(useGSAP);
 
@@ -413,7 +414,7 @@ export const TrangChu = () => {
                           textAlign: 'center',
                           marginBottom: '1.25rem'
                         }}>
-                          {sachVip.TacGia}
+                          {lamSachChuoi(sachVip.TacGia)}
                         </p>
                       </Link>
                     );
@@ -672,7 +673,7 @@ export const TrangChu = () => {
                           overflow: 'hidden',
                           textOverflow: 'ellipsis'
                         }}>
-                          {sach.TacGia}
+                          {lamSachChuoi(sach.TacGia)}
                         </p>
                       </Link>
 

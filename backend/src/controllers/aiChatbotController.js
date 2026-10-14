@@ -57,14 +57,18 @@ async function guiTinNhan(req, res) {
     });
   }
 
-  // Nhận diện khách hàng nếu đã đăng nhập từ token (nếu có)
+  // Nhận diện khách hàng nếu đã đăng nhập từ token hoặc frontend
   const maKhachHang = req.nguoiDung?.MaKhachHang || req.nguoiDung?.maKhachHang || null;
+  const daDangNhap = Boolean(maKhachHang || req.body?.daDangNhap);
+  const tenKhachHang = req.nguoiDung?.fullName || req.nguoiDung?.HoTen || req.body?.tenKhachHang || '';
 
   try {
     const ketQua = await aiChatbotService.xuLyHoiThoaiAI({
       lichSuChat: messages,
       tinNhanMoi,
-      maKhachHang
+      maKhachHang,
+      daDangNhap,
+      tenKhachHang
     });
 
     return phanHoiThanhCong(res, {

@@ -59,6 +59,30 @@ export function roiDonHang(maTraCuu) {
 }
 
 /**
+ * Tham gia phòng realtime dành cho nhân viên quản trị (yêu cầu JWT token nhân viên)
+ */
+export function thamGiaNhanVien(token) {
+  const socket = laySocket();
+  const tokenGui = token || localStorage.getItem('booknest_token');
+  if (socket.connected) {
+    socket.emit('tham_gia_nhan_vien', { token: tokenGui });
+  } else {
+    socket.once('connect', () => {
+      socket.emit('tham_gia_nhan_vien', { token: tokenGui });
+    });
+  }
+}
+
+/**
+ * Rời phòng nhân viên khi thoát trang quản lý
+ */
+export function roiNhanVien() {
+  if (socketInstance) {
+    socketInstance.emit('roi_nhan_vien');
+  }
+}
+
+/**
  * Đóng kết nối socket khi đăng xuất hoặc rời khỏi ứng dụng
  */
 export function dongSocket() {
@@ -72,5 +96,7 @@ export default {
   laySocket,
   thamGiaDonHang,
   roiDonHang,
+  thamGiaNhanVien,
+  roiNhanVien,
   dongSocket
 };

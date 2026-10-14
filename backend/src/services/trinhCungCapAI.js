@@ -52,7 +52,7 @@ async function goiNhaCungCapAI({ messages, tools, maxTokens = 600, temperature =
   }
 
   const controller = new AbortController();
-  const thoiGianCho = setTimeout(() => controller.abort(), 20000); // 20s timeout
+  const thoiGianCho = setTimeout(() => controller.abort(), 30000); // 30s timeout tránh timeout mạng chậm
 
   try {
     const phanHoi = await fetch(url, {
@@ -69,6 +69,7 @@ async function goiNhaCungCapAI({ messages, tools, maxTokens = 600, temperature =
 
     if (!phanHoi.ok) {
       const noiDungLoi = await phanHoi.text();
+      console.error('[AI Error Response]', phanHoi.status, noiDungLoi);
       let thongDiepLoi = `Lỗi từ nhà cung cấp AI (Mã ${phanHoi.status})`;
       try {
         const jsonLoi = JSON.parse(noiDungLoi);

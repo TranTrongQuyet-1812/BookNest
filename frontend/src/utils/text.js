@@ -41,5 +41,18 @@ export const giaiMaHtmlEntities = (str) => {
     }
   }
 
-  return res.replace(/&amp;/g, '&');
+  return res
+    .replace(/&amp;/g, '&')
+    .replace(/&nbsp;?/gi, ' ')
+    .replace(/\bnbsp;?/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+/**
+ * Làm sạch chuỗi văn bản hiển thị: loại bỏ rác HTML entity và chuẩn hóa khoảng trắng
+ */
+export const lamSachChuoi = (str) => {
+  if (!str) return '';
+  return giaiMaHtmlEntities(str);
 };

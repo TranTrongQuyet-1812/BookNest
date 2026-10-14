@@ -18,6 +18,16 @@ const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 const { sinhMaTraCuu } = require('../utils/maTraCuu');
 const { tinhNgayHetHan, sinhMaGiaoDich } = require('../utils/thanhToanQr');
 const emailService = require('./emailService');
+const { phatSuKien } = require('../realtime/socket');
+
+// Phát sự kiện Socket.IO an toàn tới phòng nhân viên (không làm gián đoạn transaction CSDL nếu socket gặp lỗi)
+function baoNhanVienRealtime(tenSuKien, duLieu) {
+  try {
+    phatSuKien(tenSuKien, duLieu, 'nhan_vien');
+  } catch (err) {
+    console.warn(`[Socket.IO] Không thể phát sự kiện ${tenSuKien}:`, err.message);
+  }
+}
 
 // Số lần thử sinh mã tra cứu khác khi gặp mã trùng (cực hiếm: hơn 1 tỷ tổ hợp, chỉ mục duy nhất chặn trùng)
 const SO_LAN_THU_SINH_MA = 5;
@@ -183,6 +193,13 @@ async function datHang(maKhachHang, thongTinGiaoHang) {
     await t.commit();
     const chiTietDon = await layChiTietDonHang(donHangMoi.MaDonHang);
     guiHoaDonKhiDatDon(chiTietDon, thongTinGiaoHang.phuongThucThanhToan);
+    baoNhanVienRealtime('donHang:donMoi', {
+      maDonHang: chiTietDon.MaDonHang,
+      maTraCuu: chiTietDon.MaTraCuu,
+      tongTien: chiTietDon.TongTien,
+      nguoiNhan: chiTietDon.TenNguoiNhan,
+      thoiGian: chiTietDon.NgayDat
+    });
     return chiTietDon;
   } catch (loi) {
     await t.rollback();
@@ -246,6 +263,13 @@ async function datHangKhachVangLai(thongTinDatHang) {
     // Không cấp token: khách vãng lai không có phiên đăng nhập
     const chiTietDon = await layChiTietDonHang(donHangMoi.MaDonHang);
     guiHoaDonKhiDatDon(chiTietDon, thongTinDatHang.phuongThucThanhToan);
+    baoNhanVienRealtime('donHang:donMoi', {
+      maDonHang: chiTietDon.MaDonHang,
+      maTraCuu: chiTietDon.MaTraCuu,
+      tongTien: chiTietDon.TongTien,
+      nguoiNhan: chiTietDon.TenNguoiNhan,
+      thoiGian: chiTietDon.NgayDat
+    });
     return chiTietDon;
   } catch (loi) {
     await t.rollback();
@@ -438,6 +462,12 @@ async function khachHuyDon(maDonHang, maKhachHang, lyDo) {
     await t.commit();
     const chiTietDon = await layChiTietDonHang(maDonHang);
     emailService.guiEmailCapNhatTrangThai(chiTietDon, 'DA_HUY', lyDo || 'Khách hàng tự hủy đơn').catch(err => console.error('[Lỗi Gửi Email Hủy Đơn]', err.message));
+    baoNhanVienRealtime('donHang:capNhatTrangThai', {
+      maDonHang: chiTietDon.MaDonHang,
+      maTraCuu: chiTietDon.MaTraCuu,
+      trangThaiDonHang: 'DA_HUY',
+      lyDo: lyDo || 'Khách hàng tự hủy đơn'
+    });
     return chiTietDon;
   } catch (loi) {
     await t.rollback();
@@ -554,6 +584,12 @@ async function adminCapNhatTrangThai(maDonHang, trangThaiMoi, ghiChu, maNhanVien
     await t.commit();
     const chiTietDon = await layChiTietDonHang(maDonHang);
     emailService.guiEmailCapNhatTrangThai(chiTietDon, trangThaiMoi, ghiChu).catch(err => console.error('[Lỗi Gửi Email Cập Nhật]', err.message));
+    baoNhanVienRealtime('donHang:capNhatTrangThai', {
+      maDonHang,
+      trangThaiCu,
+      trangThaiMoi,
+      thoiGian: new Date().toISOString()
+    });
     return chiTietDon;
   } catch (loi) {
     await t.rollback();
@@ -608,6 +644,13 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
     await t.commit();
     const chiTietDon = await layChiTietDonHang(maDonHang);
     emailService.guiEmailCapNhatTrangThai(chiTietDon, 'DA_HUY', lyDo).catch(err => console.error('[Lỗi Gửi Email Hủy Đơn]', err.message));
+    baoNhanVienRealtime('donHang:capNhatTrangThai', {
+      maDonHang,
+      trangThaiCu,
+      trangThaiMoi: 'DA_HUY',
+      lyDo,
+      thoiGian: new Date().toISOString()
+    });
     return chiTietDon;
   } catch (loi) {
     await t.rollback();

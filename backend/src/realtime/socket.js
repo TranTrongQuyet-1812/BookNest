@@ -3,6 +3,7 @@
  * Thiết kế theo kiến trúc tách biệt: Service nghiệp vụ chỉ gọi hàm phát sự kiện, không đụng trực tiếp tới socket.
  */
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 const cauHinh = require('../config/cauHinh');
 const { chuanHoaMaTraCuu } = require('../utils/maTraCuu');
 
@@ -18,17 +19,26 @@ function khoiTaoSocket(httpServer) {
     ...(cauHinh.corsBackOffice || []),
     'http://localhost:3000',
     'http://localhost:5173',
-    'http://localhost:5174'
+    'http://localhost:5174',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174'
   ];
 
   io = new Server(httpServer, {
     cors: {
       origin: (origin, callback) => {
-        // Cho phép các yêu cầu không có origin (như mobile app/curl) hoặc nằm trong danh sách
-        if (!origin || danhSachOrigins.includes(origin)) {
+        // Cho phép các yêu cầu không có origin (như curl / mobile app / server-to-server)
+        if (!origin) return callback(null, true);
+
+        // Kiểm tra xem origin có nằm trong whitelist hoặc là localhost / dev LAN hợp lệ không
+        const hopLe = danhSachOrigins.includes(origin) ||
+          /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+
+        if (hopLe) {
           return callback(null, true);
         }
-        return callback(null, true); // Chế độ phát triển cho phép linh hoạt
+        return callback(new Error(`CORS WebSocket bị chặn cho origin: ${origin}`));
       },
       methods: ['GET', 'POST'],
       credentials: true
@@ -50,9 +60,46 @@ function khoiTaoSocket(httpServer) {
       if (ma) socket.leave(`don_hang:${ma}`);
     });
 
-    // Nhân viên tham gia phòng quản trị
-    socket.on('tham_gia_nhan_vien', () => {
-      socket.join('nhan_vien');
+    // Nhân viên tham gia phòng quản trị (Bắt buộc xác thực JWT Token: aud === 'nhan_vien')
+    socket.on('tham_gia_nhan_vien', (duLieuXacThuc) => {
+      try {
+        const token = typeof duLieuXacThuc === 'string'
+          ? duLieuXacThuc
+          : duLieuXacThuc?.token;
+
+        if (!token) {
+          socket.emit('loi_xac_thuc', { thongDiep: 'Thiếu mã xác thực (token) nhân viên' });
+          socket.emit('loi_auth_socket', { thongDiep: 'Thiếu mã xác thực (token) nhân viên' });
+          return;
+        }
+
+        const biMat = cauHinh.jwt?.biMat || cauHinh.jwtBiMat;
+        const giaiMa = jwt.verify(token, biMat);
+        // Kiểm tra claim aud và vai trò hợp lệ của nhân sự BookNest
+        if (giaiMa.aud === 'nhan_vien' && ['quan_tri', 'thu_kho', 'thu_thu'].includes(giaiMa.role)) {
+          socket.join('nhan_vien');
+          socket.emit('tham_gia_nhan_vien_thanh_cong', {
+            role: giaiMa.role,
+            hoTen: giaiMa.fullName || giaiMa.hoTen || giaiMa.tenNhanVien || 'Nhân viên BookNest'
+          });
+          socket.emit('da_tham_gia_nhan_vien', {
+            thanhCong: true,
+            vaiTro: giaiMa.role,
+            hoTen: giaiMa.fullName || giaiMa.hoTen || giaiMa.tenNhanVien || 'Nhân viên BookNest'
+          });
+        } else {
+          socket.emit('loi_xac_thuc', { thongDiep: 'Quyền truy cập phòng quản trị bị từ chối' });
+          socket.emit('loi_auth_socket', { thongDiep: 'Quyền truy cập phòng quản trị bị từ chối' });
+        }
+      } catch (err) {
+        socket.emit('loi_xac_thuc', { thongDiep: 'Mã xác thực nhân viên không hợp lệ hoặc đã hết hạn' });
+        socket.emit('loi_auth_socket', { thongDiep: 'Mã xác thực nhân viên không hợp lệ hoặc đã hết hạn' });
+      }
+    });
+
+    // Rời phòng quản trị
+    socket.on('roi_nhan_vien', () => {
+      socket.leave('nhan_vien');
     });
 
     socket.on('disconnect', () => {

@@ -10,6 +10,7 @@ import PaperBackgroundCanvas from './components/canvas/PaperBackgroundCanvas';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ChatbotWidget from './components/ChatbotWidget';
+import useCartStore from './stores/cartStore';
 
 // Pages Storefront
 import TrangChu from './pages/TrangChu';
@@ -51,6 +52,15 @@ const AppContent = () => {
   const location = useLocation();
   const laKhuAdmin = location.pathname.startsWith('/admin');
   const [displayLocation, setDisplayLocation] = useState(location);
+  const kichHoatLangNgheCrossTab = useCartStore((s) => s.kichHoatLangNgheCrossTab);
+
+  // Kích hoạt đồng bộ giỏ hàng đa tab (Cross-Tab Synchronization)
+  React.useEffect(() => {
+    const huyLangNghe = kichHoatLangNgheCrossTab();
+    return () => {
+      if (huyLangNghe) huyLangNghe();
+    };
+  }, [kichHoatLangNgheCrossTab]);
 
   // Khi rèm đã che kín 100% màn hình, mới hoán đổi sang trang mới cho Storefront!
   const handleCurtainCovered = useCallback(() => {
