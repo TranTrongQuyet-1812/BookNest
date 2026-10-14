@@ -10,11 +10,13 @@ const {
   Sach,
   GioHang,
   LichSuTrangThaiDonHang,
+  ThanhToan,
   KhachHang,
   NhanVien
 } = require('../models');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 const { sinhMaTraCuu } = require('../utils/maTraCuu');
+const { tinhNgayHetHan, sinhMaGiaoDich } = require('../utils/thanhToanQr');
 const emailService = require('./emailService');
 
 // Số lần thử sinh mã tra cứu khác khi gặp mã trùng (cực hiếm: hơn 1 tỷ tổ hợp, chỉ mục duy nhất chặn trùng)
@@ -77,6 +79,22 @@ async function truTonKhoVaChotChiTiet(cacMon, transaction) {
   }
 
   return { tongTien, danhSachChiTiet };
+}
+
+/**
+ * Đơn chọn chuyển khoản QR có sẵn khoản thanh toán "đang chờ" ngay khi đặt (chưa có link payOS).
+ * Nhờ vậy dù tạo link lỗi, đơn vẫn có hạn: quá hạn không trả thì bị hủy và nhả kho (hetHanThanhToanService),
+ * trong lúc đó khách thử lại hoặc đổi sang COD. MaGiaoDichPayos là cột duy nhất nên cấp tạm một mã, link thật sẽ lấy mã mới.
+ */
+async function taoKhoanQrDangCho(donHangMoi, tongTien, transaction) {
+  await ThanhToan.create({
+    MaDonHang: donHangMoi.MaDonHang,
+    PhuongThuc: 'CHUYEN_KHOAN_QR',
+    TrangThai: 'CHO_THANH_TOAN',
+    SoTien: tongTien,
+    MaGiaoDichPayos: sinhMaGiaoDich(),
+    NgayHetHan: tinhNgayHetHan()
+  }, { transaction });
 }
 
 /**
@@ -161,6 +179,7 @@ async function datHang(maKhachHang, thongTinGiaoHang) {
       }
     }
 
+    if (thongTinGiaoHang.phuongThucThanhToan === 'CHUYEN_KHOAN_QR') await taoKhoanQrDangCho(donHangMoi, tongTien, t);
     await t.commit();
     const chiTietDon = await layChiTietDonHang(donHangMoi.MaDonHang);
     guiHoaDonKhiDatDon(chiTietDon, thongTinGiaoHang.phuongThucThanhToan);
@@ -221,6 +240,7 @@ async function datHangKhachVangLai(thongTinDatHang) {
       { transaction: t }
     );
 
+    if (thongTinDatHang.phuongThucThanhToan === 'CHUYEN_KHOAN_QR') await taoKhoanQrDangCho(donHangMoi, tongTien, t);
     await t.commit();
 
     // Không cấp token: khách vãng lai không có phiên đăng nhập

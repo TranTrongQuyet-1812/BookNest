@@ -25,10 +25,11 @@ function laQrHetHan(thanhToan) {
 
 // Đóng link bên payOS để khách không còn trả tiền được vào link đã hủy. Lỗi mạng chỉ ghi log: nếu tiền vẫn về,
 // webhook sẽ đánh dấu CAN_HOAN_TIEN thay vì bỏ sót (xem payosService.xuLyWebhookPayOS)
-async function dongLinkPayos(maGiaoDichPayos, lyDo) {
-  if (!payOSClient || !maGiaoDichPayos) return;
+async function dongLinkPayos(thanhToan, lyDo) {
+  // Khoản chưa tạo được link (tạo QR lỗi) thì bên payOS chưa có gì để đóng
+  if (!payOSClient || !thanhToan.DuongDanThanhToan) return;
   try {
-    await payOSClient.paymentRequests.cancel(Number(maGiaoDichPayos), lyDo);
+    await payOSClient.paymentRequests.cancel(Number(thanhToan.MaGiaoDichPayos), lyDo);
   } catch (loi) {
     console.warn('[payOS] Không đóng được link thanh toán:', loi.message);
   }
@@ -74,7 +75,7 @@ async function huyDonQrHetHan(thanhToan) {
     throw loi;
   }
 
-  await dongLinkPayos(thanhToan.MaGiaoDichPayos, 'Hết hạn thanh toán');
+  await dongLinkPayos(thanhToan, 'Hết hạn thanh toán');
   if (daHuyDon) await baoDonBiHuy(thanhToan.MaDonHang);
   return daHuyDon;
 }
@@ -141,7 +142,7 @@ async function doiSangCOD(donHang) {
     throw LoiNghiepVu.xungDot('Khoản chuyển khoản không còn chờ thanh toán (đã trả tiền hoặc đã hết hạn)');
   }
 
-  await dongLinkPayos(thanhToan.MaGiaoDichPayos, 'Khách đổi sang thanh toán khi nhận hàng');
+  await dongLinkPayos(thanhToan, 'Khách đổi sang thanh toán khi nhận hàng');
   const chiTietDon = await donHangService.layChiTietDonHang(donHang.MaDonHang);
   emailService.guiEmailHoaDonDonHang(chiTietDon, emailService.HINH_THUC_COD)
     .catch((loi) => console.error('[Lỗi Gửi Email Hóa Đơn]', loi.message));

@@ -34,6 +34,9 @@ export const ThanhToan = () => {
   const [donVuaDat, setDonVuaDat] = useState(null);
   const [donVangLaiTam, setDonVangLaiTam] = useState(null);
   const [dangChuyenTrang, setDangChuyenTrang] = useState(false);
+  // Đơn QR đã đặt nhưng tạo mã thanh toán lỗi: { maTraCuu, lyDo }
+  const [donLoiQr, setDonLoiQr] = useState(null);
+  const [dangThuLaiQr, setDangThuLaiQr] = useState(false);
 
   // Phương thức thanh toán: COD hoặc CHUYEN_KHOAN_QR
   const [phuongThucThanhToan, setPhuongThucThanhToan] = useState('COD');
@@ -146,6 +149,45 @@ export const ThanhToan = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // Tạo QR cho đơn vừa đặt. Lỗi thì KHÔNG tự đổi sang COD: báo đúng lý do máy chủ trả về (khóa sai, payOS từ chối...)
+  // và để khách tự chọn thử lại hoặc đổi COD. Đơn vẫn được giữ trong thời hạn thanh toán, quá hạn sẽ tự hủy.
+  const taoQrChoDon = async (maTraCuu) => {
+    try {
+      const resQr = await api.post(`/payments/create-qr/${maTraCuu}`);
+      setDonLoiQr(null);
+      setDuLieuQR(resQr.data.data);
+      setHienModalQR(true);
+    } catch (errQr) {
+      const lyDo = errQr.response?.data?.message || errQr.message;
+      console.warn('Không thể tạo mã VietQR:', lyDo, errQr);
+      setDonLoiQr({ maTraCuu, lyDo });
+    }
+  };
+
+  const handleThuLaiQr = async () => {
+    setDangThuLaiQr(true);
+    await taoQrChoDon(donLoiQr.maTraCuu);
+    setDangThuLaiQr(false);
+  };
+
+  // Đổi đơn đang chờ chuyển khoản sang COD (báo máy chủ đổi thật, không thì đơn vẫn chờ QR và bị hủy khi hết hạn)
+  const doiSangCOD = async (maTraCuu) => {
+    try {
+      await api.post(`/payments/switch-to-cod/${maTraCuu}`);
+    } catch (errCod) {
+      alert(errCod.response?.data?.message || 'Không thể đổi sang thanh toán khi nhận hàng lúc này');
+      return;
+    }
+    setHienModalQR(false);
+    setDonLoiQr(null);
+    alert(`Đơn hàng ${maTraCuu} của bạn đã chuyển sang hình thức thanh toán khi nhận hàng (COD)!`);
+    if (daDangNhap) {
+      chuyenToiDonHang(maTraCuu);
+    } else if (donVangLaiTam) {
+      setDonVuaDat(donVangLaiTam);
+    }
+  };
+
   const handleDatHang = async (e) => {
     e.preventDefault();
     setLoi('');
@@ -174,24 +216,14 @@ export const ThanhToan = () => {
         const maTraCuu = res.data.data?.MaTraCuu;
 
         // Chưa xóa state giỏ ở đây: tạo QR mất 1-2 giây, giỏ rỗng trong lúc chờ sẽ làm màn "Giỏ hàng trống" lóe lên.
-        // Chỉ xóa sau khi đã biết kết quả (khung QR đã mở, hoặc chuyển sang trang đơn hàng).
+        // Chỉ xóa sau khi đã biết kết quả (khung QR đã mở, hoặc màn báo lỗi tạo QR).
         if (phuongThucThanhToan === 'CHUYEN_KHOAN_QR') {
-          try {
-            const resQr = await api.post(`/payments/create-qr/${maTraCuu}`);
-            setDuLieuQR(resQr.data.data);
-            setHienModalQR(true);
-            xoaTrangState();
-            return; // Dừng lại ở modal để khách quét mã QR
-          } catch (errQr) {
-            // Hiện đúng lý do máy chủ trả về (khóa sai, payOS từ chối...) thay vì một câu chung chung
-            const lyDo = errQr.response?.data?.message || errQr.message;
-            console.warn('Không thể tạo mã VietQR:', lyDo, errQr);
-            alert(`Không thể tạo mã VietQR: ${lyDo}. Đơn hàng của bạn đã được lưu với phương thức COD (thanh toán khi nhận hàng)!`);
-          }
-        } else {
-          alert('Kính chúc quý độc giả nhiều niềm vui! Đơn hàng của bạn đã được khởi tạo thành công.');
+          await taoQrChoDon(maTraCuu);
+          xoaTrangState();
+          return; // Ở lại trang: khung QR (thành công) hoặc màn báo lỗi để khách tự chọn (thất bại)
         }
 
+        alert('Kính chúc quý độc giả nhiều niềm vui! Đơn hàng của bạn đã được khởi tạo thành công.');
         xoaTrangState();
         chuyenToiDonHang(maTraCuu);
       } else {
@@ -219,23 +251,13 @@ export const ThanhToan = () => {
         const maTraCuu = res.data.data?.MaTraCuu;
         if (phuongThucThanhToan === 'CHUYEN_KHOAN_QR' && maTraCuu) {
           setDonVangLaiTam(res.data.data);
-          try {
-            const resQr = await api.post(`/payments/create-qr/${maTraCuu}`);
-            setDuLieuQR(resQr.data.data);
-            setHienModalQR(true);
-            xoaGioKhach();
-            return; // Dừng lại ở modal để khách quét mã QR
-          } catch (errQr) {
-            const lyDo = errQr.response?.data?.message || errQr.message;
-            console.warn('Không thể tạo mã VietQR cho khách vãng lai:', lyDo, errQr);
-            alert(`Không thể tạo mã VietQR: ${lyDo}. Đơn hàng của bạn đã được lưu với phương thức COD!`);
-            xoaGioKhach();
-            setDonVuaDat(res.data.data);
-          }
-        } else {
+          await taoQrChoDon(maTraCuu);
           xoaGioKhach();
-          setDonVuaDat(res.data.data);
+          return; // Ở lại trang: khung QR (thành công) hoặc màn báo lỗi để khách tự chọn (thất bại)
         }
+
+        xoaGioKhach();
+        setDonVuaDat(res.data.data);
       }
     } catch (err) {
       const msg = err.response?.data?.message || 'Đặt hàng thất bại. Vui lòng kiểm tra lại thông tin nhận hàng';
@@ -313,6 +335,46 @@ export const ThanhToan = () => {
             <Link to="/register" className="btn btn-outline" style={{ padding: '0.7rem 1.5rem', borderRadius: '6px' }}>
               Đăng ký để lần sau không phải nhập lại
             </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Đơn QR đã đặt nhưng tạo mã thanh toán lỗi: báo lỗi thật, khách tự chọn thử lại hoặc đổi COD (không tự đổi giúp khách)
+  if (donLoiQr) {
+    return (
+      <div className="container py-16 text-center">
+        <div className="card" style={{ maxWidth: '560px', margin: '0 auto', padding: '2.5rem 2rem', borderRadius: '12px' }}>
+          <AlertCircle size={48} style={{ color: 'var(--danger, #dc3545)', marginBottom: '1rem' }} />
+          <h2 className="font-serif" style={{ fontSize: '1.45rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+            Chưa tạo được mã thanh toán QR
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.75rem', lineHeight: 1.6 }}>
+            Đơn hàng <strong>{donLoiQr.maTraCuu}</strong> đã được ghi nhận và giữ chỗ trong 15 phút. Lý do: {donLoiQr.lyDo}
+          </p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.75rem', lineHeight: 1.6 }}>
+            Bạn có thể thử tạo lại mã, hoặc đổi sang thanh toán khi nhận hàng. Nếu không chọn gì, đơn sẽ tự hủy khi hết 15 phút.
+          </p>
+          <div className="flex gap-3" style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              disabled={dangThuLaiQr}
+              onClick={handleThuLaiQr}
+              className="btn btn-primary"
+              style={{ padding: '0.7rem 1.5rem', borderRadius: '6px' }}
+            >
+              {dangThuLaiQr ? 'Đang tạo mã...' : 'Thử tạo lại mã QR'}
+            </button>
+            <button
+              type="button"
+              disabled={dangThuLaiQr}
+              onClick={() => doiSangCOD(donLoiQr.maTraCuu)}
+              className="btn btn-outline"
+              style={{ padding: '0.7rem 1.5rem', borderRadius: '6px' }}
+            >
+              Đổi sang thanh toán khi nhận hàng
+            </button>
           </div>
         </div>
       </div>
@@ -850,22 +912,7 @@ export const ThanhToan = () => {
               navigate('/');
             }
           }}
-          onDoiSangCOD={async () => {
-            // Phải báo máy chủ đổi thật: không thì đơn vẫn chờ chuyển khoản và sẽ bị hủy khi QR hết hạn
-            try {
-              await api.post(`/payments/switch-to-cod/${duLieuQR.maTraCuu}`);
-            } catch (errCod) {
-              alert(errCod.response?.data?.message || 'Không thể đổi sang thanh toán khi nhận hàng lúc này');
-              return;
-            }
-            setHienModalQR(false);
-            alert(`Đơn hàng ${duLieuQR.maTraCuu} của bạn đã chuyển sang hình thức thanh toán khi nhận hàng (COD)!`);
-            if (daDangNhap) {
-              chuyenToiDonHang(duLieuQR.maTraCuu);
-            } else if (donVangLaiTam) {
-              setDonVuaDat(donVangLaiTam);
-            }
-          }}
+          onDoiSangCOD={() => doiSangCOD(duLieuQR.maTraCuu)}
         />
       )}
     </div>

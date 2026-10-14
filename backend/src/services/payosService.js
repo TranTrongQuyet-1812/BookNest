@@ -2,8 +2,8 @@
  * Dịch vụ xử lý thanh toán VietQR qua payOS.
  * Tuân thủ nghiêm ngặt nguyên tắc bảo mật và quy trình trong docs/KE_HOACH_THANH_TOAN_QR_PAYOS.md.
  */
-const crypto = require('crypto');
 const { maRutGonChoChuyenKhoan } = require('../utils/maTraCuu');
+const { tinhNgayHetHan, sinhMaGiaoDich } = require('../utils/thanhToanQr');
 const cauHinh = require('../config/cauHinh');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 const payOSClient = require('./payosClient');
@@ -32,15 +32,6 @@ async function kiemTraCongTacQRDangBat() {
     return false;
   }
   return cauHinhHeThongService.docCongTac(KHOA_THANH_TOAN_QR);
-}
-
-/**
- * Sinh mã giao dịch orderCode kiểu số nguyên duy nhất cho payOS (tối đa 9007199254740991).
- * Không dùng MaDonHang để orderCode (hiện trên trang payOS/sao kê) không lộ số đơn của cửa hàng:
- * mili giây * 1000 + 3 số ngẫu nhiên (khoảng 16 chữ số, vẫn dưới giới hạn); cột MaGiaoDichPayos có ràng buộc duy nhất.
- */
-function sinhMaGiaoDich() {
-  return Date.now() * 1000 + crypto.randomInt(1000);
 }
 
 /**
@@ -131,8 +122,7 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
 
   const paymentLinkRes = await payOSClient.paymentRequests.create(duLieuPayos);
 
-  // Hạn thanh toán mặc định 15 phút
-  const ngayHetHan = new Date(Date.now() + 15 * 60 * 1000);
+  const ngayHetHan = tinhNgayHetHan();
 
   if (banGhiThanhToan) {
     await banGhiThanhToan.update({
@@ -358,7 +348,7 @@ async function layThongTinThanhToanTheoDon(donHangTraCuu) {
   }
 
   // Nếu đang chờ thanh toán và có client SDK, có thể chủ động kiểm tra trạng thái bên payOS
-  if (thanhToan.PhuongThuc === 'CHUYEN_KHOAN_QR' && thanhToan.TrangThai === 'CHO_THANH_TOAN' && thanhToan.MaGiaoDichPayos && payOSClient) {
+  if (thanhToan.PhuongThuc === 'CHUYEN_KHOAN_QR' && thanhToan.TrangThai === 'CHO_THANH_TOAN' && thanhToan.DuongDanThanhToan && payOSClient) {
     try {
       const thongTinPayos = await payOSClient.paymentRequests.get(thanhToan.MaGiaoDichPayos);
       if (thongTinPayos && thongTinPayos.status === 'PAID') {
