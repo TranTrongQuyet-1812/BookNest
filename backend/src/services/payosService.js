@@ -8,6 +8,8 @@ const { maRutGonChoChuyenKhoan } = require('../utils/maTraCuu');
 const cauHinh = require('../config/cauHinh');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 const cauHinhHeThongService = require('./cauHinhHeThongService');
+const donHangService = require('./donHangService');
+const emailService = require('./emailService');
 const {
   sequelize,
   DonHang,
@@ -131,7 +133,15 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
     cancelUrl: `${domainClient}/orders/${donHang.MaTraCuu}?payment=cancelled`
   };
 
-  const paymentLinkRes = await payOSClient.paymentRequests.create(duLieuPayos);
+  let paymentLinkRes;
+  try {
+    paymentLinkRes = await payOSClient.paymentRequests.create(duLieuPayos);
+  } catch (loi) {
+    // Không tạo được QR thì giao diện báo đơn được giữ theo COD, nên gửi xác nhận như đơn COD (lúc đặt chưa gửi vì chọn QR)
+    emailService.guiEmailHoaDonDonHang(donHang, emailService.HINH_THUC_COD)
+      .catch((errMail) => console.error('[Lỗi Gửi Email Hóa Đơn]', errMail.message));
+    throw loi;
+  }
 
   // Hạn thanh toán mặc định 15 phút
   const ngayHetHan = new Date(Date.now() + 15 * 60 * 1000);
@@ -278,6 +288,11 @@ async function xuLyWebhookPayOS(webhookBody) {
     }, { transaction: t });
 
     await t.commit();
+
+    // Tiền đã về thì mới gửi hóa đơn (đơn QR không gửi lúc đặt, xem donHangService.guiHoaDonKhiDatDon)
+    donHangService.layChiTietDonHang(thanhToan.MaDonHang)
+      .then((chiTiet) => emailService.guiEmailHoaDonDonHang(chiTiet, emailService.HINH_THUC_DA_THANH_TOAN_QR))
+      .catch((errMail) => console.error('[Lỗi Gửi Email Hóa Đơn]', errMail.message));
 
     // Phát sự kiện thời gian thực Socket.IO tới phòng đơn hàng và quản trị viên (T43)
     try {

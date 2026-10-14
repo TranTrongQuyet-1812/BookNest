@@ -112,10 +112,14 @@ async function guiEmailMaXacNhan(email, maOtp, thoiHanPhut = 15) {
   });
 }
 
+const HINH_THUC_COD = 'Thanh toán khi nhận hàng (COD)';
+const HINH_THUC_DA_THANH_TOAN_QR = 'Đã thanh toán qua chuyển khoản VietQR';
+
 /**
- * 2. Gửi hóa đơn xác nhận đơn hàng thành công
+ * 2. Gửi hóa đơn xác nhận đơn hàng.
+ * Đơn COD gửi ngay khi đặt; đơn chuyển khoản QR chỉ gửi sau khi payOS báo đã nhận tiền (hinhThucThanhToan ghi rõ điều đó).
  */
-async function guiEmailHoaDonDonHang(donHang) {
+async function guiEmailHoaDonDonHang(donHang, hinhThucThanhToan = HINH_THUC_COD) {
   const emailNhan = donHang.EmailNhan;
   if (!emailNhan) return false;
 
@@ -163,6 +167,7 @@ async function guiEmailHoaDonDonHang(donHang) {
           <div><strong>Số điện thoại:</strong> ${donHang.SoDienThoaiNhan || 'Chưa cung cấp'}</div>
           <div><strong>Địa chỉ giao hàng:</strong> ${donHang.DiaChiGiaoHang || 'Nhận tại quầy'}</div>
           <div><strong>Kênh mua hàng:</strong> ${donHang.KenhBan === 'TAI_QUAY' ? 'Mua trực tiếp tại quầy' : 'Đặt trực tuyến Storefront'}</div>
+          <div><strong>Hình thức thanh toán:</strong> ${hinhThucThanhToan}</div>
         </div>
 
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
@@ -282,6 +287,8 @@ function xoaNhatKyEmailGiaLap() {
 }
 
 module.exports = {
+  HINH_THUC_COD,
+  HINH_THUC_DA_THANH_TOAN_QR,
   guiEmailMaXacNhan,
   guiEmailHoaDonDonHang,
   guiEmailCapNhatTrangThai,

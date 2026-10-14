@@ -79,6 +79,15 @@ async function truTonKhoVaChotChiTiet(cacMon, transaction) {
   return { tongTien, danhSachChiTiet };
 }
 
+/**
+ * Gửi hóa đơn ngay khi đặt đơn, trừ đơn chọn chuyển khoản QR: đơn đó chưa trả tiền nên chưa được báo "đã xác nhận".
+ * Hóa đơn của đơn QR gửi sau, khi payOS báo đã nhận tiền (payosService.xuLyWebhookPayOS).
+ */
+function guiHoaDonKhiDatDon(chiTietDon, phuongThucThanhToan) {
+  if (phuongThucThanhToan === 'CHUYEN_KHOAN_QR') return;
+  emailService.guiEmailHoaDonDonHang(chiTietDon).catch(err => console.error('[Lỗi Gửi Email Hóa Đơn]', err.message));
+}
+
 // 1. Đặt hàng trong một Transaction (ACID, chống race condition và bán âm kho)
 async function datHang(maKhachHang, thongTinGiaoHang) {
   const t = await sequelize.transaction();
@@ -154,7 +163,7 @@ async function datHang(maKhachHang, thongTinGiaoHang) {
 
     await t.commit();
     const chiTietDon = await layChiTietDonHang(donHangMoi.MaDonHang);
-    emailService.guiEmailHoaDonDonHang(chiTietDon).catch(err => console.error('[Lỗi Gửi Email Hóa Đơn]', err.message));
+    guiHoaDonKhiDatDon(chiTietDon, thongTinGiaoHang.phuongThucThanhToan);
     return chiTietDon;
   } catch (loi) {
     await t.rollback();
@@ -216,7 +225,7 @@ async function datHangKhachVangLai(thongTinDatHang) {
 
     // Không cấp token: khách vãng lai không có phiên đăng nhập
     const chiTietDon = await layChiTietDonHang(donHangMoi.MaDonHang);
-    emailService.guiEmailHoaDonDonHang(chiTietDon).catch(err => console.error('[Lỗi Gửi Email Hóa Đơn]', err.message));
+    guiHoaDonKhiDatDon(chiTietDon, thongTinDatHang.phuongThucThanhToan);
     return chiTietDon;
   } catch (loi) {
     await t.rollback();
