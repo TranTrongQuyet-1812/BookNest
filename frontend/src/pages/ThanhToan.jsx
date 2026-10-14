@@ -33,6 +33,7 @@ export const ThanhToan = () => {
   // Đơn vừa đặt của khách vãng lai: khách không có trang xem đơn nên hiện kết quả ngay tại đây
   const [donVuaDat, setDonVuaDat] = useState(null);
   const [donVangLaiTam, setDonVangLaiTam] = useState(null);
+  const [dangChuyenTrang, setDangChuyenTrang] = useState(false);
 
   // Phương thức thanh toán: COD hoặc CHUYEN_KHOAN_QR
   const [phuongThucThanhToan, setPhuongThucThanhToan] = useState('COD');
@@ -134,6 +135,13 @@ export const ThanhToan = () => {
     if (congQrKhaDung === false) setPhuongThucThanhToan((cu) => (cu === 'CHUYEN_KHOAN_QR' ? 'COD' : cu));
   }, [congQrKhaDung]);
 
+  // Rời trang thanh toán sau khi đã đặt đơn. Rèm chuyển trang giữ trang cũ trên màn hình cho tới khi rèm che kín,
+  // mà lúc này giỏ đã bị xóa, nên không đánh dấu thì khách thấy màn "Giỏ hàng trống" lóe lên dưới rèm.
+  const chuyenToiDonHang = (maTraCuu) => {
+    setDangChuyenTrang(true);
+    navigate(`/orders/${maTraCuu}`, { state: { from: '/orders' }, replace: true });
+  };
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -185,7 +193,7 @@ export const ThanhToan = () => {
         }
 
         xoaTrangState();
-        navigate(`/orders/${maTraCuu}`, { state: { from: '/orders' }, replace: true });
+        chuyenToiDonHang(maTraCuu);
       } else {
         // --- Nhánh Khách vãng lai (Guest Checkout): không tạo tài khoản, không lưu thông tin ---
         const res = await api.post('/orders/guest', {
@@ -257,7 +265,7 @@ export const ThanhToan = () => {
           }
         })();
 
-  if (dangTai) {
+  if (dangTai || dangChuyenTrang) {
     return (
       <div className="container py-16 text-center" style={{ minHeight: '60vh' }}>
         <div style={{
@@ -270,7 +278,7 @@ export const ThanhToan = () => {
           animation: 'spin 1s linear infinite'
         }} />
         <p className="font-serif" style={{ color: 'var(--text-muted)', fontSize: '1.05rem', fontStyle: 'italic' }}>
-          Đang chuẩn bị trang thanh toán cho ấn phẩm của bạn...
+          {dangChuyenTrang ? 'Đang chuyển tới đơn hàng của bạn...' : 'Đang chuẩn bị trang thanh toán cho ấn phẩm của bạn...'}
         </p>
       </div>
     );
@@ -816,7 +824,7 @@ export const ThanhToan = () => {
           onThanhToanThanhCong={() => {
             setHienModalQR(false);
             if (daDangNhap) {
-              navigate(`/orders/${duLieuQR.maTraCuu}`, { state: { from: '/orders' }, replace: true });
+              chuyenToiDonHang(duLieuQR.maTraCuu);
             } else if (donVangLaiTam) {
               setDonVuaDat(donVangLaiTam);
             }
@@ -824,7 +832,7 @@ export const ThanhToan = () => {
           onDong={() => {
             setHienModalQR(false);
             if (daDangNhap) {
-              navigate(`/orders/${duLieuQR.maTraCuu}`, { state: { from: '/orders' }, replace: true });
+              chuyenToiDonHang(duLieuQR.maTraCuu);
             } else if (donVangLaiTam) {
               setDonVuaDat(donVangLaiTam);
             }
@@ -833,7 +841,7 @@ export const ThanhToan = () => {
             setHienModalQR(false);
             alert(`Đơn hàng ${duLieuQR.maTraCuu} của bạn đã chuyển sang hình thức thanh toán khi nhận hàng (COD)!`);
             if (daDangNhap) {
-              navigate(`/orders/${duLieuQR.maTraCuu}`, { state: { from: '/orders' }, replace: true });
+              chuyenToiDonHang(duLieuQR.maTraCuu);
             } else if (donVangLaiTam) {
               setDonVuaDat(donVangLaiTam);
             }
