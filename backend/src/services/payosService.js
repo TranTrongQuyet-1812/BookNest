@@ -133,15 +133,7 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
     cancelUrl: `${domainClient}/orders/${donHang.MaTraCuu}?payment=cancelled`
   };
 
-  let paymentLinkRes;
-  try {
-    paymentLinkRes = await payOSClient.paymentRequests.create(duLieuPayos);
-  } catch (loi) {
-    // Không tạo được QR thì giao diện báo đơn được giữ theo COD, nên gửi xác nhận như đơn COD (lúc đặt chưa gửi vì chọn QR)
-    emailService.guiEmailHoaDonDonHang(donHang, emailService.HINH_THUC_COD)
-      .catch((errMail) => console.error('[Lỗi Gửi Email Hóa Đơn]', errMail.message));
-    throw loi;
-  }
+  const paymentLinkRes = await payOSClient.paymentRequests.create(duLieuPayos);
 
   // Hạn thanh toán mặc định 15 phút
   const ngayHetHan = new Date(Date.now() + 15 * 60 * 1000);
