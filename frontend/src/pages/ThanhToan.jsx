@@ -855,10 +855,7 @@ export const ThanhToan = () => {
                 )}
               </button>
 
-              <div className="flex items-center justify-center gap-1.5 mt-3" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                <Lock size={13} />
-                <span>Khoá số lượng và đơn giá nguyên tử trong CSDL</span>
-              </div>
+              
 
               <p style={{
                 fontSize: '0.75rem',
