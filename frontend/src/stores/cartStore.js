@@ -22,15 +22,17 @@ const luuGuestCart = (cacMon) => {
   }
 };
 
-// Kiểm tra xem phiên hiện tại có phải là khách hàng hợp lệ (Customer) để gọi API Server không
+// Kiểm tra xem phiên hiện tại có phải là khách hàng hợp lệ (Customer) để gọi API Server không.
+// Client chỉ lưu token (không lưu booknest_user nữa), nên đọc loại tài khoản từ claim "aud" trong chính token.
+// Việc này chỉ để chọn nơi lưu giỏ (server hay máy khách); quyền thật vẫn do máy chủ kiểm tra ở từng request.
+// Trước đây đọc booknest_user đã bị xóa nên luôn trả false: giỏ của khách đăng nhập bị lưu cục bộ trong khi đặt đơn
+// lại đọc giỏ trên server (rỗng), gây lỗi 400 "Giỏ hàng đang trống".
 const laKhachHangHopLe = () => {
   const token = localStorage.getItem('booknest_token');
   if (!token) return false;
   try {
-    const userRaw = localStorage.getItem('booknest_user');
-    if (!userRaw) return false;
-    const user = JSON.parse(userRaw);
-    return user && user.role === 'khach_hang';
+    const phanDuLieu = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(phanDuLieu)).aud === 'khach_hang';
   } catch {
     return false;
   }
