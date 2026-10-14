@@ -3,11 +3,12 @@
  * Tuân thủ nghiêm ngặt nguyên tắc bảo mật và quy trình trong docs/KE_HOACH_THANH_TOAN_QR_PAYOS.md.
  */
 const crypto = require('crypto');
-const { PayOS } = require('@payos/node');
 const { maRutGonChoChuyenKhoan } = require('../utils/maTraCuu');
 const cauHinh = require('../config/cauHinh');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
+const payOSClient = require('./payosClient');
 const cauHinhHeThongService = require('./cauHinhHeThongService');
+const hetHanThanhToanService = require('./hetHanThanhToanService');
 const donHangService = require('./donHangService');
 const emailService = require('./emailService');
 const {
@@ -21,20 +22,6 @@ const { phatThanhToanThanhCong } = require('../realtime/socket');
 
 const { KHOA_THANH_TOAN_QR } = cauHinhHeThongService;
 const THONG_DIEP_QR_DANG_TAT = 'Chuyển khoản QR đang tạm ngừng. Vui lòng chọn thanh toán khi nhận hàng (COD).';
-
-// Khởi tạo client SDK payOS nếu đã cung cấp đủ 3 khóa trong .env
-let payOSClient = null;
-if (cauHinh.payos.daCauHinh) {
-  try {
-    payOSClient = new PayOS({
-      clientId: cauHinh.payos.clientId,
-      apiKey: cauHinh.payos.apiKey,
-      checksumKey: cauHinh.payos.checksumKey
-    });
-  } catch (err) {
-    console.warn('[payOS] Không thể khởi tạo SDK payOS:', err.message);
-  }
-}
 
 /**
  * Kiểm tra xem công tắc thanh toán QR có đang BẬT và đủ khóa cấu hình không.
@@ -92,8 +79,17 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
     throw new Error('Đơn hàng này đã được thanh toán thành công trước đó');
   }
 
-  // Nếu đã có link và chưa hết hạn, có thể tái sử dụng
-  if (banGhiThanhToan && banGhiThanhToan.DuongDanThanhToan && banGhiThanhToan.NgayHetHan > new Date()) {
+  // Đơn đã hủy thì không cấp QR nữa; QR quá hạn thì hủy đơn ngay (không chờ lượt quét định kỳ) rồi báo khách
+  if (donHang.TrangThai === 'DA_HUY') {
+    throw LoiNghiepVu.xungDot('Đơn hàng đã bị hủy nên không thể thanh toán');
+  }
+  if (banGhiThanhToan?.TrangThai === 'HET_HAN' || hetHanThanhToanService.laQrHetHan(banGhiThanhToan)) {
+    await hetHanThanhToanService.huyDonQrHetHan(banGhiThanhToan);
+    throw LoiNghiepVu.xungDot(hetHanThanhToanService.THONG_DIEP_QR_HET_HAN);
+  }
+
+  // Nếu đã có link còn chờ thanh toán và chưa hết hạn, tái sử dụng đúng mã QR cũ (khách mở lại QR)
+  if (banGhiThanhToan && banGhiThanhToan.TrangThai === 'CHO_THANH_TOAN' && banGhiThanhToan.DuongDanThanhToan && banGhiThanhToan.NgayHetHan > new Date()) {
     const thongTinTrich = trichXuatThongTinTuQr(banGhiThanhToan.QrCode);
     return {
       maTraCuu: donHang.MaTraCuu,
@@ -177,6 +173,38 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
   };
 }
 
+// Tiền đã về nhưng khoản thanh toán không còn chờ (đã hết hạn hoặc bị hủy): giữ nguyên đơn đã hủy,
+// đánh dấu CAN_HOAN_TIEN để nhân viên hoàn tiền cho khách, tuyệt đối không bỏ sót khoản tiền này
+async function ghiNhanTienVeMuon(thanhToan, orderCode, noiDungTho) {
+  await ThanhToan.update(
+    { TrangThai: 'CAN_HOAN_TIEN', NgayThanhToan: new Date() },
+    { where: { MaThanhToan: thanhToan.MaThanhToan } }
+  );
+  await NhatKyWebhookPayos.create({
+    MaGiaoDichPayos: orderCode,
+    NoiDungTho: noiDungTho,
+    ChuKyHopLe: true,
+    KetQuaXuLy: 'DA_XU_LY'
+  });
+  console.warn(`[payOS] Tiền về cho khoản thanh toán ${thanhToan.MaThanhToan} đã hết hạn hoặc bị hủy (mã GD ${orderCode}), cần hoàn tiền`);
+  return { thanhCong: true, thongDiep: 'Tiền về sau khi đơn đã hủy, đã đánh dấu cần hoàn tiền' };
+}
+
+// Cập nhật có điều kiện không đổi được dòng nào: hoặc webhook trùng đã xử lý trước, hoặc khoản vừa bị hủy do hết hạn
+async function xuLyKhongDoiDuocTrangThai(thanhToan, orderCode, noiDungTho) {
+  const hienTai = await ThanhToan.findByPk(thanhToan.MaThanhToan);
+  if (hienTai.TrangThai !== 'DA_THANH_TOAN') {
+    return ghiNhanTienVeMuon(thanhToan, orderCode, noiDungTho);
+  }
+  await NhatKyWebhookPayos.create({
+    MaGiaoDichPayos: orderCode,
+    NoiDungTho: noiDungTho,
+    ChuKyHopLe: true,
+    KetQuaXuLy: 'BO_QUA_LAP'
+  });
+  return { thanhCong: true, thongDiep: 'Giao dịch đã được xử lý trước đó (Idempotent)' };
+}
+
 /**
  * Xử lý Webhook an toàn từ payOS
  */
@@ -236,6 +264,11 @@ async function xuLyWebhookPayOS(webhookBody) {
     return { thanhCong: true, thongDiep: 'Giao dịch đã được xử lý trước đó (Idempotent)' };
   }
 
+  // 3b. Tiền về muộn: khoản đã hết hạn/hủy thì không coi là đã thanh toán, đánh dấu cần hoàn tiền
+  if (thanhToan.TrangThai !== 'CHO_THANH_TOAN') {
+    return ghiNhanTienVeMuon(thanhToan, orderCode, noiDungTho);
+  }
+
   // 4. Đối soát số tiền
   const soTienDoiChieu = Math.round(Number(thanhToan.SoTien));
   if (soTienDoiChieu !== Number(amount)) {
@@ -251,11 +284,17 @@ async function xuLyWebhookPayOS(webhookBody) {
   // 5. Cập nhật trạng thái trong Transaction
   const t = await sequelize.transaction();
   try {
-    await thanhToan.update({
+    // WHERE TrangThai = CHO_THANH_TOAN: nếu lượt quét hết hạn vừa hủy khoản này thì không ghi đè sang đã thanh toán
+    const [soDongDoi] = await ThanhToan.update({
       TrangThai: 'DA_THANH_TOAN',
       NgayThanhToan: new Date(),
       MaThamChieuNganHang: reference || null
-    }, { transaction: t });
+    }, { where: { MaThanhToan: thanhToan.MaThanhToan, TrangThai: 'CHO_THANH_TOAN' }, transaction: t });
+
+    if (soDongDoi === 0) {
+      await t.rollback();
+      return xuLyKhongDoiDuocTrangThai(thanhToan, orderCode, noiDungTho);
+    }
 
     // Tự động chuyển đơn hàng sang DA_XAC_NHAN nếu đang ở CHO_DUYET
     const donHang = await DonHang.findByPk(thanhToan.MaDonHang, { transaction: t });
@@ -319,7 +358,7 @@ async function layThongTinThanhToanTheoDon(donHangTraCuu) {
   }
 
   // Nếu đang chờ thanh toán và có client SDK, có thể chủ động kiểm tra trạng thái bên payOS
-  if (thanhToan.TrangThai === 'CHO_THANH_TOAN' && thanhToan.MaGiaoDichPayos && payOSClient) {
+  if (thanhToan.PhuongThuc === 'CHUYEN_KHOAN_QR' && thanhToan.TrangThai === 'CHO_THANH_TOAN' && thanhToan.MaGiaoDichPayos && payOSClient) {
     try {
       const thongTinPayos = await payOSClient.paymentRequests.get(thanhToan.MaGiaoDichPayos);
       if (thongTinPayos && thongTinPayos.status === 'PAID') {
@@ -338,10 +377,21 @@ async function layThongTinThanhToanTheoDon(donHangTraCuu) {
             GhiChu: 'Thanh toán VietQR payOS xác nhận thành công qua đồng bộ API'
           });
         }
+        // Webhook chưa tới nên hóa đơn cũng chưa được gửi: gửi ở đây (webhook tới sau sẽ bị bỏ qua vì đã DA_THANH_TOAN)
+        donHangService.layChiTietDonHang(maDonHang)
+          .then((chiTiet) => emailService.guiEmailHoaDonDonHang(chiTiet, emailService.HINH_THUC_DA_THANH_TOAN_QR))
+          .catch((errMail) => console.error('[Lỗi Gửi Email Hóa Đơn]', errMail.message));
       }
     } catch (e) {
       // Bỏ qua lỗi kết nối payOS tạm thời
     }
+  }
+
+  // Quá hạn mà chưa trả tiền thì hủy đơn ngay (không đợi lượt quét định kỳ) để trang hiển thị đúng trạng thái.
+  // Đặt sau bước đồng bộ ở trên để khoản đã trả mà webhook tới chậm vẫn được cứu
+  if (hetHanThanhToanService.laQrHetHan(thanhToan)) {
+    await hetHanThanhToanService.huyDonQrHetHan(thanhToan);
+    await thanhToan.reload();
   }
 
   const thongTinTrich = trichXuatThongTinTuQr(thanhToan.QrCode);

@@ -600,6 +600,7 @@ module.exports = {
   datHang,
   datHangKhachVangLai,
   taoDonQuay,
+  hoanTonKho,
   layChiTietDonHang,
   layDanhSachDonQuay,
   layChiTietDonQuay,

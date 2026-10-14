@@ -48,9 +48,26 @@ export const ChiTietDonHang = () => {
       const resPay = await api.get(`/payments/order/${id}`);
       if (resPay.data?.data) {
         setThongTinThanhToan(resPay.data.data);
+        // Hỏi thanh toán là lúc máy chủ phát hiện QR quá hạn và hủy đơn: nạp lại đơn để trang hiện đúng "Đã hủy"
+        if (resPay.data.data.trangThai === 'HET_HAN') {
+          const resDon = await api.get(`/orders/my-orders/${id}`);
+          setDonHang(resDon.data.data);
+        }
       }
     } catch (err) {
       console.warn('Đơn hàng chưa có thông tin thanh toán QR hoặc dùng COD');
+    }
+  };
+
+  // Khách chủ động đổi sang COD trước khi QR hết hạn (hết hạn là đơn bị hủy)
+  const handleDoiSangCOD = async () => {
+    try {
+      await api.post(`/payments/switch-to-cod/${id}`);
+      setHienModalQR(false);
+      await napThongTinThanhToan();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Không thể đổi sang thanh toán khi nhận hàng lúc này');
+      napThongTinThanhToan();
     }
   };
 
@@ -349,7 +366,7 @@ export const ChiTietDonHang = () => {
                   <div>
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Tình trạng:</span>
                     <div>
-                      {thongTinThanhToan?.trangThaiThanhToan === 'DA_THANH_TOAN' ? (
+                      {thongTinThanhToan?.trangThai === 'DA_THANH_TOAN' ? (
                         <span style={{
                           display: 'inline-block',
                           backgroundColor: '#e6f4ea',
@@ -360,6 +377,30 @@ export const ChiTietDonHang = () => {
                           borderRadius: '4px'
                         }}>
                           ✓ Đã thanh toán
+                        </span>
+                      ) : thongTinThanhToan?.trangThai === 'HET_HAN' ? (
+                        <span style={{
+                          display: 'inline-block',
+                          backgroundColor: '#fdeceb',
+                          color: '#a43b3b',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '4px'
+                        }}>
+                          Quá hạn thanh toán, đơn đã bị hủy
+                        </span>
+                      ) : thongTinThanhToan?.trangThai === 'CAN_HOAN_TIEN' ? (
+                        <span style={{
+                          display: 'inline-block',
+                          backgroundColor: '#fef7e0',
+                          color: '#b06000',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '4px'
+                        }}>
+                          Cửa hàng đã nhận tiền sau khi đơn bị hủy, sẽ liên hệ hoàn tiền cho bạn
                         </span>
                       ) : thongTinThanhToan?.phuongThuc === 'CHUYEN_KHOAN_QR' ? (
                         <span style={{
@@ -390,20 +431,30 @@ export const ChiTietDonHang = () => {
                   </div>
                 </div>
 
-                {/* Nếu là đơn chuyển khoản và chưa thanh toán, cho phép mở lại mã QR */}
-                {thongTinThanhToan?.phuongThuc === 'CHUYEN_KHOAN_QR' && 
-                 thongTinThanhToan?.trangThaiThanhToan === 'CHO_THANH_TOAN' && 
+                {/* Đơn chuyển khoản còn chờ tiền (chưa hết hạn): mở lại đúng mã QR cũ, hoặc đổi sang COD */}
+                {thongTinThanhToan?.phuongThuc === 'CHUYEN_KHOAN_QR' &&
+                 thongTinThanhToan?.trangThai === 'CHO_THANH_TOAN' &&
                  !['DA_HUY', 'DA_GIAO'].includes(donHang.TrangThai) && (
-                  <button
-                    type="button"
-                    disabled={dangTaoQR}
-                    onClick={handleMoQRThanhToan}
-                    className="btn btn-primary mt-2"
-                    style={{ padding: '0.6rem 1rem', fontSize: '0.85rem', borderRadius: '6px' }}
-                  >
-                    <QrCode size={15} />
-                    {dangTaoQR ? 'Đang tải mã...' : 'Xem Mã QR Thanh Toán'}
-                  </button>
+                  <div className="flex gap-2 mt-2" style={{ flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      disabled={dangTaoQR}
+                      onClick={handleMoQRThanhToan}
+                      className="btn btn-primary"
+                      style={{ padding: '0.6rem 1rem', fontSize: '0.85rem', borderRadius: '6px' }}
+                    >
+                      <QrCode size={15} />
+                      {dangTaoQR ? 'Đang tải mã...' : 'Xem Mã QR Thanh Toán'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDoiSangCOD}
+                      className="btn btn-outline"
+                      style={{ padding: '0.6rem 1rem', fontSize: '0.85rem', borderRadius: '6px' }}
+                    >
+                      Đổi sang thanh toán khi nhận hàng
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -419,7 +470,7 @@ export const ChiTietDonHang = () => {
             napThongTinThanhToan();
           }}
           onDong={() => setHienModalQR(false)}
-          onDoiSangCOD={() => setHienModalQR(false)}
+          onDoiSangCOD={handleDoiSangCOD}
         />
       )}
     </div>

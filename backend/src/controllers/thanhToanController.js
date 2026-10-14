@@ -2,6 +2,7 @@
  * Controller xử lý các yêu cầu liên quan đến cổng thanh toán VietQR (payOS).
  */
 const payosService = require('../services/payosService');
+const hetHanThanhToanService = require('../services/hetHanThanhToanService');
 const { DonHang, ChiTietDonHang, Sach } = require('../models');
 const { phanHoiThanhCong, phanHoiLoi } = require('../middlewares/phanHoi');
 const { chuanHoaMaTraCuu } = require('../utils/maTraCuu');
@@ -12,6 +13,12 @@ async function timDonTheoMaTraCuu(chuoiMa, tuyChon = {}) {
   const maTraCuu = chuanHoaMaTraCuu(chuoiMa);
   if (!maTraCuu) return null;
   return DonHang.findOne({ where: { MaTraCuu: maTraCuu }, ...tuyChon });
+}
+
+// Khách đăng nhập chỉ được thao tác đơn của chính mình. Đơn khách vãng lai (MaKhachHang rỗng) không có chủ tài khoản,
+// quyền truy cập dựa vào việc biết mã tra cứu khó đoán
+function khongPhaiChuDon(user, donHang) {
+  return Boolean(user && user.role === 'khach_hang' && donHang.MaKhachHang && donHang.MaKhachHang !== user.id);
 }
 
 /**
@@ -49,8 +56,7 @@ async function taoQrThanhToan(req, res, next) {
       });
     }
 
-    // Nếu là khách đăng nhập, kiểm tra quyền sở hữu đơn
-    if (req.user && req.user.role === 'khach_hang' && donHang.MaKhachHang && donHang.MaKhachHang !== req.user.id) {
+    if (khongPhaiChuDon(req.user, donHang)) {
       return phanHoiLoi(res, {
         thongDiep: 'Bạn không có quyền thao tác trên đơn hàng này (IDOR Guard)',
         maTrangThai: 403
@@ -68,6 +74,26 @@ async function taoQrThanhToan(req, res, next) {
       duLieu: ketQua,
       thongDiep: 'Khởi tạo mã thanh toán VietQR thành công'
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * Khách đổi đơn từ chuyển khoản QR sang thanh toán khi nhận hàng (COD) trước khi QR hết hạn
+ */
+async function doiSangCOD(req, res, next) {
+  try {
+    const donHang = await timDonTheoMaTraCuu(req.params.maTraCuu);
+    if (!donHang) {
+      return phanHoiLoi(res, { thongDiep: 'Không tìm thấy thông tin đơn hàng', maTrangThai: 404 });
+    }
+    if (khongPhaiChuDon(req.user, donHang)) {
+      return phanHoiLoi(res, { thongDiep: 'Bạn không có quyền thao tác trên đơn hàng này (IDOR Guard)', maTrangThai: 403 });
+    }
+
+    const ketQua = await hetHanThanhToanService.doiSangCOD(donHang);
+    return phanHoiThanhCong(res, { duLieu: ketQua, thongDiep: 'Đã đổi sang thanh toán khi nhận hàng (COD)' });
   } catch (err) {
     next(err);
   }
@@ -114,6 +140,7 @@ async function layTrangThaiThanhToan(req, res, next) {
 module.exports = {
   kiemTraKhaDung,
   taoQrThanhToan,
+  doiSangCOD,
   xuLyWebhook,
   layTrangThaiThanhToan
 };

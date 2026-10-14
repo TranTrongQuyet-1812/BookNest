@@ -36,6 +36,9 @@ router.get('/options', thanhToanController.kiemTraKhaDung);
 // Tạo liên kết và mã QR VietQR cho đơn hàng (định danh bằng mã tra cứu, xem thanhToanController)
 router.post('/create-qr/:maTraCuu', gioiHanDoMaDon, gioiHanTaoQr, chanTaoLink, xacThucTuyChon, thanhToanController.taoQrThanhToan);
 
+// Đổi đơn đang chờ chuyển khoản sang COD (trước khi QR hết hạn, hết hạn là đơn bị hủy)
+router.post('/switch-to-cod/:maTraCuu', gioiHanDoMaDon, gioiHanTaoQr, xacThucTuyChon, thanhToanController.doiSangCOD);
+
 // Endpoint nhận Webhook trực tiếp từ payOS
 router.post('/payos-webhook', gioiHanWebhook, thanhToanController.xuLyWebhook);
 router.post('/webhook', gioiHanWebhook, thanhToanController.xuLyWebhook);

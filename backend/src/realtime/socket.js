@@ -115,9 +115,21 @@ function phatThanhToanThanhCong(duLieu) {
   }, 'nhan_vien');
 }
 
+/**
+ * Báo đơn chuyển khoản đã bị hủy do hết hạn: trang của khách (phòng theo mã tra cứu) đóng khung QR,
+ * phòng nhân viên cập nhật danh sách đơn.
+ */
+function phatDonHetHan({ maDonHang, maTraCuu }) {
+  if (maTraCuu) {
+    phatSuKien('thanhToan:hetHan', { maTraCuu, thoiGian: new Date().toISOString() }, `don_hang:${maTraCuu}`);
+  }
+  phatSuKien('donHang:capNhatTrangThai', { maDonHang, maTraCuu, trangThaiDonHang: 'DA_HUY', trangThaiThanhToan: 'HET_HAN' }, 'nhan_vien');
+}
+
 module.exports = {
   khoiTaoSocket,
   layIo,
   phatSuKien,
-  phatThanhToanThanhCong
+  phatThanhToanThanhCong,
+  phatDonHetHan
 };

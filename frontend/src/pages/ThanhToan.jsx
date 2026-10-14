@@ -840,7 +840,24 @@ export const ThanhToan = () => {
               setDonVuaDat(donVangLaiTam);
             }
           }}
-          onDoiSangCOD={() => {
+          onDongHetHan={() => {
+            // QR quá hạn: máy chủ đã hủy đơn. Khách đăng nhập xem đơn ở trang đơn hàng; khách vãng lai không có trang đó nên báo rồi về trang chủ
+            setHienModalQR(false);
+            if (daDangNhap) {
+              chuyenToiDonHang(duLieuQR.maTraCuu);
+            } else {
+              alert(`Đơn hàng ${duLieuQR.maTraCuu} đã bị hủy do quá hạn thanh toán chuyển khoản. Bạn có thể đặt lại đơn mới.`);
+              navigate('/');
+            }
+          }}
+          onDoiSangCOD={async () => {
+            // Phải báo máy chủ đổi thật: không thì đơn vẫn chờ chuyển khoản và sẽ bị hủy khi QR hết hạn
+            try {
+              await api.post(`/payments/switch-to-cod/${duLieuQR.maTraCuu}`);
+            } catch (errCod) {
+              alert(errCod.response?.data?.message || 'Không thể đổi sang thanh toán khi nhận hàng lúc này');
+              return;
+            }
             setHienModalQR(false);
             alert(`Đơn hàng ${duLieuQR.maTraCuu} của bạn đã chuyển sang hình thức thanh toán khi nhận hàng (COD)!`);
             if (daDangNhap) {

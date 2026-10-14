@@ -7,6 +7,7 @@ const cauHinh = require('./config/cauHinh');
 const { kiemTraKetNoiDb } = require('./config/ketNoiDb');
 const app = require('./app');
 const { khoiTaoSocket } = require('./realtime/socket');
+const { batDauQuetHetHan } = require('./services/hetHanThanhToanService');
 
 async function khoiDongMayChu() {
   try {
@@ -22,6 +23,8 @@ async function khoiDongMayChu() {
     // 4. Mở cổng lắng nghe cả HTTP API và WebSocket
     server.listen(cauHinh.cong, () => {
       console.log(`[BookNest] Máy chủ đang chạy tại cổng http://localhost:${cauHinh.cong} (HTTP & Socket.IO)`);
+      // 5. Định kỳ hủy các đơn chuyển khoản QR đã quá hạn thanh toán mà chưa trả tiền
+      batDauQuetHetHan();
     });
   } catch (loi) {
     console.error('[BookNest] Khởi động máy chủ thất bại do không thể kết nối CSDL:', loi.message);

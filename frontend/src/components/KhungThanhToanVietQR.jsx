@@ -24,6 +24,7 @@ export const KhungThanhToanVietQR = ({
   duLieuQR,
   onThanhToanThanhCong,
   onDong,
+  onDongHetHan,
   onDoiSangCOD
 }) => {
   const [daSaoChep, setDaSaoChep] = useState('');
@@ -44,6 +45,12 @@ export const KhungThanhToanVietQR = ({
   const [giayConLai, setGiayConLai] = useState(tinhGiayConLai);
   const pollingRef = useRef(null);
   const timerRef = useRef(null);
+
+  // Đóng khung: nếu đã hết hạn (đơn đã bị hủy) thì báo cho trang cha xử lý riêng, không coi như khách chỉ đóng khung QR
+  const dongKhung = () => {
+    if (daHetHan && onDongHetHan) onDongHetHan();
+    else onDong();
+  };
 
   // Xử lý sao chép văn bản vào clipboard
   const handleSaoChep = async (text, loai) => {
@@ -122,6 +129,15 @@ export const KhungThanhToanVietQR = ({
 
     socket.on('thanhToan:daThanhToan', xuLyThanhToanRealtime);
 
+    // Máy chủ báo đơn đã bị hủy do hết hạn (ví dụ đồng hồ máy khách chạy chậm): chuyển sang màn hết hạn ngay
+    const xuLyHetHanRealtime = (duLieu) => {
+      if (String(duLieu?.maTraCuu) !== String(maTraCuu)) return;
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      setDaHetHan(true);
+    };
+    socket.on('thanhToan:hetHan', xuLyHetHanRealtime);
+
     // 2. Đồng hồ đếm ngược
     timerRef.current = setInterval(() => {
       setGiayConLai((prev) => {
@@ -145,8 +161,14 @@ export const KhungThanhToanVietQR = ({
       if (pollingRef.current) clearInterval(pollingRef.current);
       roiDonHang(maTraCuu);
       socket.off('thanhToan:daThanhToan', xuLyThanhToanRealtime);
+      socket.off('thanhToan:hetHan', xuLyHetHanRealtime);
     };
   }, [duLieuQR?.maTraCuu]);
+
+  // Vừa hết hạn thì hỏi máy chủ một lần: việc hỏi này khiến máy chủ hủy đơn quá hạn ngay (không phải chờ lượt quét định kỳ)
+  useEffect(() => {
+    if (daHetHan) kiemTraTrangThai(false);
+  }, [daHetHan]);
 
   // Tạo URL ảnh VietQR chuẩn EMVCo hiển thị tức thì
   const urlAnhVietQR = duLieuQR?.qrCode?.startsWith('http') || duLieuQR?.qrCode?.startsWith('data:')
@@ -213,7 +235,7 @@ export const KhungThanhToanVietQR = ({
 
           <button
             type="button"
-            onClick={onDong}
+            onClick={dongKhung}
             style={{
               background: 'none',
               border: 'none',
@@ -278,22 +300,12 @@ export const KhungThanhToanVietQR = ({
                 Mã Thanh Toán Đã Hết Hạn
               </h4>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-                Thời gian 10 phút giữ đơn chuyển khoản đã kết thúc. Bạn có thể đổi sang thanh toán tiền mặt (COD) hoặc thử lại.
+                Đã quá thời gian thanh toán chuyển khoản nên đơn hàng đã bị hủy. Nếu vẫn muốn mua, bạn vui lòng đặt lại đơn mới nhé.
               </p>
               <div className="flex gap-3 justify-center">
-                {onDoiSangCOD && (
-                  <button
-                    type="button"
-                    onClick={onDoiSangCOD}
-                    className="btn btn-primary"
-                    style={{ padding: '0.65rem 1.25rem', borderRadius: '6px' }}
-                  >
-                    Chuyển sang thanh toán COD
-                  </button>
-                )}
                 <button
                   type="button"
-                  onClick={onDong}
+                  onClick={dongKhung}
                   className="btn btn-outline"
                   style={{ padding: '0.65rem 1.25rem', borderRadius: '6px' }}
                 >
