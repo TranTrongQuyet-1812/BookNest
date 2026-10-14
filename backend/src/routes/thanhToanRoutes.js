@@ -6,6 +6,7 @@ const router = express.Router();
 const thanhToanController = require('../controllers/thanhToanController');
 const jwt = require('jsonwebtoken');
 const cauHinh = require('../config/cauHinh');
+const { chanTaoLink } = require('../middlewares/kiemTraCongTacQR');
 const {
   gioiHanDoMaDon,
   gioiHanTaoQr,
@@ -33,7 +34,7 @@ router.get('/status-check', thanhToanController.kiemTraKhaDung);
 router.get('/options', thanhToanController.kiemTraKhaDung);
 
 // Tạo liên kết và mã QR VietQR cho đơn hàng (định danh bằng mã tra cứu, xem thanhToanController)
-router.post('/create-qr/:maTraCuu', gioiHanDoMaDon, gioiHanTaoQr, xacThucTuyChon, thanhToanController.taoQrThanhToan);
+router.post('/create-qr/:maTraCuu', gioiHanDoMaDon, gioiHanTaoQr, chanTaoLink, xacThucTuyChon, thanhToanController.taoQrThanhToan);
 
 // Endpoint nhận Webhook trực tiếp từ payOS
 router.post('/payos-webhook', gioiHanWebhook, thanhToanController.xuLyWebhook);

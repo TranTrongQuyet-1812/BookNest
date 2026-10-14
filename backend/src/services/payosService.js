@@ -6,15 +6,19 @@ const crypto = require('crypto');
 const { PayOS } = require('@payos/node');
 const { maRutGonChoChuyenKhoan } = require('../utils/maTraCuu');
 const cauHinh = require('../config/cauHinh');
-const { 
-  sequelize, 
-  DonHang, 
-  ThanhToan, 
-  NhatKyWebhookPayos, 
-  CauHinhHeThong, 
-  LichSuTrangThaiDonHang 
+const LoiNghiepVu = require('../middlewares/loiNghiepVu');
+const cauHinhHeThongService = require('./cauHinhHeThongService');
+const {
+  sequelize,
+  DonHang,
+  ThanhToan,
+  NhatKyWebhookPayos,
+  LichSuTrangThaiDonHang
 } = require('../models');
 const { phatThanhToanThanhCong } = require('../realtime/socket');
+
+const { KHOA_THANH_TOAN_QR } = cauHinhHeThongService;
+const THONG_DIEP_QR_DANG_TAT = 'Chuyển khoản QR đang tạm ngừng. Vui lòng chọn thanh toán khi nhận hàng (COD).';
 
 // Khởi tạo client SDK payOS nếu đã cung cấp đủ 3 khóa trong .env
 let payOSClient = null;
@@ -31,22 +35,14 @@ if (cauHinh.payos.daCauHinh) {
 }
 
 /**
- * Kiểm tra xem công tắc thanh toán QR có đang BẬT và đủ khóa cấu hình không
+ * Kiểm tra xem công tắc thanh toán QR có đang BẬT và đủ khóa cấu hình không.
+ * Thiếu dòng cấu hình hay lỗi đọc CSDL đều coi như TẮT (xem docCongTac).
  */
 async function kiemTraCongTacQRDangBat() {
   if (!cauHinh.payos.daCauHinh || !payOSClient) {
     return false;
   }
-  try {
-    const cauHinhDb = await CauHinhHeThong.findByPk('THANH_TOAN_QR_BAT');
-    if (cauHinhDb && cauHinhDb.GiaTri === '0') {
-      return false;
-    }
-    return true;
-  } catch (err) {
-    // Nếu bảng chưa có thì mặc định kiểm tra cờ môi trường
-    return cauHinh.payos.daCauHinh;
-  }
+  return cauHinhHeThongService.docCongTac(KHOA_THANH_TOAN_QR);
 }
 
 /**
@@ -79,7 +75,7 @@ function trichXuatThongTinTuQr(qr) {
 async function taoThanhToanQR(donHang, danhSachMon = []) {
   const daBat = await kiemTraCongTacQRDangBat();
   if (!daBat) {
-    throw new Error('Cổng thanh toán QR hiện đang tạm đóng hoặc chưa được cấu hình khóa trong hệ thống');
+    throw LoiNghiepVu.camTruyCap(THONG_DIEP_QR_DANG_TAT);
   }
 
   const maDonHang = donHang.MaDonHang;
@@ -370,6 +366,7 @@ async function xacNhanWebhookUrl(webhookUrl) {
 }
 
 module.exports = {
+  THONG_DIEP_QR_DANG_TAT,
   kiemTraCongTacQRDangBat,
   taoThanhToanQR,
   xuLyWebhookPayOS,

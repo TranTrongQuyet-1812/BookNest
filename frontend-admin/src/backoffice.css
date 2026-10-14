@@ -10,3 +10,23 @@
 @media(max-width:1050px){.counter-grid{grid-template-columns:1fr}.counter-results{max-height:430px}.counter-lines{max-height:360px}}
 @media(max-width:700px){.bo-page-heading{align-items:flex-start;flex-direction:column}.bo-tabs{width:100%}.bo-tabs button{flex:1;justify-content:center}.counter-grid{gap:.75rem}.counter-line{grid-template-columns:minmax(0,1fr) auto 22px;gap:.4rem}.counter-line-total{grid-column:1;grid-row:2}.counter-quantity{grid-column:2;grid-row:1 / span 2}.counter-line>.bo-quiet-button{grid-column:3;grid-row:1 / span 2}.counter-customer-fields{grid-template-columns:1fr}.counter-customer-fields input:last-child{grid-column:auto}.history-cleanup-controls{align-items:stretch;flex-direction:column}.history-cleanup-controls label,.history-cleanup-controls input{width:100%}.history-preview{align-items:stretch;flex-direction:column}.history-preview button{width:100%}.bo-table td{min-width:115px}.bo-table td:last-child{min-width:auto}.history-table td{min-width:125px}.bo-panel-title{padding:.9rem}.counter-results{padding:0 .9rem .8rem}.counter-book{gap:.6rem}.counter-book img{width:42px;height:59px}.counter-book-info strong{white-space:normal}.counter-checkout .bo-panel-title{align-items:flex-start}}
 @media print{body *{visibility:hidden!important}.bo-modal-backdrop,.bo-modal-backdrop *{visibility:visible!important}.bo-modal-backdrop{position:absolute;inset:0;display:block;padding:0;background:white!important;backdrop-filter:none}.bo-receipt{width:100%;max-height:none;overflow:visible;padding:0;border-radius:0;box-shadow:none}.no-print{display:none!important}}
+
+/* Trang Cài đặt hệ thống (công tắc khẩn cấp) */
+.cai-dat-the{position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:1.25rem;flex-wrap:wrap;padding:1.25rem 1.35rem;margin-bottom:1rem}
+.cai-dat-chinh{display:flex;gap:.9rem;align-items:flex-start;min-width:0;flex:1 1 360px}
+.cai-dat-chinh h2{margin:0 0 .35rem;font-size:1.05rem}
+.cai-dat-chinh ul{margin:.7rem 0 .6rem;padding-left:1.1rem;color:var(--bo-muted);font-size:.84rem;line-height:1.55}
+.cai-dat-chinh small{color:var(--bo-muted)}
+.cai-dat-nhan{display:inline-block;padding:.15rem .6rem;border-radius:999px;font-size:.72rem;font-weight:800;letter-spacing:.04em}
+.cai-dat-nhan.bat{background:#e3f3e7;color:#1d6b35}
+.cai-dat-nhan.tat{background:#fdeceb;color:#a43b3b}
+.cai-dat-canh-bao{display:flex;gap:.4rem;align-items:flex-start;margin:.6rem 0 0;color:#9a5b00;font-size:.82rem}
+.cai-dat-cong-tac{position:relative;flex:none;width:64px;height:34px;border:1px solid var(--bo-line);border-radius:999px;background:#c9ced6;cursor:pointer;transition:background .2s}
+.cai-dat-cong-tac.bat{background:#2e9b55;border-color:#237a43}
+.cai-dat-cong-tac:disabled{opacity:.6;cursor:wait}
+.cai-dat-cong-tac:focus-visible{outline:2px solid var(--bo-accent);outline-offset:3px}
+.cai-dat-nut{position:absolute;top:3px;left:3px;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#fff;color:#7c8797;box-shadow:0 1px 4px #0003;transition:transform .2s}
+.cai-dat-cong-tac.bat .cai-dat-nut{transform:translateX(30px);color:#2e9b55}
+.cai-dat-xac-nhan{flex:1 1 100%;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1rem;padding:.85rem 1rem;border:1px solid #e7b9b7;border-radius:10px;background:#fff0ef;color:#9d3733;font-size:.85rem}
+.cai-dat-xac-nhan>span{flex:1 1 240px}
+.cai-dat-xac-nhan>div{display:flex;gap:.5rem}

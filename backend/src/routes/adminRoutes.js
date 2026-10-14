@@ -12,6 +12,7 @@ const xacThucToken = require('../middlewares/xacThucToken');
 const phanQuyen = require('../middlewares/phanQuyen');
 const kiemTraDuLieu = require('../middlewares/kiemTraDuLieu');
 const lichSuQuanTriController = require('../controllers/lichSuQuanTriController');
+const cauHinhHeThongController = require('../controllers/cauHinhHeThongController');
 
 const router = express.Router();
 
@@ -100,7 +101,7 @@ const luatTaoDonQuay = Joi.object({
 const luatTruyVanLichSu = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(30),
-  loaiDoiTuong: Joi.string().valid('SACH', 'DANH_MUC'),
+  loaiDoiTuong: Joi.string().valid('SACH', 'DANH_MUC', 'CAU_HINH'),
   truongDuLieu: Joi.string().max(50),
   tuNgay: Joi.date().iso(),
   denNgay: Joi.date().iso()
@@ -855,6 +856,81 @@ router.post(
   phanQuyen('quan_tri'),
   kiemTraDuLieu(luatDonDepLichSu),
   batLoiAsync(lichSuQuanTriController.xuLyDonDep)
+);
+
+// ==========================================
+// 5. Công tắc hệ thống: bật/tắt thanh toán QR (T41)
+// ==========================================
+const luatDatCongTac = Joi.object({
+  bat: Joi.boolean().strict().required().messages({
+    'boolean.base': 'Giá trị bật/tắt phải là true hoặc false',
+    'any.required': 'Giá trị bật/tắt là bắt buộc'
+  })
+});
+
+/**
+ * @swagger
+ * /api/admin/settings:
+ *   get:
+ *     summary: Xem trạng thái các công tắc hệ thống, người đổi và thời điểm đổi (Chỉ Quản trị viên)
+ *     tags: [Quản trị (Admin)]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Danh sách công tắc (khoa, ten, bat, daDuDieuKien, ngayCapNhat, nhanVienCapNhat)
+ *       403:
+ *         description: Chỉ dành cho Quản trị viên
+ */
+router.get(
+  '/settings',
+  xacThucToken,
+  phanQuyen('quan_tri'),
+  batLoiAsync(cauHinhHeThongController.xuLyLayDanhSach)
+);
+
+/**
+ * @swagger
+ * /api/admin/settings/{khoa}:
+ *   put:
+ *     summary: Bật/tắt một công tắc hệ thống, ví dụ THANH_TOAN_QR_BAT (Chỉ Quản trị viên, có ghi lịch sử và báo realtime)
+ *     tags: [Quản trị (Admin)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: khoa
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: THANH_TOAN_QR_BAT
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [bat]
+ *             properties:
+ *               bat:
+ *                 type: boolean
+ *                 example: false
+ *     responses:
+ *       200:
+ *         description: Đã đổi công tắc
+ *       400:
+ *         description: Giá trị không hợp lệ
+ *       403:
+ *         description: Chỉ dành cho Quản trị viên
+ *       404:
+ *         description: Khóa công tắc không tồn tại
+ */
+router.put(
+  '/settings/:khoa',
+  xacThucToken,
+  phanQuyen('quan_tri'),
+  kiemTraDuLieu(luatDatCongTac),
+  batLoiAsync(cauHinhHeThongController.xuLyDatCongTac)
 );
 
 module.exports = router;

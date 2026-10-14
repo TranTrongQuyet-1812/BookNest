@@ -10,6 +10,7 @@ const phanQuyen = require('../middlewares/phanQuyen');
 const kiemTraDuLieu = require('../middlewares/kiemTraDuLieu');
 const kiemTraChuDon = require('../middlewares/kiemTraChuDon');
 const { gioiHanDatDonVangLai, gioiHanDoMaDon } = require('../middlewares/gioiHanTanSuat');
+const { chanKhiChonQR } = require('../middlewares/kiemTraCongTacQR');
 
 const router = express.Router();
 
@@ -103,7 +104,7 @@ const luatDatHangKhachVangLai = Joi.object({
  *       409:
  *         description: Sách hết tồn kho hoặc đã ngừng kinh doanh
  */
-router.post('/guest', gioiHanDatDonVangLai, kiemTraDuLieu(luatDatHangKhachVangLai), batLoiAsync(donHangController.xuLyDatHangKhachVangLai));
+router.post('/guest', gioiHanDatDonVangLai, kiemTraDuLieu(luatDatHangKhachVangLai), chanKhiChonQR, batLoiAsync(donHangController.xuLyDatHangKhachVangLai));
 
 // Tất cả các route bên dưới của khách đều cần đăng nhập với vai trò khach_hang
 router.use(xacThucToken, phanQuyen('khach_hang'));
@@ -195,7 +196,7 @@ const luatKhachHuyDon = Joi.object({
  *       409:
  *         description: Sách hết tồn kho hoặc đã ngừng kinh doanh
  */
-router.post('/', kiemTraDuLieu(luatDatHang), batLoiAsync(donHangController.xuLyDatHang));
+router.post('/', kiemTraDuLieu(luatDatHang), chanKhiChonQR, batLoiAsync(donHangController.xuLyDatHang));
 
 /**
  * @swagger

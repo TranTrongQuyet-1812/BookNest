@@ -11,7 +11,8 @@ import {
   ArrowUpRight,
   Boxes,
   ShoppingCart,
-  History
+  History,
+  Settings
 } from 'lucide-react';
 
 export const AdminLayout = () => {
@@ -70,6 +71,7 @@ export const AdminLayout = () => {
     if (p.includes('/admin/orders')) return 'Xử Lý Đơn Hàng';
     if (p.includes('/admin/counter-sales')) return 'Bán Hàng Tại Quầy';
     if (p.includes('/admin/change-history')) return 'Lịch Sử Thay Đổi';
+    if (p.includes('/admin/settings')) return 'Cài Đặt Hệ Thống';
     if (p.includes('/admin/users')) return 'Quản Lý Nhân Sự & Khách';
     return 'Bảng Điều Hành';
   };
@@ -220,6 +222,10 @@ export const AdminLayout = () => {
                 <NavLink to="/admin/change-history" className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}>
                   <History size={16} />
                   <span>Lịch Sử Thay Đổi</span>
+                </NavLink>
+                <NavLink to="/admin/settings" className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}>
+                  <Settings size={16} />
+                  <span>Cài Đặt Hệ Thống</span>
                 </NavLink>
               </div>
             )}

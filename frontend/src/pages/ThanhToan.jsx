@@ -20,6 +20,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import { KhungThanhToanVietQR } from '../components/KhungThanhToanVietQR';
+import { laySocket } from '../services/socket';
 
 export const ThanhToan = () => {
   const navigate = useNavigate();
@@ -35,7 +36,8 @@ export const ThanhToan = () => {
 
   // Phương thức thanh toán: COD hoặc CHUYEN_KHOAN_QR
   const [phuongThucThanhToan, setPhuongThucThanhToan] = useState('COD');
-  const [congQrKhaDung, setCongQrKhaDung] = useState(true);
+  // null = đang hỏi máy chủ: chưa vẽ lựa chọn QR để nó không lóe lên rồi biến mất khi công tắc đang tắt
+  const [congQrKhaDung, setCongQrKhaDung] = useState(null);
   const [hienModalQR, setHienModalQR] = useState(false);
   const [duLieuQR, setDuLieuQR] = useState(null);
 
@@ -99,11 +101,11 @@ export const ThanhToan = () => {
         // Kiểm tra trạng thái khả dụng của cổng thanh toán VietQR payOS
         try {
           const resCheck = await api.get('/payments/status-check');
-          if (!daHuy && resCheck.data?.data) {
-            setCongQrKhaDung(!!resCheck.data.data.khaDung);
-          }
+          if (!daHuy) setCongQrKhaDung(!!resCheck.data?.data?.khaDung);
         } catch (errCheck) {
-          console.warn('Không thể kiểm tra cổng QR, dùng mặc định:', errCheck);
+          // Không hỏi được thì coi như tắt (khách vẫn đặt được bằng COD)
+          console.warn('Không thể kiểm tra cổng QR, tạm ẩn lựa chọn chuyển khoản:', errCheck);
+          if (!daHuy) setCongQrKhaDung(false);
         }
       } catch (errGio) {
         console.error('Lỗi tải giỏ hàng:', errGio);
@@ -116,6 +118,21 @@ export const ThanhToan = () => {
     taiDuLieu();
     return () => { daHuy = true; };
   }, [layGioHang, daDangNhap, user]);
+
+  // Quản trị viên bật/tắt công tắc QR thì trang đang mở cập nhật ngay, không cần tải lại
+  useEffect(() => {
+    const socket = laySocket();
+    const xuLyDoiCongTac = ({ khoa, bat }) => {
+      if (khoa === 'THANH_TOAN_QR_BAT') setCongQrKhaDung(!!bat);
+    };
+    socket.on('cauHinh:doi', xuLyDoiCongTac);
+    return () => socket.off('cauHinh:doi', xuLyDoiCongTac);
+  }, []);
+
+  // Công tắc tắt mà khách đang chọn QR thì đưa về COD, tránh gửi đơn QR sẽ bị máy chủ từ chối
+  useEffect(() => {
+    if (congQrKhaDung === false) setPhuongThucThanhToan((cu) => (cu === 'CHUYEN_KHOAN_QR' ? 'COD' : cu));
+  }, [congQrKhaDung]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -215,6 +232,8 @@ export const ThanhToan = () => {
     } catch (err) {
       const msg = err.response?.data?.message || 'Đặt hàng thất bại. Vui lòng kiểm tra lại thông tin nhận hàng';
       setLoi(msg);
+      // Máy chủ từ chối (403) khi khách chọn QR nghĩa là công tắc vừa tắt: đồng bộ giao diện, khách chọn lại COD
+      if (err.response?.status === 403 && phuongThucThanhToan === 'CHUYEN_KHOAN_QR') setCongQrKhaDung(false);
     } finally {
       setDangDatHang(false);
     }
@@ -561,7 +580,8 @@ export const ThanhToan = () => {
                     </div>
                   </label>
 
-                  {/* Tùy chọn 2: VietQR qua payOS */}
+                  {/* Tùy chọn 2: VietQR qua payOS, chỉ hiện khi Quản trị viên đang bật công tắc */}
+                  {congQrKhaDung === true && (
                   <label style={{
                     display: 'flex',
                     alignItems: 'flex-start',
@@ -572,8 +592,7 @@ export const ThanhToan = () => {
                     backgroundColor: phuongThucThanhToan === 'CHUYEN_KHOAN_QR' ? 'rgba(139, 69, 19, 0.04)' : 'var(--bg-surface)',
                     cursor: 'pointer',
                     position: 'relative',
-                    transition: 'all 0.2s ease',
-                    opacity: congQrKhaDung ? 1 : 0.6
+                    transition: 'all 0.2s ease'
                   }}>
                     <input
                       type="radio"
@@ -605,7 +624,14 @@ export const ThanhToan = () => {
                       </p>
                     </div>
                   </label>
+                  )}
                 </div>
+
+                {congQrKhaDung === false && (
+                  <p role="status" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '10px 0 0', lineHeight: 1.45 }}>
+                    Chuyển khoản QR đang tạm ngừng, hiện cửa hàng chỉ nhận thanh toán khi nhận hàng (COD).
+                  </p>
+                )}
               </div>
             </div>
           </div>
