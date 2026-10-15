@@ -29,7 +29,9 @@ function laCauXacNhan(noiDung) {
   const khongDau = boDauTiengViet(noiDung).toLowerCase().trim();
   const mauXacNhan = [
     /\b(dung|chinh la no|chinh no|chuang?|dung roi|dung vay|chinh xac|lay cuon|mua cuon|mua no|lay no|cho toi|cho minh|lay 1|cho 1|lay giup|cho e|cho anh|cho em|muon no)\b/i,
-    /^(ok|oke|okay|vang|da|u|uh|uk|dung|chuan|chinh no|lay no)$/i
+    /^(ok|oke|okay|vang|da|u|uh|uk|dung|chuan|chinh no|lay no)$/i,
+    /^\s*\d+\s*(cuon|quyen|tap|ban)?\s*$/i,
+    /\b(mua|lay|them)\s+\d+\s*(cuon|quyen)?\b/i
   ];
   return mauXacNhan.some(re => re.test(khongDau));
 }
@@ -93,10 +95,10 @@ Quy tắc ứng xử cốt lõi:
       - Ngay khi khách đã nói rõ số lượng và đã xác nhận đúng sách (hoặc nếu khách đã nói tên sách chính xác 100% kèm số lượng ngay từ đầu, ví dụ: "cho tôi 2 cuốn sách X"), bạn hãy gọi NGAY công cụ "them_vao_gio_hang" để hệ thống tự động thêm sách vào giỏ và đưa khách vào trang giỏ hàng.
 6. Khi khách hỏi về đơn hàng, hãy nhắc khách cung cấp mã tra cứu dạng "BN-XXXXXX" (ví dụ: BN-7K3F9Q) rồi gọi công cụ "tra_cuu_don_hang".
 7. Chính sách nhà sách BookNest:
-   - Miễn phí vận chuyển (Freeship) cho đơn hàng từ 250.000đ trở lên; đơn dưới 250k phí ship cố định 25.000đ toàn quốc.
+   - MIỄN PHÍ VẬN CHUYỂN (FREESHIP) CHO 100% MỌI ĐƠN HÀNG trên toàn quốc (Phí vận chuyển: 0đ). Tuyệt đối KHÔNG thu phí ship 25k hay đặt điều kiện giá trị đơn hàng!
    - Được đồng kiểm hàng khi nhận sách trước khi thanh toán.
    - Đổi trả miễn phí trong 7 ngày đối với sách lỗi do nhà xuất bản hoặc hư hỏng do vận chuyển.
-   - Hỗ trợ thanh toán tiền mặt (COD) hoặc Chuyển khoản VietQR qua PayOS (hoàn tiền tự động trong 24h nếu đơn thử nghiệm bị hủy).
+   - Hỗ trợ thanh toán tiền mặt (COD) hoặc Chuyển khoản VietQR qua PayOS. Quy trình hoàn tiền: Trường hợp khách chuyển khoản khi đơn đã quá hạn hoặc bị hủy, hệ thống sẽ tự động ghi nhận trạng thái CẦN HOÀN TIỀN để nhân viên BookNest liên hệ hỗ trợ đối soát hoàn tiền về tài khoản ngân hàng của bạn (không có hoàn tiền tự động tức thì).
 8. ĐỊNH DẠNG TRẢ LỜI: Luôn trả lời trực tiếp bằng văn bản thuần túy (plain text tiếng Việt). Tuyệt đối KHÔNG xuất câu trả lời dưới dạng JSON {"type": "text", "text": "..."} hay bất kỳ cú pháp bao bọc nào.`;
 }
 
@@ -575,9 +577,9 @@ async function thucThiSoanThanhToan({ danh_sach_sach, ten_nguoi_nhan, so_dien_th
       };
     }
 
-    // Miễn phí vận chuyển nếu đơn từ 250k trở lên
-    const phiVanChuyen = tamTinh >= 250000 ? 0 : 25000;
-    const tongTien = tamTinh + phiVanChuyen;
+    // Chính sách BookNest: Miễn phí vận chuyển cho 100% mọi đơn hàng (0đ)
+    const phiVanChuyen = 0;
+    const tongTien = tamTinh;
 
     return {
       hopLe: true,
@@ -586,7 +588,7 @@ async function thucThiSoanThanhToan({ danh_sach_sach, ten_nguoi_nhan, so_dien_th
         tamTinh,
         phiVanChuyen,
         tongTien,
-        mienPhiShip: phiVanChuyen === 0,
+        mienPhiShip: true,
         thongTinNhanHang: {
           tenNguoiNhan: ten_nguoi_nhan || '',
           soDienThoai: so_dien_thoai || '',
@@ -611,12 +613,10 @@ async function thucThiThemVaoGioHang({ ma_sach, ten_sach, so_luong = 1 }, tinNha
     let tenSachTim = (ten_sach && ten_sach.trim()) ? ten_sach.trim() : '';
     if ((!tenSachTim || ['no', 'chinh la no', 'chinh no', 'cuon nay', 'cuon do'].includes(boDauTiengViet(tenSachTim).toLowerCase())) && sachHienTai) {
       tenSachTim = sachHienTai;
-      laKhopChinhXac = true;
     }
 
     if (ma_sach && Number(ma_sach) > 0) {
       sach = await Sach.findOne({ where: { MaSach: Number(ma_sach), DaAn: false } });
-      if (sach) laKhopChinhXac = true;
     }
     // Fallback nếu mã sách không tồn tại trong CSDL nhưng có sachHienTai
     if (!sach && sachHienTai) {
@@ -626,7 +626,6 @@ async function thucThiThemVaoGioHang({ ma_sach, ten_sach, so_luong = 1 }, tinNha
           chuaTuKhoaLinhHoat('[Sach].[TenSach]', sachHienTai)
         ]
       });
-      if (sach) laKhopChinhXac = true;
     }
     if (!sach && tenSachTim) {
       sach = await Sach.findOne({
@@ -635,15 +634,6 @@ async function thucThiThemVaoGioHang({ ma_sach, ten_sach, so_luong = 1 }, tinNha
           chuaTuKhoaLinhHoat('[Sach].[TenSach]', tenSachTim)
         ]
       });
-      if (sach) {
-        if (sachHienTai && sach.TenSach.toLowerCase() === sachHienTai.toLowerCase()) {
-          laKhopChinhXac = true;
-        } else {
-          const tenSachKhongDau = boDauTiengViet(sach.TenSach).toLowerCase().replace(/[^a-z0-9]/g, '');
-          const cauKhachKhongDau = boDauTiengViet(tinNhanGoc || tenSachTim || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-          laKhopChinhXac = cauKhachKhongDau.includes(tenSachKhongDau);
-        }
-      }
     }
 
     // Fallback tìm kiếm mờ theo điểm token nếu chưa thấy
@@ -651,20 +641,33 @@ async function thucThiThemVaoGioHang({ ma_sach, ten_sach, so_luong = 1 }, tinNha
       const ketQuaMoTinGoc = await timSachMoDiem(tinNhanGoc.trim(), { limit: 1, includeDanhMuc: false });
       if (ketQuaMoTinGoc.length > 0) {
         sach = ketQuaMoTinGoc[0];
-        laKhopChinhXac = false;
       }
     }
     if (!sach && tenSachTim) {
       const ketQuaMo = await timSachMoDiem(tenSachTim, { limit: 1, includeDanhMuc: false });
       if (ketQuaMo.length > 0) {
         sach = ketQuaMo[0];
-        laKhopChinhXac = false;
       }
     }
 
     if (!sach) {
       return { thanhCong: false, thongDiep: 'Không tìm thấy cuốn sách này trong kho để thêm vào giỏ hàng.' };
     }
+
+    // SERVER CONFIRMATION GUARD (Chốt chặn xác minh ở tầng server):
+    // Chỉ đánh dấu laKhopChinhXac nếu:
+    // 1. Tin nhắn của khách bao hàm trọn vẹn tên sách chuẩn (ví dụ: "cho tôi mua 2 cuốn Vòng quanh thế giới - Israel"),
+    // 2. HOẶC sách này chính là cuốn sách đang trao đổi (sachHienTai) VÀ tin nhắn của khách là câu xác nhận ("đúng rồi", "lấy cuốn đó", "2 cuốn").
+    // Tuyệt đối không cho phép AI tự ý gọi thêm giỏ khi khách chưa hề xác nhận!
+    const tenSachKhongDau = boDauTiengViet(sach.TenSach).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cauKhachKhongDau = boDauTiengViet(tinNhanGoc || tenSachTim || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const daKhopTenTronVen = cauKhachKhongDau.includes(tenSachKhongDau);
+    const laXacNhanSachHienTai = sachHienTai &&
+      (sach.TenSach.toLowerCase() === sachHienTai.toLowerCase() ||
+       boDauTiengViet(sach.TenSach).toLowerCase().includes(boDauTiengViet(sachHienTai).toLowerCase())) &&
+      laCauXacNhan(tinNhanGoc);
+
+    laKhopChinhXac = daKhopTenTronVen || Boolean(laXacNhanSachHienTai);
 
     // Nếu tên sách chỉ là gợi ý hoặc nghi ngờ (khách gõ sai chính tả, không dấu hoặc chỉ gõ một nửa tên)
     // TUYỆT ĐỐI KHÔNG tự tiện thêm vào giỏ hàng ngay mà phải ép AI hỏi xác nhận lại với khách!
@@ -718,14 +721,46 @@ function dichTrangThaiDonHang(trangThai) {
   return bangDich[trangThai] || trangThai;
 }
 
+// Bộ đếm chống brute-force mã tra cứu đơn hàng qua AI Chatbot (Task T42 & T48)
+const SO_LAN_TRA_CUU_SAI_TOI_DA = 5;
+const KHOANG_THOI_GIAN_KHOA_TRA_CUU_MS = 15 * 60 * 1000; // 15 phút
+const boDemTraCuuSai = new Map();
+
+function kiemTraVaGhiNhanTraCuuSai(dinhDanh, laThatBai = false) {
+  const bayGio = Date.now();
+  const banGhi = boDemTraCuuSai.get(dinhDanh);
+  if (banGhi && (bayGio - banGhi.thoiDiem) > KHOANG_THOI_GIAN_KHOA_TRA_CUU_MS) {
+    boDemTraCuuSai.delete(dinhDanh);
+  }
+  const hienTai = boDemTraCuuSai.get(dinhDanh) || { soLan: 0, thoiDiem: bayGio };
+  if (hienTai.soLan >= SO_LAN_TRA_CUU_SAI_TOI_DA) {
+    return false; // bị khóa
+  }
+  if (laThatBai) {
+    hienTai.soLan += 1;
+    hienTai.thoiDiem = bayGio;
+    boDemTraCuuSai.set(dinhDanh, hienTai);
+  }
+  return true;
+}
+
 /**
  * Thực thi tra cứu đơn hàng bằng mã tra cứu công khai hoặc mã khách hàng đăng nhập
  */
-async function thucThiTraCuuDonHang({ ma_tra_cuu }, maKhachHangContext) {
+async function thucThiTraCuuDonHang({ ma_tra_cuu }, maKhachHangContext, dinhDanh = 'chung') {
   try {
     // 1. Nếu có mã tra cứu công khai dạng BN-XXXXXX
     if (ma_tra_cuu && ma_tra_cuu.trim()) {
       const maChuan = ma_tra_cuu.trim().toUpperCase();
+
+      // Kiểm tra xem định danh hiện tại có bị khóa do thử sai quá nhiều lần không (Brute-force Guard)
+      if (!kiemTraVaGhiNhanTraCuuSai(dinhDanh, false)) {
+        return {
+          timThay: false,
+          thongDiep: 'Bạn đã thử sai mã đơn quá 5 lần liên tiếp. Để bảo vệ an toàn thông tin đơn hàng, tính năng tra cứu tạm khóa trong 15 phút. Vui lòng thử lại sau.'
+        };
+      }
+
       const donHang = await DonHang.findOne({
         where: { MaTraCuu: maChuan },
         include: [
@@ -748,8 +783,12 @@ async function thucThiTraCuuDonHang({ ma_tra_cuu }, maKhachHangContext) {
       });
 
       if (!donHang) {
+        kiemTraVaGhiNhanTraCuuSai(dinhDanh, true);
         return { timThay: false, thongDiep: `Không tìm thấy đơn hàng nào với mã tra cứu "${maChuan}". Vui lòng kiểm tra lại mã trên hóa đơn hoặc tin nhắn.` };
       }
+
+      // Tra cứu thành công -> xóa bỏ bộ đếm lỗi
+      boDemTraCuuSai.delete(dinhDanh);
 
       const phuongThuc = donHang.thanhToan?.PhuongThuc || 'COD';
       const trangThaiTT = donHang.thanhToan?.TrangThai || 'CHO_THANH_TOAN';
@@ -1006,6 +1045,7 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
 
   const TOI_DA_VONG_LAP = 2; // Tối đa 2 vòng gọi công cụ để đảm bảo tốc độ và tiết kiệm token
   let soVongLap = 0;
+  let tongTokensTieuThu = 0;
 
   // Lọc công cụ khả dụng theo vai trò: Guest chưa đăng nhập thì không nạp tool them_vao_gio_hang để tránh AI từ chối
   const cacCongCuKhaDung = daDangNhap
@@ -1021,6 +1061,10 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
       maxTokens: 600,
       temperature: 0.3
     });
+
+    if (ketQuaAI?.usage?.total_tokens) {
+      tongTokensTieuThu += ketQuaAI.usage.total_tokens;
+    }
 
     const aiMessage = ketQuaAI.message;
 
@@ -1132,7 +1176,8 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
           }];
         }
       } else if (tenHam === 'tra_cuu_don_hang') {
-        ketQuaTool = await thucThiTraCuuDonHang(thamSo, maKhachHang);
+        const dinhDanh = maKhachHang ? `user_${maKhachHang}` : 'guest';
+        ketQuaTool = await thucThiTraCuuDonHang(thamSo, maKhachHang, dinhDanh);
         if (ketQuaTool?.donHang || ketQuaTool?.danhSachDon) {
           duLieuKemTheo.thongTinDonHang = ketQuaTool.donHang || ketQuaTool.danhSachDon;
         }
@@ -1154,6 +1199,13 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
     maxTokens: 500,
     temperature: 0.3
   });
+
+  if (ketQuaCuoi?.usage?.total_tokens) {
+    tongTokensTieuThu += ketQuaCuoi.usage.total_tokens;
+  }
+  if (tongTokensTieuThu > 0) {
+    console.log(`[AI Chatbot] Lượt hội thoại hoàn tất. Tổng token tiêu thụ: ${tongTokensTieuThu}`);
+  }
 
   let traLoiCuoi = chuanHoaNoiDungAI(ketQuaCuoi.message?.content);
   // Tự động bù đắp dữ liệu sách và làm sạch placeholder (...)

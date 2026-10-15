@@ -155,7 +155,7 @@ export const ChinhSachBaoMat = () => {
             <li><strong>Thông tin tài khoản thành viên:</strong> Tên người dùng, email đăng nhập và mật khẩu (được mã hóa một chiều ngay khi lưu).</li>
             <li><strong>Dữ liệu cục bộ trình duyệt:</strong> Giỏ hàng của khách vãng lai được lưu trữ an toàn trong bộ nhớ máy của bạn (<code style={{ backgroundColor: 'var(--bg-surface)', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>localStorage</code>), chúng tôi không theo dõi hành vi cá nhân bên ngoài trang web.</li>
             <li>
-              <strong>Điều chúng tôi KHÔNG BAO GIỜ thu thập:</strong> BookNest không bao giờ yêu cầu hay lưu trữ thông tin thẻ ngân hàng, số thẻ tín dụng, mã PIN hay mã xác thực OTP của bạn. Mọi giao dịch chuyển khoản VietQR đều được thực hiện bảo mật qua ứng dụng ngân hàng của bạn và cổng thanh toán đối tác payOS.
+              <strong>Điều chúng tôi KHÔNG BAO GIỜ thu thập:</strong> BookNest không bao giờ yêu cầu hay lưu trữ thông tin thẻ ngân hàng, số thẻ tín dụng, mã PIN hay mã xác thực OTP của bạn (kể cả qua kênh Trợ lý AI Chatbot). Mọi giao dịch chuyển khoản VietQR đều được thực hiện bảo mật qua ứng dụng ngân hàng của bạn và cổng thanh toán đối tác payOS.
             </li>
           </ul>
         </section>
@@ -199,6 +199,7 @@ export const ChinhSachBaoMat = () => {
             <li><strong>Xác thực phiên qua JWT:</strong> Mã định danh JSON Web Token có thời hạn hiệu lực, kiểm tra quyền truy cập chặt chẽ ở từng thao tác.</li>
             <li><strong>Chống rò rỉ mã đơn hàng (IDOR Defense):</strong> Đơn hàng công khai được định danh bằng <em>Mã tra cứu ngẫu nhiên khó đoán</em> (<code style={{ backgroundColor: 'var(--bg-surface)', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>BN-XXXXXX</code>) thay vì số thứ tự tăng dần thông thường, ngăn chặn việc người lạ dò tìm hoặc xem trộm đơn hàng của bạn.</li>
             <li><strong>Tường lửa giới hạn tần suất (Rate Limiting):</strong> Trang bị bộ lọc giới hạn số lần gọi API tra cứu đơn và tạo thanh toán để chống lại các cuộc tấn công dò quét tự động.</li>
+            <li><strong>Bảo vệ dữ liệu hội thoại AI Chatbot:</strong> Trợ lý ảo BookNest AI sử dụng giao diện lập trình đám mây bảo mật của nhà cung cấp mô hình trí tuệ nhân tạo (NVIDIA NIM). Dữ liệu hội thoại chỉ phục vụ tư vấn sách và soạn nháp đơn hàng, không lưu trữ hay yêu cầu thông tin tài khoản ngân hàng của bạn.</li>
           </ul>
         </section>
 

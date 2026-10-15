@@ -95,7 +95,7 @@ export const ChatbotWidget = () => {
       {
         id: 'msg_chao',
         role: 'assistant',
-        content: 'Xin chào bạn đọc! Tôi là BookNest AI 📚.\nTôi có thể giúp bạn tìm sách theo thể loại, kiểm tra tồn kho thật, hỗ trợ soạn đơn thanh toán hoặc tra cứu mã đơn hàng BN-XXXXXX.\n\nHôm nay bạn muốn tìm cuốn sách nào?',
+        content: 'Xin chào bạn đọc! Tôi là BookNest AI 📚 (vận hành bởi mô hình đám mây NVIDIA NIM).\nTôi có thể giúp bạn tìm sách theo thể loại, kiểm tra tồn kho thật, hỗ trợ soạn đơn hoặc tra cứu mã đơn hàng BN-XXXXXX.\n\n💡 Lưu ý: Dữ liệu trò chuyện được xử lý qua AI đám mây, vui lòng không chia sẻ mật khẩu hoặc thông tin thẻ ngân hàng.\n\nHôm nay bạn muốn tìm cuốn sách nào?',
         thoiGian: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         duLieuKemTheo: null
       }
@@ -184,9 +184,7 @@ export const ChatbotWidget = () => {
 
       const res = await api.post('/chat', {
         messages: payloadMessages,
-        tinNhan: textCanGui,
-        daDangNhap: Boolean(daDangNhap),
-        tenKhachHang: user?.fullName || user?.HoTen || user?.name || ''
+        tinNhan: textCanGui
       });
 
       const duLieuPhanHoi = res.data?.data;
@@ -456,7 +454,7 @@ export const ChatbotWidget = () => {
                   <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, letterSpacing: '-0.01em', color: '#FFFFFF' }}>BookNest AI</h3>
                   <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#10B981', boxShadow: '0 0 6px #10B981' }} />
                 </div>
-                <p style={{ margin: 0, fontSize: '0.72rem', color: '#FDF4E1', opacity: 0.85 }}>Trợ lý tư vấn & hỗ trợ bạn đọc</p>
+                <p style={{ margin: 0, fontSize: '0.72rem', color: '#FDF4E1', opacity: 0.85 }}>Trợ lý tư vấn & hỗ trợ bạn đọc (NVIDIA NIM)</p>
               </div>
             </div>
 
@@ -503,6 +501,21 @@ export const ChatbotWidget = () => {
                 <Minus style={{ width: '15px', height: '15px', strokeWidth: 2.5, color: '#FFFFFF' }} />
               </button>
             </div>
+          </div>
+
+          {/* Thông báo minh bạch về AI điện toán đám mây (NVIDIA NIM) */}
+          <div style={{
+            padding: '6px 12px',
+            backgroundColor: laDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(180, 83, 9, 0.05)',
+            borderBottom: '1px solid var(--border)',
+            fontSize: '0.68rem',
+            color: 'var(--text-muted)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}>
+            <span style={{ fontSize: '0.75rem' }}>💡</span>
+            <span>Hội thoại xử lý qua AI đám mây (NVIDIA NIM). Vui lòng không chia sẻ dữ liệu thẻ ngân hàng hay mật khẩu.</span>
           </div>
 
           {/* Body Tin Nhắn (Scrollable) */}

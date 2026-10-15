@@ -20,11 +20,15 @@ function xacThucTuyChon(req, res, next) {
     const token = chuoiHeader.split(' ')[1];
     try {
       const duLieuGiaiMa = jwt.verify(token, cauHinh.jwt.biMat);
-      req.nguoiDung = {
-        MaKhachHang: duLieuGiaiMa.id,
-        maKhachHang: duLieuGiaiMa.id,
-        ...duLieuGiaiMa
-      };
+      // BẢO MẬT & PHÂN QUYỀN: Bắt buộc aud === 'khach_hang' để phân định rõ cổng Khách Hàng.
+      // Tuyệt đối không cho phép token nhân viên (aud: 'nhan_vien') bị gán nhầm thành MaKhachHang.
+      if (duLieuGiaiMa && duLieuGiaiMa.aud === 'khach_hang') {
+        req.nguoiDung = {
+          MaKhachHang: duLieuGiaiMa.id,
+          maKhachHang: duLieuGiaiMa.id,
+          ...duLieuGiaiMa
+        };
+      }
     } catch (e) {
       // Token lỗi hoặc hết hạn thì xem như khách vãng lai bình thường
     }

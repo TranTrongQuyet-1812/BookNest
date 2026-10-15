@@ -9,6 +9,7 @@ const { ghiNhanThayDoi } = require('./lichSuThayDoiService');
 const { phatSuKien } = require('../realtime/socket');
 
 const KHOA_THANH_TOAN_QR = 'THANH_TOAN_QR_BAT';
+const KHOA_AI_CHATBOT = 'AI_CHATBOT_BAT';
 
 // Danh sách khóa được phép đổi qua API. Khóa lạ bị từ chối để Quản trị viên không ghi bừa vào bảng cấu hình.
 const CONG_TAC = {
@@ -17,6 +18,12 @@ const CONG_TAC = {
     moTa: 'Công tắc bật/tắt thanh toán chuyển khoản VietQR qua payOS (1: Bật, 0: Tắt)',
     // Thiếu khóa trong .env thì dù bật cũng không dùng được, giao diện cần biết để cảnh báo
     daDuDieuKien: () => cauHinh.payos.daCauHinh
+  },
+  [KHOA_AI_CHATBOT]: {
+    ten: 'Trợ lý AI Chatbot tư vấn',
+    moTa: 'Công tắc bật/tắt khẩn cấp trợ lý AI Chatbot (1: Bật, 0: Tắt)',
+    // Thiếu API key thì dù bật cũng không hoạt động được
+    daDuDieuKien: () => cauHinh.ai.daCauHinh
   }
 };
 
@@ -24,9 +31,10 @@ const CONG_TAC = {
  * Đọc công tắc. Chỉ giá trị '1' mới là bật: thiếu dòng hoặc lỗi đọc CSDL đều coi như tắt
  * ("đóng khi chưa chắc", vì đây là nút khẩn cấp liên quan pháp lý).
  */
-async function docCongTac(khoa) {
+async function docCongTac(khoa, macDinh = false) {
   try {
     const dong = await CauHinhHeThong.findByPk(khoa);
+    if (!dong) return macDinh;
     return dong?.GiaTri === '1';
   } catch (err) {
     console.error(`[CauHinhHeThong] Không đọc được công tắc ${khoa}, coi như tắt:`, err.message);
@@ -89,6 +97,7 @@ async function datCongTac(khoa, bat, maNhanVien) {
 
 module.exports = {
   KHOA_THANH_TOAN_QR,
+  KHOA_AI_CHATBOT,
   docCongTac,
   layDanhSachCongTac,
   datCongTac
