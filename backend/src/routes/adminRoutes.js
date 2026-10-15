@@ -13,6 +13,8 @@ const phanQuyen = require('../middlewares/phanQuyen');
 const kiemTraDuLieu = require('../middlewares/kiemTraDuLieu');
 const lichSuQuanTriController = require('../controllers/lichSuQuanTriController');
 const cauHinhHeThongController = require('../controllers/cauHinhHeThongController');
+const aiChatbotController = require('../controllers/aiChatbotController');
+const danhGiaController = require('../controllers/danhGiaController');
 
 const router = express.Router();
 
@@ -931,6 +933,149 @@ router.put(
   phanQuyen('quan_tri'),
   kiemTraDuLieu(luatDatCongTac),
   batLoiAsync(cauHinhHeThongController.xuLyDatCongTac)
+);
+
+// ==========================================
+// 12. Giám sát ngân sách AI Chatbot (Chỉ Quản trị viên)
+// ==========================================
+/**
+ * @swagger
+ * /api/admin/chatbot/stats:
+ *   get:
+ *     summary: Xem thống kê tiêu thụ token và trần ngân sách ngày của AI Chatbot (Chỉ Quản trị viên)
+ *     tags: [Quản trị (Admin)]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Thống kê số lượng token đã dùng, trần ngày, phần trăm tiêu thụ
+ *       403:
+ *         description: Chỉ dành cho Quản trị viên
+ */
+router.get(
+  '/chatbot/stats',
+  xacThucToken,
+  phanQuyen('quan_tri'),
+  batLoiAsync(aiChatbotController.layThongKe)
+);
+
+// ==========================================
+// 13. Quản lý & Kiểm duyệt đánh giá sách (Task T38)
+// ==========================================
+const luatAnHienDanhGia = Joi.object({
+  daAn: Joi.boolean().required(),
+  lyDo: Joi.string().trim().max(255).allow('')
+});
+
+/**
+ * @swagger
+ * /api/admin/reviews:
+ *   get:
+ *     summary: Xem danh sách đánh giá toàn hệ thống phục vụ kiểm duyệt (Quản trị viên, Thủ thư)
+ *     tags: [Quản trị (Admin)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: rating
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: daAn
+ *         schema:
+ *           type: boolean
+ *     responses:
+ *       200:
+ *         description: Danh sách đánh giá kèm thông tin sách và khách hàng
+ *       403:
+ *         description: Không có quyền truy cập
+ */
+router.get(
+  '/reviews',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_thu'),
+  batLoiAsync(danhGiaController.xuLyLayDanhSachAdmin)
+);
+
+/**
+ * @swagger
+ * /api/admin/reviews/{id}/visibility:
+ *   put:
+ *     summary: Ẩn hoặc bỏ ẩn một đánh giá vi phạm (Quản trị viên, Thủ thư)
+ *     tags: [Quản trị (Admin)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [daAn]
+ *             properties:
+ *               daAn:
+ *                 type: boolean
+ *               lyDo:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Đã cập nhật trạng thái ẩn/hiện đánh giá
+ *       403:
+ *         description: Không có quyền truy cập
+ */
+router.put(
+  '/reviews/:id/visibility',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_thu'),
+  kiemTraDuLieu(luatAnHienDanhGia),
+  batLoiAsync(danhGiaController.xuLyAnHienDanhGia)
+);
+
+/**
+ * @swagger
+ * /api/admin/reviews/{id}:
+ *   delete:
+ *     summary: Xóa vĩnh viễn đánh giá rác/spam nghiêm trọng (Chỉ Quản trị viên)
+ *     tags: [Quản trị (Admin)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Đã xóa đánh giá thành công
+ *       403:
+ *         description: Chỉ Quản trị viên mới được xóa
+ */
+router.delete(
+  '/reviews/:id',
+  xacThucToken,
+  phanQuyen('quan_tri'),
+  batLoiAsync(danhGiaController.xuLyXoaDanhGia)
 );
 
 module.exports = router;

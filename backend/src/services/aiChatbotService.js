@@ -4,9 +4,11 @@
  * Tối ưu hóa token và an toàn chỉ đọc dữ liệu.
  */
 const { Op } = require('sequelize');
-const { sequelize, Sach, DanhMuc, DonHang, ChiTietDonHang, LichSuTrangThaiDonHang, ThanhToan } = require('../models');
+const { sequelize, Sach, DanhMuc, DonHang, ChiTietDonHang, LichSuTrangThaiDonHang, ThanhToan, NhatKyChatbot } = require('../models');
 const { chuaTuKhoa, chuaTuKhoaLinhHoat, locTuKhoaThucSu, tinhDiemTrungKhop, boDauTiengViet } = require('../utils/timKiem');
 const { goiNhaCungCapAI } = require('./trinhCungCapAI');
+const { layNguCanhChinhSachChoAI } = require('./chinhSachService');
+const cauHinhHeThongService = require('./cauHinhHeThongService');
 
 // Trích xuất cuốn sách gần nhất mà AI đã hỏi hoặc gợi ý trong lịch sử chat
 function trichXuatSachGanNhatTuLichSu(lichSuChat) {
@@ -94,11 +96,7 @@ Quy tắc ứng xử cốt lõi:
       - Bạn CHỈ cần hỏi số lượng sách khách muốn mua (nếu khách chưa nói rõ số lượng): "Dạ, bạn muốn mua bao nhiêu cuốn sách này để tôi thêm vào giỏ hàng cho bạn ạ?".
       - Ngay khi khách đã nói rõ số lượng và đã xác nhận đúng sách (hoặc nếu khách đã nói tên sách chính xác 100% kèm số lượng ngay từ đầu, ví dụ: "cho tôi 2 cuốn sách X"), bạn hãy gọi NGAY công cụ "them_vao_gio_hang" để hệ thống tự động thêm sách vào giỏ và đưa khách vào trang giỏ hàng.
 6. Khi khách hỏi về đơn hàng, hãy nhắc khách cung cấp mã tra cứu dạng "BN-XXXXXX" (ví dụ: BN-7K3F9Q) rồi gọi công cụ "tra_cuu_don_hang".
-7. Chính sách nhà sách BookNest:
-   - MIỄN PHÍ VẬN CHUYỂN (FREESHIP) CHO 100% MỌI ĐƠN HÀNG trên toàn quốc (Phí vận chuyển: 0đ). Tuyệt đối KHÔNG thu phí ship 25k hay đặt điều kiện giá trị đơn hàng!
-   - Được đồng kiểm hàng khi nhận sách trước khi thanh toán.
-   - Đổi trả miễn phí trong 7 ngày đối với sách lỗi do nhà xuất bản hoặc hư hỏng do vận chuyển.
-   - Hỗ trợ thanh toán tiền mặt (COD) hoặc Chuyển khoản VietQR qua PayOS. Quy trình hoàn tiền: Trường hợp khách chuyển khoản khi đơn đã quá hạn hoặc bị hủy, hệ thống sẽ tự động ghi nhận trạng thái CẦN HOÀN TIỀN để nhân viên BookNest liên hệ hỗ trợ đối soát hoàn tiền về tài khoản ngân hàng của bạn (không có hoàn tiền tự động tức thì).
+7. ${layNguCanhChinhSachChoAI()}
 8. ĐỊNH DẠNG TRẢ LỜI: Luôn trả lời trực tiếp bằng văn bản thuần túy (plain text tiếng Việt). Tuyệt đối KHÔNG xuất câu trả lời dưới dạng JSON {"type": "text", "text": "..."} hay bất kỳ cú pháp bao bọc nào.`;
 }
 
@@ -1003,15 +1001,99 @@ async function tuDongBuDapDuLieuSach({ traLoi, noiDungTinNhan, sachHienTai, duLi
 }
 
 /**
+ * Tính tổng lượng token AI Chatbot đã tiêu thụ trong ngày hôm nay
+ */
+async function tinhTongTokenHomNay() {
+  try {
+    const [ketQua] = await sequelize.query(`
+      SELECT ISNULL(SUM(SoToken), 0) AS tongToken, COUNT(MaNhatKy) AS soLuot
+      FROM dbo.NhatKyChatbot
+      WHERE CAST(NgayGhi AS DATE) = CAST(SYSDATETIME() AS DATE)
+    `, { type: sequelize.QueryTypes.SELECT });
+    return {
+      tongToken: ketQua ? parseInt(ketQua.tongToken, 10) : 0,
+      soLuot: ketQua ? parseInt(ketQua.soLuot, 10) : 0
+    };
+  } catch (err) {
+    // Nếu bảng chưa tạo hoặc lỗi, trả về 0 để không làm nghẽn luồng
+    return { tongToken: 0, soLuot: 0 };
+  }
+}
+
+/**
+ * Ghi nhận một dòng nhật ký kỹ thuật vào bảng NhatKyChatbot
+ * TUYỆT ĐỐI KHÔNG lưu nội dung hội thoại chat nhạy cảm
+ */
+async function ghiNhatKyChatbot({ maKhachHang = null, khoaPhien = null, soToken = 0, tenCongCu = null, ketQua = 'THANH_CONG', ghiChu = null }) {
+  try {
+    if (!NhatKyChatbot) return;
+    await NhatKyChatbot.create({
+      MaKhachHang: maKhachHang,
+      KhoaPhien: khoaPhien ? String(khoaPhien).substring(0, 64) : null,
+      SoToken: Math.max(0, parseInt(soToken, 10) || 0),
+      TenCongCu: tenCongCu ? String(tenCongCu).substring(0, 50) : null,
+      KetQua: ketQua,
+      GhiChu: ghiChu ? String(ghiChu).substring(0, 255) : null
+    });
+  } catch (err) {
+    if (process.env.NODE_ENV !== 'test') {
+      console.error('[NhatKyChatbot] Không thể ghi nhật ký AI:', err.message);
+    }
+  }
+}
+
+/**
+ * Lấy số liệu thống kê tiêu thụ token AI trong ngày cho Quản trị viên
+ */
+async function layThongKeChatbotHomNay() {
+  const tranNgay = await cauHinhHeThongService.docGiaTriSo(cauHinhHeThongService.KHOA_AI_TRAN_NGAY, 50000);
+  const { tongToken, soLuot } = await tinhTongTokenHomNay();
+  const conLai = Math.max(0, tranNgay - tongToken);
+  const phanTramTieuThu = tranNgay > 0 ? Math.min(100, Math.round((tongToken / tranNgay) * 100)) : 0;
+  return {
+    tongTokenHomNay: tongToken,
+    tranNgay,
+    conLai,
+    phanTramTieuThu,
+    soLuotHoiThoaiHomNay: soLuot,
+    daVuotTran: tranNgay > 0 && tongToken >= tranNgay
+  };
+}
+
+/**
  * Xử lý cuộc hội thoại với AI Chatbot (hỗ trợ vòng lặp Function Calling)
  * @param {Object} options
  * @param {Array} options.lichSuChat - Mảng các tin nhắn [{ role: 'user'|'assistant', content: string }]
  * @param {string} options.tinNhanMoi - Tin nhắn mới nhất của người dùng
  * @param {number|null} [options.maKhachHang=null] - ID khách hàng nếu đã đăng nhập
+ * @param {string|null} [options.khoaPhien=null] - Khóa phiên hoặc IP người dùng
  * @returns {Promise<{ traLoi: string, duLieuKemTheo: Object }>}
  */
-async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHang = null, daDangNhap = false, tenKhachHang = '' }) {
+async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHang = null, daDangNhap = false, tenKhachHang = '', khoaPhien = null }) {
   const noiDungTinNhan = String(tinNhanMoi || tinNhan || '').trim();
+
+  // Kiểm tra trần ngân sách token mỗi ngày (AI_CHATBOT_TRAN_NGAY)
+  const tranNgay = await cauHinhHeThongService.docGiaTriSo(cauHinhHeThongService.KHOA_AI_TRAN_NGAY, 50000);
+  const { tongToken: tongTokenHomNay } = await tinhTongTokenHomNay();
+  if (tranNgay > 0 && tongTokenHomNay >= tranNgay) {
+    const traLoi = 'Trợ lý AI đã đạt hạn mức phục vụ trong ngày nhằm bảo vệ ngân sách hệ thống. Quý khách vui lòng quay lại vào ngày mai hoặc liên hệ trực tiếp nhân viên BookNest nhé!';
+    await ghiNhatKyChatbot({
+      maKhachHang,
+      khoaPhien,
+      soToken: 0,
+      ketQua: 'QUA_GIOI_HAN',
+      ghiChu: `Vượt trần ngân sách ngày: ${tongTokenHomNay}/${tranNgay} tokens`
+    });
+    return {
+      traLoi,
+      duLieuKemTheo: {
+        danhSachSach: [],
+        thongTinThanhToan: null,
+        thongTinDonHang: null,
+        themVaoGioHang: null
+      }
+    };
+  }
 
   // Chuẩn bị danh sách messages, giới hạn 8 tin nhắn gần nhất để tiết kiệm token
   const tinNhanHopLe = (Array.isArray(lichSuChat) ? lichSuChat : [])
@@ -1046,6 +1128,7 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
   const TOI_DA_VONG_LAP = 2; // Tối đa 2 vòng gọi công cụ để đảm bảo tốc độ và tiết kiệm token
   let soVongLap = 0;
   let tongTokensTieuThu = 0;
+  const danhSachToolDaGoi = [];
 
   // Lọc công cụ khả dụng theo vai trò: Guest chưa đăng nhập thì không nạp tool them_vao_gio_hang để tránh AI từ chối
   const cacCongCuKhaDung = daDangNhap
@@ -1094,6 +1177,15 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
           traLoi = 'Dạ, tôi có thể giúp gì thêm cho bạn về sách và đơn hàng không ạ?';
         }
       }
+
+      await ghiNhatKyChatbot({
+        maKhachHang,
+        khoaPhien,
+        soToken: tongTokensTieuThu,
+        tenCongCu: danhSachToolDaGoi.join(',') || null,
+        ketQua: 'THANH_CONG'
+      });
+
       return {
         traLoi,
         duLieuKemTheo
@@ -1109,6 +1201,9 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
 
     for (const toolCall of aiMessage.tool_calls) {
       const tenHam = toolCall.function?.name;
+      if (tenHam && !danhSachToolDaGoi.includes(tenHam)) {
+        danhSachToolDaGoi.push(tenHam);
+      }
       let thamSo = {};
       try {
         thamSo = JSON.parse(toolCall.function?.arguments || '{}');
@@ -1138,6 +1233,15 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
               conHang: true
             }];
           }
+
+          await ghiNhatKyChatbot({
+            maKhachHang,
+            khoaPhien,
+            soToken: tongTokensTieuThu,
+            tenCongCu: danhSachToolDaGoi.join(',') || 'soan_thong_tin_thanh_toan',
+            ketQua: 'THANH_CONG'
+          });
+
           return {
             traLoi: ketQuaTool.thongDiep,
             duLieuKemTheo
@@ -1162,6 +1266,14 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
             chuyenTrangGioHang: true
           };
           // Đã thêm giỏ hàng thành công -> Trả về ngay lập tức, tiết kiệm 50% token và loại bỏ 100% ảo giác
+          await ghiNhatKyChatbot({
+            maKhachHang,
+            khoaPhien,
+            soToken: tongTokensTieuThu,
+            tenCongCu: danhSachToolDaGoi.join(',') || 'them_vao_gio_hang',
+            ketQua: 'THANH_CONG'
+          });
+
           return {
             traLoi: ketQuaTool.thongDiep || `Dạ, tôi đã thêm ${ketQuaTool.sach.soLuong || 1} cuốn "${ketQuaTool.sach.tenSach}" vào giỏ hàng cho bạn rồi nhé. Đang chuyển hướng sang giỏ hàng cho bạn ạ!`,
             duLieuKemTheo
@@ -1223,6 +1335,14 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
     }
   }
 
+  await ghiNhatKyChatbot({
+    maKhachHang,
+    khoaPhien,
+    soToken: tongTokensTieuThu,
+    tenCongCu: danhSachToolDaGoi.join(',') || null,
+    ketQua: 'THANH_CONG'
+  });
+
   return {
     traLoi: traLoiCuoi,
     duLieuKemTheo
@@ -1243,5 +1363,8 @@ module.exports = {
   trichXuatSachGanNhatTuLichSu,
   laCauXacNhan,
   tuDongBuDapDuLieuSach,
+  tinhTongTokenHomNay,
+  ghiNhatKyChatbot,
+  layThongKeChatbotHomNay,
   xuLyHoiThoaiAI
 };

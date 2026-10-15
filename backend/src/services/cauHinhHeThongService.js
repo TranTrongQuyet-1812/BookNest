@@ -10,6 +10,7 @@ const { phatSuKien } = require('../realtime/socket');
 
 const KHOA_THANH_TOAN_QR = 'THANH_TOAN_QR_BAT';
 const KHOA_AI_CHATBOT = 'AI_CHATBOT_BAT';
+const KHOA_AI_TRAN_NGAY = 'AI_CHATBOT_TRAN_NGAY';
 
 // Danh sách khóa được phép đổi qua API. Khóa lạ bị từ chối để Quản trị viên không ghi bừa vào bảng cấu hình.
 const CONG_TAC = {
@@ -39,6 +40,21 @@ async function docCongTac(khoa, macDinh = false) {
   } catch (err) {
     console.error(`[CauHinhHeThong] Không đọc được công tắc ${khoa}, coi như tắt:`, err.message);
     return false;
+  }
+}
+
+/**
+ * Đọc giá trị số từ cấu hình hệ thống (ví dụ: hạn mức token ngày, thời hạn thanh toán).
+ */
+async function docGiaTriSo(khoa, macDinh = 0) {
+  try {
+    const dong = await CauHinhHeThong.findByPk(khoa);
+    if (!dong || !dong.GiaTri) return macDinh;
+    const so = parseInt(dong.GiaTri, 10);
+    return isNaN(so) ? macDinh : so;
+  } catch (err) {
+    console.error(`[CauHinhHeThong] Không đọc được giá trị số ${khoa}, dùng mặc định ${macDinh}:`, err.message);
+    return macDinh;
   }
 }
 
@@ -98,7 +114,9 @@ async function datCongTac(khoa, bat, maNhanVien) {
 module.exports = {
   KHOA_THANH_TOAN_QR,
   KHOA_AI_CHATBOT,
+  KHOA_AI_TRAN_NGAY,
   docCongTac,
+  docGiaTriSo,
   layDanhSachCongTac,
   datCongTac
 };

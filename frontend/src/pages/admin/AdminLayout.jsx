@@ -12,7 +12,8 @@ import {
   Boxes,
   ShoppingCart,
   History,
-  Settings
+  Settings,
+  MessageSquare
 } from 'lucide-react';
 
 export const AdminLayout = () => {
@@ -69,6 +70,7 @@ export const AdminLayout = () => {
     if (p.includes('/admin/books')) return laThuThu ? 'Tra Cứu Sách & Tồn Kho' : 'Quản Lý Sách & Thể Loại';
     if (p.includes('/admin/inventory')) return 'Nhập Kho & Tồn Kho';
     if (p.includes('/admin/orders')) return 'Xử Lý Đơn Hàng';
+    if (p.includes('/admin/reviews')) return 'Kiểm Duyệt Đánh Giá';
     if (p.includes('/admin/counter-sales')) return 'Bán Hàng Tại Quầy';
     if (p.includes('/admin/change-history')) return 'Lịch Sử Thay Đổi';
     if (p.includes('/admin/settings')) return 'Cài Đặt Hệ Thống';
@@ -195,6 +197,14 @@ export const AdminLayout = () => {
                 >
                   <ClipboardList size={16} />
                   <span>Xử Lý Đơn Hàng</span>
+                </NavLink>
+
+                <NavLink
+                  to="/admin/reviews"
+                  className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}
+                >
+                  <MessageSquare size={16} />
+                  <span>Kiểm Duyệt Đánh Giá</span>
                 </NavLink>
               </div>
             )}

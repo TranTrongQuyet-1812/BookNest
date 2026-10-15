@@ -3,10 +3,11 @@
  * Quy tắc nghiệp vụ: Chỉ khách đã mua và nhận sách thành công (đơn DA_GIAO) mới được đánh giá.
  * Mỗi khách chỉ có 1 đánh giá cho mỗi sách (gửi lại sẽ cập nhật đánh giá cũ).
  */
-const { sequelize, DanhGia, DonHang, ChiTietDonHang, Sach, KhachHang } = require('../models');
+const { Op } = require('sequelize');
+const { sequelize, DanhGia, DonHang, ChiTietDonHang, Sach, KhachHang, LichSuThayDoi } = require('../models');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 
-// Lấy danh sách đánh giá của cuốn sách kèm thống kê số sao trung bình
+// Lấy danh sách đánh giá của cuốn sách kèm thống kê số sao trung bình (Chỉ lấy đánh giá chưa ẩn)
 async function layDanhSachDanhGia(maSach, { page = 1, limit = 10 }) {
   const sach = await Sach.findByPk(maSach);
   if (!sach || sach.DaAn) {
@@ -18,7 +19,10 @@ async function layDanhSachDanhGia(maSach, { page = 1, limit = 10 }) {
   const viTri = (trang - 1) * gioiHan;
 
   const { rows, count } = await DanhGia.findAndCountAll({
-    where: { MaSach: maSach },
+    where: {
+      MaSach: maSach,
+      DaAn: false
+    },
     order: [['NgayCapNhat', 'DESC']],
     limit: gioiHan,
     offset: viTri,
@@ -31,9 +35,9 @@ async function layDanhSachDanhGia(maSach, { page = 1, limit = 10 }) {
     ]
   });
 
-  // Tính số sao trung bình của sách bằng câu truy vấn vô hướng chuẩn SQL Server
+  // Tính số sao trung bình của sách bằng câu truy vấn vô hướng chuẩn SQL Server (Chỉ tính đánh giá chưa ẩn)
   const [thongKe] = await sequelize.query(
-    'SELECT ROUND(AVG(CAST(SoSao AS FLOAT)), 1) AS saoTrungBinh, COUNT(MaDanhGia) AS soLuotDanhGia FROM DanhGia WHERE MaSach = :maSach',
+    'SELECT ROUND(AVG(CAST(SoSao AS FLOAT)), 1) AS saoTrungBinh, COUNT(MaDanhGia) AS soLuotDanhGia FROM DanhGia WHERE MaSach = :maSach AND DaAn = 0',
     { replacements: { maSach }, type: sequelize.QueryTypes.SELECT }
   );
 
@@ -88,20 +92,155 @@ async function taoHoacCapNhatDanhGia(maKhachHang, maSach, { soSao, noiDung }) {
   if (danhGia) {
     danhGia.SoSao = soSao;
     danhGia.NoiDung = noiDung || null;
+    danhGia.DaAn = false; // Khi khách cập nhật lại nhận xét, đưa về trạng thái chờ/hiển thị
     await danhGia.save();
   } else {
     danhGia = await DanhGia.create({
       MaKhachHang: maKhachHang,
       MaSach: maSach,
       SoSao: soSao,
-      NoiDung: noiDung || null
+      NoiDung: noiDung || null,
+      DaAn: false
     });
   }
 
   return danhGia;
 }
 
+/**
+ * Lấy danh sách đánh giá phục vụ kiểm duyệt phía Back-Office (Task T38)
+ */
+async function layDanhSachDanhGiaAdmin({ page = 1, limit = 10, search = '', rating = null, daAn = null }) {
+  const trang = Math.max(1, parseInt(page, 10) || 1);
+  const gioiHan = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
+  const viTri = (trang - 1) * gioiHan;
+
+  const dieuKienWhere = {};
+
+  // Lọc theo trạng thái ẩn/hiện
+  if (daAn !== null && daAn !== undefined && daAn !== '') {
+    dieuKienWhere.DaAn = String(daAn) === 'true' || daAn === true || String(daAn) === '1';
+  }
+
+  // Lọc theo số sao (1 đến 5)
+  const soSaoInt = parseInt(rating, 10);
+  if (soSaoInt >= 1 && soSaoInt <= 5) {
+    dieuKienWhere.SoSao = soSaoInt;
+  }
+
+  // Tìm kiếm theo từ khóa (nội dung, tên sách hoặc tên khách hàng)
+  const tuKhoa = String(search || '').trim();
+  if (tuKhoa) {
+    dieuKienWhere[Op.or] = [
+      { NoiDung: { [Op.like]: `%${tuKhoa}%` } },
+      { '$sach.TenSach$': { [Op.like]: `%${tuKhoa}%` } },
+      { '$khachHang.HoTen$': { [Op.like]: `%${tuKhoa}%` } }
+    ];
+  }
+
+  const { rows, count } = await DanhGia.findAndCountAll({
+    where: dieuKienWhere,
+    order: [['NgayCapNhat', 'DESC']],
+    limit: gioiHan,
+    offset: viTri,
+    include: [
+      {
+        model: KhachHang,
+        as: 'khachHang',
+        attributes: ['MaKhachHang', 'HoTen', 'Email', 'SoDienThoai']
+      },
+      {
+        model: Sach,
+        as: 'sach',
+        attributes: ['MaSach', 'TenSach', 'AnhBia', 'GiaBan', 'DaAn']
+      }
+    ]
+  });
+
+  return {
+    danhSach: rows,
+    phanTrang: {
+      tongSoBanGhi: count,
+      tongSoTrang: Math.ceil(count / gioiHan),
+      trangHienTai: trang,
+      soBanGhiMoiTrang: gioiHan
+    }
+  };
+}
+
+/**
+ * Ẩn hoặc Bỏ ẩn một đánh giá vi phạm/tiêu cực (Chỉ Quản trị viên, Thủ thư)
+ */
+async function anHienDanhGia(maDanhGia, daAn, maNhanVien, lyDo = '') {
+  const danhGia = await DanhGia.findByPk(maDanhGia, {
+    include: [
+      { model: KhachHang, as: 'khachHang', attributes: ['MaKhachHang', 'HoTen', 'Email'] },
+      { model: Sach, as: 'sach', attributes: ['MaSach', 'TenSach'] }
+    ]
+  });
+
+  if (!danhGia) {
+    throw LoiNghiepVu.khongTimThay('Không tìm thấy đánh giá cần cập nhật');
+  }
+
+  const giaTriCu = danhGia.DaAn ? '1' : '0';
+  const giaTriMoi = daAn ? '1' : '0';
+
+  danhGia.DaAn = Boolean(daAn);
+  await danhGia.save();
+
+  // Ghi nhật ký kiểm toán Back-Office
+  if (maNhanVien) {
+    try {
+      await LichSuThayDoi.create({
+        LoaiDoiTuong: 'DanhGia',
+        MaDoiTuong: maDanhGia,
+        TruongDuLieu: 'DaAn',
+        GiaTriCu: giaTriCu,
+        GiaTriMoi: `${giaTriMoi}${lyDo ? ` (Lý do: ${lyDo})` : ''}`,
+        MaNhanVienThayDoi: maNhanVien
+      });
+    } catch (e) {
+      console.warn('[LichSuThayDoi] Không thể ghi nhật ký thay đổi đánh giá:', e.message);
+    }
+  }
+
+  return danhGia;
+}
+
+/**
+ * Xóa vĩnh viễn đánh giá rác/spam nghiêm trọng (Chỉ Quản trị viên)
+ */
+async function xoaDanhGia(maDanhGia, maNhanVien) {
+  const danhGia = await DanhGia.findByPk(maDanhGia);
+  if (!danhGia) {
+    throw LoiNghiepVu.khongTimThay('Không tìm thấy đánh giá cần xóa');
+  }
+
+  // Ghi nhật ký kiểm toán trước khi xóa
+  if (maNhanVien) {
+    try {
+      await LichSuThayDoi.create({
+        LoaiDoiTuong: 'DanhGia',
+        MaDoiTuong: maDanhGia,
+        TruongDuLieu: 'DaXoa',
+        GiaTriCu: JSON.stringify({ SoSao: danhGia.SoSao, NoiDung: danhGia.NoiDung }),
+        GiaTriMoi: 'DA_XOA_VINH_VIEN',
+        MaNhanVienThayDoi: maNhanVien
+      });
+    } catch (e) {
+      console.warn('[LichSuThayDoi] Không thể ghi nhật ký xóa đánh giá:', e.message);
+    }
+  }
+
+  await danhGia.destroy();
+  return { thanhCong: true, maDanhGia };
+}
+
 module.exports = {
   layDanhSachDanhGia,
-  taoHoacCapNhatDanhGia
+  taoHoacCapNhatDanhGia,
+  layDanhSachDanhGiaAdmin,
+  anHienDanhGia,
+  xoaDanhGia
 };

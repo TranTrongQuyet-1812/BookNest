@@ -96,13 +96,16 @@ async function guiTinNhan(req, res) {
   const daDangNhap = Boolean(maKhachHang);
   const tenKhachHang = req.nguoiDung?.fullName || req.nguoiDung?.HoTen || '';
 
+  const khoaPhien = req.headers['x-session-id'] || req.ip || null;
+
   try {
     const ketQua = await aiChatbotService.xuLyHoiThoaiAI({
       lichSuChat: messages,
       tinNhanMoi,
       maKhachHang,
       daDangNhap,
-      tenKhachHang
+      tenKhachHang,
+      khoaPhien
     });
 
     return phanHoiThanhCong(res, {
@@ -118,7 +121,27 @@ async function guiTinNhan(req, res) {
   }
 }
 
+/**
+ * Lấy số liệu thống kê tiêu thụ token AI hôm nay (dành cho Quản trị viên)
+ */
+async function layThongKe(req, res) {
+  try {
+    const thongKe = await aiChatbotService.layThongKeChatbotHomNay();
+    return phanHoiThanhCong(res, {
+      thongDiep: 'Lấy thống kê tiêu thụ AI Chatbot thành công.',
+      duLieu: thongKe
+    });
+  } catch (err) {
+    console.error('[Lỗi Thống Kê AI Chatbot Controller]:', err.message);
+    return phanHoiLoi(res, {
+      maTrangThai: 500,
+      thongDiep: 'Không thể lấy số liệu thống kê AI Chatbot.'
+    });
+  }
+}
+
 module.exports = {
   layTrangThai,
-  guiTinNhan
+  guiTinNhan,
+  layThongKe
 };

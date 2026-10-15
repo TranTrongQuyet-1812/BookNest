@@ -25,7 +25,40 @@ async function xuLyTaoHoacCapNhatDanhGia(req, res) {
   });
 }
 
+// Back-Office: Xem danh sách kiểm duyệt đánh giá toàn hệ thống (Task T38)
+async function xuLyLayDanhSachAdmin(req, res) {
+  const ketQua = await danhGiaService.layDanhSachDanhGiaAdmin(req.query);
+  return phanHoiThanhCong(res, {
+    duLieu: ketQua,
+    thongDiep: 'Lấy danh sách đánh giá quản trị thành công'
+  });
+}
+
+// Back-Office: Ẩn hoặc Bỏ ẩn một đánh giá
+async function xuLyAnHienDanhGia(req, res) {
+  const maDanhGia = parseInt(req.params.id, 10);
+  const { daAn, lyDo } = req.body;
+  const danhGia = await danhGiaService.anHienDanhGia(maDanhGia, daAn, req.user?.id, lyDo);
+  return phanHoiThanhCong(res, {
+    duLieu: danhGia,
+    thongDiep: daAn ? 'Đã ẩn đánh giá khỏi giao diện' : 'Đã khôi phục hiển thị đánh giá'
+  });
+}
+
+// Back-Office: Xóa vĩnh viễn đánh giá rác/spam
+async function xuLyXoaDanhGia(req, res) {
+  const maDanhGia = parseInt(req.params.id, 10);
+  const ketQua = await danhGiaService.xoaDanhGia(maDanhGia, req.user?.id);
+  return phanHoiThanhCong(res, {
+    duLieu: ketQua,
+    thongDiep: 'Đã xóa vĩnh viễn đánh giá thành công'
+  });
+}
+
 module.exports = {
   xuLyLayDanhSachDanhGia,
-  xuLyTaoHoacCapNhatDanhGia
+  xuLyTaoHoacCapNhatDanhGia,
+  xuLyLayDanhSachAdmin,
+  xuLyAnHienDanhGia,
+  xuLyXoaDanhGia
 };

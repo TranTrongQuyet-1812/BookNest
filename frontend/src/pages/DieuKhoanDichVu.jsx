@@ -231,7 +231,7 @@ export const DieuKhoanDichVu = () => {
             <li><strong>Thanh toán khi nhận hàng (COD):</strong> Bạn kiểm tra sách và thanh toán tiền mặt trực tiếp cho nhân viên giao hàng.</li>
             <li><strong>Chuyển khoản VietQR tức thì (payOS):</strong> Quét mã QR qua ứng dụng ngân hàng, hệ thống tự động xác nhận trong vài giây với thời hạn hiệu lực 10 phút.</li>
             <li>
-              <strong>Cam kết hoàn tiền thử nghiệm:</strong> Vì hệ thống được kết nối cổng thanh toán thật trên môi trường mạng, trong trường hợp bạn đọc chuyển tiền thử nghiệm thật hoặc có nhu cầu hủy đơn sau khi đã chuyển khoản VietQR thành công, xin vui lòng gửi email hoặc liên hệ với tác giả. <strong>Chúng tôi cam kết sẽ hoàn trả 100% số tiền đã nhận về tài khoản ngân hàng của bạn trong vòng 24 giờ làm việc.</strong>
+              <strong>Quy trình hoàn tiền PayOS:</strong> Hệ thống thanh toán VietQR payOS là luồng chuyển khoản một chiều an toàn. Trong trường hợp bạn đọc chuyển tiền thử nghiệm, có nhu cầu hủy đơn sau khi chuyển khoản thành công, hoặc chuyển khoản khi đơn đã quá hạn hủy, hệ thống sẽ tự động ghi nhận trạng thái <strong>Cần hoàn tiền (CAN_HOAN_TIEN)</strong>. Đội ngũ nhân viên BookNest sẽ chủ động liên hệ trực tiếp với bạn đọc để đối soát thông tin và chuyển khoản hoàn trả 100% số tiền về tài khoản ngân hàng.
             </li>
           </ul>
         </section>

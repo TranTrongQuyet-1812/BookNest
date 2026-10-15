@@ -18,6 +18,7 @@ const LichSuDieuChinhKho = require('./LichSuDieuChinhKho');
 const ThanhToan = require('./ThanhToan');
 const NhatKyWebhookPayos = require('./NhatKyWebhookPayos');
 const CauHinhHeThong = require('./CauHinhHeThong');
+const NhatKyChatbot = require('./NhatKyChatbot');
 
 // ==========================================
 // 1. Quan hệ DanhMuc ↔ Sach (1 - n)
@@ -106,6 +107,9 @@ ThanhToan.belongsTo(DonHang, { foreignKey: 'MaDonHang', as: 'donHang' });
 NhanVien.hasMany(CauHinhHeThong, { foreignKey: 'MaNhanVienCapNhat', as: 'cauHinhCapNhat' });
 CauHinhHeThong.belongsTo(NhanVien, { foreignKey: 'MaNhanVienCapNhat', as: 'nhanVienCapNhat' });
 
+KhachHang.hasMany(NhatKyChatbot, { foreignKey: 'MaKhachHang', as: 'nhatKyChatbot' });
+NhatKyChatbot.belongsTo(KhachHang, { foreignKey: 'MaKhachHang', as: 'khachHang' });
+
 module.exports = {
   sequelize,
   NhanVien,
@@ -122,5 +126,6 @@ module.exports = {
   LichSuDieuChinhKho,
   ThanhToan,
   NhatKyWebhookPayos,
-  CauHinhHeThong
+  CauHinhHeThong,
+  NhatKyChatbot
 };

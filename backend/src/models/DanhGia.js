@@ -27,6 +27,11 @@ const DanhGia = sequelize.define('DanhGia', {
   NoiDung: {
     type: DataTypes.STRING(1000),
     allowNull: true
+  },
+  DaAn: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false
   }
 }, {
   tableName: 'DanhGia',
