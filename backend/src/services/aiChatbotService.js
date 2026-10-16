@@ -738,9 +738,18 @@ function dichTrangThaiThanhToan(trangThai) {
 const SO_LAN_TRA_CUU_SAI_TOI_DA = 5;
 const KHOANG_THOI_GIAN_KHOA_TRA_CUU_MS = 15 * 60 * 1000; // 15 phút
 const boDemTraCuuSai = new Map();
+const NGUONG_DON_BO_DEM_TRA_CUU = 1000;
+
+// Bộ đếm nằm trong RAM nên phải dọn các định danh đã hết hạn khóa, nếu không sẽ phình mãi khi bị bắn từ nhiều IP
+function donBoDemTraCuuHetHan(bayGio) {
+  for (const [khoa, banGhi] of boDemTraCuuSai) {
+    if (bayGio - banGhi.thoiDiem > KHOANG_THOI_GIAN_KHOA_TRA_CUU_MS) boDemTraCuuSai.delete(khoa);
+  }
+}
 
 function kiemTraVaGhiNhanTraCuuSai(dinhDanh, laThatBai = false) {
   const bayGio = Date.now();
+  if (boDemTraCuuSai.size >= NGUONG_DON_BO_DEM_TRA_CUU) donBoDemTraCuuHetHan(bayGio);
   const banGhi = boDemTraCuuSai.get(dinhDanh);
   if (banGhi && (bayGio - banGhi.thoiDiem) > KHOANG_THOI_GIAN_KHOA_TRA_CUU_MS) {
     boDemTraCuuSai.delete(dinhDanh);

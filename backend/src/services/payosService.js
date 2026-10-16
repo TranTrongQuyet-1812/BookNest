@@ -403,7 +403,8 @@ async function layThongTinThanhToanTheoDon(donHangInput) {
     try {
       thongTinPayos = await payOSClient.paymentRequests.get(thanhToan.MaGiaoDichPayos);
     } catch (errKetNoiPayos) {
-      // Chỉ bỏ qua lỗi kết nối mạng/timeout phía cổng payOS để tiếp tục trả bản ghi thanh toán hiện tại
+      // Hỏi payOS chỉ để đồng bộ sớm, webhook vẫn là nguồn chính: không hỏi được (mạng, timeout, payOS trả lỗi)
+      // thì ghi cảnh báo và trả trạng thái hiện có trong CSDL, không làm trang theo dõi đơn của khách lỗi 500
       console.warn('[payOS] Không thể kết nối tới cổng payOS để đồng bộ trạng thái:', errKetNoiPayos.message);
     }
 
