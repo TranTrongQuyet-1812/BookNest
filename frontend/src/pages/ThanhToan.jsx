@@ -21,10 +21,12 @@ import {
 } from 'lucide-react';
 import { KhungThanhToanVietQR } from '../components/KhungThanhToanVietQR';
 import { laySocket } from '../services/socket';
+import { useThongBao } from '@booknest/shared/thongbao';
 
 export const ThanhToan = () => {
   const navigate = useNavigate();
   const { user, daDangNhap } = useAuth();
+  const { thongBao: tb, xacNhan } = useThongBao();
   const { gioHang, cacMon, layGioHang, xoaTrangState, loi: loiGioHang } = useCartStore();
 
   const [dangTai, setDangTai] = useState(true);
@@ -175,12 +177,12 @@ export const ThanhToan = () => {
     try {
       await api.post(`/payments/switch-to-cod/${maTraCuu}`);
     } catch (errCod) {
-      alert(errCod.response?.data?.message || 'Không thể đổi sang thanh toán khi nhận hàng lúc này');
+      tb.loiTuApi(errCod, 'Không thể đổi sang thanh toán khi nhận hàng lúc này');
       return;
     }
     setHienModalQR(false);
     setDonLoiQr(null);
-    alert(`Đơn hàng ${maTraCuu} của bạn đã chuyển sang hình thức thanh toán khi nhận hàng (COD)!`);
+    tb.thanhCong(`Đơn hàng ${maTraCuu} của bạn đã chuyển sang hình thức thanh toán khi nhận hàng (COD)!`);
     if (daDangNhap) {
       chuyenToiDonHang(maTraCuu);
     } else if (donVangLaiTam) {
@@ -223,7 +225,7 @@ export const ThanhToan = () => {
           return; // Ở lại trang: khung QR (thành công) hoặc màn báo lỗi để khách tự chọn (thất bại)
         }
 
-        alert('Kính chúc quý độc giả nhiều niềm vui! Đơn hàng của bạn đã được khởi tạo thành công.');
+        tb.thanhCong('Kính chúc quý độc giả nhiều niềm vui! Đơn hàng của bạn đã được khởi tạo thành công.');
         xoaTrangState();
         chuyenToiDonHang(maTraCuu);
       } else {
@@ -963,7 +965,7 @@ export const ThanhToan = () => {
             if (daDangNhap) {
               chuyenToiDonHang(duLieuQR.maTraCuu);
             } else {
-              alert(`Đơn hàng ${duLieuQR.maTraCuu} đã bị hủy do quá hạn thanh toán chuyển khoản. Bạn có thể đặt lại đơn mới.`);
+              tb.canhBao(`Đơn hàng ${duLieuQR.maTraCuu} đã bị hủy do quá hạn thanh toán chuyển khoản. Bạn có thể đặt lại đơn mới.`);
               navigate('/');
             }
           }}

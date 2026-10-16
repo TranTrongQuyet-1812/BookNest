@@ -110,9 +110,9 @@ async function xuLyWebhook(req, res) {
     // payOS yêu cầu phản hồi HTTP 200 nhanh chóng
     return res.status(200).json({ error: 0, message: 'Webhook processed successfully' });
   } catch (err) {
-    // Trả về 200 hoặc 400 kèm ghi nhận lỗi
+    // Trả về 200 kèm ghi nhận lỗi, không để lộ thông tin kỹ thuật/CSDL nội bộ
     console.error('[payOS Webhook Error]', err.message);
-    return res.status(200).json({ error: 1, message: err.message });
+    return res.status(200).json({ error: 1, message: 'Lỗi khi xử lý dữ liệu webhook payOS' });
   }
 }
 

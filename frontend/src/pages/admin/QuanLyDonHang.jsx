@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { laySocket, thamGiaNhanVien, roiNhanVien } from '../../services/socket';
+import { useThongBao } from '@booknest/shared/thongbao';
 import PhanTrang from '../../components/PhanTrang';
 import { 
   ClipboardList, 
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react';
 
 export const QuanLyDonHang = () => {
+  const { thongBao: tb, xacNhan, nhapLyDo } = useThongBao();
   const [searchParams, setSearchParams] = useSearchParams();
   const trang = parseInt(searchParams.get('page') || '1', 10);
   const trangThaiLoc = searchParams.get('status') || '';
@@ -105,34 +107,41 @@ export const QuanLyDonHang = () => {
 
   // Luân chuyển trạng thái đơn hàng kế tiếp (State Machine)
   const handleChuyenTrangThai = async (maDonHang, trangThaiMoi, tenHanhDong) => {
-    if (!window.confirm(`Xác nhận ${tenHanhDong} cho đơn hàng #${maDonHang}?`)) return;
+    const dongY = await xacNhan({
+      tieuDe: 'Cập nhật trạng thái đơn hàng',
+      noiDung: `Xác nhận ${tenHanhDong} cho đơn hàng #${maDonHang}?`,
+      nhanXacNhan: tenHanhDong,
+    });
+    if (!dongY) return;
 
     try {
       await api.put(`/admin/orders/${maDonHang}/status`, { trangThaiMoi });
-      setThongBao(`Đã chuyển đơn hàng #${maDonHang} sang trạng thái: ${trangThaiMoi}`);
+      tb.thanhCong(`Đã chuyển đơn hàng #${maDonHang} sang trạng thái: ${trangThaiMoi}`);
       taiLai();
-      setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.message || 'Chuyển trạng thái thất bại');
+      tb.loiTuApi(err, 'Chuyển trạng thái thất bại');
     }
   };
 
   // Hủy đơn hàng và hoàn lại tồn kho
   const handleHuyDon = async (maDonHang) => {
-    const lyDo = window.prompt('Nhập lý do hủy đơn hàng (bắt buộc):');
+    const lyDo = await nhapLyDo({
+      tieuDe: `Hủy đơn hàng #${maDonHang}`,
+      noiDung: 'Thao tác này sẽ hủy đơn và hoàn trả toàn bộ số lượng sách vào kho.',
+      nhan: 'Lý do hủy đơn',
+      placeholder: 'Nhập lý do hủy đơn hàng (bắt buộc)...',
+      batBuoc: true,
+      nguyHiem: true,
+      nhanXacNhan: 'Xác nhận hủy đơn',
+    });
     if (lyDo === null) return;
-    if (!lyDo.trim()) {
-      alert('Lý do hủy đơn không được để trống');
-      return;
-    }
 
     try {
-      await api.put(`/admin/orders/${maDonHang}/cancel`, { lyDo: lyDo.trim() });
-      setThongBao(`Đã hủy đơn hàng #${maDonHang} và hoàn lại sách vào kho.`);
+      await api.put(`/admin/orders/${maDonHang}/cancel`, { lyDo });
+      tb.thanhCong(`Đã hủy đơn hàng #${maDonHang} và hoàn lại sách vào kho.`);
       taiLai();
-      setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.message || 'Không thể hủy đơn hàng này');
+      tb.loiTuApi(err, 'Không thể hủy đơn hàng này');
     }
   };
 

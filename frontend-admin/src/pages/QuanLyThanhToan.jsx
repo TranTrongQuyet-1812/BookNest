@@ -15,10 +15,12 @@ import {
 } from 'lucide-react';
 import api from '@booknest/shared/api';
 import { useAuth } from '@booknest/shared/auth';
+import { useThongBao, HopThoai, ThongBaoTaiCho } from '@booknest/shared/thongbao';
 
 export default function QuanLyThanhToan() {
   const { user } = useAuth();
   const laQuanTri = user?.role === 'quan_tri' || user?.VaiTro === 'quan_tri';
+  const { thongBao: tb } = useThongBao();
   const [danhSach, setDanhSach] = useState([]);
   const [thongKe, setThongKe] = useState({});
   const [phanTrang, setPhanTrang] = useState({ trangHienTai: 1, tongSoTrang: 1, tongSoBanGhi: 0 });
@@ -30,7 +32,6 @@ export default function QuanLyThanhToan() {
   const [dangTai, setDangTai] = useState(true);
   const [dangXuLyId, setDangXuLyId] = useState(null);
   const [loi, setLoi] = useState('');
-  const [thongBao, setThongBao] = useState('');
 
   // Modal hoàn tiền
   const [khoanCanHoan, setKhoanCanHoan] = useState(null);
@@ -85,14 +86,13 @@ export default function QuanLyThanhToan() {
         maThamChieu: maThamChieu.trim() || undefined,
         ghiChu: ghiChuHoan.trim() || undefined
       });
-      setThongBao(`Đã xác nhận hoàn tiền thành công cho đơn ${khoanCanHoan.donHang?.MaTraCuu || khoanCanHoan.MaDonHang}`);
+      tb.thanhCong(`Đã xác nhận hoàn tiền thành công cho đơn ${khoanCanHoan.donHang?.MaTraCuu || khoanCanHoan.MaDonHang}`);
       setKhoanCanHoan(null);
       setMaThamChieu('');
       setGhiChuHoan('');
       taiDanhSach();
-      setTimeout(() => setThongBao(''), 5000);
     } catch (err) {
-      setLoi(err.response?.data?.message || 'Lỗi khi xác nhận hoàn tiền.');
+      tb.loiTuApi(err, 'Lỗi khi xác nhận hoàn tiền.');
     } finally {
       setDangXuLyId(null);
     }
@@ -252,41 +252,10 @@ export default function QuanLyThanhToan() {
         </button>
       </div>
 
-      {/* Thông báo Alert */}
-      {thongBao && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          padding: '0.75rem 1rem',
-          backgroundColor: '#ECFDF5',
-          border: '1px solid #A7F3D0',
-          borderRadius: '8px',
-          color: '#065F46',
-          marginBottom: '1.25rem',
-          fontSize: '0.9rem'
-        }}>
-          <CheckCircle2 size={18} />
-          <span>{thongBao}</span>
-        </div>
-      )}
-
       {loi && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          padding: '0.75rem 1rem',
-          backgroundColor: '#FEF2F2',
-          border: '1px solid #FCA5A5',
-          borderRadius: '8px',
-          color: '#991B1B',
-          marginBottom: '1.25rem',
-          fontSize: '0.9rem'
-        }}>
-          <AlertCircle size={18} />
-          <span>{loi}</span>
-        </div>
+        <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>
+          {loi}
+        </ThongBaoTaiCho>
       )}
 
       {/* Tabs Bộ Lọc Nhanh Trạng Thái */}
@@ -630,117 +599,83 @@ export default function QuanLyThanhToan() {
 
       {/* Modal Xác Nhận Hoàn Tiền */}
       {khoanCanHoan && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.65)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: '1rem'
-        }}>
-          <div style={{
-            backgroundColor: 'var(--adm-card-bg)',
-            borderRadius: '12px',
-            width: '100%',
-            maxWidth: '520px',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-            border: '1px solid var(--adm-card-border)',
-            overflow: 'hidden'
-          }}>
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--adm-card-border)' }}>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0, color: 'var(--adm-text-title)' }}>
-                Xác Nhận Đã Hoàn Tiền Cho Khách Hàng
-              </h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--adm-text-muted)', margin: '0.25rem 0 0' }}>
-                Đơn hàng: {khoanCanHoan.donHang?.MaTraCuu || khoanCanHoan.MaDonHang} • Số tiền: {dinhDangTien(khoanCanHoan.SoTien)}
-              </p>
+        <HopThoai
+          mo={Boolean(khoanCanHoan)}
+          onDong={() => setKhoanCanHoan(null)}
+          tieuDe="Xác Nhận Đã Hoàn Tiền Cho Khách Hàng"
+          kichThuoc="md"
+        >
+          <p style={{ fontSize: '0.85rem', color: 'var(--adm-text-muted)', margin: '0 0 1.25rem 0' }}>
+            Đơn hàng: <strong>{khoanCanHoan.donHang?.MaTraCuu || khoanCanHoan.MaDonHang}</strong> • Số tiền: <strong>{dinhDangTien(khoanCanHoan.SoTien)}</strong>
+          </p>
+
+          <form onSubmit={handleXacNhanHoanTien}>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.4rem', color: 'var(--adm-text-title)' }}>
+                Mã Giao Dịch Chuyển Khoản Ngân Hàng (Tùy chọn)
+              </label>
+              <input
+                type="text"
+                placeholder="Ví dụ: FT241016892348 hoặc mã đối soát ngân hàng"
+                value={maThamChieu}
+                maxLength={100}
+                onChange={(e) => setMaThamChieu(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.55rem 0.75rem',
+                  fontSize: '0.85rem',
+                  backgroundColor: 'var(--adm-card-bg)',
+                  border: '1px solid var(--adm-card-border)',
+                  borderRadius: '6px',
+                  color: 'var(--adm-text-title)',
+                  boxSizing: 'border-box'
+                }}
+              />
             </div>
 
-            <form onSubmit={handleXacNhanHoanTien} style={{ padding: '1.5rem' }}>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.4rem', color: 'var(--adm-text-title)' }}>
-                  Mã Giao Dịch Chuyển Khoản Ngân Hàng (Tùy chọn)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: FT241016892348 hoặc mã đối soát ngân hàng"
-                  value={maThamChieu}
-                  onChange={(e) => setMaThamChieu(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.55rem 0.75rem',
-                    fontSize: '0.85rem',
-                    backgroundColor: 'var(--adm-card-bg)',
-                    border: '1px solid var(--adm-card-border)',
-                    borderRadius: '6px',
-                    color: 'var(--adm-text-title)'
-                  }}
-                />
-              </div>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.4rem', color: 'var(--adm-text-title)' }}>
+                Ghi Chú Đối Soát Hoàn Tiền (Tùy chọn)
+              </label>
+              <textarea
+                rows={3}
+                placeholder="Nhập ghi chú (VD: Đã liên hệ khách và chuyển khoản hoàn tiền qua Vietcombank STK 102...)"
+                value={ghiChuHoan}
+                maxLength={500}
+                onChange={(e) => setGhiChuHoan(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.55rem 0.75rem',
+                  fontSize: '0.85rem',
+                  backgroundColor: 'var(--adm-card-bg)',
+                  border: '1px solid var(--adm-card-border)',
+                  borderRadius: '6px',
+                  color: 'var(--adm-text-title)',
+                  resize: 'vertical',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
 
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.4rem', color: 'var(--adm-text-title)' }}>
-                  Ghi Chú Đối Soát Hoàn Tiền (Tùy chọn)
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Nhập ghi chú (VD: Đã liên hệ khách và chuyển khoản hoàn tiền qua Vietcombank STK 102...)"
-                  value={ghiChuHoan}
-                  onChange={(e) => setGhiChuHoan(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.55rem 0.75rem',
-                    fontSize: '0.85rem',
-                    backgroundColor: 'var(--adm-card-bg)',
-                    border: '1px solid var(--adm-card-border)',
-                    borderRadius: '6px',
-                    color: 'var(--adm-text-title)',
-                    resize: 'vertical'
-                  }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-                <button
-                  type="button"
-                  disabled={dangXuLyId !== null}
-                  onClick={() => setKhoanCanHoan(null)}
-                  style={{
-                    padding: '0.55rem 1.1rem',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    backgroundColor: 'transparent',
-                    border: '1px solid var(--adm-card-border)',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    color: 'var(--adm-text-body)'
-                  }}
-                >
-                  Hủy bỏ
-                </button>
-                <button
-                  type="submit"
-                  disabled={dangXuLyId !== null}
-                  style={{
-                    padding: '0.55rem 1.25rem',
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    backgroundColor: '#059669',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: dangXuLyId !== null ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  {dangXuLyId !== null ? 'Đang lưu...' : 'Xác Nhận Hoàn Tiền'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                type="button"
+                className="bn-btn bn-btn-secondary"
+                disabled={dangXuLyId !== null}
+                onClick={() => setKhoanCanHoan(null)}
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="submit"
+                className="bn-btn bn-btn-primary"
+                disabled={dangXuLyId !== null}
+              >
+                {dangXuLyId !== null ? 'Đang lưu...' : 'Xác Nhận Hoàn Tiền'}
+              </button>
+            </div>
+          </form>
+        </HopThoai>
       )}
     </div>
   );

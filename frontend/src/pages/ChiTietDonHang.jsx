@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { KhungThanhToanVietQR } from '../components/KhungThanhToanVietQR';
 import { laySocket, thamGiaDonHang, roiDonHang } from '../services/socket';
+import { useThongBao } from '@booknest/shared/thongbao';
+import { useHuyDonHang } from '../hooks/useHuyDonHang';
 
 export const ChiTietDonHang = () => {
   const { id } = useParams();
@@ -36,6 +38,8 @@ export const ChiTietDonHang = () => {
     }
     navigate('/orders');
   };
+  const { thongBao: tb, xacNhan } = useThongBao();
+  const { thucHienHuyDon, dangHuy } = useHuyDonHang();
   const [donHang, setDonHang] = useState(null);
   const [dangTai, setDangTai] = useState(true);
   const [loi, setLoi] = useState('');
@@ -43,7 +47,6 @@ export const ChiTietDonHang = () => {
   const [hienModalQR, setHienModalQR] = useState(false);
   const [duLieuQR, setDuLieuQR] = useState(null);
   const [dangTaoQR, setDangTaoQR] = useState(false);
-  const [dangHuy, setDangHuy] = useState(false);
 
   const napThongTinThanhToan = async () => {
     try {
@@ -74,30 +77,25 @@ export const ChiTietDonHang = () => {
   };
 
   const handleHuyDon = async () => {
-    const lyDo = window.prompt('Vui lòng nhập lý do hủy đơn hàng:');
-    if (lyDo === null) return;
-    setDangHuy(true);
-    try {
-      await api.put(`/orders/${id}/cancel`, {
-        lyDo: lyDo.trim() || 'Khách hàng yêu cầu hủy đơn qua trang chi tiết'
-      });
-      alert('Đã hủy đơn hàng thành công. Số lượng sách đã được hoàn trả lại vào kho.');
-      await napChiTiet();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Không thể hủy đơn hàng này');
-    } finally {
-      setDangHuy(false);
-    }
+    await thucHienHuyDon(id, napChiTiet);
   };
 
   // Khách chủ động đổi sang COD trước khi QR hết hạn (hết hạn là đơn bị hủy)
   const handleDoiSangCOD = async () => {
+    const dongY = await xacNhan({
+      tieuDe: 'Chuyển sang thanh toán khi nhận hàng',
+      noiDung: 'Bạn có chắc chắn muốn chuyển hình thức thanh toán của đơn hàng này sang Tiền mặt khi nhận hàng (COD)?',
+      nhanXacNhan: 'Đổi sang COD',
+    });
+    if (!dongY) return;
+
     try {
       await api.post(`/payments/switch-to-cod/${id}`);
+      tb.thanhCong('Đã chuyển sang hình thức thanh toán COD thành công.');
       setHienModalQR(false);
       await napThongTinThanhToan();
     } catch (err) {
-      alert(err.response?.data?.message || 'Không thể đổi sang thanh toán khi nhận hàng lúc này');
+      tb.loiTuApi(err, 'Không thể đổi sang thanh toán khi nhận hàng lúc này');
       napThongTinThanhToan();
     }
   };
@@ -109,7 +107,7 @@ export const ChiTietDonHang = () => {
       setDuLieuQR(res.data?.data);
       setHienModalQR(true);
     } catch (err) {
-      alert(err.response?.data?.message || 'Không thể tạo mã QR thanh toán lúc này');
+      tb.loiTuApi(err, 'Không thể tạo mã QR thanh toán lúc này');
     } finally {
       setDangTaoQR(false);
     }

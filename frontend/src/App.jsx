@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThongBaoProvider } from '@booknest/shared/thongbao';
 import { ProtectedRoute } from './components/Guards';
 import SmoothScroll from './components/SmoothScroll';
 import PageLoader from './components/PageLoader';
@@ -145,11 +146,13 @@ const AppContent = () => {
 export const App = () => {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <SmoothScroll>
-          <AppContent />
-        </SmoothScroll>
-      </BrowserRouter>
+      <ThongBaoProvider>
+        <BrowserRouter>
+          <SmoothScroll>
+            <AppContent />
+          </SmoothScroll>
+        </BrowserRouter>
+      </ThongBaoProvider>
     </AuthProvider>
   );
 };

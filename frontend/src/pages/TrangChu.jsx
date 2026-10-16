@@ -11,6 +11,7 @@ import { useGiamChuyenDong } from '../utils/chuyenDong';
 import { getLenis } from '../utils/lenis';
 import { khiRemMo } from '../utils/nhipMoTrang';
 import { lamSachChuoi } from '../utils/text';
+import { useThongBao } from '@booknest/shared/thongbao';
 
 gsap.registerPlugin(useGSAP);
 
@@ -102,8 +103,7 @@ export const TrangChu = () => {
   const [lanTaiLaiLoc, setLanTaiLaiLoc] = useState(0);
   const [tenDanhMucHienTai, setTenDanhMucHienTai] = useState('');
 
-  // Thông báo thêm giỏ hàng
-  const [thongBaoThem, setThongBaoThem] = useState('');
+  const { thongBao: tb } = useThongBao();
 
   // Kiểm tra xem có đang ở chế độ lọc/tìm kiếm/sắp xếp không
   const laCheDoLoc = Boolean(tuKhoaTimKiem || danhMucId || kieuSapXepRaw);
@@ -172,10 +172,9 @@ export const TrangChu = () => {
   const handleThemVaoGio = async (maSach, tieuDe, thongTinSach = null) => {
     const ketQua = await themVaoGio(maSach, 1, thongTinSach);
     if (ketQua.thanhCong) {
-      setThongBaoThem(`Đã thêm "${tieuDe}" vào giỏ hàng`);
-      setTimeout(() => setThongBaoThem(''), 3000);
+      tb.thanhCong(`Đã thêm "${tieuDe}" vào giỏ hàng`);
     } else {
-      alert(ketQua.thongDiep || 'Không thể thêm vào giỏ hàng');
+      tb.canhBao(ketQua.thongDiep || 'Không thể thêm vào giỏ hàng');
     }
   };
 
@@ -361,26 +360,6 @@ export const TrangChu = () => {
       {/* Đàn sinh vật 3D: ban ngày chim bướm chuồn chuồn ong, ban đêm đom đóm và dơi (cùng một engine, tự đổi theo giao diện) */}
       {!laCheDoLoc && (
         <Suspense fallback={null}><SinhVatTrangChuCanvas /></Suspense>
-      )}
-
-      {/* Toast thông báo thêm vào giỏ hàng */}
-      {thongBaoThem && (
-        <div style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          backgroundColor: 'var(--bg-surface)',
-          color: 'var(--text-main)',
-          border: '1px solid var(--border)',
-          padding: '0.85rem 1.4rem',
-          borderRadius: 'var(--radius-sm)',
-          boxShadow: 'var(--shadow-lg)',
-          fontSize: '0.9rem',
-          fontWeight: 600,
-          zIndex: 99
-        }}>
-          {thongBaoThem}
-        </div>
       )}
 
       {/* ============================================================== */}

@@ -16,6 +16,7 @@ import {
   Wifi
 } from 'lucide-react';
 import { laySocket, thamGiaDonHang, roiDonHang } from '../services/socket';
+import { useThongBao } from '@booknest/shared/thongbao';
 
 /**
  * Component Modal / Khung hiển thị thanh toán VietQR (payOS)
@@ -28,6 +29,7 @@ export const KhungThanhToanVietQR = ({
   onDongHetHan,
   onDoiSangCOD
 }) => {
+  const { thongBao: tb } = useThongBao();
   const [daSaoChep, setDaSaoChep] = useState('');
   const [dangKiemTra, setDangKiemTra] = useState(false);
   const [thanhToanThanhCong, setThanhToanThanhCong] = useState(false);
@@ -58,9 +60,11 @@ export const KhungThanhToanVietQR = ({
     try {
       await navigator.clipboard.writeText(String(text));
       setDaSaoChep(loai);
+      const tenMuc = loai === 'TIEN' ? 'số tiền' : loai === 'STK' ? 'số tài khoản' : 'nội dung chuyển khoản';
+      tb.thanhCong(`Đã sao chép ${tenMuc} vào bộ nhớ tạm`);
       setTimeout(() => setDaSaoChep(''), 2000);
     } catch (err) {
-      console.warn('Không thể sao chép tự động:', err);
+      tb.canhBao('Không thể tự động sao chép. Vui lòng sao chép thủ công.');
     }
   };
 

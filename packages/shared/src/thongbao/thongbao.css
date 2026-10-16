@@ -1,0 +1,435 @@
+/* ==========================================================================
+   HỆ THỐNG THÔNG BÁO DÙNG CHUNG BOOKNEST (STOREFRONT & BACK-OFFICE)
+   Tuân thủ nguyên tắc Thiết kế Impeccable (Craft Floor):
+   - Typography chuẩn xác, độ tương phản cao WCAG AAA
+   - Shadow mềm mại đa lớp, không viền cộc hay khối vuông 4px 4px 0
+   - Tự động tương thích Light / Dark mode qua CSS variables có sẵn
+   ========================================================================== */
+
+/* 1. KHUNG CHỨA TOAST */
+.bn-toast-container {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: none;
+  width: calc(100% - 2.5rem);
+  max-width: 420px;
+}
+
+@media (max-width: 640px) {
+  .bn-toast-container {
+    top: 0.75rem;
+    right: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+    max-width: none;
+  }
+}
+
+/* 2. TỪNG THẺ TOAST */
+.bn-toast-item {
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.95rem 1.15rem;
+  background-color: var(--bg-card, #ffffff);
+  color: var(--text-main, #2A2723);
+  border: 1px solid var(--border, #E8DCC4);
+  border-radius: var(--radius-sm, 8px);
+  box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.18), 0 6px 12px -2px rgba(0, 0, 0, 0.08);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  overflow: hidden;
+  animation: bn-toast-enter 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+}
+
+.bn-toast-item:hover {
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.24);
+}
+
+.bn-toast-item.bn-toast-leaving {
+  animation: bn-toast-exit 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+/* Biến thể màu theo loại */
+.bn-toast-item.bn-toast-thanhCong {
+  border-color: rgba(16, 185, 129, 0.35);
+}
+.bn-toast-item.bn-toast-thanhCong .bn-toast-icon {
+  color: #10B981;
+}
+
+.bn-toast-item.bn-toast-loi {
+  border-color: rgba(239, 68, 68, 0.4);
+}
+.bn-toast-item.bn-toast-loi .bn-toast-icon {
+  color: #EF4444;
+}
+
+.bn-toast-item.bn-toast-canhBao {
+  border-color: rgba(245, 158, 11, 0.38);
+}
+.bn-toast-item.bn-toast-canhBao .bn-toast-icon {
+  color: #F59E0B;
+}
+
+.bn-toast-item.bn-toast-thongTin {
+  border-color: rgba(59, 130, 246, 0.35);
+}
+.bn-toast-item.bn-toast-thongTin .bn-toast-icon {
+  color: #3B82F6;
+}
+
+.bn-toast-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.bn-toast-content {
+  flex: 1;
+  word-break: break-word;
+}
+
+.bn-toast-title {
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+  color: var(--text-main, #2A2723);
+  font-size: 0.9rem;
+}
+
+.bn-toast-close {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #736B66);
+  cursor: pointer;
+  padding: 4px;
+  margin: -4px -4px 0 0;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.bn-toast-close:hover {
+  color: var(--text-main, #2A2723);
+  background-color: var(--bg-hover, rgba(0, 0, 0, 0.05));
+}
+
+.bn-toast-close:focus-visible {
+  outline: 2px solid var(--primary, #853953);
+  outline-offset: 1px;
+}
+
+/* Thanh thời gian (Progress bar mỏng ở đáy toast) */
+.bn-toast-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  background: currentColor;
+  opacity: 0.25;
+  transform-origin: left;
+  animation: bn-toast-progress-shrink linear forwards;
+}
+
+.bn-toast-item:hover .bn-toast-progress {
+  animation-play-state: paused;
+}
+
+/* 3. KHUNG HỘP THOẠI MODAL (HopThoai, xacNhan, nhapLyDo) */
+.bn-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.52);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 99998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  animation: bn-fade-in 0.2s ease-out forwards;
+}
+
+.bn-dialog-card {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  background-color: var(--bg-card, #ffffff);
+  color: var(--text-main, #2A2723);
+  border: 1px solid var(--border, #E8DCC4);
+  border-radius: var(--radius-md, 12px);
+  box-shadow: 0 24px 48px -8px rgba(0, 0, 0, 0.32), 0 12px 24px -6px rgba(0, 0, 0, 0.16);
+  padding: 1.5rem;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  animation: bn-dialog-scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.bn-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.bn-dialog-title {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main, #2A2723);
+  margin: 0;
+  line-height: 1.35;
+}
+
+.bn-dialog-body {
+  font-size: 0.92rem;
+  color: var(--text-muted, #736B66);
+  line-height: 1.55;
+  margin-bottom: 1.25rem;
+  word-break: break-word;
+}
+
+.bn-dialog-input-group {
+  margin-bottom: 1.25rem;
+}
+
+.bn-dialog-input {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.92rem;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  background-color: var(--bg-surface, #F5E8CD);
+  color: var(--text-main, #2A2723);
+  border: 1px solid var(--border, #E8DCC4);
+  border-radius: var(--radius-sm, 6px);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.bn-dialog-input:focus {
+  outline: none;
+  border-color: var(--primary, #853953);
+  box-shadow: 0 0 0 3px rgba(133, 57, 83, 0.2);
+}
+
+.bn-dialog-textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.bn-dialog-input-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  margin-top: 0.35rem;
+  color: var(--text-muted, #736B66);
+}
+
+.bn-dialog-input-error {
+  color: var(--danger, #EF4444);
+  font-weight: 500;
+}
+
+.bn-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.bn-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1.15rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.bn-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.bn-btn-secondary {
+  background-color: var(--bg-surface, #F5E8CD);
+  color: var(--text-main, #2A2723);
+  border-color: var(--border, #E8DCC4);
+}
+.bn-btn-secondary:hover:not(:disabled) {
+  background-color: var(--bg-hover, #ECE0C4);
+}
+
+.bn-btn-primary {
+  background-color: var(--primary, #853953);
+  color: var(--primary-text, #F3F4F4);
+}
+.bn-btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-hover, #9E4463);
+}
+
+.bn-btn-danger {
+  background-color: var(--danger, #EF4444);
+  color: #ffffff;
+}
+.bn-btn-danger:hover:not(:disabled) {
+  background-color: #DC2626;
+}
+
+/* 4. KHUNG THÔNG BÁO TẠI CHỖ (ThongBaoTaiCho) */
+.bn-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.85rem 1.15rem;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--border, #E8DCC4);
+  margin-bottom: 1.25rem;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  background-color: var(--bg-surface, #F5E8CD);
+}
+
+.bn-alert-loi {
+  background-color: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: var(--text-main, #2A2723);
+}
+.bn-alert-loi .bn-alert-icon {
+  color: #EF4444;
+}
+
+.bn-alert-thanhCong {
+  background-color: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: var(--text-main, #2A2723);
+}
+.bn-alert-thanhCong .bn-alert-icon {
+  color: #10B981;
+}
+
+.bn-alert-canhBao {
+  background-color: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: var(--text-main, #2A2723);
+}
+.bn-alert-canhBao .bn-alert-icon {
+  color: #F59E0B;
+}
+
+.bn-alert-thongTin {
+  background-color: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: var(--text-main, #2A2723);
+}
+.bn-alert-thongTin .bn-alert-icon {
+  color: #3B82F6;
+}
+
+.bn-alert-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.bn-alert-body {
+  flex: 1;
+}
+
+.bn-alert-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--text-main, #2A2723);
+}
+
+.bn-alert-actions {
+  margin-top: 0.65rem;
+  display: flex;
+  gap: 0.65rem;
+}
+
+.bn-alert-close {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #736B66);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+.bn-alert-close:hover {
+  color: var(--text-main, #2A2723);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* 5. HIỆU ỨNG CHUYỂN ĐỘNG (KEYFRAMES) */
+@keyframes bn-toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes bn-toast-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+}
+
+@keyframes bn-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes bn-dialog-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes bn-toast-progress-shrink {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+/* Hỗ trợ chế độ giảm chuyển động (Prefers-Reduced-Motion) */
+@media (prefers-reduced-motion: reduce) {
+  .bn-toast-item,
+  .bn-toast-item.bn-toast-leaving,
+  .bn-dialog-backdrop,
+  .bn-dialog-card,
+  .bn-toast-progress {
+    animation: none !important;
+    transition: none !important;
+  }
+}

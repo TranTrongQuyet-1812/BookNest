@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Power, QrCode, RefreshCw, ShieldAlert } from 'lucide-react';
 import api from '@booknest/shared/api';
+import { useThongBao } from '@booknest/shared/thongbao';
 
 // Mô tả hậu quả từng công tắc để Quản trị viên hiểu rõ trước khi tắt (hiện chỉ có công tắc thanh toán QR)
 const MO_TA_CONG_TAC = {
@@ -17,9 +18,9 @@ export default function CaiDatHeThong() {
   const [danhSach, setDanhSach] = useState([]);
   const [dangTai, setDangTai] = useState(true);
   const [loi, setLoi] = useState('');
-  const [thongBao, setThongBao] = useState('');
   const [dangDoi, setDangDoi] = useState(false);
   const [khoaChoXacNhanTat, setKhoaChoXacNhanTat] = useState(null);
+  const { thongBao: tb } = useThongBao();
 
   const taiDanhSach = async () => {
     setDangTai(true);
@@ -38,13 +39,12 @@ export default function CaiDatHeThong() {
 
   const datCongTac = async (congTac, bat) => {
     setDangDoi(true);
-    setThongBao('');
     try {
       const res = await api.put(`/admin/settings/${congTac.khoa}`, { bat });
       setDanhSach((cu) => cu.map((c) => (c.khoa === congTac.khoa ? res.data.data : c)));
       setKhoaChoXacNhanTat(null);
       setLoi('');
-      setThongBao(`${congTac.ten}: đã ${bat ? 'BẬT' : 'TẮT'}.`);
+      tb.thanhCong(`${congTac.ten}: đã ${bat ? 'BẬT' : 'TẮT'}.`);
     } catch (err) {
       setLoi(err.response?.data?.message || 'Không đổi được công tắc. Vui lòng thử lại.');
     } finally {
@@ -70,7 +70,6 @@ export default function CaiDatHeThong() {
       </div>
 
       {loi && <div className="bo-alert" role="alert">{loi}</div>}
-      {thongBao && <div className="history-success" role="status">{thongBao}</div>}
 
       {dangTai ? <div className="bo-empty">Đang tải cài đặt…</div> : danhSach.map((congTac) => (
         <section key={congTac.khoa} className="bo-panel cai-dat-the">

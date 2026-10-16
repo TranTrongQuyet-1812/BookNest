@@ -14,10 +14,12 @@ import {
 } from 'lucide-react';
 import api from '@booknest/shared/api';
 import { useAuth } from '@booknest/shared/auth';
+import { useThongBao } from '@booknest/shared/thongbao';
 
 export default function QuanLyDanhGia() {
   const { user } = useAuth();
   const laQuanTri = user?.role === 'quan_tri';
+  const { thongBao: tb, xacNhan, nhapLyDo } = useThongBao();
 
   const [danhSach, setDanhSach] = useState([]);
   const [phanTrang, setPhanTrang] = useState({ trangHienTai: 1, tongSoTrang: 1, tongSoBanGhi: 0 });
@@ -29,13 +31,6 @@ export default function QuanLyDanhGia() {
   const [dangTai, setDangTai] = useState(true);
   const [dangXuLyId, setDangXuLyId] = useState(null);
   const [loi, setLoi] = useState('');
-  const [thongBao, setThongBao] = useState('');
-
-  // Modal xác nhận xóa vĩnh viễn (Chỉ Quản trị viên)
-  const [danhGiaCanXoa, setDanhGiaCanXoa] = useState(null);
-  // Modal ẩn đánh giá kèm lý do
-  const [danhGiaCanAn, setDanhGiaCanAn] = useState(null);
-  const [lyDoAn, setLyDoAn] = useState('');
 
   const taiDanhSach = async () => {
     setDangTai(true);
@@ -71,7 +66,6 @@ export default function QuanLyDanhGia() {
 
   const xuLyDoiTrangThaiAn = async (maDanhGia, trangThaiMoi, lyDo = '') => {
     setDangXuLyId(maDanhGia);
-    setThongBao('');
     setLoi('');
     try {
       await api.put(`/admin/reviews/${maDanhGia}/visibility`, {
@@ -84,28 +78,45 @@ export default function QuanLyDanhGia() {
         }
         return item;
       }));
-      setThongBao(trangThaiMoi ? `Đã ẩn đánh giá #${maDanhGia} khỏi cửa hàng.` : `Đã cho hiển thị lại đánh giá #${maDanhGia}.`);
-      setDanhGiaCanAn(null);
-      setLyDoAn('');
+      tb.thanhCong(trangThaiMoi ? `Đã ẩn đánh giá #${maDanhGia} khỏi cửa hàng.` : `Đã cho hiển thị lại đánh giá #${maDanhGia}.`);
     } catch (err) {
-      setLoi(err.response?.data?.message || 'Không thể thay đổi trạng thái đánh giá.');
+      tb.loiTuApi(err, 'Không thể thay đổi trạng thái đánh giá.');
     } finally {
       setDangXuLyId(null);
     }
   };
 
-  const xuLyXoaVinhVien = async () => {
-    if (!danhGiaCanXoa) return;
-    setDangXuLyId(danhGiaCanXoa.MaDanhGia);
-    setThongBao('');
+  const handleMoAnDanhGia = async (dg) => {
+    const lyDo = await nhapLyDo({
+      tieuDe: `Ẩn đánh giá #${dg.MaDanhGia}`,
+      noiDung: `Ẩn đánh giá của "${dg.khachHang?.HoTen || 'Khách'}" khỏi Storefront. Đánh giá này sẽ không còn hiển thị và không tính vào điểm sao của sách.`,
+      nhan: 'Lý do ẩn',
+      placeholder: 'Ví dụ: Chứa từ ngữ thô tục, quảng cáo, không liên quan...',
+      batBuoc: false,
+      nguyHiem: true,
+      nhanXacNhan: 'Xác nhận ẩn',
+    });
+    if (lyDo === null) return;
+    await xuLyDoiTrangThaiAn(dg.MaDanhGia, true, lyDo);
+  };
+
+  const handleMoXoaDanhGia = async (dg) => {
+    const dongY = await xacNhan({
+      tieuDe: `Xóa vĩnh viễn đánh giá #${dg.MaDanhGia}?`,
+      noiDung: `Hành động này không thể hoàn tác. Đánh giá của khách hàng "${dg.khachHang?.HoTen || 'Khách'}" cho cuốn sách "${dg.sach?.TenSach || ''}" sẽ bị xóa hoàn toàn khỏi cơ sở dữ liệu.`,
+      nhanXacNhan: 'Xác nhận xóa vĩnh viễn',
+      nguyHiem: true,
+    });
+    if (!dongY) return;
+
+    setDangXuLyId(dg.MaDanhGia);
     setLoi('');
     try {
-      await api.delete(`/admin/reviews/${danhGiaCanXoa.MaDanhGia}`);
-      setDanhSach(prev => prev.filter(item => item.MaDanhGia !== danhGiaCanXoa.MaDanhGia));
-      setThongBao(`Đã xóa vĩnh viễn đánh giá #${danhGiaCanXoa.MaDanhGia}.`);
-      setDanhGiaCanXoa(null);
+      await api.delete(`/admin/reviews/${dg.MaDanhGia}`);
+      setDanhSach(prev => prev.filter(item => item.MaDanhGia !== dg.MaDanhGia));
+      tb.thanhCong(`Đã xóa vĩnh viễn đánh giá #${dg.MaDanhGia}.`);
     } catch (err) {
-      setLoi(err.response?.data?.message || 'Không thể xóa đánh giá.');
+      tb.loiTuApi(err, 'Không thể xóa đánh giá.');
     } finally {
       setDangXuLyId(null);
     }
@@ -148,12 +159,6 @@ export default function QuanLyDanhGia() {
         </div>
       )}
 
-      {thongBao && (
-        <div className="history-success" role="status" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <CheckCircle2 size={16} />
-          <span>{thongBao}</span>
-        </div>
-      )}
 
       {/* Filter Bar */}
       <section className="bo-panel" style={{ marginBottom: '1.25rem', padding: '1rem' }}>
@@ -346,7 +351,7 @@ export default function QuanLyDanhGia() {
                               style={{ padding: '0.3rem 0.55rem', fontSize: '0.75rem', color: '#B45309', borderColor: '#FDE68A' }}
                               title="Ẩn đánh giá khỏi trang Storefront"
                               disabled={dangXuLyId === dg.MaDanhGia}
-                              onClick={() => { setDanhGiaCanAn(dg); setLyDoAn(''); }}
+                              onClick={() => handleMoAnDanhGia(dg)}
                             >
                               <EyeOff size={13} /> Ẩn
                             </button>
@@ -359,7 +364,7 @@ export default function QuanLyDanhGia() {
                               style={{ padding: '0.3rem 0.55rem', fontSize: '0.75rem' }}
                               title="Xóa vĩnh viễn đánh giá spam"
                               disabled={dangXuLyId === dg.MaDanhGia}
-                              onClick={() => setDanhGiaCanXoa(dg)}
+                              onClick={() => handleMoXoaDanhGia(dg)}
                             >
                               <Trash2 size={13} />
                             </button>
@@ -393,120 +398,6 @@ export default function QuanLyDanhGia() {
           </button>
         </div>
       </section>
-
-      {/* Modal Ẩn đánh giá kèm lý do */}
-      {danhGiaCanAn && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(15, 23, 42, 0.6)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: '1rem'
-        }}>
-          <div style={{
-            background: '#FFFFFF',
-            borderRadius: '12px',
-            maxWidth: '460px',
-            width: '100%',
-            padding: '1.5rem',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-          }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0 0 0.5rem 0', color: '#1E293B' }}>
-              Xác nhận ẩn đánh giá #{danhGiaCanAn.MaDanhGia}
-            </h3>
-            <p style={{ fontSize: '0.875rem', color: '#64748B', margin: '0 0 1rem 0' }}>
-              Đánh giá này sẽ bị ẩn khỏi Storefront và không được tính vào điểm số sao trung bình của sách.
-            </p>
-
-            <div style={{ marginBottom: '1.25rem' }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: '0.35rem' }}>
-                Lý do ẩn (sẽ lưu vào Lịch sử thay đổi):
-              </label>
-              <input
-                type="text"
-                placeholder="Ví dụ: Chứa từ ngữ thô tục, quảng cáo, không liên quan..."
-                value={lyDoAn}
-                onChange={(e) => setLyDoAn(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem 0.75rem',
-                  borderRadius: '6px',
-                  border: '1px solid #CBD5E1',
-                  fontSize: '0.875rem'
-                }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-              <button
-                type="button"
-                className="bo-secondary-button"
-                onClick={() => setDanhGiaCanAn(null)}
-              >
-                Hủy bỏ
-              </button>
-              <button
-                type="button"
-                className="bo-danger-button"
-                style={{ background: '#D97706', borderColor: '#D97706' }}
-                onClick={() => xuLyDoiTrangThaiAn(danhGiaCanAn.MaDanhGia, true, lyDoAn)}
-              >
-                Xác nhận ẩn
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Xác nhận Xóa Vĩnh Viễn */}
-      {danhGiaCanXoa && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(15, 23, 42, 0.6)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: '1rem'
-        }}>
-          <div style={{
-            background: '#FFFFFF',
-            borderRadius: '12px',
-            maxWidth: '440px',
-            width: '100%',
-            padding: '1.5rem',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
-          }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0 0 0.5rem 0', color: '#DC2626' }}>
-              Xóa vĩnh viễn đánh giá #{danhGiaCanXoa.MaDanhGia}?
-            </h3>
-            <p style={{ fontSize: '0.875rem', color: '#64748B', margin: '0 0 1rem 0' }}>
-              Hành động này <strong style={{ color: '#DC2626' }}>không thể hoàn tác</strong>. Đánh giá của khách hàng <em>{danhGiaCanXoa.khachHang?.HoTen}</em> cho cuốn sách <em>{danhGiaCanXoa.sach?.TenSach}</em> sẽ bị xóa hoàn toàn khỏi cơ sở dữ liệu.
-            </p>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-              <button
-                type="button"
-                className="bo-secondary-button"
-                onClick={() => setDanhGiaCanXoa(null)}
-              >
-                Hủy bỏ
-              </button>
-              <button
-                type="button"
-                className="bo-danger-button"
-                onClick={xuLyXoaVinhVien}
-              >
-                Xác nhận xóa vĩnh viễn
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

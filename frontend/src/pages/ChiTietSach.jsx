@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import useCartStore from '../stores/cartStore';
+import { useThongBao } from '@booknest/shared/thongbao';
 import StarRating from '../components/StarRating';
 import KeSachCuonNgang from '../components/KeSachCuonNgang';
 import { giaiMaHtmlEntities, lamSachChuoi } from '../utils/text';
@@ -38,8 +39,8 @@ export const ChiTietSach = () => {
   const [thongKeSao, setThongKeSao] = useState({ saoTrungBinh: 0, soLuotDanhGia: 0 });
   const [soLuong, setSoLuong] = useState(1);
   const [dangTai, setDangTai] = useState(true);
-  const [thongBao, setThongBao] = useState('');
   const [loi, setLoi] = useState('');
+  const { thongBao: tb } = useThongBao();
 
   // Form gửi nhận xét (Verified Buyer)
   const [soSaoDanhGia, setSoSaoDanhGia] = useState(5);
@@ -96,14 +97,12 @@ export const ChiTietSach = () => {
 
   // Thêm sách vào giỏ hàng qua Zustand Store (Hỗ trợ cả Khách vãng lai & Khách hàng)
   const handleThemGioHang = async () => {
-    setThongBao('');
     setLoi('');
     const ketQua = await themVaoGio(sach?.MaSach, soLuong, sach);
     if (ketQua.thanhCong) {
-      setThongBao(`Đã thêm ${soLuong} cuốn "${sach?.TenSach}" vào giỏ hàng`);
-      setTimeout(() => setThongBao(''), 3000);
+      tb.thanhCong(`Đã thêm ${soLuong} cuốn "${sach?.TenSach}" vào giỏ hàng`);
     } else {
-      setLoi(ketQua.thongDiep || 'Lỗi khi thêm sách vào giỏ hàng');
+      tb.canhBao(ketQua.thongDiep || 'Lỗi khi thêm sách vào giỏ hàng');
     }
   };
 
@@ -259,26 +258,6 @@ export const ChiTietSach = () => {
           <span>{location.state?.from ? 'Quay lại danh sách' : 'Trở về trang trước'}</span>
         </button>
       </div>
-
-      {/* Thông Báo Thêm Giỏ Hàng Toast Nhẹ */}
-      {thongBao && (
-        <div style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          backgroundColor: 'var(--bg-surface)',
-          color: 'var(--text-main)',
-          border: '1px solid var(--border)',
-          padding: '0.85rem 1.4rem',
-          borderRadius: 'var(--radius-sm)',
-          boxShadow: 'var(--shadow-lg)',
-          fontSize: '0.9rem',
-          fontWeight: 600,
-          zIndex: 99
-        }}>
-          {thongBao}
-        </div>
-      )}
 
       {/* KHỐI NỘI DUNG CHÍNH (2 CỘT TỶ LỆ VÀNG 4.5 : 7.5 TRONG CARD SANG TRỌNG) */}
       <div style={{

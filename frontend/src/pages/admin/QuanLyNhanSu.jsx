@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { useThongBao } from '@booknest/shared/thongbao';
 import PhanTrang from '../../components/PhanTrang';
 import { 
   UserPlus, 
@@ -16,6 +17,7 @@ import {
 
 export const QuanLyNhanSu = () => {
   const { user: adminHienTai } = useAuth();
+  const { thongBao: tb, xacNhan } = useThongBao();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const trang = parseInt(searchParams.get('page') || '1', 10);
@@ -112,23 +114,29 @@ export const QuanLyNhanSu = () => {
     const userId = laKhach ? u.MaKhachHang : u.MaNhanVien;
     const myId = adminHienTai?.id;
     if (!laKhach && userId === myId) {
-      alert('Bạn không thể tự khóa tài khoản quản trị của chính mình!');
+      tb.canhBao('Bạn không thể tự khóa tài khoản quản trị của chính mình!');
       return;
     }
 
     const dangHoatDong = u.DangHoatDong;
     const email = u.Email;
     const hanhDong = dangHoatDong ? 'khóa' : 'mở khóa';
-    if (!window.confirm(`Bạn có chắc muốn ${hanhDong} tài khoản "${email}"?`)) return;
+
+    const dongY = await xacNhan({
+      tieuDe: `Xác nhận ${hanhDong} tài khoản`,
+      noiDung: `Bạn có chắc muốn ${hanhDong} tài khoản "${email}"?`,
+      nhanXacNhan: dangHoatDong ? 'Khóa tài khoản' : 'Mở khóa tài khoản',
+      nguyHiem: dangHoatDong,
+    });
+    if (!dongY) return;
 
     try {
       const trangThaiMoi = !dangHoatDong;
       await api.put(`${duongDanDanhSach}/${userId}/status`, { dangHoatDong: trangThaiMoi });
-      setThongBao(`Đã ${hanhDong} tài khoản ${email} thành công`);
+      tb.thanhCong(`Đã ${hanhDong} tài khoản ${email} thành công`);
       taiLai();
-      setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi khi cập nhật trạng thái người dùng');
+      tb.loiTuApi(err, 'Lỗi khi cập nhật trạng thái người dùng');
     }
   };
 
@@ -144,7 +152,7 @@ export const QuanLyNhanSu = () => {
         vaiTro: formNhanSu.vaiTro,
         soDienThoai: formNhanSu.soDienThoai || undefined
       });
-      setThongBao(`Đã khởi tạo tài khoản nhân sự thành công: ${formNhanSu.email}`);
+      tb.thanhCong(`Đã khởi tạo tài khoản nhân sự thành công: ${formNhanSu.email}`);
       setModalMo(false);
       setFormNhanSu({
         hoTen: '',
@@ -154,9 +162,8 @@ export const QuanLyNhanSu = () => {
         soDienThoai: ''
       });
       taiLai();
-      setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi khi tạo tài khoản nhân sự');
+      tb.loiTuApi(err, 'Lỗi khi tạo tài khoản nhân sự');
     } finally {
       setDangTao(false);
     }

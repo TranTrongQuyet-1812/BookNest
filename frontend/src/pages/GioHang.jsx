@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useCartStore from '../stores/cartStore';
 import { useAuth } from '../context/AuthContext';
+import { useThongBao } from '@booknest/shared/thongbao';
 import { 
   ShoppingCart, 
   Trash2, 
@@ -16,6 +17,7 @@ import {
 export const GioHang = () => {
   const navigate = useNavigate();
   const { daDangNhap } = useAuth();
+  const { thongBao: tb, xacNhan } = useThongBao();
   const {
     gioHang,
     cacMon,
@@ -45,25 +47,43 @@ export const GioHang = () => {
     if (soLuongMoi < 1) return;
     const ketQua = await capNhatSoLuong(maSach, soLuongMoi);
     if (!ketQua.thanhCong) {
-      alert(ketQua.thongDiep);
+      tb.canhBao(ketQua.thongDiep);
     }
   };
 
   // Xóa một mặt hàng khỏi giỏ
   const handleXoaMatHang = async (maSach) => {
-    if (!window.confirm('Bạn có chắc muốn xóa cuốn sách này khỏi giỏ hàng?')) return;
+    const dongY = await xacNhan({
+      tieuDe: 'Xóa sản phẩm khỏi giỏ',
+      noiDung: 'Bạn có chắc muốn xóa cuốn sách này khỏi giỏ hàng?',
+      nhanXacNhan: 'Xóa khỏi giỏ',
+      nguyHiem: true,
+    });
+    if (!dongY) return;
+
     const ketQua = await xoaMon(maSach);
     if (!ketQua.thanhCong) {
-      alert(ketQua.thongDiep);
+      tb.loi(ketQua.thongDiep);
+    } else {
+      tb.thanhCong(ketQua.thongDiep || 'Đã xóa cuốn sách khỏi giỏ hàng.');
     }
   };
 
   // Xóa sạch toàn bộ giỏ hàng
   const handleXoaTatCa = async () => {
-    if (!window.confirm('Bạn có chắc muốn dọn sạch giỏ hàng?')) return;
+    const dongY = await xacNhan({
+      tieuDe: 'Dọn sạch giỏ hàng',
+      noiDung: 'Bạn có chắc muốn dọn sạch toàn bộ giỏ hàng?',
+      nhanXacNhan: 'Dọn sạch giỏ',
+      nguyHiem: true,
+    });
+    if (!dongY) return;
+
     const ketQua = await xoaToanBoGio();
     if (!ketQua.thanhCong) {
-      alert(ketQua.thongDiep);
+      tb.loi(ketQua.thongDiep);
+    } else {
+      tb.thanhCong(ketQua.thongDiep || 'Đã dọn sạch giỏ hàng.');
     }
   };
 

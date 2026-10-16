@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { laySocket, thamGiaKhachHang, roiKhachHang } from '../services/socket';
+import { useHuyDonHang } from '../hooks/useHuyDonHang';
 import PhanTrang from '../components/PhanTrang';
 import { 
   Package, 
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 
 export const DonHangCuaToi = () => {
+  const { thucHienHuyDon } = useHuyDonHang();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const trang = parseInt(searchParams.get('page') || '1', 10);
@@ -93,18 +95,7 @@ export const DonHangCuaToi = () => {
 
   // Hủy đơn hàng CHO_DUYET
   const handleHuyDon = async (maDonHang) => {
-    const lyDo = window.prompt('Vui lòng nhập lý do hủy đơn hàng:');
-    if (lyDo === null) return;
-
-    try {
-      await api.put(`/orders/${maDonHang}/cancel`, {
-        lyDo: lyDo.trim() || 'Khách hàng yêu cầu hủy đơn'
-      });
-      alert('Đã hủy đơn hàng thành công. Số lượng sách đã được hoàn trả lại vào kho.');
-      taiLai();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Không thể hủy đơn hàng này');
-    }
+    await thucHienHuyDon(maDonHang, taiLai);
   };
 
   const dinhDangTien = (soTien) => {

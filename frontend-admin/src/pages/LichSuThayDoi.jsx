@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { History, RefreshCw, Trash2 } from 'lucide-react';
 import api from '@booknest/shared/api';
+import { useThongBao } from '@booknest/shared/thongbao';
 
 const nhan = (value) => value == null || value === '' ? '—' : value;
 const nguoiDungTruong = { TenSach: 'Tên sách', TacGia: 'Tác giả', MoTa: 'Mô tả', GiaBan: 'Giá bán', NguongCanhBao: 'Ngưỡng cảnh báo', AnhBia: 'Ảnh bìa', MaDanhMuc: 'Danh mục', DaAn: 'Trạng thái', TenDanhMuc: 'Tên danh mục', THANH_TOAN_QR_BAT: 'Thanh toán QR' };
@@ -9,6 +10,7 @@ const tenDoiTuong = { SACH: 'Sách', DANH_MUC: 'Danh mục', CAU_HINH: 'Cài đ�
 const hienGiaTri = (item, giaTri) => item.LoaiDoiTuong === 'CAU_HINH' ? (giaTri === '1' ? 'Bật' : 'Tắt') : nhan(giaTri);
 
 export default function LichSuThayDoi() {
+  const { thongBao: tb, xacNhan } = useThongBao();
   const [danhSach, setDanhSach] = useState([]);
   const [page, setPage] = useState(1);
   const [tongSoTrang, setTongSoTrang] = useState(1);
@@ -42,14 +44,28 @@ export default function LichSuThayDoi() {
   };
 
   const xacNhanDonDep = async () => {
+    if (!xemTruoc || !xemTruoc.soDongDuKien) return;
+
+    const dongY = await xacNhan({
+      tieuDe: 'Xác nhận xóa vĩnh viễn lịch sử',
+      noiDung: `Bạn có chắc chắn muốn xóa vĩnh viễn ${xemTruoc.soDongDuKien.toLocaleString('vi-VN')} dòng lịch sử cũ trước ngày ${truocNgay}? Thao tác này không thể hoàn tác.`,
+      nhanXacNhan: 'Xác nhận xóa vĩnh viễn',
+      nguyHiem: true,
+    });
+    if (!dongY) return;
+
     setDangDon(true);
     try {
       const res = await api.post('/admin/change-history/cleanup', { truocNgay: new Date(truocNgay).toISOString() });
-      setKetQuaDon(res.data.data);
+      const tongDaXoa = Object.values(res.data.data?.daXoa || {}).reduce((tong, soDong) => tong + soDong, 0);
+      tb.thanhCong(`Đã xóa vĩnh viễn ${tongDaXoa.toLocaleString('vi-VN')} dòng lịch sử.`);
       setXemTruoc(null);
       await taiLichSu();
-    } catch (err) { setLoi(err.response?.data?.message || 'Lưu trữ thất bại; dữ liệu chưa bị xóa.'); }
-    finally { setDangDon(false); }
+    } catch (err) {
+      tb.loiTuApi(err, 'Lưu trữ thất bại; dữ liệu chưa bị xóa.');
+    } finally {
+      setDangDon(false);
+    }
   };
 
   return (
@@ -60,7 +76,6 @@ export default function LichSuThayDoi() {
         <div className="history-cleanup-copy"><span className="history-icon"><Trash2 size={18}/></span><div><strong>Dọn lịch sử cũ</strong><p>Dữ liệu trước mốc đã chọn sẽ bị xóa vĩnh viễn. Lịch sử đơn đã giao được giữ để bảo toàn báo cáo.</p></div></div>
         <div className="history-cleanup-controls"><label>Từ trước ngày<input type="date" value={truocNgay} onChange={e => { setTruocNgay(e.target.value); setXemTruoc(null); }}/></label><button className="bo-secondary-button" onClick={kiemTraDonDep}>Xem trước</button></div>
         {xemTruoc && <div className="history-preview"><div><strong>Sẽ xóa vĩnh viễn {xemTruoc.soDongDuKien.toLocaleString('vi-VN')} dòng:</strong><small>Thay đổi: {xemTruoc.theoBang.LichSuThayDoi.toLocaleString('vi-VN')} · Nhập kho: {xemTruoc.theoBang.LichSuNhapKho.toLocaleString('vi-VN')} · Điều chỉnh kho: {xemTruoc.theoBang.LichSuDieuChinhKho.toLocaleString('vi-VN')} · Trạng thái đơn: {xemTruoc.theoBang.LichSuTrangThaiDonHang.toLocaleString('vi-VN')}</small></div><span>Giữ lại <strong>{xemTruoc.soDongDaGiaoGiuLai.toLocaleString('vi-VN')}</strong> dòng giao thành công.</span><button className="bo-danger-button" disabled={dangDon || !xemTruoc.soDongDuKien} onClick={xacNhanDonDep}>{dangDon ? 'Đang xóa…' : 'Xác nhận xóa vĩnh viễn'}</button></div>}
-        {ketQuaDon && <div className="history-success">Đã xóa vĩnh viễn {Object.values(ketQuaDon.daXoa || {}).reduce((tong, soDong) => tong + soDong, 0).toLocaleString('vi-VN')} dòng lịch sử.</div>}
       </section>
       <section className="bo-panel history-table-panel">
         <div className="bo-panel-title"><div><h2><History size={18}/> Gần đây</h2><p>{danhSach.length} mục ở trang {page}/{tongSoTrang}</p></div></div>

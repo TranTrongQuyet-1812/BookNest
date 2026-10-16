@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { useThongBao } from '@booknest/shared/thongbao';
 import PhanTrang from '../../components/PhanTrang';
 import { 
   Plus, 
@@ -17,6 +18,7 @@ import {
 
 export const QuanLySach = () => {
   const { user } = useAuth();
+  const { thongBao: tb, xacNhan } = useThongBao();
   const vaiTro = user?.role;
   // Chỉ Quản trị viên và Thủ kho mới được quyền thêm, sửa, đổi giá và ẩn sách
   const coQuyenSuaSach = ['quan_tri', 'thu_kho'].includes(vaiTro);
@@ -153,7 +155,7 @@ export const QuanLySach = () => {
   const handleLuuSach = async (e) => {
     e.preventDefault();
     if (!coQuyenSuaSach) {
-      alert('Tài khoản của bạn chỉ có quyền tra cứu, không được sửa hoặc thêm sách.');
+      tb.canhBao('Tài khoản của bạn chỉ có quyền tra cứu, không được sửa hoặc thêm sách.');
       return;
     }
     try {
@@ -170,23 +172,22 @@ export const QuanLySach = () => {
       const maSach = sachDangSua ? sachDangSua.MaSach : null;
       if (sachDangSua) {
         await api.put(`/books/${maSach}`, payload);
-        setThongBao(`Đã cập nhật cuốn sách "${formSach.tieuDe}"`);
+        tb.thanhCong(`Đã cập nhật cuốn sách "${formSach.tieuDe}"`);
       } else {
         await api.post('/books', payload);
-        setThongBao(`Đã thêm mới cuốn sách "${formSach.tieuDe}" vào kho`);
+        tb.thanhCong(`Đã thêm mới cuốn sách "${formSach.tieuDe}" vào kho`);
       }
       setModalSachMo(false);
       taiLai();
-      setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi khi lưu sách');
+      tb.loiTuApi(err, 'Lỗi khi lưu sách');
     }
   };
 
   // Ẩn hoặc Khôi phục sách (Soft delete toggle)
   const handleToggleAnSach = async (sach) => {
     if (!coQuyenSuaSach) {
-      alert('Tài khoản của bạn không có quyền ẩn hoặc khôi phục sách.');
+      tb.canhBao('Tài khoản của bạn không có quyền ẩn hoặc khôi phục sách.');
       return;
     }
     const maSach = sach.MaSach;
@@ -194,15 +195,20 @@ export const QuanLySach = () => {
     const daAn = sach.DaAn;
     const hanhDong = daAn ? 'khôi phục' : 'ẩn';
 
-    if (!window.confirm(`Bạn có chắc muốn ${hanhDong} cuốn sách "${tenSach}"?`)) return;
+    const dongY = await xacNhan({
+      tieuDe: `Xác nhận ${hanhDong} sách`,
+      noiDung: `Bạn có chắc muốn ${hanhDong} cuốn sách "${tenSach}"?`,
+      nhanXacNhan: daAn ? 'Khôi phục sách' : 'Ẩn cuốn sách này',
+      nguyHiem: !daAn,
+    });
+    if (!dongY) return;
 
     try {
       await api.delete(`/books/${maSach}`);
-      setThongBao(`Đã ${hanhDong} thành công cuốn sách "${tenSach}"`);
+      tb.thanhCong(`Đã ${hanhDong} thành công cuốn sách "${tenSach}"`);
       taiLai();
-      setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi khi thay đổi trạng thái sách');
+      tb.loiTuApi(err, 'Lỗi khi thay đổi trạng thái sách');
     }
   };
 
@@ -210,18 +216,17 @@ export const QuanLySach = () => {
   const handleThemDanhMuc = async (e) => {
     e.preventDefault();
     if (!coQuyenSuaSach) {
-      alert('Tài khoản của bạn không có quyền tạo thể loại mới.');
+      tb.canhBao('Tài khoản của bạn không có quyền tạo thể loại mới.');
       return;
     }
     try {
       await api.post('/categories', formDanhMuc);
-      setThongBao(`Đã tạo thể loại "${formDanhMuc.tenDanhMuc}"`);
+      tb.thanhCong(`Đã tạo thể loại "${formDanhMuc.tenDanhMuc}"`);
       setFormDanhMuc({ tenDanhMuc: '', moTa: '' });
       setModalDanhMucMo(false);
       taiLai();
-      setTimeout(() => setThongBao(''), 3000);
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi khi tạo thể loại');
+      tb.loiTuApi(err, 'Lỗi khi tạo thể loại');
     }
   };
 
