@@ -1288,7 +1288,7 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
           }];
         }
       } else if (tenHam === 'tra_cuu_don_hang') {
-        const dinhDanh = maKhachHang ? `user_${maKhachHang}` : 'guest';
+        const dinhDanh = maKhachHang ? `user_${maKhachHang}` : (khoaPhien ? `guest_${khoaPhien}` : 'guest');
         ketQuaTool = await thucThiTraCuuDonHang(thamSo, maKhachHang, dinhDanh);
         if (ketQuaTool?.donHang || ketQuaTool?.danhSachDon) {
           duLieuKemTheo.thongTinDonHang = ketQuaTool.donHang || ketQuaTool.danhSachDon;
