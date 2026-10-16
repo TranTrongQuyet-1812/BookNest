@@ -18,6 +18,7 @@ import { useAuth } from '@booknest/shared/auth';
 
 export default function QuanLyThanhToan() {
   const { user } = useAuth();
+  const laQuanTri = user?.role === 'quan_tri' || user?.VaiTro === 'quan_tri';
   const [danhSach, setDanhSach] = useState([]);
   const [thongKe, setThongKe] = useState({});
   const [phanTrang, setPhanTrang] = useState({ trangHienTai: 1, tongSoTrang: 1, tongSoBanGhi: 0 });
@@ -524,31 +525,47 @@ export default function QuanLyThanhToan() {
                       {/* Hành Động */}
                       <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
                         {laCanHoan ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setKhoanCanHoan(item);
-                              setMaThamChieu('');
-                              setGhiChuHoan('');
-                            }}
-                            style={{
+                          laQuanTri ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setKhoanCanHoan(item);
+                                setMaThamChieu('');
+                                setGhiChuHoan('');
+                              }}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                padding: '0.45rem 0.85rem',
+                                fontSize: '0.8rem',
+                                fontWeight: 700,
+                                backgroundColor: '#DC2626',
+                                color: '#FFFFFF',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 4px rgba(220, 38, 38, 0.25)'
+                              }}
+                            >
+                              <FileCheck2 size={14} />
+                              Xác Nhận Đã Hoàn
+                            </button>
+                          ) : (
+                            <span style={{
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: '0.35rem',
-                              padding: '0.45rem 0.85rem',
-                              fontSize: '0.8rem',
-                              fontWeight: 700,
-                              backgroundColor: '#DC2626',
-                              color: '#FFFFFF',
-                              border: 'none',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              boxShadow: '0 2px 4px rgba(220, 38, 38, 0.25)'
-                            }}
-                          >
-                            <FileCheck2 size={14} />
-                            Xác Nhận Đã Hoàn
-                          </button>
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              backgroundColor: '#FEF2F2',
+                              color: '#DC2626',
+                              border: '1px dashed #FCA5A5'
+                            }}>
+                              Chờ Admin hoàn
+                            </span>
+                          )
                         ) : (
                           <span style={{ fontSize: '0.8rem', color: 'var(--adm-text-muted)' }}>
                             ---

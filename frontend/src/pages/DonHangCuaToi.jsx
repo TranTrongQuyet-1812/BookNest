@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
-import { laySocket } from '../services/socket';
+import { laySocket, thamGiaKhachHang, roiKhachHang } from '../services/socket';
 import PhanTrang from '../components/PhanTrang';
 import { 
   Package, 
@@ -31,15 +31,21 @@ export const DonHangCuaToi = () => {
 
   // Lắng nghe sự kiện realtime cập nhật trạng thái đơn hàng và thanh toán (T46)
   useEffect(() => {
+    thamGiaKhachHang();
     const socket = laySocket();
     const xuLyCapNhat = () => {
       taiLai();
     };
     socket.on('donHang:capNhatTrangThai', xuLyCapNhat);
     socket.on('thanhToan:daThanhToan', xuLyCapNhat);
+    socket.on('thanhToan:canHoanTien', xuLyCapNhat);
+    socket.on('thanhToan:daHoanTien', xuLyCapNhat);
     return () => {
+      roiKhachHang();
       socket.off('donHang:capNhatTrangThai', xuLyCapNhat);
       socket.off('thanhToan:daThanhToan', xuLyCapNhat);
+      socket.off('thanhToan:canHoanTien', xuLyCapNhat);
+      socket.off('thanhToan:daHoanTien', xuLyCapNhat);
     };
   }, []);
 

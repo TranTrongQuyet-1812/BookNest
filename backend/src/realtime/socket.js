@@ -60,6 +60,29 @@ function khoiTaoSocket(httpServer) {
       if (ma) socket.leave(`don_hang:${ma}`);
     });
 
+    // Khách hàng tham gia phòng cá nhân (Bắt buộc xác thực JWT Token: aud === 'khach_hang')
+    socket.on('tham_gia_khach_hang', (duLieuXacThuc) => {
+      try {
+        const token = typeof duLieuXacThuc === 'string' ? duLieuXacThuc : duLieuXacThuc?.token;
+        if (!token) return;
+        const biMat = cauHinh.jwt?.biMat || cauHinh.jwtBiMat;
+        const giaiMa = jwt.verify(token, biMat);
+        if (giaiMa.aud === 'khach_hang' && giaiMa.id) {
+          socket.join(`khach_hang:${giaiMa.id}`);
+        }
+      } catch (err) {}
+    });
+
+    socket.on('roi_khach_hang', (duLieuXacThuc) => {
+      try {
+        const token = typeof duLieuXacThuc === 'string' ? duLieuXacThuc : duLieuXacThuc?.token;
+        if (!token) return;
+        const biMat = cauHinh.jwt?.biMat || cauHinh.jwtBiMat;
+        const giaiMa = jwt.verify(token, biMat);
+        if (giaiMa.id) socket.leave(`khach_hang:${giaiMa.id}`);
+      } catch (err) {}
+    });
+
     // Nhân viên tham gia phòng quản trị (Bắt buộc xác thực JWT Token: aud === 'nhan_vien')
     socket.on('tham_gia_nhan_vien', (duLieuXacThuc) => {
       try {

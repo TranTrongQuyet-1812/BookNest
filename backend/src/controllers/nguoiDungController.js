@@ -34,8 +34,9 @@ async function xuLyCapNhatHoSo(req, res) {
 
 // Đổi mật khẩu
 async function xuLyDoiMatKhau(req, res) {
-  await nguoiDungService.doiMatKhau(req.user.aud, req.user.id, req.body);
+  const ketQua = await nguoiDungService.doiMatKhau(req.user.aud, req.user.id, req.body);
   return phanHoiThanhCong(res, {
+    duLieu: { token: ketQua.token },
     thongDiep: 'Đổi mật khẩu thành công'
   });
 }

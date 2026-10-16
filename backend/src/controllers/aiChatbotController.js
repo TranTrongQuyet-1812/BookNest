@@ -96,7 +96,9 @@ async function guiTinNhan(req, res) {
   const daDangNhap = Boolean(maKhachHang);
   const tenKhachHang = req.nguoiDung?.fullName || req.nguoiDung?.HoTen || '';
 
-  const khoaPhien = req.headers['x-session-id'] || req.ip || null;
+  const ipClient = req.ip || req.connection?.remoteAddress || 'unknown_ip';
+  const sessionId = req.headers['x-session-id'] || 'no_session';
+  const khoaPhien = `${ipClient}_${sessionId}`;
 
   try {
     const ketQua = await aiChatbotService.xuLyHoiThoaiAI({
@@ -105,7 +107,8 @@ async function guiTinNhan(req, res) {
       maKhachHang,
       daDangNhap,
       tenKhachHang,
-      khoaPhien
+      khoaPhien,
+      ipClient
     });
 
     return phanHoiThanhCong(res, {

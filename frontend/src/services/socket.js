@@ -83,6 +83,31 @@ export function roiNhanVien() {
 }
 
 /**
+ * Tham gia phòng realtime dành cho khách hàng đã đăng nhập để nhận thông báo đơn hàng
+ */
+export function thamGiaKhachHang(token) {
+  const socket = laySocket();
+  const tokenGui = token || localStorage.getItem('booknest_token');
+  if (!tokenGui) return;
+  if (socket.connected) {
+    socket.emit('tham_gia_khach_hang', { token: tokenGui });
+  } else {
+    socket.once('connect', () => {
+      socket.emit('tham_gia_khach_hang', { token: tokenGui });
+    });
+  }
+}
+
+/**
+ * Rời phòng khách hàng
+ */
+export function roiKhachHang(token) {
+  if (!socketInstance) return;
+  const tokenGui = token || localStorage.getItem('booknest_token');
+  socketInstance.emit('roi_khach_hang', { token: tokenGui });
+}
+
+/**
  * Đóng kết nối socket khi đăng xuất hoặc rời khỏi ứng dụng
  */
 export function dongSocket() {
@@ -96,6 +121,8 @@ export default {
   laySocket,
   thamGiaDonHang,
   roiDonHang,
+  thamGiaKhachHang,
+  roiKhachHang,
   thamGiaNhanVien,
   roiNhanVien,
   dongSocket

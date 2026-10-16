@@ -759,15 +759,22 @@ function kiemTraVaGhiNhanTraCuuSai(dinhDanh, laThatBai = false) {
 
 /**
  * Thực thi tra cứu đơn hàng bằng mã tra cứu công khai hoặc mã khách hàng đăng nhập
+ * Tích hợp khóa Brute-force thông minh:
+ * - Khách đăng nhập: Khóa riêng theo User ID (không khóa IP chung, tránh ảnh hưởng người khác chung Wi-Fi như lớp học/văn phòng).
+ * - Khách vãng lai: Khóa theo IP máy trạm (chống đổi header session-id để bypass).
+ * - Chống tấn công xen kẽ: Tra cứu thành công KHÔNG xóa bộ đếm thử sai (bộ đếm chỉ tự hết hạn sau 15 phút theo thời gian).
  */
-async function thucThiTraCuuDonHang({ ma_tra_cuu }, maKhachHangContext, dinhDanh = 'chung') {
+async function thucThiTraCuuDonHang({ ma_tra_cuu }, maKhachHangContext, dinhDanh = 'chung', dinhDanhIp = null) {
   try {
     // 1. Nếu có mã tra cứu công khai dạng BN-XXXXXX
     if (ma_tra_cuu && ma_tra_cuu.trim()) {
       const maChuan = ma_tra_cuu.trim().toUpperCase();
+      const laUserDangNhap = Boolean(maKhachHangContext || (dinhDanh && dinhDanh.startsWith('user_')));
 
-      // Kiểm tra xem định danh hiện tại có bị khóa do thử sai quá nhiều lần không (Brute-force Guard)
-      if (!kiemTraVaGhiNhanTraCuuSai(dinhDanh, false)) {
+      // Kiểm tra xem định danh hiện tại hoặc IP (đối với khách vãng lai) có bị khóa do thử sai quá 5 lần không
+      const biKhoaDinhDanh = !kiemTraVaGhiNhanTraCuuSai(dinhDanh, false);
+      const biKhoaIp = (!laUserDangNhap && dinhDanhIp) ? !kiemTraVaGhiNhanTraCuuSai(dinhDanhIp, false) : false;
+      if (biKhoaDinhDanh || biKhoaIp) {
         return {
           timThay: false,
           thongDiep: 'Bạn đã thử sai mã đơn quá 5 lần liên tiếp. Để bảo vệ an toàn thông tin đơn hàng, tính năng tra cứu tạm khóa trong 15 phút. Vui lòng thử lại sau.'
@@ -797,11 +804,15 @@ async function thucThiTraCuuDonHang({ ma_tra_cuu }, maKhachHangContext, dinhDanh
 
       if (!donHang) {
         kiemTraVaGhiNhanTraCuuSai(dinhDanh, true);
+        if (!laUserDangNhap && dinhDanhIp && dinhDanhIp !== dinhDanh) {
+          kiemTraVaGhiNhanTraCuuSai(dinhDanhIp, true);
+        }
         return { timThay: false, thongDiep: `Không tìm thấy đơn hàng nào với mã tra cứu "${maChuan}". Vui lòng kiểm tra lại mã trên hóa đơn hoặc tin nhắn.` };
       }
 
-      // Tra cứu thành công -> xóa bỏ bộ đếm lỗi
-      boDemTraCuuSai.delete(dinhDanh);
+      // LƯU Ý BẢO MẬT: Tra cứu thành công KHÔNG xóa bộ đếm lỗi để ngăn chặn kẻ tấn công dò mã xen kẽ
+      // (ví dụ: thử 4 lần sai rồi tra 1 đơn đúng của mình để reset bộ đếm về 0).
+      // Bộ đếm sẽ tự động giải phóng sau 15 phút theo sliding window (KHOANG_THOI_GIAN_KHOA_TRA_CUU_MS).
 
       const phuongThuc = donHang.thanhToan?.PhuongThuc || 'COD';
       const trangThaiTT = donHang.thanhToan?.TrangThai || 'CHO_THANH_TOAN';
@@ -1151,7 +1162,7 @@ function taoTraLoiMacDinhKhiRong(duLieuKemTheo, macDinhCuoi = 'Dạ, tôi có th
 /**
  * Điều phối gọi từng công cụ nghiệp vụ CSDL (Function Calling)
  */
-async function dieuPhoiToolCall({ toolCall, noiDungTinNhan, sachHienTai, maKhachHang, khoaPhien, duLieuKemTheo, danhSachToolDaGoi }) {
+async function dieuPhoiToolCall({ toolCall, noiDungTinNhan, sachHienTai, maKhachHang, khoaPhien, duLieuKemTheo, danhSachToolDaGoi, ipClient = null }) {
   const tenHam = toolCall.function?.name;
   if (tenHam && !danhSachToolDaGoi.includes(tenHam)) danhSachToolDaGoi.push(tenHam);
 
@@ -1191,8 +1202,10 @@ async function dieuPhoiToolCall({ toolCall, noiDungTinNhan, sachHienTai, maKhach
     return { ketQuaTool: ketQua };
   }
   if (tenHam === 'tra_cuu_don_hang') {
-    const dinhDanh = maKhachHang ? `user_${maKhachHang}` : (khoaPhien ? `guest_${khoaPhien}` : 'guest');
-    const ketQua = await thucThiTraCuuDonHang(thamSo, maKhachHang, dinhDanh);
+    // Chống brute-force: Luôn khóa theo IP máy trạm (kể cả khách đổi session-id liên tục)
+    const dinhDanhIp = ipClient ? `ip_${ipClient}` : (khoaPhien ? `guest_${khoaPhien}` : 'guest');
+    const dinhDanh = maKhachHang ? `user_${maKhachHang}` : dinhDanhIp;
+    const ketQua = await thucThiTraCuuDonHang(thamSo, maKhachHang, dinhDanh, dinhDanhIp);
     if (ketQua?.donHang || ketQua?.danhSachDon) duLieuKemTheo.thongTinDonHang = ketQua.donHang || ketQua.danhSachDon;
     return { ketQuaTool: ketQua };
   }
@@ -1202,7 +1215,7 @@ async function dieuPhoiToolCall({ toolCall, noiDungTinNhan, sachHienTai, maKhach
 /**
  * Xử lý cuộc hội thoại với AI Chatbot (hỗ trợ vòng lặp Function Calling)
  */
-async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHang = null, daDangNhap = false, tenKhachHang = '', khoaPhien = null }) {
+async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHang = null, daDangNhap = false, tenKhachHang = '', khoaPhien = null, ipClient = null }) {
   const noiDungTinNhan = String(tinNhanMoi || tinNhan || '').trim();
 
   // 1. Kiểm tra trần ngân sách token mỗi ngày
@@ -1244,7 +1257,7 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
     // Thực thi các tool được yêu cầu
     messages.push({ role: 'assistant', content: aiMessage.content || null, tool_calls: aiMessage.tool_calls });
     for (const toolCall of aiMessage.tool_calls) {
-      const phanHoiTool = await dieuPhoiToolCall({ toolCall, noiDungTinNhan, sachHienTai, maKhachHang, khoaPhien, duLieuKemTheo, danhSachToolDaGoi });
+      const phanHoiTool = await dieuPhoiToolCall({ toolCall, noiDungTinNhan, sachHienTai, maKhachHang, khoaPhien, duLieuKemTheo, danhSachToolDaGoi, ipClient });
       if (phanHoiTool.traVeNgay) {
         await ghiNhatKyChatbot({ maKhachHang, khoaPhien, soToken: tongTokensTieuThu, tenCongCu: phanHoiTool.toolGhiNhan || danhSachToolDaGoi.join(','), ketQua: 'THANH_CONG' });
         return { traLoi: phanHoiTool.traLoi, duLieuKemTheo };

@@ -25,7 +25,7 @@ import { laySocket } from '../services/socket';
 export const ThanhToan = () => {
   const navigate = useNavigate();
   const { user, daDangNhap } = useAuth();
-  const { gioHang, cacMon, layGioHang, xoaTrangState } = useCartStore();
+  const { gioHang, cacMon, layGioHang, xoaTrangState, loi: loiGioHang } = useCartStore();
 
   const [dangTai, setDangTai] = useState(true);
   const [dangDatHang, setDangDatHang] = useState(false);
@@ -391,6 +391,58 @@ export const ThanhToan = () => {
   // Nếu thoát sớm ở đây, khung QR (dựng ở cuối trang chính) không bao giờ xuất hiện và khách chỉ thấy "Giỏ hàng trống".
   const dangHienKhungQR = hienModalQR && Boolean(duLieuQR);
   if (items.length === 0 && !dangHienKhungQR) {
+    const loiHienThi = loi || loiGioHang;
+    if (loiHienThi) {
+      return (
+        <div className="container py-16 text-center">
+          <div className="card" style={{ maxWidth: '520px', margin: '0 auto', padding: '2.5rem 2rem', borderRadius: '12px' }}>
+            <div style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              backgroundColor: '#FEF2F2',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1.25rem',
+              color: '#DC2626'
+            }}>
+              <AlertCircle size={32} />
+            </div>
+            <h2 className="font-serif" style={{ fontSize: '1.45rem', fontWeight: 700, marginBottom: '0.75rem', color: '#DC2626' }}>
+              Không Thể Tải Giỏ Hàng
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.75rem', lineHeight: 1.6 }}>
+              {loiHienThi}
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={async () => {
+                  setDangTai(true);
+                  setLoi('');
+                  try {
+                    await layGioHang();
+                  } catch (e) {
+                    setLoi(e.message || 'Không thể tải lại giỏ hàng');
+                  } finally {
+                    setDangTai(false);
+                  }
+                }}
+                className="btn btn-primary"
+                style={{ padding: '0.75rem 1.75rem', borderRadius: '6px' }}
+              >
+                Thử tải lại
+              </button>
+              <Link to="/cart" className="btn btn-outline" style={{ padding: '0.75rem 1.5rem', borderRadius: '6px' }}>
+                Về giỏ hàng
+              </Link>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="container py-16 text-center">
         <div className="card" style={{ maxWidth: '520px', margin: '0 auto', padding: '2.5rem 2rem', borderRadius: '12px' }}>

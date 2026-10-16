@@ -230,6 +230,17 @@ async function xacNhanHoanTienAdmin(req, res) {
   const maThanhToan = parseInt(req.params.id, 10);
   const { maThamChieu, ghiChu } = req.body;
 
+  if (maThamChieu !== undefined && maThamChieu !== null) {
+    if (typeof maThamChieu !== 'string' || maThamChieu.trim().length > 100) {
+      throw LoiNghiepVu.yeuCauKhongHopLe('Mã tham chiếu hoàn tiền phải là chuỗi không quá 100 ký tự');
+    }
+  }
+  if (ghiChu !== undefined && ghiChu !== null) {
+    if (typeof ghiChu !== 'string' || ghiChu.trim().length > 500) {
+      throw LoiNghiepVu.yeuCauKhongHopLe('Ghi chú hoàn tiền phải là chuỗi không quá 500 ký tự');
+    }
+  }
+
   const thanhToan = await ThanhToan.findByPk(maThanhToan, {
     include: [{ model: DonHang, as: 'donHang' }]
   });
@@ -244,10 +255,10 @@ async function xacNhanHoanTienAdmin(req, res) {
 
   const trangThaiCu = thanhToan.TrangThai;
   await sequelize.transaction(async (t) => {
+    // Không ghi đè MaThamChieuNganHang gốc của giao dịch chuyển khoản; mã hoàn tiền được lưu vào LichSuThayDoi
     const [soDongCapNhat] = await ThanhToan.update(
       {
-        TrangThai: 'DA_HOAN_TIEN',
-        MaThamChieuNganHang: maThamChieu ? String(maThamChieu).trim() : thanhToan.MaThamChieuNganHang
+        TrangThai: 'DA_HOAN_TIEN'
       },
       {
         where: { MaThanhToan: maThanhToan, TrangThai: 'CAN_HOAN_TIEN' },
@@ -260,9 +271,8 @@ async function xacNhanHoanTienAdmin(req, res) {
     }
 
     thanhToan.TrangThai = 'DA_HOAN_TIEN';
-    if (maThamChieu) thanhToan.MaThamChieuNganHang = String(maThamChieu).trim();
 
-    // Ghi nhật ký vào LichSuThayDoi
+    // Ghi nhật ký trạng thái vào LichSuThayDoi
     await LichSuThayDoi.create({
       LoaiDoiTuong: 'THANH_TOAN',
       MaDoiTuong: maThanhToan,
@@ -273,30 +283,50 @@ async function xacNhanHoanTienAdmin(req, res) {
       NgayThayDoi: new Date()
     }, { transaction: t });
 
-    if (ghiChu && ghiChu.trim()) {
+    // Ghi nhật ký mã tham chiếu hoàn tiền vào LichSuThayDoi
+    if (maThamChieu && String(maThamChieu).trim()) {
+      await LichSuThayDoi.create({
+        LoaiDoiTuong: 'THANH_TOAN',
+        MaDoiTuong: maThanhToan,
+        TruongDuLieu: 'MaThamChieuHoanTien',
+        GiaTriCu: null,
+        GiaTriMoi: String(maThamChieu).trim(),
+        MaNhanVienThayDoi: req.user.id,
+        NgayThayDoi: new Date()
+      }, { transaction: t });
+    }
+
+    if (ghiChu && String(ghiChu).trim()) {
       await LichSuThayDoi.create({
         LoaiDoiTuong: 'THANH_TOAN',
         MaDoiTuong: maThanhToan,
         TruongDuLieu: 'GhiChuHoanTien',
         GiaTriCu: null,
-        GiaTriMoi: ghiChu.trim(),
+        GiaTriMoi: String(ghiChu).trim(),
         MaNhanVienThayDoi: req.user.id,
         NgayThayDoi: new Date()
       }, { transaction: t });
     }
   });
 
-  // Phát Socket.IO thông báo nhân viên
+  // Phát Socket.IO thông báo nhân viên và phòng đơn hàng / khách hàng
   try {
     const { phatSuKien } = require('../realtime/socket');
-    phatSuKien('thanhToan:daHoanTien', {
+    const duLieuSocket = {
       maThanhToan,
       maDonHang: thanhToan.MaDonHang,
       maTraCuu: thanhToan.donHang?.MaTraCuu,
       soTien: thanhToan.SoTien,
       maNhanVien: req.user.id,
       thoiGian: new Date().toISOString()
-    }, 'nhan_vien');
+    };
+    phatSuKien('thanhToan:daHoanTien', duLieuSocket, 'nhan_vien');
+    if (thanhToan.donHang?.MaTraCuu) {
+      phatSuKien('thanhToan:daHoanTien', duLieuSocket, `don_hang:${thanhToan.donHang.MaTraCuu}`);
+    }
+    if (thanhToan.donHang?.MaKhachHang) {
+      phatSuKien('thanhToan:daHoanTien', duLieuSocket, `khach_hang:${thanhToan.donHang.MaKhachHang}`);
+    }
   } catch (e) {}
 
   return phanHoiThanhCong(res, {

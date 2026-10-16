@@ -22,6 +22,9 @@ export const GioHang = () => {
     daKhoiTao,
     dangCapNhat,
     loi,
+    loiDongBo,
+    cacMonLoiDongBo,
+    xoaLoiDongBo,
     layGioHang,
     capNhatSoLuong,
     xoaMon,
@@ -152,6 +155,33 @@ export const GioHang = () => {
       {loi && (
         <div className="alert alert-danger mb-4">
           <span>{loi}</span>
+        </div>
+      )}
+
+      {loiDongBo && (
+        <div className="alert alert-warning mb-4" style={{ backgroundColor: '#FFFBEB', borderColor: '#FDE68A', color: '#B45309', display: 'block' }}>
+          <div className="flex items-center justify-between" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 600 }}>{loiDongBo}</span>
+            {xoaLoiDongBo && (
+              <button 
+                type="button" 
+                onClick={xoaLoiDongBo} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, color: '#B45309', fontSize: '1.1rem', padding: '0 4px' }}
+                title="Đóng thông báo"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          {Array.isArray(cacMonLoiDongBo) && cacMonLoiDongBo.length > 0 && (
+            <ul style={{ marginTop: '0.5rem', marginBottom: 0, paddingLeft: '1.25rem', fontSize: '0.85rem' }}>
+              {cacMonLoiDongBo.map((m, idx) => (
+                <li key={idx}>
+                  <strong>{m.tenSach || `Sách #${m.maSach}`}</strong>: {m.lyDoLoi || 'Không thể đồng bộ'}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 

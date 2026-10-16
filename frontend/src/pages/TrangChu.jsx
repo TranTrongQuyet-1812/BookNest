@@ -44,6 +44,9 @@ const DANH_NGON_SACH = [
   }
 ];
 
+// Whitelist các kiểu sắp xếp hợp lệ được hỗ trợ bởi hệ thống
+const CAC_KIEU_SAP_XEP_HOP_LE = ['newest', 'price_asc', 'price_desc', 'random'];
+
 export const TrangChu = () => {
   const { themVaoGio } = useCartStore();
   const location = useLocation();
@@ -51,9 +54,15 @@ export const TrangChu = () => {
   const heroRef = useRef(null);
   const [giamChuyenDong] = useGiamChuyenDong();
 
-  // Đọc query param từ URL (tìm kiếm hoặc lọc danh mục từ navbar)
+  // Đọc kiểu sắp xếp từ URL và kiểm tra tính hợp lệ (không fallback ngầm)
+  const kieuSapXepRaw = searchParams.get('sort') || '';
+  const kieuSapXepHopLe = !kieuSapXepRaw || CAC_KIEU_SAP_XEP_HOP_LE.includes(kieuSapXepRaw);
+  const kieuSapXep = CAC_KIEU_SAP_XEP_HOP_LE.includes(kieuSapXepRaw) ? kieuSapXepRaw : '';
+
+  // Đọc query param từ URL (tìm kiếm hoặc lọc danh mục hoặc sắp xếp từ liên kết xem thêm)
   const tuKhoaTimKiem = searchParams.get('search') || '';
   const danhMucId = searchParams.get('categoryId') || '';
+  const hasPageParam = searchParams.has('page');
   const trangHienTai = parseInt(searchParams.get('page') || '1', 10);
 
   // Danh ngôn ngẫu nhiên mỗi lần tải trang
@@ -89,13 +98,15 @@ export const TrangChu = () => {
   const [sachLocList, setSachLocList] = useState([]);
   const [phanTrangLoc, setPhanTrangLoc] = useState(null);
   const [dangTaiLoc, setDangTaiLoc] = useState(false);
+  const [loiLoc, setLoiLoc] = useState('');
+  const [lanTaiLaiLoc, setLanTaiLaiLoc] = useState(0);
   const [tenDanhMucHienTai, setTenDanhMucHienTai] = useState('');
 
   // Thông báo thêm giỏ hàng
   const [thongBaoThem, setThongBaoThem] = useState('');
 
-  // Kiểm tra xem có đang ở chế độ lọc/tìm kiếm không
-  const laCheDoLoc = Boolean(tuKhoaTimKiem || danhMucId);
+  // Kiểm tra xem có đang ở chế độ lọc/tìm kiếm/sắp xếp không
+  const laCheDoLoc = Boolean(tuKhoaTimKiem || danhMucId || kieuSapXepRaw);
 
   // Hiệu ứng GSAP mở màn cho Hero Section
   useGSAP(() => {
@@ -263,7 +274,7 @@ export const TrangChu = () => {
     }
   };
 
-  // 2. Tải dữ liệu khi có Tìm Kiếm hoặc Lọc Danh Mục
+  // 2. Tải dữ liệu khi có Tìm Kiếm hoặc Lọc Danh Mục / Sắp Xếp
   useEffect(() => {
     if (!laCheDoLoc) return;
 
@@ -271,13 +282,50 @@ export const TrangChu = () => {
     let daHuy = false;
     const taiDuLieuLoc = async () => {
       setDangTaiLoc(true);
+      setLoiLoc('');
+      let dangChuyenTrangRandom = false;
+
+      // Nếu có kiểu sắp xếp trên URL nhưng không thuộc whitelist hợp lệ -> báo lỗi minh bạch, không fallback ngầm
+      if (kieuSapXepRaw && !kieuSapXepHopLe) {
+        setDangTaiLoc(false);
+        setLoiLoc(`Kiểu sắp xếp "${kieuSapXepRaw}" không hợp lệ. Vui lòng chọn một trong các kiểu: Mới nhất, Giá tăng dần, Giá giảm dần hoặc Gợi ý ngẫu nhiên.`);
+        return;
+      }
+
       try {
+        // Xử lý riêng cho trường hợp ?sort=random
+        if (kieuSapXep === 'random') {
+          // Nếu URL chưa có page (người dùng vừa vào /?sort=random lần đầu)
+          if (!hasPageParam) {
+            // Lấy metadata tổng số trang thực tế từ server
+            const resTong = await api.get('/books', { params: { limit: 16, page: 1 } });
+            if (daHuy) return;
+            const tongTrang = resTong.data.data?.phanTrang?.tongSoTrang || 1;
+            setTongSoTrangSach(tongTrang);
+            const randomPage = tongTrang > 1 ? Math.floor(Math.random() * tongTrang) + 1 : 1;
+            if (randomPage !== 1) {
+              dangChuyenTrangRandom = true;
+              // Cập nhật page lên URL để đồng bộ với thanh phân trang và kích hoạt tải trang đó
+              // Giữ dangTaiLoc = true để tránh nhá khung "Không tìm thấy cuốn sách nào" trước khi dữ liệu trang ngẫu nhiên kịp tải
+              const paramsMoi = new URLSearchParams(searchParams);
+              paramsMoi.set('page', String(randomPage));
+              setSearchParams(paramsMoi, { replace: true });
+              return;
+            }
+            // Nếu chỉ có 1 trang thì hiển thị luôn
+            setSachLocList(resTong.data.data?.danhSach || []);
+            setPhanTrangLoc(resTong.data.data?.phanTrang || null);
+            return;
+          }
+        }
+
         const params = {
           page: trangHienTai,
           limit: 16
         };
         if (tuKhoaTimKiem) params.search = tuKhoaTimKiem;
         if (danhMucId) params.categoryId = Number(danhMucId);
+        if (kieuSapXep && kieuSapXep !== 'random') params.sort = kieuSapXep;
 
         const [resBooks, resCats] = await Promise.all([
           api.get('/books', { params }),
@@ -296,14 +344,17 @@ export const TrangChu = () => {
         }
       } catch (err) {
         console.error('Lỗi tải dữ liệu lọc:', err);
+        if (!daHuy) {
+          setLoiLoc(err?.response?.data?.message || err?.message || 'Không thể tải danh sách sách. Vui lòng thử lại sau.');
+        }
       } finally {
-        if (!daHuy) setDangTaiLoc(false);
+        if (!daHuy && !dangChuyenTrangRandom) setDangTaiLoc(false);
       }
     };
 
     taiDuLieuLoc();
     return () => { daHuy = true; };
-  }, [laCheDoLoc, tuKhoaTimKiem, danhMucId, trangHienTai]);
+  }, [laCheDoLoc, tuKhoaTimKiem, danhMucId, kieuSapXep, kieuSapXepRaw, kieuSapXepHopLe, trangHienTai, hasPageParam, lanTaiLaiLoc]);
 
   return (
     <div className="home-page" style={{ minHeight: '80vh', paddingBottom: '3.5rem' }}>
@@ -605,12 +656,47 @@ export const TrangChu = () => {
               lineHeight: 1.15,
               margin: 0
             }}>
-              {tuKhoaTimKiem ? `Tìm kiếm: "${tuKhoaTimKiem}"` : (tenDanhMucHienTai || 'Danh Mục Sách')}
+              {tuKhoaTimKiem ? `Tìm kiếm: "${tuKhoaTimKiem}"` : (
+                danhMucId ? (tenDanhMucHienTai || 'Danh Mục Sách') : (
+                  kieuSapXep === 'newest' ? 'Sách Mới Phát Hành' :
+                  kieuSapXep === 'price_asc' ? 'Ưu Đãi Giá Tốt Nhất' :
+                  kieuSapXep === 'price_desc' ? 'Tác Phẩm Đặc Tuyển' :
+                  kieuSapXep === 'random' ? 'Gợi Ý Đọc Sách Hôm Nay' :
+                  'Kho Sách Chọn Lọc'
+                )
+              )}
             </h2>
             {phanTrangLoc && (
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.35rem', margin: 0 }}>
                 Tìm thấy {phanTrangLoc.tongSoBanGhi} cuốn sách phù hợp
               </p>
+            )}
+
+            {kieuSapXep === 'random' && (
+              <div style={{ marginTop: '0.65rem' }}>
+                <button
+                  onClick={() => {
+                    const maxP = phanTrangLoc?.tongSoTrang || tongSoTrangSach || 1;
+                    const randomPage = Math.floor(Math.random() * maxP) + 1;
+                    const paramsMoi = new URLSearchParams(searchParams);
+                    paramsMoi.set('page', String(randomPage));
+                    setSearchParams(paramsMoi);
+                  }}
+                  style={{
+                    padding: '0.35rem 0.85rem',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    backgroundColor: 'var(--primary)',
+                    color: 'var(--primary-text)',
+                    border: 'none',
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                    boxShadow: 'var(--shadow-sm)'
+                  }}
+                >
+                  🎲 Đổi gợi ý ngẫu nhiên khác
+                </button>
+              </div>
             )}
 
             <Link
@@ -635,6 +721,50 @@ export const TrangChu = () => {
           {dangTaiLoc ? (
             <div style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--text-muted)' }}>
               Đang tải danh sách sách...
+            </div>
+          ) : loiLoc ? (
+            <div style={{
+              textAlign: 'center',
+              padding: '3rem 1.5rem',
+              backgroundColor: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-md)',
+              maxWidth: '520px',
+              margin: '2rem auto'
+            }}>
+              <p style={{ color: 'var(--danger)', fontWeight: 600, marginBottom: '1rem', fontSize: '0.95rem' }}>
+                {loiLoc}
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+                <button
+                  onClick={() => setLanTaiLaiLoc(prev => prev + 1)}
+                  style={{
+                    padding: '0.5rem 1.2rem',
+                    backgroundColor: 'var(--primary)',
+                    color: 'var(--primary-text)',
+                    border: 'none',
+                    borderRadius: 'var(--radius-sm)',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Thử tải lại
+                </button>
+                <Link
+                  to="/"
+                  style={{
+                    padding: '0.5rem 1.2rem',
+                    backgroundColor: 'var(--bg-surface)',
+                    color: 'var(--text-main)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                    fontWeight: 600,
+                    textDecoration: 'none'
+                  }}
+                >
+                  Về trang chủ
+                </Link>
+              </div>
             </div>
           ) : sachLocList.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--text-muted)' }}>

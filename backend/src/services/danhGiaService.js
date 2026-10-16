@@ -191,12 +191,13 @@ async function anHienDanhGia(maDanhGia, daAn, maNhanVien, lyDo = '') {
   const giaTriCu = danhGia.DaAn ? '1' : '0';
   const giaTriMoi = daAn ? '1' : '0';
 
-  danhGia.DaAn = Boolean(daAn);
-  await danhGia.save();
+  const t = await sequelize.transaction();
+  try {
+    danhGia.DaAn = Boolean(daAn);
+    await danhGia.save({ transaction: t });
 
-  // Ghi nhật ký kiểm toán Back-Office
-  if (maNhanVien) {
-    try {
+    // Ghi nhật ký kiểm toán Back-Office
+    if (maNhanVien) {
       await LichSuThayDoi.create({
         LoaiDoiTuong: 'DanhGia',
         MaDoiTuong: maDanhGia,
@@ -204,13 +205,15 @@ async function anHienDanhGia(maDanhGia, daAn, maNhanVien, lyDo = '') {
         GiaTriCu: giaTriCu,
         GiaTriMoi: `${giaTriMoi}${lyDo ? ` (Lý do: ${lyDo})` : ''}`,
         MaNhanVienThayDoi: maNhanVien
-      });
-    } catch (e) {
-      console.warn('[LichSuThayDoi] Không thể ghi nhật ký thay đổi đánh giá:', e.message);
+      }, { transaction: t });
     }
-  }
 
-  return danhGia;
+    await t.commit();
+    return danhGia;
+  } catch (err) {
+    await t.rollback();
+    throw err;
+  }
 }
 
 /**
@@ -222,9 +225,10 @@ async function xoaDanhGia(maDanhGia, maNhanVien) {
     throw LoiNghiepVu.khongTimThay('Không tìm thấy đánh giá cần xóa');
   }
 
-  // Ghi nhật ký kiểm toán trước khi xóa
-  if (maNhanVien) {
-    try {
+  const t = await sequelize.transaction();
+  try {
+    // Ghi nhật ký kiểm toán trước khi xóa
+    if (maNhanVien) {
       await LichSuThayDoi.create({
         LoaiDoiTuong: 'DanhGia',
         MaDoiTuong: maDanhGia,
@@ -232,14 +236,16 @@ async function xoaDanhGia(maDanhGia, maNhanVien) {
         GiaTriCu: JSON.stringify({ SoSao: danhGia.SoSao, NoiDung: danhGia.NoiDung }),
         GiaTriMoi: 'DA_XOA_VINH_VIEN',
         MaNhanVienThayDoi: maNhanVien
-      });
-    } catch (e) {
-      console.warn('[LichSuThayDoi] Không thể ghi nhật ký xóa đánh giá:', e.message);
+      }, { transaction: t });
     }
-  }
 
-  await danhGia.destroy();
-  return { thanhCong: true, maDanhGia };
+    await danhGia.destroy({ transaction: t });
+    await t.commit();
+    return { thanhCong: true, maDanhGia };
+  } catch (err) {
+    await t.rollback();
+    throw err;
+  }
 }
 
 module.exports = {

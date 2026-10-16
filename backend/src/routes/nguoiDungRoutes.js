@@ -16,8 +16,8 @@ const luatCapNhatHoSo = Joi.object({
     'string.min': 'Họ và tên phải có ít nhất 2 ký tự',
     'string.max': 'Họ và tên không được vượt quá 100 ký tự'
   }),
-  soDienThoai: Joi.string().trim().pattern(/^[0-9]{10,11}$/).allow(null, '').messages({
-    'string.pattern.base': 'Số điện thoại phải gồm 10 hoặc 11 chữ số'
+  soDienThoai: Joi.string().trim().pattern(/^(0|\+84)[35789][0-9]{8}$/).allow(null, '').messages({
+    'string.pattern.base': 'Số điện thoại không đúng định dạng số di động Việt Nam'
   }),
   diaChiMacDinh: Joi.string().trim().max(255).allow(null, '').messages({
     'string.max': 'Địa chỉ không được vượt quá 255 ký tự'

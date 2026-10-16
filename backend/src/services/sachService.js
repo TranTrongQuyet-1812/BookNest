@@ -59,13 +59,13 @@ async function layDanhSachSach({
       include: [
         [
           sequelize.literal(
-            '(SELECT ROUND(AVG(CAST(SoSao AS FLOAT)), 1) FROM DanhGia WHERE DanhGia.MaSach = Sach.MaSach)'
+            '(SELECT ROUND(AVG(CAST(SoSao AS FLOAT)), 1) FROM DanhGia WHERE DanhGia.MaSach = Sach.MaSach AND DanhGia.DaAn = 0)'
           ),
           'soSaoTrungBinh'
         ],
         [
           sequelize.literal(
-            '(SELECT COUNT(*) FROM DanhGia WHERE DanhGia.MaSach = Sach.MaSach)'
+            '(SELECT COUNT(*) FROM DanhGia WHERE DanhGia.MaSach = Sach.MaSach AND DanhGia.DaAn = 0)'
           ),
           'soLuotDanhGia'
         ]
@@ -92,13 +92,13 @@ async function layChiTietSach(maSach, laAdmin = false) {
       include: [
         [
           sequelize.literal(
-            '(SELECT ROUND(AVG(CAST(SoSao AS FLOAT)), 1) FROM DanhGia WHERE DanhGia.MaSach = Sach.MaSach)'
+            '(SELECT ROUND(AVG(CAST(SoSao AS FLOAT)), 1) FROM DanhGia WHERE DanhGia.MaSach = Sach.MaSach AND DanhGia.DaAn = 0)'
           ),
           'soSaoTrungBinh'
         ],
         [
           sequelize.literal(
-            '(SELECT COUNT(*) FROM DanhGia WHERE DanhGia.MaSach = Sach.MaSach)'
+            '(SELECT COUNT(*) FROM DanhGia WHERE DanhGia.MaSach = Sach.MaSach AND DanhGia.DaAn = 0)'
           ),
           'soLuotDanhGia'
         ]

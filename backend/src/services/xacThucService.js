@@ -34,6 +34,22 @@ async function dangKy({ email, matKhau, hoTen, soDienThoai, diaChiMacDinh }) {
   return { id, email: emailMoi, fullName, role };
 }
 
+// Hàm tính mã phiên mật khẩu HMAC-SHA256 (bảo vệ cấu trúc hash bcrypt, không làm lộ hash ra JWT payload)
+function tinhMaPhienMatKhau(matKhauHash, biMat = cauHinh.jwt?.biMat || cauHinh.jwtBiMat) {
+  if (!matKhauHash) return '';
+  return crypto.createHmac('sha256', biMat).update(String(matKhauHash)).digest('hex').slice(0, 10);
+}
+
+// Cấp token JWT chuẩn mực với mã phiên pwh bảo mật
+function taoToken(user, aud, taiKhoan) {
+  const pwh = tinhMaPhienMatKhau(taiKhoan.MatKhauHash);
+  return jwt.sign(
+    { id: user.id, email: user.email, role: user.role, fullName: user.fullName, aud, pwh },
+    cauHinh.jwt.biMat,
+    { expiresIn: cauHinh.jwt.hanDung }
+  );
+}
+
 // Kiểm tra email, mật khẩu trên một bảng tài khoản rồi cấp JWT mang đúng aud của cổng đó
 async function dangNhapTrenBang(Bang, aud, { email, matKhau }) {
   const taiKhoan = await Bang.findOne({ where: { Email: email } });
@@ -54,15 +70,7 @@ async function dangNhapTrenBang(Bang, aud, { email, matKhau }) {
   }
 
   const user = thongTinTaiKhoan(aud, taiKhoan);
-
-  // Ký token JWT với thời hạn cấu hình; aud cho biết token được cấp ở cổng nào.
-  // Gắn pwh (8 ký tự cuối của MatKhauHash) để vô hiệu hóa token cũ ngay lập tức khi đổi mật khẩu
-  const pwh = taiKhoan.MatKhauHash ? taiKhoan.MatKhauHash.slice(-8) : '';
-  const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role, fullName: user.fullName, aud, pwh },
-    cauHinh.jwt.biMat,
-    { expiresIn: cauHinh.jwt.hanDung }
-  );
+  const token = taoToken(user, aud, taiKhoan);
 
   return { token, user };
 }
@@ -196,5 +204,7 @@ module.exports = {
   xacMinhOtpQuenMatKhau,
   datLaiMatKhau,
   layOtpChoTest,
-  xoaTatCaOtpChoTest
+  xoaTatCaOtpChoTest,
+  taoToken,
+  tinhMaPhienMatKhau
 };

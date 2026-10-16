@@ -74,6 +74,8 @@ export const useCartStore = create((set, get) => ({
   daKhoiTao: false,
   dangCapNhat: false,
   loi: null,
+  loiDongBo: null,
+  cacMonLoiDongBo: [],
 
   // 1. Tải giỏ hàng (Tự động nhận diện Guest hay Customer)
   layGioHang: async () => {
@@ -348,13 +350,15 @@ export const useCartStore = create((set, get) => ({
       if (cacMonLoi.length > 0) {
         luuGuestCart(cacMonLoi);
         set({
-          loi: `Có ${cacMonLoi.length} cuốn sách trong giỏ cục bộ chưa thể đưa lên tài khoản (sách tạm hết hàng hoặc vượt tồn kho).`
+          loiDongBo: `Có ${cacMonLoi.length} cuốn sách trong giỏ cục bộ chưa thể đưa lên tài khoản (sách tạm hết hàng hoặc vượt tồn kho).`,
+          cacMonLoiDongBo: cacMonLoi
         });
       } else {
         localStorage.removeItem(KEY_GUEST_CART);
+        set({ loiDongBo: null, cacMonLoiDongBo: [] });
       }
 
-      // Nạp lại toàn bộ giỏ hàng mới nhất từ Server
+      // Nạp lại toàn bộ giỏ hàng mới nhất từ Server (chỉ clear `loi`, giữ nguyên `loiDongBo` để báo người dùng)
       await get().layGioHang();
     } catch (err) {
       console.error('Lỗi quá trình đồng bộ giỏ hàng lên server:', err);
@@ -362,7 +366,12 @@ export const useCartStore = create((set, get) => ({
     }
   },
 
-  // 7. Xóa trắng state ở Client (khi đăng xuất hoặc sau khi đặt hàng thành công)
+  // 7. Xóa thông báo lỗi đồng bộ giỏ hàng
+  xoaLoiDongBo: () => {
+    set({ loiDongBo: null, cacMonLoiDongBo: [] });
+  },
+
+  // 8. Xóa trắng state ở Client (khi đăng xuất hoặc sau khi đặt hàng thành công)
   xoaTrangState: () => {
     set({
       gioHang: null,
@@ -370,6 +379,8 @@ export const useCartStore = create((set, get) => ({
       tongSoLuong: 0,
       tongTien: 0,
       loi: null,
+      loiDongBo: null,
+      cacMonLoiDongBo: [],
       daKhoiTao: false
     });
   },

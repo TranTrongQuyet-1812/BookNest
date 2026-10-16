@@ -20,10 +20,35 @@ const { tinhNgayHetHan, sinhMaGiaoDich } = require('../utils/thanhToanQr');
 const emailService = require('./emailService');
 const { phatSuKien } = require('../realtime/socket');
 
-// Phát sự kiện Socket.IO an toàn tới phòng nhân viên (không làm gián đoạn transaction CSDL nếu socket gặp lỗi)
+// Phát sự kiện Socket.IO an toàn tới phòng nhân viên và phòng khách hàng (không làm gián đoạn transaction CSDL nếu socket gặp lỗi)
 function baoNhanVienRealtime(tenSuKien, duLieu) {
   try {
+    // 1. Luôn phát tới phòng nhân viên (Back-Office)
     phatSuKien(tenSuKien, duLieu, 'nhan_vien');
+
+    // 2. Phát tới phòng riêng của đơn hàng theo mã tra cứu (Storefront ChiTietDonHang)
+    if (duLieu?.maTraCuu) {
+      phatSuKien(tenSuKien, {
+        maTraCuu: duLieu.maTraCuu,
+        trangThaiDonHang: duLieu.trangThaiMoi || duLieu.trangThaiDonHang,
+        trangThaiCu: duLieu.trangThaiCu,
+        trangThaiThanhToan: duLieu.trangThaiThanhToan,
+        soTien: duLieu.soTien,
+        thoiGian: duLieu.thoiGian || new Date().toISOString()
+      }, `don_hang:${duLieu.maTraCuu}`);
+    }
+
+    // 3. Nếu đơn có MaKhachHang, phát tới phòng riêng của khách hàng (Storefront DonHangCuaToi)
+    if (duLieu?.maKhachHang) {
+      phatSuKien(tenSuKien, {
+        maTraCuu: duLieu.maTraCuu,
+        trangThaiDonHang: duLieu.trangThaiMoi || duLieu.trangThaiDonHang,
+        trangThaiCu: duLieu.trangThaiCu,
+        trangThaiThanhToan: duLieu.trangThaiThanhToan,
+        soTien: duLieu.soTien,
+        thoiGian: duLieu.thoiGian || new Date().toISOString()
+      }, `khach_hang:${duLieu.maKhachHang}`);
+    }
   } catch (err) {
     console.warn(`[Socket.IO] Không thể phát sự kiện ${tenSuKien}:`, err.message);
   }
@@ -483,7 +508,7 @@ async function khachHuyDon(maDonHang, maKhachHang, lyDo) {
     );
 
     await t.commit();
-    if (thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && thanhToan?.MaGiaoDichPayos) {
+    if (thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && thanhToan?.DuongDanThanhToan && thanhToan?.MaGiaoDichPayos) {
       try {
         const { huyLinkPayOS } = require('./payosService');
         huyLinkPayOS(thanhToan.MaGiaoDichPayos, lyDo || 'Khách hàng tự hủy đơn');
@@ -494,7 +519,10 @@ async function khachHuyDon(maDonHang, maKhachHang, lyDo) {
     baoNhanVienRealtime('donHang:capNhatTrangThai', {
       maDonHang: chiTietDon.MaDonHang,
       maTraCuu: chiTietDon.MaTraCuu,
+      maKhachHang: chiTietDon.MaKhachHang,
       trangThaiDonHang: 'DA_HUY',
+      trangThaiCu: 'CHO_DUYET',
+      trangThaiThanhToan: thanhToan?.TrangThai,
       lyDo: lyDo || 'Khách hàng tự hủy đơn'
     });
     return chiTietDon;
@@ -628,8 +656,11 @@ async function adminCapNhatTrangThai(maDonHang, trangThaiMoi, ghiChu, maNhanVien
     emailService.guiEmailCapNhatTrangThai(chiTietDon, trangThaiMoi, ghiChu).catch(err => console.error('[Lỗi Gửi Email Cập Nhật]', err.message));
     baoNhanVienRealtime('donHang:capNhatTrangThai', {
       maDonHang,
+      maTraCuu: chiTietDon.MaTraCuu,
+      maKhachHang: chiTietDon.MaKhachHang,
       trangThaiCu,
       trangThaiMoi,
+      trangThaiThanhToan: chiTietDon.thanhToan?.TrangThai,
       thoiGian: new Date().toISOString()
     });
     return chiTietDon;
@@ -698,7 +729,7 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
     );
 
     await t.commit();
-    if (canHuyLink && thanhToan?.MaGiaoDichPayos) {
+    if (canHuyLink && thanhToan?.DuongDanThanhToan && thanhToan?.MaGiaoDichPayos) {
       try {
         const { huyLinkPayOS } = require('./payosService');
         huyLinkPayOS(thanhToan.MaGiaoDichPayos, lyDo || 'Nhân viên hủy đơn');
@@ -708,8 +739,11 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
     emailService.guiEmailCapNhatTrangThai(chiTietDon, 'DA_HUY', lyDo).catch(err => console.error('[Lỗi Gửi Email Hủy Đơn]', err.message));
     baoNhanVienRealtime('donHang:capNhatTrangThai', {
       maDonHang,
+      maTraCuu: chiTietDon.MaTraCuu,
+      maKhachHang: chiTietDon.MaKhachHang,
       trangThaiCu,
       trangThaiMoi: 'DA_HUY',
+      trangThaiThanhToan: thanhToan?.TrangThai,
       lyDo,
       thoiGian: new Date().toISOString()
     });
@@ -717,6 +751,7 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
       baoNhanVienRealtime('thanhToan:canHoanTien', {
         maDonHang: chiTietDon.MaDonHang,
         maTraCuu: chiTietDon.MaTraCuu,
+        maKhachHang: chiTietDon.MaKhachHang,
         soTien: thanhToan.SoTien,
         lyDo
       });

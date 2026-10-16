@@ -107,13 +107,19 @@ export const AuthProvider = ({ children }) => {
     setUser(prev => ({ ...prev, ...thongTinMoi }));
   };
 
+  const capNhatToken = (tokenMoi) => {
+    if (!tokenMoi) return;
+    localStorage.setItem('booknest_token', tokenMoi);
+    setToken(tokenMoi);
+  };
+
   return (
     <AuthContext.Provider value={{
       user, token, loading, theme, toggleTheme: () => setTheme(prev => prev === 'light' ? 'dark' : 'light'),
       dangNhap: (email, matKhau) => dangNhapTaiCong('/auth/login', email, matKhau),
       dangNhapNhanVien: (email, matKhau) => dangNhapTaiCong('/admin/auth/login', email, matKhau),
       dangKy: async (duLieu) => (await api.post('/auth/register', duLieu)).data,
-      dangXuat, capNhatUser, daDangNhap: Boolean(token && user)
+      dangXuat, capNhatUser, capNhatToken, daDangNhap: Boolean(token && user)
     }}>
       {children}
     </AuthContext.Provider>

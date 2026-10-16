@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { User, Lock, Check, AlertCircle, Save, KeyRound } from 'lucide-react';
 
 export const HoSo = () => {
-  const { user, capNhatUser } = useAuth();
+  const { user, capNhatUser, capNhatToken } = useAuth();
 
   // State cập nhật thông tin
   const [formProfile, setFormProfile] = useState({
@@ -76,10 +76,14 @@ export const HoSo = () => {
 
     setDangLuuPass(true);
     try {
-      await api.put('/users/change-password', {
+      const res = await api.put('/users/change-password', {
         matKhauCu: formPassword.matKhauCu,
         matKhauMoi: formPassword.matKhauMoi
       });
+      const tokenMoi = res.data?.data?.token;
+      if (tokenMoi && capNhatToken) {
+        capNhatToken(tokenMoi);
+      }
       setThongBaoPass('Đổi mật khẩu thành công! Mật khẩu mới đã có hiệu lực');
       setFormPassword({ matKhauCu: '', matKhauMoi: '', xacNhanMatKhau: '' });
     } catch (err) {

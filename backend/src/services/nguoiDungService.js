@@ -62,7 +62,17 @@ async function doiMatKhau(aud, maTaiKhoan, { matKhauCu, matKhauMoi }) {
   taiKhoan.MatKhauHash = await bcrypt.hash(matKhauMoi, 10);
   await taiKhoan.save();
 
-  return { thanhCong: true };
+  // Cấp ngay token mới chứa phiên mật khẩu mới để client gia hạn phiên làm việc, không bị đá ra 401
+  const { taoToken } = require('./xacThucService');
+  const user = {
+    id: taiKhoan[aud === AUD_NHAN_VIEN ? 'MaNhanVien' : 'MaKhachHang'],
+    email: taiKhoan.Email,
+    role: aud === AUD_NHAN_VIEN ? taiKhoan.VaiTro : 'khach_hang',
+    fullName: taiKhoan.HoTen
+  };
+  const tokenMoi = taoToken(user, aud, taiKhoan);
+
+  return { thanhCong: true, token: tokenMoi };
 }
 
 // ==========================================

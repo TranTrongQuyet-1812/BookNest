@@ -133,11 +133,15 @@ export const ChiTietDonHang = () => {
 
     socket.on('donHang:capNhatTrangThai', xuLyCapNhat);
     socket.on('thanhToan:daThanhToan', xuLyCapNhat);
+    socket.on('thanhToan:canHoanTien', xuLyCapNhat);
+    socket.on('thanhToan:daHoanTien', xuLyCapNhat);
 
     return () => {
       roiDonHang(id);
       socket.off('donHang:capNhatTrangThai', xuLyCapNhat);
       socket.off('thanhToan:daThanhToan', xuLyCapNhat);
+      socket.off('thanhToan:canHoanTien', xuLyCapNhat);
+      socket.off('thanhToan:daHoanTien', xuLyCapNhat);
     };
   }, [id, donHang?.MaDonHang]);
 
