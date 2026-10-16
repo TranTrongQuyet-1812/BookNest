@@ -5,9 +5,7 @@ import {
   Boxes, 
   AlertTriangle, 
   PlusCircle, 
-  History, 
-  Check, 
-  AlertCircle 
+  History 
 } from 'lucide-react';
 
 const tenLoaiDieuChinh = {

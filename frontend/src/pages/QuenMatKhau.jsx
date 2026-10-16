@@ -6,8 +6,6 @@ import {
   KeyRound, 
   Mail, 
   ArrowLeft, 
-  CheckCircle2, 
-  AlertCircle, 
   Eye, 
   EyeOff, 
   RefreshCw,

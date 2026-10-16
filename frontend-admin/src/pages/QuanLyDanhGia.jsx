@@ -8,8 +8,6 @@ import {
   RefreshCw, 
   Search, 
   Filter, 
-  AlertCircle, 
-  CheckCircle2,
   BookOpen
 } from 'lucide-react';
 import api from '@booknest/shared/api';

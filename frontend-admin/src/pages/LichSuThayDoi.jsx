@@ -19,7 +19,6 @@ export default function LichSuThayDoi() {
   const [truocNgay, setTruocNgay] = useState('');
   const [xemTruoc, setXemTruoc] = useState(null);
   const [dangDon, setDangDon] = useState(false);
-  const [ketQuaDon, setKetQuaDon] = useState(null);
 
   const taiLichSu = async () => {
     setDangTai(true);

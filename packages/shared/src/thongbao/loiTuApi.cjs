@@ -1,5 +1,5 @@
 /**
- * Hàm trích xuất thông điệp lỗi an toàn từ phản hồi API (Axios Error)
+ * Hàm trích xuất thông điệp lỗi an toàn từ phản hồi API (Axios Error) - Bản CommonJS cho Node/Jest
  * Tuân thủ quy tắc bảo mật và UX của BookNest:
  * 1. Tuyệt đối không bao giờ để lộ err.message thô của Axios (như "Network Error", "Request failed with status code 500" hay đường dẫn API).
  * 2. Mã lỗi 4xx: Trả về thông điệp tiếng Việt thân thiện do backend trả về (err.response.data.message).
@@ -58,9 +58,20 @@ function loiTuApi(err, macDinh = 'Đã có lỗi xảy ra. Vui lòng thử lại
       err.includes('Request failed') ||
       err.includes('timeout')
     ) {
-      return 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau.';
+      return 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại đường truyền mạng.';
     }
     return err.trim();
+  }
+
+  if (typeof err?.message === 'string' && err.message.trim()) {
+    if (
+      err.message.includes('Network Error') ||
+      err.message.includes('Request failed') ||
+      err.message.includes('timeout')
+    ) {
+      return 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại đường truyền mạng.';
+    }
+    return macDinh;
   }
 
   return macDinh;

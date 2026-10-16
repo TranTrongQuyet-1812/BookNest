@@ -7,13 +7,9 @@ import {
   Check, 
   Clock, 
   RefreshCw, 
-  ShieldCheck, 
   AlertCircle, 
   CheckCircle2, 
-  X,
-  ExternalLink,
-  Download,
-  Wifi
+  X
 } from 'lucide-react';
 import { laySocket, thamGiaDonHang, roiDonHang } from '../services/socket';
 import { useThongBao } from '@booknest/shared/thongbao';
@@ -62,7 +58,7 @@ export const KhungThanhToanVietQR = ({
       const tenMuc = loai === 'TIEN' ? 'số tiền' : loai === 'STK' ? 'số tài khoản' : 'nội dung chuyển khoản';
       tb.thanhCong(`Đã sao chép ${tenMuc} vào bộ nhớ tạm`);
       setTimeout(() => setDaSaoChep(''), 2000);
-    } catch (err) {
+    } catch (_err) {
       tb.canhBao('Không thể tự động sao chép. Vui lòng sao chép thủ công.');
     }
   };

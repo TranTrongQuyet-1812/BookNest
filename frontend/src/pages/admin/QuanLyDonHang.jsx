@@ -12,10 +12,18 @@ import {
   PackageCheck, 
   XCircle, 
   Filter, 
-  Check, 
-  AlertCircle, 
   Ban 
 } from 'lucide-react';
+
+const NHAN_TRANG_THAI_DON_HANG = {
+  CHO_DUYET: 'Chờ duyệt',
+  DA_XAC_NHAN: 'Đã xác nhận',
+  DANG_GIAO: 'Đang giao hàng',
+  DA_GIAO: 'Đã giao hàng',
+  DA_HUY: 'Đã hủy',
+};
+
+const layTenTrangThai = (ma) => NHAN_TRANG_THAI_DON_HANG[ma] || ma || '';
 
 export const QuanLyDonHang = () => {
   const { thongBao: tb, xacNhan, nhapLyDo } = useThongBao();
@@ -43,7 +51,7 @@ export const QuanLyDonHang = () => {
     };
 
     const xuLyCapNhatTrangThai = (duLieu) => {
-      tb.thongTin(`Đơn hàng #${duLieu?.maDonHang || ''} vừa cập nhật trạng thái: ${duLieu?.trangThaiMoi || ''}`);
+      tb.thongTin(`Đơn hàng #${duLieu?.maDonHang || ''} vừa cập nhật trạng thái: ${layTenTrangThai(duLieu?.trangThaiMoi)}`);
       taiLai();
     };
 
@@ -113,7 +121,7 @@ export const QuanLyDonHang = () => {
 
     try {
       await api.put(`/admin/orders/${maDonHang}/status`, { trangThaiMoi });
-      tb.thanhCong(`Đã chuyển đơn hàng #${maDonHang} sang trạng thái: ${trangThaiMoi}`);
+      tb.thanhCong(`Đã chuyển đơn hàng #${maDonHang} sang trạng thái: ${layTenTrangThai(trangThaiMoi)}`);
       taiLai();
     } catch (err) {
       tb.loiTuApi(err, 'Chuyển trạng thái thất bại');

@@ -5,8 +5,7 @@ import useCartStore from '../stores/cartStore';
 import LogoBookNest from '../components/LogoBookNest';
 import { 
   Eye, 
-  EyeOff, 
-  AlertCircle 
+  EyeOff 
 } from 'lucide-react';
 import { ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 

@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useCartStore from '../stores/cartStore';
-import { useAuth } from '../context/AuthContext';
 import { useThongBao, ThongBaoTaiCho } from '@booknest/shared/thongbao';
 import { 
   ShoppingCart, 
@@ -9,17 +8,14 @@ import {
   Plus, 
   Minus, 
   ArrowRight, 
-  AlertTriangle, 
   BookOpen, 
   ArrowLeft 
 } from 'lucide-react';
 
 export const GioHang = () => {
   const navigate = useNavigate();
-  const { daDangNhap } = useAuth();
   const { thongBao: tb, xacNhan } = useThongBao();
   const {
-    gioHang,
     cacMon,
     daKhoiTao,
     dangCapNhat,

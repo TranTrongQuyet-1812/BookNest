@@ -8,16 +8,11 @@ import {
   CheckCircle, 
   AlertCircle, 
   ArrowLeft, 
-  ShieldCheck, 
   BookOpen, 
   User, 
-  Mail, 
-  Phone, 
   Truck,
   Sparkles,
-  Lock,
-  QrCode,
-  CreditCard
+  QrCode
 } from 'lucide-react';
 import { KhungThanhToanVietQR } from '../components/KhungThanhToanVietQR';
 import { useThongBao, loiTuApi, ThongBaoTaiCho } from '@booknest/shared/thongbao';
@@ -25,7 +20,7 @@ import { useThongBao, loiTuApi, ThongBaoTaiCho } from '@booknest/shared/thongbao
 export const ThanhToan = () => {
   const navigate = useNavigate();
   const { user, daDangNhap } = useAuth();
-  const { thongBao: tb, xacNhan } = useThongBao();
+  const { thongBao: tb } = useThongBao();
   const { gioHang, cacMon, layGioHang, xoaTrangState, loi: loiGioHang } = useCartStore();
 
   const [dangTai, setDangTai] = useState(true);

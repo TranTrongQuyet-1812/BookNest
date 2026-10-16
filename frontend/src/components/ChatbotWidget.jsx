@@ -75,7 +75,7 @@ const chuanHoaNoiDungAI = (noiDung) => {
 export const ChatbotWidget = () => {
   const navigate = useNavigate();
   const { themVaoGio } = useCartStore();
-  const { theme, daDangNhap, user } = useAuth();
+  const { theme } = useAuth();
   const laDark = theme === 'dark';
 
   const [moChat, setMoChat] = useState(false);

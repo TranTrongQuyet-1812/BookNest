@@ -8,7 +8,6 @@ import {
   Truck, 
   PackageCheck, 
   XCircle, 
-  AlertCircle, 
   MapPin, 
   Phone, 
   User, 
@@ -59,7 +58,7 @@ export const ChiTietDonHang = () => {
           setDonHang(resDon.data.data);
         }
       }
-    } catch (err) {
+    } catch (_err) {
       console.warn('Đơn hàng chưa có thông tin thanh toán QR hoặc dùng COD');
     }
   };

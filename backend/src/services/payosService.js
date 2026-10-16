@@ -241,7 +241,6 @@ async function xuLyKhongDoiDuocTrangThai(thanhToan, orderCode, noiDungTho) {
  */
 async function xuLyWebhookPayOS(webhookBody) {
   const noiDungTho = typeof webhookBody === 'string' ? webhookBody : JSON.stringify(webhookBody);
-  let chuKyHopLe = false;
   let duLieuXacThuc = null;
 
   // 1. Xác thực chữ ký Checksum
@@ -256,9 +255,7 @@ async function xuLyWebhookPayOS(webhookBody) {
 
   try {
     duLieuXacThuc = await payOSClient.webhooks.verify(webhookBody);
-    chuKyHopLe = true;
-  } catch (err) {
-    chuKyHopLe = false;
+  } catch (_err) {
     await NhatKyWebhookPayos.create({
       NoiDungTho: noiDungTho,
       ChuKyHopLe: false,

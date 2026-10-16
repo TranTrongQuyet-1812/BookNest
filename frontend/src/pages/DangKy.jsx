@@ -4,9 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import LogoBookNest from '../components/LogoBookNest';
 import { 
   Eye, 
-  EyeOff, 
-  AlertCircle, 
-  CheckCircle2 
+  EyeOff 
 } from 'lucide-react';
 import { ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 

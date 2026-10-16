@@ -9,6 +9,12 @@ import ThongBaoContext from './ThongBaoContext';
 import HopThoai from './HopThoai';
 import { loiTuApi } from './loiTuApi';
 import {
+  taoQuanLyHangDoi,
+  kiemTraVaLuuDebounce,
+  themToastVaoHangDoi,
+  tinhThoiGianConLai,
+} from './logicThongBao';
+import {
   IconThanhCong,
   IconLoi,
   IconCanhBao,
@@ -67,8 +73,11 @@ function ToastItem({ toast, onDong }) {
   const handleTamDung = () => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
-      const daChay = Date.now() - startTimeRef.current;
-      remainingRef.current = Math.max(0, remainingRef.current - daChay);
+      remainingRef.current = tinhThoiGianConLai(
+        remainingRef.current,
+        startTimeRef.current,
+        Date.now()
+      );
     }
   };
 
@@ -138,9 +147,14 @@ export function ThongBaoProvider({ children }) {
   const [toasts, setToasts] = useState([]);
   const lichSuNoiDung = useRef(new Map());
 
-  // Hàng đợi hộp thoại: đảm bảo không bao giờ ghi đè resolve hoặc mở chồng chéo
-  const hangDoiHopThoai = useRef([]);
+  // Quản lý hàng đợi hộp thoại thuần túy bên ngoài React state updater để chống double-invocation trong StrictMode
   const [hopHienTai, setHopHienTai] = useState(null);
+  const quanLyHangDoiRef = useRef(null);
+  if (!quanLyHangDoiRef.current) {
+    quanLyHangDoiRef.current = taoQuanLyHangDoi((hop) => {
+      setHopHienTai(hop);
+    });
+  }
 
   // 1. Thao tác Toast
   const xoaToast = useCallback((id) => {
@@ -152,19 +166,9 @@ export function ThongBaoProvider({ children }) {
     const chuoiNoiDung = typeof noiDung === 'string' ? noiDung.trim() : String(noiDung);
     const bayGio = Date.now();
 
-    // Dọn dẹp các mục cũ hơn 5 giây để tránh Map phình to
-    for (const [noiDungCu, tg] of lichSuNoiDung.current.entries()) {
-      if (bayGio - tg > 5000) {
-        lichSuNoiDung.current.delete(noiDungCu);
-      }
-    }
-
-    // Chống spam thông điệp trùng nhau trong 1.5 giây
-    const lanCuoi = lichSuNoiDung.current.get(chuoiNoiDung) || 0;
-    if (bayGio - lanCuoi < 1500) {
-      return;
-    }
-    lichSuNoiDung.current.set(chuoiNoiDung, bayGio);
+    // Kiểm tra debounce chống spam và tự dọn dẹp bộ nhớ (> 5000ms)
+    const hopLe = kiemTraVaLuuDebounce(lichSuNoiDung.current, chuoiNoiDung, bayGio, 1500, 5000);
+    if (!hopLe) return;
 
     const id = `toast_${bayGio}_${Math.random().toString(36).slice(2, 7)}`;
     const thoiGian = options.thoiGian || THOI_GIAN_TOAST[loai] || 5000;
@@ -177,12 +181,7 @@ export function ThongBaoProvider({ children }) {
       thoiGian,
     };
 
-    setToasts((prev) => {
-      // Giới hạn tối đa 3 toast cùng lúc. Nếu có 3 toast, đẩy toast cũ nhất ra
-      const danhSach = prev.length >= 3 ? prev.slice(prev.length - 2) : prev;
-      return [...danhSach, toastMoi];
-    });
-
+    setToasts((prev) => themToastVaoHangDoi(prev, toastMoi, 3));
     return id;
   }, []);
 
@@ -206,18 +205,7 @@ export function ThongBaoProvider({ children }) {
 
   // Điều phối đóng hộp thoại hiện tại và kích hoạt hộp thoại tiếp theo trong hàng đợi
   const dongHopHienTai = useCallback((ketQua) => {
-    setHopHienTai((hienTai) => {
-      if (hienTai && typeof hienTai.resolve === 'function') {
-        hienTai.resolve(ketQua);
-      }
-
-      // Lấy hộp thoại tiếp theo nếu có
-      if (hangDoiHopThoai.current.length > 0) {
-        const keTiep = hangDoiHopThoai.current.shift();
-        return keTiep;
-      }
-      return null;
-    });
+    quanLyHangDoiRef.current.dong(ketQua);
   }, []);
 
   // 2. Hộp thoại Xác nhận (xacNhan) trả về Promise<boolean>
@@ -242,15 +230,7 @@ export function ThongBaoProvider({ children }) {
           kichThuoc,
           resolve,
         };
-
-        setHopHienTai((hienTai) => {
-          if (!hienTai) {
-            return hopMoi;
-          }
-          // Đang có hộp thoại khác mở -> Đẩy vào hàng đợi
-          hangDoiHopThoai.current.push(hopMoi);
-          return hienTai;
-        });
+        quanLyHangDoiRef.current.them(hopMoi);
       });
     },
     []
@@ -270,6 +250,7 @@ export function ThongBaoProvider({ children }) {
       nhanXacNhan = 'Đồng ý',
       nhanHuy = 'Hủy bỏ',
       nguyHiem = false,
+      chanClickNgoai = true, // Mặc định chặn click ngoài để tránh mất dữ liệu đang gõ dở
     } = {}) => {
       return new Promise((resolve) => {
         const hopMoi = {
@@ -286,18 +267,11 @@ export function ThongBaoProvider({ children }) {
           nhanXacNhan,
           nhanHuy,
           nguyHiem,
+          chanClickNgoai,
           loiInline: '',
           resolve,
         };
-
-        setHopHienTai((hienTai) => {
-          if (!hienTai) {
-            return hopMoi;
-          }
-          // Đang có hộp thoại khác mở -> Đẩy vào hàng đợi
-          hangDoiHopThoai.current.push(hopMoi);
-          return hienTai;
-        });
+        quanLyHangDoiRef.current.them(hopMoi);
       });
     },
     []
@@ -359,8 +333,10 @@ export function ThongBaoProvider({ children }) {
       {/* HỘP THOẠI XÁC NHẬN (xacNhan) */}
       {hopHienTai && hopHienTai.loai === 'xacNhan' && (
         <HopThoai
+          key={hopHienTai.id}
           mo={true}
           onDong={() => dongHopHienTai(false)}
+          chanClickNgoai={hopHienTai.chanClickNgoai || false}
           tieuDe={hopHienTai.tieuDe}
           kichThuoc={hopHienTai.kichThuoc || 'md'}
           footer={
@@ -392,8 +368,10 @@ export function ThongBaoProvider({ children }) {
       {/* HỘP THOẠI NHẬP LÝ DO (nhapLyDo) */}
       {hopHienTai && hopHienTai.loai === 'nhapLyDo' && (
         <HopThoai
+          key={hopHienTai.id}
           mo={true}
           onDong={() => dongHopHienTai(null)}
+          chanClickNgoai={hopHienTai.chanClickNgoai !== false}
           tieuDe={hopHienTai.tieuDe}
           kichThuoc="md"
           footer={

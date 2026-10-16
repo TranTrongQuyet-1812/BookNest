@@ -10,8 +10,6 @@ import {
   Unlock, 
   Search, 
   Filter, 
-  Check, 
-  AlertCircle, 
   X 
 } from 'lucide-react';
 

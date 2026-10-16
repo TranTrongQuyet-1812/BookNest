@@ -5,6 +5,12 @@ export { HopThoai } from './HopThoai.jsx';
 export { ThongBaoTaiCho } from './ThongBaoTaiCho.jsx';
 export { loiTuApi } from './loiTuApi.js';
 export {
+  taoQuanLyHangDoi,
+  kiemTraVaLuuDebounce,
+  themToastVaoHangDoi,
+  tinhThoiGianConLai,
+} from './logicThongBao.js';
+export {
   IconThanhCong,
   IconLoi,
   IconCanhBao,

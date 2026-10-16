@@ -10,8 +10,6 @@ import {
   Eye, 
   EyeOff, 
   FolderPlus, 
-  Check, 
-  AlertCircle, 
   X, 
   Search 
 } from 'lucide-react';

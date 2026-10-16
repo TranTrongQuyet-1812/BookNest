@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { User, Lock, Check, AlertCircle, Save, KeyRound } from 'lucide-react';
+import { User, Lock, Save, KeyRound } from 'lucide-react';
 import { ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
 export const HoSo = () => {
