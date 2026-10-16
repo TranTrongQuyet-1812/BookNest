@@ -602,6 +602,7 @@ export default function QuanLyThanhToan() {
           onDong={() => setKhoanCanHoan(null)}
           tieuDe="Xác Nhận Đã Hoàn Tiền Cho Khách Hàng"
           kichThuoc="md"
+          chanClickNgoai
         >
           <p style={{ fontSize: '0.85rem', color: 'var(--adm-text-muted)', margin: '0 0 1.25rem 0' }}>
             Đơn hàng: <strong>{khoanCanHoan.donHang?.MaTraCuu || khoanCanHoan.MaDonHang}</strong> • Số tiền: <strong>{dinhDangTien(khoanCanHoan.SoTien)}</strong>

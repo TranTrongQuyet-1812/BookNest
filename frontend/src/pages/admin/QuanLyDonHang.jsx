@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { laySocket, thamGiaNhanVien, roiNhanVien } from '../../services/socket';
@@ -25,6 +25,12 @@ const NHAN_TRANG_THAI_DON_HANG = {
 
 const layTenTrangThai = (ma) => NHAN_TRANG_THAI_DON_HANG[ma] || ma || '';
 
+// Đơn có nằm trong số đơn nhân viên này vừa tự thao tác (trong 5 giây gần nhất) hay không
+const laVuaTuThaoTac = (donDaThaoTac, maDonHang) => {
+  const luc = donDaThaoTac.get(String(maDonHang));
+  return Boolean(luc) && Date.now() - luc < 5000;
+};
+
 export const QuanLyDonHang = () => {
   const { thongBao: tb, xacNhan, nhapLyDo } = useThongBao();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -39,6 +45,10 @@ export const QuanLyDonHang = () => {
 
   const taiLai = () => setLanTai((n) => n + 1);
 
+  // Đơn mà chính nhân viên này vừa đổi trạng thái hoặc hủy: sự kiện realtime của đơn đó đến ngay sau,
+  // nên bỏ qua toast của sự kiện (đã có toast kết quả thao tác), vẫn tải lại danh sách
+  const donVuaTuThaoTac = useRef(new Map());
+
   // Lắng nghe sự kiện realtime đơn hàng từ Socket.IO cho nhân viên quản trị
   useEffect(() => {
     const socket = laySocket();
@@ -51,7 +61,7 @@ export const QuanLyDonHang = () => {
     };
 
     const xuLyCapNhatTrangThai = (duLieu) => {
-      tb.thongTin(`Đơn hàng #${duLieu?.maDonHang || ''} vừa cập nhật trạng thái: ${layTenTrangThai(duLieu?.trangThaiMoi)}`);
+      if (!laVuaTuThaoTac(donVuaTuThaoTac.current, duLieu?.maDonHang)) tb.thongTin(`Đơn hàng #${duLieu?.maDonHang || ''} vừa cập nhật trạng thái: ${layTenTrangThai(duLieu?.trangThaiMoi)}`);
       taiLai();
     };
 
@@ -63,7 +73,7 @@ export const QuanLyDonHang = () => {
       socket.off('donHang:capNhatTrangThai', xuLyCapNhatTrangThai);
       roiNhanVien();
     };
-  }, []);
+  }, [tb]);
 
   useEffect(() => {
     let daHuy = false;
@@ -119,6 +129,7 @@ export const QuanLyDonHang = () => {
     });
     if (!dongY) return;
 
+    donVuaTuThaoTac.current.set(String(maDonHang), Date.now());
     try {
       await api.put(`/admin/orders/${maDonHang}/status`, { trangThaiMoi });
       tb.thanhCong(`Đã chuyển đơn hàng #${maDonHang} sang trạng thái: ${layTenTrangThai(trangThaiMoi)}`);
@@ -141,6 +152,7 @@ export const QuanLyDonHang = () => {
     });
     if (lyDo === null) return;
 
+    donVuaTuThaoTac.current.set(String(maDonHang), Date.now());
     try {
       await api.put(`/admin/orders/${maDonHang}/cancel`, { lyDo });
       tb.thanhCong(`Đã hủy đơn hàng #${maDonHang} và hoàn lại sách vào kho.`);

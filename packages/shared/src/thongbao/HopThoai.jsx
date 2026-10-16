@@ -77,7 +77,8 @@ export function HopThoai({
     // Xử lý phím Esc và Focus Trap
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        if (!chanClickNgoai && onDongRef.current) {
+        // Esc luôn đóng được; chanClickNgoai chỉ chặn bấm nền ngoài (tránh mất chữ đang gõ)
+        if (onDongRef.current) {
           e.preventDefault();
           onDongRef.current();
         }
@@ -118,7 +119,7 @@ export function HopThoai({
         previousActiveElement.current.focus();
       }
     };
-  }, [mo, chanClickNgoai]);
+  }, [mo]);
 
   if (!mo) return null;
 
