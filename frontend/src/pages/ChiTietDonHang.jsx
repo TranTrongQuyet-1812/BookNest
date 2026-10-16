@@ -18,6 +18,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { KhungThanhToanVietQR } from '../components/KhungThanhToanVietQR';
+import { laySocket, thamGiaDonHang, roiDonHang } from '../services/socket';
 
 export const ChiTietDonHang = () => {
   const { id } = useParams();
@@ -42,6 +43,7 @@ export const ChiTietDonHang = () => {
   const [hienModalQR, setHienModalQR] = useState(false);
   const [duLieuQR, setDuLieuQR] = useState(null);
   const [dangTaoQR, setDangTaoQR] = useState(false);
+  const [dangHuy, setDangHuy] = useState(false);
 
   const napThongTinThanhToan = async () => {
     try {
@@ -56,6 +58,35 @@ export const ChiTietDonHang = () => {
       }
     } catch (err) {
       console.warn('Đơn hàng chưa có thông tin thanh toán QR hoặc dùng COD');
+    }
+  };
+
+  const napChiTiet = async () => {
+    try {
+      const res = await api.get(`/orders/my-orders/${id}`);
+      setDonHang(res.data.data);
+      napThongTinThanhToan();
+    } catch (err) {
+      setLoi(err.response?.data?.message || 'Không tìm thấy thông tin đơn hàng này (IDOR Protected)');
+    } finally {
+      setDangTai(false);
+    }
+  };
+
+  const handleHuyDon = async () => {
+    const lyDo = window.prompt('Vui lòng nhập lý do hủy đơn hàng:');
+    if (lyDo === null) return;
+    setDangHuy(true);
+    try {
+      await api.put(`/orders/${id}/cancel`, {
+        lyDo: lyDo.trim() || 'Khách hàng yêu cầu hủy đơn qua trang chi tiết'
+      });
+      alert('Đã hủy đơn hàng thành công. Số lượng sách đã được hoàn trả lại vào kho.');
+      await napChiTiet();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Không thể hủy đơn hàng này');
+    } finally {
+      setDangHuy(false);
     }
   };
 
@@ -85,24 +116,30 @@ export const ChiTietDonHang = () => {
   };
 
   useEffect(() => {
-    let daHuy = false;
-    const napChiTiet = async () => {
-      try {
-        const res = await api.get(`/orders/my-orders/${id}`);
-        if (daHuy) return;
-        setDonHang(res.data.data);
-        napThongTinThanhToan();
-      } catch (err) {
-        if (!daHuy) setLoi(err.response?.data?.message || 'Không tìm thấy thông tin đơn hàng này (IDOR Protected)');
-      } finally {
-        if (!daHuy) setDangTai(false);
+    napChiTiet();
+  }, [id]);
+
+  useEffect(() => {
+    const socket = laySocket();
+    if (!socket || !id) return;
+
+    thamGiaDonHang(id);
+
+    const xuLyCapNhat = (duLieu) => {
+      if (duLieu?.maTraCuu === id || duLieu?.maDonHang === donHang?.MaDonHang) {
+        napChiTiet();
       }
     };
-    napChiTiet();
+
+    socket.on('donHang:capNhatTrangThai', xuLyCapNhat);
+    socket.on('thanhToan:daThanhToan', xuLyCapNhat);
+
     return () => {
-      daHuy = true;
+      roiDonHang(id);
+      socket.off('donHang:capNhatTrangThai', xuLyCapNhat);
+      socket.off('thanhToan:daThanhToan', xuLyCapNhat);
     };
-  }, [id]);
+  }, [id, donHang?.MaDonHang]);
 
   const dinhDangTien = (soTien) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(soTien || 0);
@@ -168,6 +205,17 @@ export const ChiTietDonHang = () => {
             Đặt vào lúc: {ngayTaoDon ? new Date(ngayTaoDon).toLocaleString('vi-VN') : ''}
           </p>
         </div>
+        {trangThaiDon === 'CHO_DUYET' && (
+          <button
+            type="button"
+            disabled={dangHuy}
+            onClick={handleHuyDon}
+            className="btn btn-outline btn-sm"
+            style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
+          >
+            {dangHuy ? 'Đang hủy...' : 'Hủy Đơn Hàng'}
+          </button>
+        )}
       </div>
 
       {/* Dòng Thời Gian Trực Quan (Timeline) */}
@@ -400,7 +448,19 @@ export const ChiTietDonHang = () => {
                           padding: '2px 8px',
                           borderRadius: '4px'
                         }}>
-                          Cửa hàng đã nhận tiền sau khi đơn bị hủy, sẽ liên hệ hoàn tiền cho bạn
+                          Cửa hàng đang xử lý hoàn tiền
+                        </span>
+                      ) : thongTinThanhToan?.trangThai === 'DA_HOAN_TIEN' ? (
+                        <span style={{
+                          display: 'inline-block',
+                          backgroundColor: '#e6f4ea',
+                          color: '#137333',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '4px'
+                        }}>
+                          ✓ Đã hoàn tiền
                         </span>
                       ) : thongTinThanhToan?.phuongThuc === 'CHUYEN_KHOAN_QR' ? (
                         <span style={{

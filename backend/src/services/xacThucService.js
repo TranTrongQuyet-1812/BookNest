@@ -3,6 +3,7 @@
  * Đảm nhiệm đăng ký khách hàng, băm mật khẩu, kiểm tra đăng nhập và ký JWT.
  * Khách hàng (bảng KhachHang) và nhân viên (bảng NhanVien) đăng nhập ở hai cổng riêng, mỗi cổng chỉ tra một bảng.
  */
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { NhanVien, KhachHang } = require('../models');
@@ -54,9 +55,11 @@ async function dangNhapTrenBang(Bang, aud, { email, matKhau }) {
 
   const user = thongTinTaiKhoan(aud, taiKhoan);
 
-  // Ký token JWT với thời hạn cấu hình; aud cho biết token được cấp ở cổng nào
+  // Ký token JWT với thời hạn cấu hình; aud cho biết token được cấp ở cổng nào.
+  // Gắn pwh (8 ký tự cuối của MatKhauHash) để vô hiệu hóa token cũ ngay lập tức khi đổi mật khẩu
+  const pwh = taiKhoan.MatKhauHash ? taiKhoan.MatKhauHash.slice(-8) : '';
   const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role, fullName: user.fullName, aud },
+    { id: user.id, email: user.email, role: user.role, fullName: user.fullName, aud, pwh },
     cauHinh.jwt.biMat,
     { expiresIn: cauHinh.jwt.hanDung }
   );
@@ -87,16 +90,12 @@ async function guiOtpQuenMatKhau(email) {
   const emailChuanHoa = email.trim().toLowerCase();
   const khachHang = await KhachHang.findOne({ where: { Email: emailChuanHoa } });
 
-  // Bảo mật chống dò email: Trả về thông báo thành công chung ngay cả khi email không có trong DB
-  if (!khachHang) {
+  // Bảo mật chống dò email: Trả về thông báo thành công chung ngay cả khi email không có trong DB hoặc tài khoản bị khóa
+  if (!khachHang || !khachHang.DangHoatDong) {
     return {
       thanhCong: true,
-      thongBao: 'Nếu địa chỉ email tồn tại trên hệ thống, mã xác nhận đã được gửi thành công.'
+      thongBao: 'Nếu địa chỉ email tồn tại và hợp lệ trên hệ thống, mã xác nhận đã được gửi thành công.'
     };
-  }
-
-  if (!khachHang.DangHoatDong) {
-    throw LoiNghiepVu.camTruyCap('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ ban quản trị để được hỗ trợ.');
   }
 
   // Chống gửi dồn dập (thời gian giãn cách tối thiểu 60 giây giữa các lần gửi mã)
@@ -107,8 +106,8 @@ async function guiOtpQuenMatKhau(email) {
     throw LoiNghiepVu.yeuCauKhongHopLe(`Vui lòng chờ ${soGiayConLai} giây trước khi yêu cầu gửi lại mã xác thực.`);
   }
 
-  // Sinh mã OTP ngẫu nhiên 6 chữ số
-  const maOtp = Math.floor(100000 + Math.random() * 900000).toString();
+  // Sinh mã OTP ngẫu nhiên 6 chữ số bằng crypto.randomInt an toàn mật mã học
+  const maOtp = crypto.randomInt(100000, 1000000).toString();
   const thoiHanPhut = 15;
   const hetHanLuc = now + thoiHanPhut * 60 * 1000;
 

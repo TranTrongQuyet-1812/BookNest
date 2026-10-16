@@ -37,10 +37,10 @@ async function capNhatHoSo(aud, maTaiKhoan, { hoTen, soDienThoai, diaChiMacDinh 
     throw LoiNghiepVu.khongTimThay('Không tìm thấy thông tin người dùng');
   }
 
-  if (hoTen !== undefined) taiKhoan.HoTen = hoTen;
-  if (soDienThoai !== undefined) taiKhoan.SoDienThoai = soDienThoai;
+  if (hoTen !== undefined) taiKhoan.HoTen = hoTen.trim();
+  if (soDienThoai !== undefined) taiKhoan.SoDienThoai = soDienThoai ? soDienThoai.trim() : null;
   // Địa chỉ mặc định chỉ có ở khách hàng, bảng NhanVien không có cột này
-  if (diaChiMacDinh !== undefined && aud !== AUD_NHAN_VIEN) taiKhoan.DiaChiMacDinh = diaChiMacDinh;
+  if (diaChiMacDinh !== undefined && aud !== AUD_NHAN_VIEN) taiKhoan.DiaChiMacDinh = diaChiMacDinh ? diaChiMacDinh.trim() : null;
 
   await taiKhoan.save();
   return layThongTinHoSo(aud, maTaiKhoan);

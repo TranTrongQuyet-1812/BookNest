@@ -52,9 +52,9 @@ export const HoSo = () => {
 
     try {
       const res = await api.put('/users/profile', {
-        hoTen: formProfile.hoTen,
-        soDienThoai: formProfile.soDienThoai || undefined,
-        diaChiMacDinh: formProfile.diaChi || undefined
+        hoTen: formProfile.hoTen.trim(),
+        soDienThoai: formProfile.soDienThoai ? formProfile.soDienThoai.trim() : null,
+        diaChiMacDinh: formProfile.diaChi ? formProfile.diaChi.trim() : null
       });
       capNhatUser({ fullName: res.data.data.HoTen });
       setThongBaoProfile('Đã cập nhật thông tin cá nhân thành công!');

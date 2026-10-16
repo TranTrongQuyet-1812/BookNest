@@ -45,5 +45,17 @@ export default defineConfig({
     port: 5174,
     fs: { allow: [thuMucDuAn] },
     proxy: { '/api': { target: 'http://localhost:5000', changeOrigin: true } }
+  },
+  build: {
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-lucide';
+          }
+        }
+      }
+    }
   }
 });

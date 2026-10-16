@@ -57,17 +57,29 @@ function kiemTraChuyenTrangThai(trangThaiCu, trangThaiMoi) {
 async function truTonKhoVaChotChiTiet(cacMon, transaction) {
   let tongTien = 0;
   const danhSachChiTiet = [];
-  const cacMonSapXep = [...cacMon].sort((a, b) => (a.MaSach ?? a.maSach) - (b.MaSach ?? b.maSach));
 
-  for (const mon of cacMonSapXep) {
+  // Tự động gộp số lượng nếu danh sách gửi lên có các món trùng mã sách (chống lỗi khóa chính ChiTietDonHang)
+  const banDoMon = new Map();
+  for (const mon of cacMon) {
     const maSach = Number(mon.MaSach ?? mon.maSach);
     const soLuong = Number(mon.SoLuong ?? mon.soLuong);
+    if (!maSach || !Number.isInteger(soLuong) || soLuong < 1) {
+      throw LoiNghiepVu.yeuCauKhongHopLe('Số lượng mỗi sách phải là số nguyên dương');
+    }
+    banDoMon.set(maSach, (banDoMon.get(maSach) || 0) + soLuong);
+  }
+
+  // Sắp xếp theo MaSach ASC để chuẩn hóa khóa dòng CSDL, triệt tiêu Deadlock 1205
+  const cacMonSapXep = Array.from(banDoMon.entries())
+    .map(([maSach, soLuong]) => ({ maSach, soLuong }))
+    .sort((a, b) => a.maSach - b.maSach);
+
+  for (const mon of cacMonSapXep) {
+    const maSach = mon.maSach;
+    const soLuong = mon.soLuong;
     const sach = await Sach.findByPk(maSach, { transaction });
     if (!sach || sach.DaAn) {
       throw LoiNghiepVu.xungDot(`Cuốn sách "${sach?.TenSach || maSach}" đã ngừng kinh doanh`);
-    }
-    if (!Number.isInteger(soLuong) || soLuong < 1) {
-      throw LoiNghiepVu.yeuCauKhongHopLe('Số lượng mỗi sách phải là số nguyên dương');
     }
 
     const ketQua = await Sach.decrement('SoLuongTon', {
@@ -389,6 +401,11 @@ async function layDanhSachDonKhach(maKhachHang, { page = 1, limit = 10, status }
         model: ChiTietDonHang,
         as: 'chiTietDonHang',
         include: [{ model: Sach, as: 'sach', attributes: ['MaSach', 'TenSach', 'AnhBia'] }]
+      },
+      {
+        model: ThanhToan,
+        as: 'thanhToan',
+        attributes: ['PhuongThuc', 'TrangThai', 'NgayHetHan']
       }
     ]
   });
@@ -447,6 +464,12 @@ async function khachHuyDon(maDonHang, maKhachHang, lyDo) {
     // Hoàn lại số lượng tồn kho cho từng cuốn sách trong đơn (sắp xếp MaSach ASC và dùng Sach.increment)
     await hoanTonKho(donHang.chiTietDonHang, t);
 
+    // Xử lý khoản thanh toán: hủy khoản thanh toán đang chờ để webhook không thể ghi đè DA_THANH_TOAN
+    const thanhToan = await ThanhToan.findOne({ where: { MaDonHang: maDonHang }, transaction: t });
+    if (thanhToan && thanhToan.TrangThai === 'CHO_THANH_TOAN') {
+      await thanhToan.update({ TrangThai: 'DA_HUY' }, { transaction: t });
+    }
+
     // Ghi nhận dòng lịch sử hủy đơn của khách
     await LichSuTrangThaiDonHang.create(
       {
@@ -460,6 +483,12 @@ async function khachHuyDon(maDonHang, maKhachHang, lyDo) {
     );
 
     await t.commit();
+    if (thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && thanhToan?.MaGiaoDichPayos) {
+      try {
+        const { huyLinkPayOS } = require('./payosService');
+        huyLinkPayOS(thanhToan.MaGiaoDichPayos, lyDo || 'Khách hàng tự hủy đơn');
+      } catch (errHuy) {}
+    }
     const chiTietDon = await layChiTietDonHang(maDonHang);
     emailService.guiEmailCapNhatTrangThai(chiTietDon, 'DA_HUY', lyDo || 'Khách hàng tự hủy đơn').catch(err => console.error('[Lỗi Gửi Email Hủy Đơn]', err.message));
     baoNhanVienRealtime('donHang:capNhatTrangThai', {
@@ -511,6 +540,11 @@ async function adminLayDanhSachDon({ page = 1, limit = 10, status, tuNgay, denNg
         model: ChiTietDonHang,
         as: 'chiTietDonHang',
         include: [{ model: Sach, as: 'sach', attributes: ['MaSach', 'TenSach'] }]
+      },
+      {
+        model: ThanhToan,
+        as: 'thanhToan',
+        attributes: ['PhuongThuc', 'TrangThai', 'SoTien']
       }
     ],
     distinct: true,
@@ -554,6 +588,14 @@ async function adminCapNhatTrangThai(maDonHang, trangThaiMoi, ghiChu, maNhanVien
     throw LoiNghiepVu.xungDot(
       `Không thể chuyển trạng thái từ ${trangThaiCu} sang ${trangThaiMoi}. Vui lòng tuân thủ quy trình CHO_DUYET -> DA_XAC_NHAN -> DANG_GIAO -> DA_GIAO.`
     );
+  }
+
+  // Chặn nhân viên xác nhận hoặc giao hàng cho đơn QR chưa nhận được tiền
+  if (['DA_XAC_NHAN', 'DANG_GIAO'].includes(trangThaiMoi)) {
+    const thanhToan = await ThanhToan.findOne({ where: { MaDonHang: maDonHang } });
+    if (thanhToan && thanhToan.PhuongThuc === 'CHUYEN_KHOAN_QR' && thanhToan.TrangThai === 'CHO_THANH_TOAN') {
+      throw LoiNghiepVu.xungDot('Khách hàng chưa hoàn tất thanh toán chuyển khoản VietQR. Vui lòng không xác nhận hoặc giao hàng khi tiền chưa về!');
+    }
   }
 
   const t = await sequelize.transaction();
@@ -630,6 +672,20 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
     // Hoàn trả tồn kho (sắp xếp MaSach ASC và dùng Sach.increment)
     await hoanTonKho(donHang.chiTietDonHang, t);
 
+    // Xử lý bản ghi thanh toán: nếu đang chờ thì hủy; nếu đã thanh toán thì chuyển CAN_HOAN_TIEN
+    const thanhToan = await ThanhToan.findOne({ where: { MaDonHang: maDonHang }, transaction: t });
+    let canHuyLink = false;
+    let canBaoHoanTien = false;
+    if (thanhToan) {
+      if (thanhToan.TrangThai === 'CHO_THANH_TOAN') {
+        await thanhToan.update({ TrangThai: 'DA_HUY' }, { transaction: t });
+        canHuyLink = true;
+      } else if (thanhToan.TrangThai === 'DA_THANH_TOAN') {
+        await thanhToan.update({ TrangThai: 'CAN_HOAN_TIEN' }, { transaction: t });
+        canBaoHoanTien = true;
+      }
+    }
+
     await LichSuTrangThaiDonHang.create(
       {
         MaDonHang: maDonHang,
@@ -642,6 +698,12 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
     );
 
     await t.commit();
+    if (canHuyLink && thanhToan?.MaGiaoDichPayos) {
+      try {
+        const { huyLinkPayOS } = require('./payosService');
+        huyLinkPayOS(thanhToan.MaGiaoDichPayos, lyDo || 'Nhân viên hủy đơn');
+      } catch (errHuy) {}
+    }
     const chiTietDon = await layChiTietDonHang(maDonHang);
     emailService.guiEmailCapNhatTrangThai(chiTietDon, 'DA_HUY', lyDo).catch(err => console.error('[Lỗi Gửi Email Hủy Đơn]', err.message));
     baoNhanVienRealtime('donHang:capNhatTrangThai', {
@@ -651,6 +713,14 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
       lyDo,
       thoiGian: new Date().toISOString()
     });
+    if (canBaoHoanTien) {
+      baoNhanVienRealtime('thanhToan:canHoanTien', {
+        maDonHang: chiTietDon.MaDonHang,
+        maTraCuu: chiTietDon.MaTraCuu,
+        soTien: thanhToan.SoTien,
+        lyDo
+      });
+    }
     return chiTietDon;
   } catch (loi) {
     await t.rollback();

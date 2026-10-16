@@ -51,8 +51,10 @@ export const AuthProvider = ({ children }) => {
           setUser(profile);
         }
       } catch (err) {
-        // Token không hợp lệ hoặc tài khoản bị khóa trong DB
-        if (!daHuy) {
+        const maLoi = err.response?.status;
+        // Chỉ xóa token khi thực sự lỗi xác thực hoặc tài khoản bị khóa trong DB (401/403)
+        // Mất mạng, timeout hoặc máy chủ tạm thời không phản hồi tuyệt đối không xóa token của người dùng
+        if (!daHuy && (maLoi === 401 || maLoi === 403)) {
           localStorage.removeItem('booknest_token');
           setToken(null);
           setUser(null);

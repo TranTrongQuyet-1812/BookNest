@@ -12,20 +12,21 @@ import Footer from './components/Footer';
 import ChatbotWidget from './components/ChatbotWidget';
 import useCartStore from './stores/cartStore';
 
-// Pages Storefront
+// Pages Storefront (TrangChu giữ static import để tải tức thì, các trang phụ dùng React.lazy)
 import TrangChu from './pages/TrangChu';
-import ChiTietSach from './pages/ChiTietSach';
-import GioHang from './pages/GioHang';
-import ThanhToan from './pages/ThanhToan';
-import DonHangCuaToi from './pages/DonHangCuaToi';
-import ChiTietDonHang from './pages/ChiTietDonHang';
-import HoSo from './pages/HoSo';
-import DangNhap from './pages/DangNhap';
-import DangKy from './pages/DangKy';
-import KhongCoQuyen from './pages/KhongCoQuyen';
-import QuenMatKhau from './pages/QuenMatKhau';
-import DieuKhoanDichVu from './pages/DieuKhoanDichVu';
-import ChinhSachBaoMat from './pages/ChinhSachBaoMat';
+
+const ChiTietSach = React.lazy(() => import('./pages/ChiTietSach'));
+const GioHang = React.lazy(() => import('./pages/GioHang'));
+const ThanhToan = React.lazy(() => import('./pages/ThanhToan'));
+const DonHangCuaToi = React.lazy(() => import('./pages/DonHangCuaToi'));
+const ChiTietDonHang = React.lazy(() => import('./pages/ChiTietDonHang'));
+const HoSo = React.lazy(() => import('./pages/HoSo'));
+const DangNhap = React.lazy(() => import('./pages/DangNhap'));
+const DangKy = React.lazy(() => import('./pages/DangKy'));
+const KhongCoQuyen = React.lazy(() => import('./pages/KhongCoQuyen'));
+const QuenMatKhau = React.lazy(() => import('./pages/QuenMatKhau'));
+const DieuKhoanDichVu = React.lazy(() => import('./pages/DieuKhoanDichVu'));
+const ChinhSachBaoMat = React.lazy(() => import('./pages/ChinhSachBaoMat'));
 
 // Layout chung cho Storefront (có Navbar & Footer)
 const StorefrontLayout = ({ children }) => {
@@ -87,49 +88,51 @@ const AppContent = () => {
         />
       )}
 
-      <Routes location={laKhuAdmin ? location : displayLocation}>
-        {/* ==================== CÁC ROUTE STOREFRONT ==================== */}
-        <Route path="/" element={<StorefrontLayout><TrangChu /></StorefrontLayout>} />
-        <Route path="/books" element={<StorefrontLayout><TrangChu /></StorefrontLayout>} />
-        <Route path="/books/:id" element={<StorefrontLayout><ChiTietSach /></StorefrontLayout>} />
-        <Route path="/login" element={<StorefrontLayout><DangNhap /></StorefrontLayout>} />
-        <Route path="/register" element={<StorefrontLayout><DangKy /></StorefrontLayout>} />
-        <Route path="/forgot-password" element={<StorefrontLayout><QuenMatKhau /></StorefrontLayout>} />
-        <Route path="/quen-mat-khau" element={<Navigate to="/forgot-password" replace />} />
-        <Route path="/unauthorized" element={<StorefrontLayout><KhongCoQuyen /></StorefrontLayout>} />
+      <React.Suspense fallback={null}>
+        <Routes location={laKhuAdmin ? location : displayLocation}>
+          {/* ==================== CÁC ROUTE STOREFRONT ==================== */}
+          <Route path="/" element={<StorefrontLayout><TrangChu /></StorefrontLayout>} />
+          <Route path="/books" element={<StorefrontLayout><TrangChu /></StorefrontLayout>} />
+          <Route path="/books/:id" element={<StorefrontLayout><ChiTietSach /></StorefrontLayout>} />
+          <Route path="/login" element={<StorefrontLayout><DangNhap /></StorefrontLayout>} />
+          <Route path="/register" element={<StorefrontLayout><DangKy /></StorefrontLayout>} />
+          <Route path="/forgot-password" element={<StorefrontLayout><QuenMatKhau /></StorefrontLayout>} />
+          <Route path="/quen-mat-khau" element={<Navigate to="/forgot-password" replace />} />
+          <Route path="/unauthorized" element={<StorefrontLayout><KhongCoQuyen /></StorefrontLayout>} />
 
-        {/* Tuyến đường Giỏ Hàng và Thanh Toán: Công khai cho cả Khách vãng lai (Guest) và Khách hàng */}
-        <Route path="/cart" element={<StorefrontLayout><GioHang /></StorefrontLayout>} />
-        <Route path="/checkout" element={<StorefrontLayout><ThanhToan /></StorefrontLayout>} />
+          {/* Tuyến đường Giỏ Hàng và Thanh Toán: Công khai cho cả Khách vãng lai (Guest) và Khách hàng */}
+          <Route path="/cart" element={<StorefrontLayout><GioHang /></StorefrontLayout>} />
+          <Route path="/checkout" element={<StorefrontLayout><ThanhToan /></StorefrontLayout>} />
 
-        {/* Các Tuyến Đường Chính Sách & Pháp Lý */}
-        <Route path="/dieu-khoan" element={<StorefrontLayout><DieuKhoanDichVu /></StorefrontLayout>} />
-        <Route path="/chinh-sach-bao-mat" element={<StorefrontLayout><ChinhSachBaoMat /></StorefrontLayout>} />
-        <Route path="/chinh-sach" element={<Navigate to="/dieu-khoan" replace />} />
+          {/* Các Tuyến Đường Chính Sách & Pháp Lý */}
+          <Route path="/dieu-khoan" element={<StorefrontLayout><DieuKhoanDichVu /></StorefrontLayout>} />
+          <Route path="/chinh-sach-bao-mat" element={<StorefrontLayout><ChinhSachBaoMat /></StorefrontLayout>} />
+          <Route path="/chinh-sach" element={<Navigate to="/dieu-khoan" replace />} />
 
-        {/* Các Route Yêu Cầu Đăng Nhập */}
-        <Route path="/orders" element={
-          <ProtectedRoute>
-            <StorefrontLayout><DonHangCuaToi /></StorefrontLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/orders/:id" element={
-          <ProtectedRoute>
-            <StorefrontLayout><ChiTietDonHang /></StorefrontLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <StorefrontLayout><HoSo /></StorefrontLayout>
-          </ProtectedRoute>
-        } />
+          {/* Các Route Yêu Cầu Đăng Nhập */}
+          <Route path="/orders" element={
+            <ProtectedRoute>
+              <StorefrontLayout><DonHangCuaToi /></StorefrontLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/orders/:id" element={
+            <ProtectedRoute>
+              <StorefrontLayout><ChiTietDonHang /></StorefrontLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <StorefrontLayout><HoSo /></StorefrontLayout>
+            </ProtectedRoute>
+          } />
 
-        {/* Back-Office được phục vụ từ frontend riêng, không dùng chung router Storefront. */}
-        <Route path="/admin/*" element={<ChuyenSangBackOffice />} />
+          {/* Back-Office được phục vụ từ frontend riêng, không dùng chung router Storefront. */}
+          <Route path="/admin/*" element={<ChuyenSangBackOffice />} />
 
-        {/* Bắt các đường dẫn không tồn tại */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Bắt các đường dẫn không tồn tại */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </React.Suspense>
 
       {/* Trợ lý AI Chatbot nổi toàn Storefront (không hiển thị trong khu BackOffice) */}
       {!laKhuAdmin && <ChatbotWidget />}

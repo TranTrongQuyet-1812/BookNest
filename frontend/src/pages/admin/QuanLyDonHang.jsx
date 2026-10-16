@@ -247,17 +247,55 @@ export const QuanLyDonHang = () => {
                     <td style={{ fontWeight: 700, color: 'var(--adm-text-main)' }} className="tabular-nums">
                       {dinhDangTien(tongTien)}
                     </td>
-                    <td>{layBadgeTrangThai(trangThai)}</td>
+                    <td>
+                      <div>{layBadgeTrangThai(trangThai)}</div>
+                      {don.thanhToan && (
+                        <div style={{ marginTop: '4px', fontSize: '0.72rem' }}>
+                          {don.thanhToan.PhuongThuc === 'CHUYEN_KHOAN_QR' ? (
+                            don.thanhToan.TrangThai === 'DA_THANH_TOAN' ? (
+                              <span style={{ color: '#059669', fontWeight: 600 }}>✓ VietQR: Đã thanh toán</span>
+                            ) : don.thanhToan.TrangThai === 'CAN_HOAN_TIEN' ? (
+                              <span style={{ color: '#DC2626', fontWeight: 700 }}>⚠️ VietQR: Cần hoàn tiền</span>
+                            ) : don.thanhToan.TrangThai === 'CHO_THANH_TOAN' ? (
+                              <span style={{ color: '#D97706', fontWeight: 600 }}>⏳ VietQR: Chờ thanh toán</span>
+                            ) : (
+                              <span style={{ color: 'var(--adm-text-muted)' }}>VietQR: {don.thanhToan.TrangThai}</span>
+                            )
+                          ) : (
+                            <span style={{ color: 'var(--adm-text-muted)' }}>COD (Tiền mặt)</span>
+                          )}
+                        </div>
+                      )}
+                    </td>
                     <td style={{ textAlign: 'right' }}>
                       <div className="inline-flex gap-2">
                         {/* Nút chuyển tiến theo State Machine */}
                         {trangThai === 'CHO_DUYET' && (
-                          <button
-                            onClick={() => handleChuyenTrangThai(maDon, 'DA_XAC_NHAN', 'Xác nhận đơn')}
-                            className="btn btn-primary btn-sm"
-                          >
-                            Duyệt Đơn
-                          </button>
+                          don.thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && don.thanhToan?.TrangThai === 'CHO_THANH_TOAN' ? (
+                            <span
+                              title="Khách chưa hoàn tất thanh toán QR, không thể duyệt đơn!"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                padding: '4px 8px',
+                                fontSize: '0.75rem',
+                                color: '#D97706',
+                                backgroundColor: '#FFFBEB',
+                                border: '1px solid #FDE68A',
+                                borderRadius: '4px',
+                                fontWeight: 600
+                              }}
+                            >
+                              Chờ Quét QR
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleChuyenTrangThai(maDon, 'DA_XAC_NHAN', 'Xác nhận đơn')}
+                              className="btn btn-primary btn-sm"
+                            >
+                              Duyệt Đơn
+                            </button>
+                          )
                         )}
 
                         {trangThai === 'DA_XAC_NHAN' && (

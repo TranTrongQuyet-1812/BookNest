@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import QRCode from 'qrcode';
 import api from '../services/api';
 import { 
   QrCode, 
@@ -170,12 +171,39 @@ export const KhungThanhToanVietQR = ({
     if (daHetHan) kiemTraTrangThai(false);
   }, [daHetHan]);
 
-  // Tạo URL ảnh VietQR chuẩn EMVCo hiển thị tức thì
-  const urlAnhVietQR = duLieuQR?.qrCode?.startsWith('http') || duLieuQR?.qrCode?.startsWith('data:')
-    ? duLieuQR.qrCode
-    : duLieuQR?.accountNumber
-      ? `https://img.vietqr.io/image/${duLieuQR?.bin || '970422'}-${duLieuQR.accountNumber}-compact2.png?amount=${duLieuQR?.soTien || 0}&addInfo=${encodeURIComponent(duLieuQR?.noiDungChuyenKhoan || String(duLieuQR?.maTraCuu || '').replace(/-/g, ''))}&accountName=${encodeURIComponent(duLieuQR?.accountName || 'BOOKNEST')}`
-      : `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(duLieuQR?.qrCode || '')}`;
+  const [qrDataUrl, setQrDataUrl] = useState('');
+
+  // Sinh mã QR nội bộ trực tiếp trên client bằng QRCode (chống rò rỉ dữ liệu sang api.qrserver.com bên thứ ba)
+  useEffect(() => {
+    let daHuy = false;
+    const sinhMaQR = async () => {
+      if (!duLieuQR) return;
+      if (duLieuQR.qrCode?.startsWith('http') || duLieuQR.qrCode?.startsWith('data:')) {
+        setQrDataUrl(duLieuQR.qrCode);
+        return;
+      }
+      if (duLieuQR.qrCode) {
+        try {
+          const url = await QRCode.toDataURL(duLieuQR.qrCode, {
+            width: 300,
+            margin: 2,
+            errorCorrectionLevel: 'M',
+            color: { dark: '#000000', light: '#ffffff' }
+          });
+          if (!daHuy) setQrDataUrl(url);
+          return;
+        } catch (err) {
+          console.warn('Lỗi sinh mã QR canvas nội bộ:', err);
+        }
+      }
+      if (duLieuQR.accountNumber) {
+        const urlVietQR = `https://img.vietqr.io/image/${duLieuQR?.bin || '970422'}-${duLieuQR.accountNumber}-compact2.png?amount=${duLieuQR?.soTien || 0}&addInfo=${encodeURIComponent(duLieuQR?.noiDungChuyenKhoan || String(duLieuQR?.maTraCuu || '').replace(/-/g, ''))}&accountName=${encodeURIComponent(duLieuQR?.accountName || 'BOOKNEST')}`;
+        if (!daHuy) setQrDataUrl(urlVietQR);
+      }
+    };
+    sinhMaQR();
+    return () => { daHuy = true; };
+  }, [duLieuQR]);
 
   return (
     <div style={{
@@ -372,7 +400,7 @@ export const KhungThanhToanVietQR = ({
                     overflow: 'hidden'
                   }}>
                     <img
-                      src={urlAnhVietQR}
+                      src={qrDataUrl}
                       alt={`Mã QR Thanh toán đơn hàng ${duLieuQR?.maTraCuu}`}
                       style={{
                         width: '100%',

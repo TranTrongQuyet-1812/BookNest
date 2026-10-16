@@ -51,6 +51,11 @@ async function xacThucToken(req, res, next) {
       throw LoiNghiepVu.camTruyCap('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên');
     }
 
+    // Nếu token có gắn pwh mà không khớp với MatKhauHash trong CSDL -> mật khẩu đã bị đổi, vô hiệu hóa token cũ ngay lập tức
+    if (duLieuGiaiMa.pwh && taiKhoan.MatKhauHash && taiKhoan.MatKhauHash.slice(-8) !== duLieuGiaiMa.pwh) {
+      throw LoiNghiepVu.chuaXacThuc('Mật khẩu đã được thay đổi. Vui lòng đăng nhập lại với mật khẩu mới.');
+    }
+
     // Gắn thông tin từ CSDL vào request (không tin vai trò lưu cứng trong token cũ)
     req.user = thongTinTaiKhoan(duLieuGiaiMa.aud, taiKhoan);
 

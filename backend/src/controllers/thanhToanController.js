@@ -3,8 +3,9 @@
  */
 const payosService = require('../services/payosService');
 const hetHanThanhToanService = require('../services/hetHanThanhToanService');
-const { DonHang, ChiTietDonHang, Sach } = require('../models');
+const { sequelize, DonHang, ChiTietDonHang, Sach, ThanhToan, KhachHang, LichSuThayDoi } = require('../models');
 const { phanHoiThanhCong, phanHoiLoi } = require('../middlewares/phanHoi');
+const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 const { chuanHoaMaTraCuu } = require('../utils/maTraCuu');
 
 // API thanh toán không cần đăng nhập nên chỉ nhận MaTraCuu (khó đoán), không nhận MaDonHang tăng dần,
@@ -137,10 +138,179 @@ async function layTrangThaiThanhToan(req, res, next) {
   }
 }
 
+/**
+ * Lấy danh sách các khoản thanh toán phục vụ Back-Office
+ */
+async function layDanhSachThanhToanAdmin(req, res) {
+  const { page = 1, limit = 10, status, method, search } = req.query;
+  const trang = Math.max(1, parseInt(page, 10) || 1);
+  const gioiHan = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
+  const viTri = (trang - 1) * gioiHan;
+
+  const dieuKienWhere = {};
+  if (status) {
+    dieuKienWhere.TrangThai = status;
+  }
+  if (method) {
+    dieuKienWhere.PhuongThuc = method;
+  }
+  if (search && search.trim()) {
+    const tuKhoa = search.trim();
+    const { Op } = require('sequelize');
+    const dieuKienOr = [
+      { '$donHang.MaTraCuu$': { [Op.like]: `%${tuKhoa}%` } },
+      { MaThamChieuNganHang: { [Op.like]: `%${tuKhoa}%` } }
+    ];
+    if (!isNaN(tuKhoa)) {
+      dieuKienOr.push(
+        { MaGiaoDichPayos: Number(tuKhoa) },
+        { MaDonHang: Number(tuKhoa) },
+        { MaThanhToan: Number(tuKhoa) }
+      );
+    }
+    dieuKienWhere[Op.or] = dieuKienOr;
+  }
+
+  const { rows, count } = await ThanhToan.findAndCountAll({
+    where: dieuKienWhere,
+    include: [
+      {
+        model: DonHang,
+        as: 'donHang',
+        attributes: ['MaDonHang', 'MaTraCuu', 'TrangThai', 'TenNguoiNhan', 'SoDienThoaiNhan', 'EmailNhan', 'TongTien', 'NgayDat', 'KenhBan'],
+        include: [
+          {
+            model: KhachHang,
+            as: 'khachHang',
+            attributes: ['MaKhachHang', 'HoTen', 'Email', 'SoDienThoai']
+          }
+        ]
+      }
+    ],
+    order: [
+      [sequelize.literal("CASE WHEN [ThanhToan].[TrangThai] = 'CAN_HOAN_TIEN' THEN 0 ELSE 1 END"), 'ASC'],
+      ['NgayCapNhat', 'DESC']
+    ],
+    limit: gioiHan,
+    offset: viTri,
+    distinct: true
+  });
+
+  // Thống kê nhanh số lượng theo trạng thái
+  const [thongKeTrangThai] = await sequelize.query(`
+    SELECT
+      COUNT(CASE WHEN TrangThai = 'CAN_HOAN_TIEN' THEN 1 END) AS soLuongCanHoanTien,
+      COUNT(CASE WHEN TrangThai = 'DA_HOAN_TIEN' THEN 1 END) AS soLuongDaHoanTien,
+      COUNT(CASE WHEN TrangThai = 'DA_THANH_TOAN' THEN 1 END) AS soLuongDaThanhToan,
+      COUNT(CASE WHEN TrangThai = 'CHO_THANH_TOAN' THEN 1 END) AS soLuongChoThanhToan,
+      COUNT(CASE WHEN TrangThai IN ('HET_HAN', 'DA_HUY') THEN 1 END) AS soLuongDaHuy,
+      COUNT(*) AS tongTatCa
+    FROM ThanhToan
+  `, { type: sequelize.QueryTypes.SELECT });
+
+  return phanHoiThanhCong(res, {
+    duLieu: {
+      danhSach: rows,
+      phanTrang: {
+        tongSoBanGhi: count,
+        tongSoTrang: Math.ceil(count / gioiHan),
+        trangHienTai: trang,
+        soBanGhiMoiTrang: gioiHan
+      },
+      thongKe: thongKeTrangThai || {}
+    },
+    thongDiep: 'Lấy danh sách thanh toán thành công'
+  });
+}
+
+/**
+ * Quản trị viên / Thủ thư xác nhận đã đối soát và hoàn tiền qua ngân hàng cho khách
+ */
+async function xacNhanHoanTienAdmin(req, res) {
+  const maThanhToan = parseInt(req.params.id, 10);
+  const { maThamChieu, ghiChu } = req.body;
+
+  const thanhToan = await ThanhToan.findByPk(maThanhToan, {
+    include: [{ model: DonHang, as: 'donHang' }]
+  });
+
+  if (!thanhToan) {
+    throw LoiNghiepVu.khongTimThay('Không tìm thấy khoản thanh toán này');
+  }
+
+  if (thanhToan.TrangThai !== 'CAN_HOAN_TIEN') {
+    throw LoiNghiepVu.xungDot(`Chỉ có thể hoàn tiền cho khoản thanh toán ở trạng thái Cần hoàn tiền (CAN_HOAN_TIEN). Trạng thái hiện tại: ${thanhToan.TrangThai}`);
+  }
+
+  const trangThaiCu = thanhToan.TrangThai;
+  await sequelize.transaction(async (t) => {
+    const [soDongCapNhat] = await ThanhToan.update(
+      {
+        TrangThai: 'DA_HOAN_TIEN',
+        MaThamChieuNganHang: maThamChieu ? String(maThamChieu).trim() : thanhToan.MaThamChieuNganHang
+      },
+      {
+        where: { MaThanhToan: maThanhToan, TrangThai: 'CAN_HOAN_TIEN' },
+        transaction: t
+      }
+    );
+
+    if (soDongCapNhat === 0) {
+      throw LoiNghiepVu.xungDot('Khoản thanh toán này đã được hoàn tiền trước đó hoặc không còn ở trạng thái Cần hoàn tiền');
+    }
+
+    thanhToan.TrangThai = 'DA_HOAN_TIEN';
+    if (maThamChieu) thanhToan.MaThamChieuNganHang = String(maThamChieu).trim();
+
+    // Ghi nhật ký vào LichSuThayDoi
+    await LichSuThayDoi.create({
+      LoaiDoiTuong: 'THANH_TOAN',
+      MaDoiTuong: maThanhToan,
+      TruongDuLieu: 'TrangThai',
+      GiaTriCu: trangThaiCu,
+      GiaTriMoi: 'DA_HOAN_TIEN',
+      MaNhanVienThayDoi: req.user.id,
+      NgayThayDoi: new Date()
+    }, { transaction: t });
+
+    if (ghiChu && ghiChu.trim()) {
+      await LichSuThayDoi.create({
+        LoaiDoiTuong: 'THANH_TOAN',
+        MaDoiTuong: maThanhToan,
+        TruongDuLieu: 'GhiChuHoanTien',
+        GiaTriCu: null,
+        GiaTriMoi: ghiChu.trim(),
+        MaNhanVienThayDoi: req.user.id,
+        NgayThayDoi: new Date()
+      }, { transaction: t });
+    }
+  });
+
+  // Phát Socket.IO thông báo nhân viên
+  try {
+    const { phatSuKien } = require('../realtime/socket');
+    phatSuKien('thanhToan:daHoanTien', {
+      maThanhToan,
+      maDonHang: thanhToan.MaDonHang,
+      maTraCuu: thanhToan.donHang?.MaTraCuu,
+      soTien: thanhToan.SoTien,
+      maNhanVien: req.user.id,
+      thoiGian: new Date().toISOString()
+    }, 'nhan_vien');
+  } catch (e) {}
+
+  return phanHoiThanhCong(res, {
+    duLieu: thanhToan,
+    thongDiep: 'Đã xác nhận hoàn tiền thành công'
+  });
+}
+
 module.exports = {
   kiemTraKhaDung,
   taoQrThanhToan,
   doiSangCOD,
   xuLyWebhook,
-  layTrangThaiThanhToan
+  layTrangThaiThanhToan,
+  layDanhSachThanhToanAdmin,
+  xacNhanHoanTienAdmin
 };

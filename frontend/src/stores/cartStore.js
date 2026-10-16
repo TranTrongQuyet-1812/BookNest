@@ -103,21 +103,19 @@ export const useCartStore = create((set, get) => ({
         tongSoLuong: data.tongSoLuong || 0,
         tongTien: data.tongTien || 0,
         dangTai: false,
-        daKhoiTao: true
-      });
-      return data;
-    } catch (err) {
-      console.warn('Lỗi tải giỏ hàng server, chuyển sang giỏ hàng cục bộ:', err.message);
-      // Fallback về giỏ hàng khách vãng lai thay vì để rỗng
-      const items = docGuestCart();
-      const tong = tinhTongGuest(items);
-      set({
-        ...tong,
-        dangTai: false,
         daKhoiTao: true,
         loi: null
       });
-      return tong.gioHang;
+      return data;
+    } catch (err) {
+      console.error('Lỗi tải giỏ hàng từ máy chủ:', err.message);
+      // Nguyên tắc "lỗi thì báo lỗi": Báo lỗi rõ ràng, không ngầm lấy giỏ khách vãng lai đè lên tài khoản khách hàng
+      set({
+        dangTai: false,
+        daKhoiTao: true,
+        loi: err.response?.data?.message || 'Không thể tải dữ liệu giỏ hàng từ máy chủ'
+      });
+      return null;
     }
   },
 
@@ -177,35 +175,12 @@ export const useCartStore = create((set, get) => ({
       await get().layGioHang();
       return { thanhCong: true };
     } catch (err) {
-      // Nếu server từ chối vì token lỗi hoặc 403, fallback lưu vào localStorage
+      // Nguyên tắc "lỗi thì báo lỗi": Báo lỗi rõ ràng, tuyệt đối không ngầm lưu giá 0đ vào giỏ local
       if (err.response?.status === 401 || err.response?.status === 403) {
-        console.warn('Lỗi xác thực giỏ hàng server, thêm dự phòng vào giỏ hàng khách vãng lai:', err.message);
-        const items = docGuestCart();
-        const viTri = items.findIndex(item => Number(item.maSach) === maSachSo);
-        const donGia = Number(thongTinSach?.giaBan ?? thongTinSach?.GiaBan ?? 0);
-        if (viTri >= 0) {
-          items[viTri].soLuong += soLuong;
-          items[viTri].thanhTien = items[viTri].soLuong * donGia;
-        } else {
-          items.push({
-            maSach: maSachSo,
-            soLuong,
-            donGia,
-            thanhTien: donGia * soLuong,
-            sach: {
-              maSach: maSachSo,
-              tenSach: thongTinSach?.tenSach || thongTinSach?.TenSach || 'Sách BookNest',
-              anhBia: thongTinSach?.anhBia || thongTinSach?.AnhBia || null,
-              tacGia: thongTinSach?.tacGia || thongTinSach?.TacGia || 'Đang cập nhật',
-              giaBan: donGia,
-              soLuongTon: 99
-            }
-          });
-        }
-        luuGuestCart(items);
-        const tong = tinhTongGuest(items);
-        set({ ...tong, daKhoiTao: true });
-        return { thanhCong: true };
+        return {
+          thanhCong: false,
+          thongDiep: 'Phiên đăng nhập đã hết hạn hoặc không có quyền. Vui lòng đăng nhập lại.'
+        };
       }
       const thongDiep = err.response?.data?.message || 'Lỗi khi thêm sách vào giỏ hàng';
       return { thanhCong: false, thongDiep };
@@ -352,6 +327,7 @@ export const useCartStore = create((set, get) => ({
     }
 
     try {
+      const cacMonLoi = [];
       // Đẩy từng món từ localStorage lên server
       for (const item of guestItems) {
         try {
@@ -360,11 +336,24 @@ export const useCartStore = create((set, get) => ({
             soLuong: item.soLuong
           });
         } catch (itemErr) {
-          console.warn(`Lỗi đồng bộ món ${item.maSach} lên server:`, itemErr);
+          console.warn(`Lỗi đồng bộ món ${item.maSach} lên server:`, itemErr.message);
+          cacMonLoi.push({
+            ...item,
+            lyDoLoi: itemErr.response?.data?.message || 'Không thể thêm vào giỏ'
+          });
         }
       }
-      // Dọn sạch guest cart sau khi đồng bộ
-      localStorage.removeItem(KEY_GUEST_CART);
+
+      // Chỉ giữ lại những món bị lỗi chưa thể thêm, món thành công được dọn dẹp khỏi guest cart
+      if (cacMonLoi.length > 0) {
+        luuGuestCart(cacMonLoi);
+        set({
+          loi: `Có ${cacMonLoi.length} cuốn sách trong giỏ cục bộ chưa thể đưa lên tài khoản (sách tạm hết hàng hoặc vượt tồn kho).`
+        });
+      } else {
+        localStorage.removeItem(KEY_GUEST_CART);
+      }
+
       // Nạp lại toàn bộ giỏ hàng mới nhất từ Server
       await get().layGioHang();
     } catch (err) {

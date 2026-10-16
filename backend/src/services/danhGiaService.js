@@ -90,9 +90,14 @@ async function taoHoacCapNhatDanhGia(maKhachHang, maSach, { soSao, noiDung }) {
   });
 
   if (danhGia) {
+    // Chống lách kiểm duyệt: Nếu đánh giá đã bị kiểm duyệt ẩn thì không cho khách tự ý mở lại
+    if (danhGia.DaAn) {
+      throw LoiNghiepVu.camTruyCap(
+        'Đánh giá của bạn về tác phẩm này đang bị quản trị viên tạm ẩn kiểm duyệt. Vui lòng liên hệ ban quản trị.'
+      );
+    }
     danhGia.SoSao = soSao;
     danhGia.NoiDung = noiDung || null;
-    danhGia.DaAn = false; // Khi khách cập nhật lại nhận xét, đưa về trạng thái chờ/hiển thị
     await danhGia.save();
   } else {
     danhGia = await DanhGia.create({

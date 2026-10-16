@@ -719,6 +719,21 @@ function dichTrangThaiDonHang(trangThai) {
   return bangDich[trangThai] || trangThai;
 }
 
+/**
+ * Ánh xạ trạng thái thanh toán sang tiếng Việt thân thiện, rõ ràng cho khách hàng
+ */
+function dichTrangThaiThanhToan(trangThai) {
+  const bangDich = {
+    CHO_THANH_TOAN: 'Chờ thanh toán',
+    DA_THANH_TOAN: 'Đã thanh toán',
+    CAN_HOAN_TIEN: 'Cửa hàng đang xử lý hoàn tiền',
+    DA_HOAN_TIEN: 'Đã hoàn tiền',
+    HET_HAN: 'Hết hạn thanh toán (đơn đã hủy)',
+    DA_HUY: 'Đã hủy'
+  };
+  return bangDich[trangThai] || trangThai || 'Chưa thanh toán';
+}
+
 // Bộ đếm chống brute-force mã tra cứu đơn hàng qua AI Chatbot (Task T42 & T48)
 const SO_LAN_TRA_CUU_SAI_TOI_DA = 5;
 const KHOANG_THOI_GIAN_KHOA_TRA_CUU_MS = 15 * 60 * 1000; // 15 phút
@@ -799,7 +814,7 @@ async function thucThiTraCuuDonHang({ ma_tra_cuu }, maKhachHangContext, dinhDanh
           ngayDat: donHang.NgayDat,
           tongTien: donHang.TongTien,
           phuongThucThanhToan: phuongThuc === 'CHUYEN_KHOAN_QR' ? 'Chuyển khoản VietQR' : 'Thanh toán tiền mặt khi nhận (COD)',
-          trangThaiThanhToan: trangThaiTT === 'DA_THANH_TOAN' ? 'Đã thanh toán' : 'Chưa thanh toán',
+          trangThaiThanhToan: dichTrangThaiThanhToan(trangThaiTT),
           danhSachSach: donHang.chiTietDonHang.map(ct => ({
             tenSach: ct.sach?.TenSach || `Sách #${ct.MaSach}`,
             soLuong: ct.SoLuong,
@@ -819,7 +834,8 @@ async function thucThiTraCuuDonHang({ ma_tra_cuu }, maKhachHangContext, dinhDanh
         where: { MaKhachHang: maKhachHangContext },
         limit: 3,
         order: [['NgayDat', 'DESC']],
-        attributes: ['MaTraCuu', 'TrangThai', 'TongTien', 'NgayDat']
+        attributes: ['MaTraCuu', 'TrangThai', 'TongTien', 'NgayDat'],
+        include: [{ model: ThanhToan, as: 'thanhToan', attributes: ['PhuongThuc', 'TrangThai'] }]
       });
 
       if (cacDon.length === 0) {
@@ -833,7 +849,9 @@ async function thucThiTraCuuDonHang({ ma_tra_cuu }, maKhachHangContext, dinhDanh
           maTraCuu: d.MaTraCuu,
           trangThai: dichTrangThaiDonHang(d.TrangThai),
           tongTien: d.TongTien,
-          ngayDat: d.NgayDat
+          ngayDat: d.NgayDat,
+          phuongThucThanhToan: d.thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' ? 'Chuyển khoản VietQR' : 'Thanh toán khi nhận hàng (COD)',
+          trangThaiThanhToan: dichTrangThaiThanhToan(d.thanhToan?.TrangThai)
         }))
       };
     }
@@ -1069,10 +1087,10 @@ async function layThongKeChatbotHomNay() {
  * @param {string|null} [options.khoaPhien=null] - Khóa phiên hoặc IP người dùng
  * @returns {Promise<{ traLoi: string, duLieuKemTheo: Object }>}
  */
-async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHang = null, daDangNhap = false, tenKhachHang = '', khoaPhien = null }) {
-  const noiDungTinNhan = String(tinNhanMoi || tinNhan || '').trim();
-
-  // Kiểm tra trần ngân sách token mỗi ngày (AI_CHATBOT_TRAN_NGAY)
+/**
+ * Kiểm tra trần ngân sách AI hàng ngày (AI_CHATBOT_TRAN_NGAY)
+ */
+async function kiemTraTranNganSach(maKhachHang, khoaPhien) {
   const tranNgay = await cauHinhHeThongService.docGiaTriSo(cauHinhHeThongService.KHOA_AI_TRAN_NGAY, 50000);
   const { tongToken: tongTokenHomNay } = await tinhTongTokenHomNay();
   if (tranNgay > 0 && tongTokenHomNay >= tranNgay) {
@@ -1085,70 +1103,123 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
       ghiChu: `Vượt trần ngân sách ngày: ${tongTokenHomNay}/${tranNgay} tokens`
     });
     return {
+      vuotTran: true,
       traLoi,
-      duLieuKemTheo: {
-        danhSachSach: [],
-        thongTinThanhToan: null,
-        thongTinDonHang: null,
-        themVaoGioHang: null
-      }
+      duLieuKemTheo: { danhSachSach: [], thongTinThanhToan: null, thongTinDonHang: null, themVaoGioHang: null }
     };
   }
+  return { vuotTran: false };
+}
 
-  // Chuẩn bị danh sách messages, giới hạn 8 tin nhắn gần nhất để tiết kiệm token
+/**
+ * Chuẩn bị mảng tin nhắn gửi mô hình AI, tối ưu 8 tin gần nhất
+ */
+function chuanBiMessagesHoiThoai({ lichSuChat, noiDungTinNhan, daDangNhap, tenKhachHang, maKhachHang }) {
   const tinNhanHopLe = (Array.isArray(lichSuChat) ? lichSuChat : [])
     .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
     .slice(-8);
 
-  // Trích xuất cuốn sách gần nhất đang trao đổi trong lịch sử chat
   const sachHienTai = trichXuatSachGanNhatTuLichSu(tinNhanHopLe);
-
   const loiNhac = taoLoiNhacHeThong({ daDangNhap, tenKhachHang, maKhachHang, sachHienTai });
-  const messages = [
-    { role: 'system', content: loiNhac },
-    ...tinNhanHopLe
-  ];
+  const messages = [{ role: 'system', content: loiNhac }, ...tinNhanHopLe];
 
-  // Tránh gửi lặp tin nhắn nếu tin nhắn mới đã nằm ở cuối lịch sử
   const tinCuoi = tinNhanHopLe[tinNhanHopLe.length - 1];
   const daCoTinCuoi = tinCuoi && tinCuoi.role === 'user' && tinCuoi.content.trim() === noiDungTinNhan;
-
   if (!daCoTinCuoi && noiDungTinNhan) {
     messages.push({ role: 'user', content: noiDungTinNhan });
   }
 
-  // Đối tượng lưu dữ liệu tương tác để trả về frontend render UI widgets
-  const duLieuKemTheo = {
-    danhSachSach: [],
-    thongTinThanhToan: null,
-    thongTinDonHang: null,
-    themVaoGioHang: null
-  };
+  return { messages, sachHienTai };
+}
 
-  const TOI_DA_VONG_LAP = 2; // Tối đa 2 vòng gọi công cụ để đảm bảo tốc độ và tiết kiệm token
-  let soVongLap = 0;
-  let tongTokensTieuThu = 0;
-  const danhSachToolDaGoi = [];
+/**
+ * Tạo câu trả lời mặc định khi nội dung từ mô hình AI bị rỗng
+ */
+function taoTraLoiMacDinhKhiRong(duLieuKemTheo, macDinhCuoi = 'Dạ, tôi có thể giúp gì thêm cho bạn về sách và đơn hàng không ạ?') {
+  if (duLieuKemTheo.themVaoGioHang) {
+    return `Dạ, tôi đã thêm ${duLieuKemTheo.themVaoGioHang.soLuong} cuốn "${duLieuKemTheo.themVaoGioHang.tenSach}" vào giỏ hàng cho bạn rồi nhé. Đang chuyển sang trang giỏ hàng cho bạn ạ!`;
+  }
+  if (duLieuKemTheo.thongTinThanhToan) {
+    return 'Dạ, tôi đã chuẩn bị xong thông tin thanh toán cho bạn rồi ạ. Bạn có thể nhấn vào nút "Mở trang thanh toán" bên dưới để hoàn tất đơn hàng nhé!';
+  }
+  if (duLieuKemTheo.danhSachSach && duLieuKemTheo.danhSachSach.length > 0) {
+    return `Dạ, có phải bạn đang muốn tìm cuốn sách "${duLieuKemTheo.danhSachSach[0].tenSach}" không ạ?`;
+  }
+  return macDinhCuoi;
+}
 
-  // Lọc công cụ khả dụng theo vai trò: Guest chưa đăng nhập thì không nạp tool them_vao_gio_hang để tránh AI từ chối
-  const cacCongCuKhaDung = daDangNhap
-    ? DANH_SACH_CONG_CU
-    : DANH_SACH_CONG_CU.filter(t => t.function?.name !== 'them_vao_gio_hang');
+/**
+ * Điều phối gọi từng công cụ nghiệp vụ CSDL (Function Calling)
+ */
+async function dieuPhoiToolCall({ toolCall, noiDungTinNhan, sachHienTai, maKhachHang, khoaPhien, duLieuKemTheo, danhSachToolDaGoi }) {
+  const tenHam = toolCall.function?.name;
+  if (tenHam && !danhSachToolDaGoi.includes(tenHam)) danhSachToolDaGoi.push(tenHam);
 
-  while (soVongLap < TOI_DA_VONG_LAP) {
-    soVongLap++;
+  let thamSo = {};
+  try { thamSo = JSON.parse(toolCall.function?.arguments || '{}'); } catch (e) { thamSo = {}; }
 
-    const ketQuaAI = await goiNhaCungCapAI({
-      messages,
-      tools: cacCongCuKhaDung,
-      maxTokens: 600,
-      temperature: 0.3
-    });
-
-    if (ketQuaAI?.usage?.total_tokens) {
-      tongTokensTieuThu += ketQuaAI.usage.total_tokens;
+  if (tenHam === 'tim_sach') {
+    const ketQua = await thucThiTimSach(thamSo, noiDungTinNhan, sachHienTai);
+    if (ketQua?.danhSach) duLieuKemTheo.danhSachSach = ketQua.danhSach;
+    return { ketQuaTool: ketQua };
+  }
+  if (tenHam === 'kiem_tra_ton_kho') {
+    return { ketQuaTool: await thucThiKiemTraTonKho(thamSo, noiDungTinNhan) };
+  }
+  if (tenHam === 'soan_thong_tin_thanh_toan') {
+    const ketQua = await thucThiSoanThanhToan(thamSo, noiDungTinNhan, sachHienTai);
+    if (ketQua?.canDienThongTin) {
+      if (ketQua.tenSach && duLieuKemTheo.danhSachSach.length === 0) {
+        duLieuKemTheo.danhSachSach = [{ maSach: ketQua.maSach || 0, tenSach: ketQua.tenSach, giaBan: ketQua.giaBan || 0, conHang: true }];
+      }
+      return { ketQuaTool: ketQua, traVeNgay: true, traLoi: ketQua.thongDiep, toolGhiNhan: 'soan_thong_tin_thanh_toan' };
     }
+    if (ketQua?.banNhapThanhToan) duLieuKemTheo.thongTinThanhToan = ketQua.banNhapThanhToan;
+    return { ketQuaTool: ketQua };
+  }
+  if (tenHam === 'them_vao_gio_hang') {
+    const ketQua = await thucThiThemVaoGioHang(thamSo, noiDungTinNhan, sachHienTai);
+    if (ketQua?.thanhCong && ketQua.sach) {
+      duLieuKemTheo.themVaoGioHang = { ...ketQua.sach, chuyenTrangGioHang: true };
+      return {
+        ketQuaTool: ketQua,
+        traVeNgay: true,
+        traLoi: ketQua.thongDiep || `Dạ, tôi đã thêm ${ketQua.sach.soLuong || 1} cuốn "${ketQua.sach.tenSach}" vào giỏ hàng cho bạn rồi nhé. Đang chuyển hướng sang giỏ hàng cho bạn ạ!`,
+        toolGhiNhan: 'them_vao_gio_hang'
+      };
+    }
+    return { ketQuaTool: ketQua };
+  }
+  if (tenHam === 'tra_cuu_don_hang') {
+    const dinhDanh = maKhachHang ? `user_${maKhachHang}` : (khoaPhien ? `guest_${khoaPhien}` : 'guest');
+    const ketQua = await thucThiTraCuuDonHang(thamSo, maKhachHang, dinhDanh);
+    if (ketQua?.donHang || ketQua?.danhSachDon) duLieuKemTheo.thongTinDonHang = ketQua.donHang || ketQua.danhSachDon;
+    return { ketQuaTool: ketQua };
+  }
+  return { ketQuaTool: { loi: `Không hỗ trợ công cụ ${tenHam}` } };
+}
 
+/**
+ * Xử lý cuộc hội thoại với AI Chatbot (hỗ trợ vòng lặp Function Calling)
+ */
+async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHang = null, daDangNhap = false, tenKhachHang = '', khoaPhien = null }) {
+  const noiDungTinNhan = String(tinNhanMoi || tinNhan || '').trim();
+
+  // 1. Kiểm tra trần ngân sách token mỗi ngày
+  const ketQuaKiemTra = await kiemTraTranNganSach(maKhachHang, khoaPhien);
+  if (ketQuaKiemTra.vuotTran) return ketQuaKiemTra;
+
+  // 2. Chuẩn bị mảng messages và công cụ theo vai trò
+  const { messages, sachHienTai } = chuanBiMessagesHoiThoai({ lichSuChat, noiDungTinNhan, daDangNhap, tenKhachHang, maKhachHang });
+  const cacCongCuKhaDung = daDangNhap ? DANH_SACH_CONG_CU : DANH_SACH_CONG_CU.filter(t => t.function?.name !== 'them_vao_gio_hang');
+  const duLieuKemTheo = { danhSachSach: [], thongTinThanhToan: null, thongTinDonHang: null, themVaoGioHang: null };
+  const danhSachToolDaGoi = [];
+  let tongTokensTieuThu = 0;
+
+  // 3. Vòng lặp Function Calling (tối đa 2 vòng)
+  for (let soVongLap = 0; soVongLap < 2; soVongLap++) {
+    const ketQuaAI = await goiNhaCungCapAI({ messages, tools: cacCongCuKhaDung, maxTokens: 600, temperature: 0.3 });
+    if (ketQuaAI?.usage?.total_tokens) tongTokensTieuThu += ketQuaAI.usage.total_tokens;
     const aiMessage = ketQuaAI.message;
 
     // Bóc tách Tool Call nếu LLM xuất JSON vào message.content thay vì tool_calls
@@ -1160,193 +1231,38 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
       }
     }
 
-    // Nếu AI không yêu cầu gọi tool -> Đã có câu trả lời cuối cùng cho người dùng
+    // Nếu AI không gọi tool -> Hoàn tất phản hồi
     if (!aiMessage.tool_calls || aiMessage.tool_calls.length === 0) {
       let traLoi = chuanHoaNoiDungAI(aiMessage.content);
-      // Tự động bù đắp dữ liệu sách và làm sạch placeholder (...)
       traLoi = await tuDongBuDapDuLieuSach({ traLoi, noiDungTinNhan, sachHienTai, duLieuKemTheo });
+      traLoi = traLoi || taoTraLoiMacDinhKhiRong(duLieuKemTheo);
 
-      if (!traLoi) {
-        if (duLieuKemTheo.themVaoGioHang) {
-          traLoi = `Dạ, tôi đã thêm ${duLieuKemTheo.themVaoGioHang.soLuong} cuốn "${duLieuKemTheo.themVaoGioHang.tenSach}" vào giỏ hàng cho bạn rồi nhé. Đang chuyển sang trang giỏ hàng cho bạn ạ!`;
-        } else if (duLieuKemTheo.thongTinThanhToan) {
-          traLoi = 'Dạ, tôi đã chuẩn bị xong thông tin thanh toán cho bạn rồi ạ. Bạn có thể nhấn vào nút "Mở trang thanh toán" bên dưới để hoàn tất đơn hàng nhé!';
-        } else if (duLieuKemTheo.danhSachSach && duLieuKemTheo.danhSachSach.length > 0) {
-          traLoi = `Dạ, có phải bạn đang muốn tìm cuốn sách "${duLieuKemTheo.danhSachSach[0].tenSach}" không ạ?`;
-        } else {
-          traLoi = 'Dạ, tôi có thể giúp gì thêm cho bạn về sách và đơn hàng không ạ?';
-        }
-      }
-
-      await ghiNhatKyChatbot({
-        maKhachHang,
-        khoaPhien,
-        soToken: tongTokensTieuThu,
-        tenCongCu: danhSachToolDaGoi.join(',') || null,
-        ketQua: 'THANH_CONG'
-      });
-
-      return {
-        traLoi,
-        duLieuKemTheo
-      };
+      await ghiNhatKyChatbot({ maKhachHang, khoaPhien, soToken: tongTokensTieuThu, tenCongCu: danhSachToolDaGoi.join(',') || null, ketQua: 'THANH_CONG' });
+      return { traLoi, duLieuKemTheo };
     }
 
-    // Nếu AI yêu cầu gọi tool -> Chuẩn hóa và push tin nhắn assistant vào messages
-    messages.push({
-      role: 'assistant',
-      content: aiMessage.content || null,
-      tool_calls: aiMessage.tool_calls
-    });
-
+    // Thực thi các tool được yêu cầu
+    messages.push({ role: 'assistant', content: aiMessage.content || null, tool_calls: aiMessage.tool_calls });
     for (const toolCall of aiMessage.tool_calls) {
-      const tenHam = toolCall.function?.name;
-      if (tenHam && !danhSachToolDaGoi.includes(tenHam)) {
-        danhSachToolDaGoi.push(tenHam);
+      const phanHoiTool = await dieuPhoiToolCall({ toolCall, noiDungTinNhan, sachHienTai, maKhachHang, khoaPhien, duLieuKemTheo, danhSachToolDaGoi });
+      if (phanHoiTool.traVeNgay) {
+        await ghiNhatKyChatbot({ maKhachHang, khoaPhien, soToken: tongTokensTieuThu, tenCongCu: phanHoiTool.toolGhiNhan || danhSachToolDaGoi.join(','), ketQua: 'THANH_CONG' });
+        return { traLoi: phanHoiTool.traLoi, duLieuKemTheo };
       }
-      let thamSo = {};
-      try {
-        thamSo = JSON.parse(toolCall.function?.arguments || '{}');
-      } catch (e) {
-        thamSo = {};
-      }
-
-      let ketQuaTool = null;
-
-      if (tenHam === 'tim_sach') {
-        ketQuaTool = await thucThiTimSach(thamSo, noiDungTinNhan, sachHienTai);
-        if (ketQuaTool?.danhSach) {
-          duLieuKemTheo.danhSachSach = ketQuaTool.danhSach;
-        }
-      } else if (tenHam === 'kiem_tra_ton_kho') {
-        ketQuaTool = await thucThiKiemTraTonKho(thamSo, noiDungTinNhan);
-      } else if (tenHam === 'soan_thong_tin_thanh_toan') {
-        ketQuaTool = await thucThiSoanThanhToan(thamSo, noiDungTinNhan, sachHienTai);
-        // Nếu Guest chưa cung cấp thông tin người nhận: Trả về ngay mẫu form nhận hàng
-        if (ketQuaTool?.canDienThongTin) {
-          if (ketQuaTool.tenSach && duLieuKemTheo.danhSachSach.length === 0) {
-            duLieuKemTheo.danhSachSach = [{
-              maSach: ketQuaTool.maSach || 0,
-              tenSach: ketQuaTool.tenSach,
-              giaBan: ketQuaTool.giaBan || 0,
-              hinhAnh: ketQuaTool.hinhAnh || null,
-              conHang: true
-            }];
-          }
-
-          await ghiNhatKyChatbot({
-            maKhachHang,
-            khoaPhien,
-            soToken: tongTokensTieuThu,
-            tenCongCu: danhSachToolDaGoi.join(',') || 'soan_thong_tin_thanh_toan',
-            ketQua: 'THANH_CONG'
-          });
-
-          return {
-            traLoi: ketQuaTool.thongDiep,
-            duLieuKemTheo
-          };
-        }
-        if (ketQuaTool?.banNhapThanhToan) {
-          duLieuKemTheo.thongTinThanhToan = ketQuaTool.banNhapThanhToan;
-        }
-        if (ketQuaTool?.canXacNhan && ketQuaTool.cuonGoiY && duLieuKemTheo.danhSachSach.length === 0) {
-          duLieuKemTheo.danhSachSach = [{
-            maSach: ketQuaTool.maSach || 0,
-            tenSach: ketQuaTool.cuonGoiY,
-            giaBan: ketQuaTool.giaBan || 0,
-            conHang: true
-          }];
-        }
-      } else if (tenHam === 'them_vao_gio_hang') {
-        ketQuaTool = await thucThiThemVaoGioHang(thamSo, noiDungTinNhan, sachHienTai);
-        if (ketQuaTool?.thanhCong && ketQuaTool.sach) {
-          duLieuKemTheo.themVaoGioHang = {
-            ...ketQuaTool.sach,
-            chuyenTrangGioHang: true
-          };
-          // Đã thêm giỏ hàng thành công -> Trả về ngay lập tức, tiết kiệm 50% token và loại bỏ 100% ảo giác
-          await ghiNhatKyChatbot({
-            maKhachHang,
-            khoaPhien,
-            soToken: tongTokensTieuThu,
-            tenCongCu: danhSachToolDaGoi.join(',') || 'them_vao_gio_hang',
-            ketQua: 'THANH_CONG'
-          });
-
-          return {
-            traLoi: ketQuaTool.thongDiep || `Dạ, tôi đã thêm ${ketQuaTool.sach.soLuong || 1} cuốn "${ketQuaTool.sach.tenSach}" vào giỏ hàng cho bạn rồi nhé. Đang chuyển hướng sang giỏ hàng cho bạn ạ!`,
-            duLieuKemTheo
-          };
-        }
-        if (ketQuaTool?.canXacNhan && ketQuaTool.cuonGoiY && duLieuKemTheo.danhSachSach.length === 0) {
-          duLieuKemTheo.danhSachSach = [{
-            maSach: ketQuaTool.maSach || 0,
-            tenSach: ketQuaTool.cuonGoiY,
-            giaBan: ketQuaTool.giaBan || 0,
-            conHang: true
-          }];
-        }
-      } else if (tenHam === 'tra_cuu_don_hang') {
-        const dinhDanh = maKhachHang ? `user_${maKhachHang}` : (khoaPhien ? `guest_${khoaPhien}` : 'guest');
-        ketQuaTool = await thucThiTraCuuDonHang(thamSo, maKhachHang, dinhDanh);
-        if (ketQuaTool?.donHang || ketQuaTool?.danhSachDon) {
-          duLieuKemTheo.thongTinDonHang = ketQuaTool.donHang || ketQuaTool.danhSachDon;
-        }
-      } else {
-        ketQuaTool = { loi: `Không hỗ trợ công cụ ${tenHam}` };
-      }
-
-      messages.push({
-        role: 'tool',
-        tool_call_id: toolCall.id,
-        content: JSON.stringify(ketQuaTool)
-      });
+      messages.push({ role: 'tool', tool_call_id: toolCall.id, content: JSON.stringify(phanHoiTool.ketQuaTool) });
     }
   }
 
-  // Nếu hết số vòng lặp mà AI chưa chốt -> Gọi 1 lần cuối không kèm tools để ép AI trả lời
-  const ketQuaCuoi = await goiNhaCungCapAI({
-    messages,
-    maxTokens: 500,
-    temperature: 0.3
-  });
-
-  if (ketQuaCuoi?.usage?.total_tokens) {
-    tongTokensTieuThu += ketQuaCuoi.usage.total_tokens;
-  }
-  if (tongTokensTieuThu > 0) {
-    console.log(`[AI Chatbot] Lượt hội thoại hoàn tất. Tổng token tiêu thụ: ${tongTokensTieuThu}`);
-  }
+  // 4. Nếu hết vòng lặp mà chưa chốt -> Gọi 1 lần cuối không kèm tools
+  const ketQuaCuoi = await goiNhaCungCapAI({ messages, maxTokens: 500, temperature: 0.3 });
+  if (ketQuaCuoi?.usage?.total_tokens) tongTokensTieuThu += ketQuaCuoi.usage.total_tokens;
 
   let traLoiCuoi = chuanHoaNoiDungAI(ketQuaCuoi.message?.content);
-  // Tự động bù đắp dữ liệu sách và làm sạch placeholder (...)
   traLoiCuoi = await tuDongBuDapDuLieuSach({ traLoi: traLoiCuoi, noiDungTinNhan, sachHienTai, duLieuKemTheo });
+  traLoiCuoi = traLoiCuoi || taoTraLoiMacDinhKhiRong(duLieuKemTheo, 'Dạ, bạn có cần BookNest tư vấn thêm thông tin nào nữa không ạ?');
 
-  if (!traLoiCuoi) {
-    if (duLieuKemTheo.themVaoGioHang) {
-      traLoiCuoi = `Dạ, tôi đã thêm ${duLieuKemTheo.themVaoGioHang.soLuong} cuốn "${duLieuKemTheo.themVaoGioHang.tenSach}" vào giỏ hàng cho bạn rồi nhé. Đang chuyển sang trang giỏ hàng cho bạn ạ!`;
-    } else if (duLieuKemTheo.thongTinThanhToan) {
-      traLoiCuoi = 'Dạ, tôi đã chuẩn bị xong thông tin thanh toán cho bạn rồi ạ. Bạn có thể nhấn vào nút "Mở trang thanh toán" bên dưới để hoàn tất đơn hàng nhé!';
-    } else if (duLieuKemTheo.danhSachSach && duLieuKemTheo.danhSachSach.length > 0) {
-      traLoiCuoi = `Dạ, có phải bạn đang muốn tìm cuốn sách "${duLieuKemTheo.danhSachSach[0].tenSach}" không ạ?`;
-    } else {
-      traLoiCuoi = 'Dạ, bạn có cần BookNest tư vấn thêm thông tin nào nữa không ạ?';
-    }
-  }
-
-  await ghiNhatKyChatbot({
-    maKhachHang,
-    khoaPhien,
-    soToken: tongTokensTieuThu,
-    tenCongCu: danhSachToolDaGoi.join(',') || null,
-    ketQua: 'THANH_CONG'
-  });
-
-  return {
-    traLoi: traLoiCuoi,
-    duLieuKemTheo
-  };
+  await ghiNhatKyChatbot({ maKhachHang, khoaPhien, soToken: tongTokensTieuThu, tenCongCu: danhSachToolDaGoi.join(',') || null, ketQua: 'THANH_CONG' });
+  return { traLoi: traLoiCuoi, duLieuKemTheo };
 }
 
 module.exports = {

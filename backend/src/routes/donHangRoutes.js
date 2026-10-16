@@ -22,7 +22,7 @@ const luatDatHangKhachVangLai = Joi.object({
     'string.max': 'Tên người nhận không được vượt quá 100 ký tự',
     'any.required': 'Tên người nhận là bắt buộc'
   }),
-  soDienThoaiNhan: Joi.string().trim().pattern(/^(0|\+84)[3|5|7|8|9][0-9]{8}$/).required().messages({
+  soDienThoaiNhan: Joi.string().trim().pattern(/^(0|\+84)[35789][0-9]{8}$/).required().messages({
     'string.pattern.base': 'Số điện thoại nhận không đúng định dạng số di động Việt Nam',
     'any.required': 'Số điện thoại nhận là bắt buộc'
   }),
@@ -117,7 +117,7 @@ const luatDatHang = Joi.object({
     'string.max': 'Tên người nhận không được vượt quá 100 ký tự',
     'any.required': 'Tên người nhận là bắt buộc'
   }),
-  soDienThoaiNhan: Joi.string().trim().pattern(/^(0|\+84)[3|5|7|8|9][0-9]{8}$/).required().messages({
+  soDienThoaiNhan: Joi.string().trim().pattern(/^(0|\+84)[35789][0-9]{8}$/).required().messages({
     'string.pattern.base': 'Số điện thoại nhận không đúng định dạng số di động Việt Nam',
     'any.required': 'Số điện thoại nhận là bắt buộc'
   }),

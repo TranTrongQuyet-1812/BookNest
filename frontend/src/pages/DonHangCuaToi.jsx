@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
+import { laySocket } from '../services/socket';
 import PhanTrang from '../components/PhanTrang';
 import { 
   Package, 
@@ -10,7 +11,8 @@ import {
   XCircle, 
   AlertCircle, 
   ArrowRight, 
-  Filter 
+  Filter,
+  QrCode
 } from 'lucide-react';
 
 export const DonHangCuaToi = () => {
@@ -26,6 +28,20 @@ export const DonHangCuaToi = () => {
   const [lanTai, setLanTai] = useState(0);
 
   const taiLai = () => setLanTai((n) => n + 1);
+
+  // Lắng nghe sự kiện realtime cập nhật trạng thái đơn hàng và thanh toán (T46)
+  useEffect(() => {
+    const socket = laySocket();
+    const xuLyCapNhat = () => {
+      taiLai();
+    };
+    socket.on('donHang:capNhatTrangThai', xuLyCapNhat);
+    socket.on('thanhToan:daThanhToan', xuLyCapNhat);
+    return () => {
+      socket.off('donHang:capNhatTrangThai', xuLyCapNhat);
+      socket.off('thanhToan:daThanhToan', xuLyCapNhat);
+    };
+  }, []);
 
   useEffect(() => {
     let daHuy = false;
@@ -182,7 +198,57 @@ export const DonHangCuaToi = () => {
                       {ngay ? new Date(ngay).toLocaleString('vi-VN') : ''}
                     </span>
                   </div>
-                  <div>{layBadgeTrangThai(trangThai)}</div>
+                  <div className="flex items-center gap-2">
+                    {don.thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && don.thanhToan?.TrangThai === 'CHO_THANH_TOAN' && trangThai === 'CHO_DUYET' && (
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        backgroundColor: '#FFFBEB',
+                        color: '#D97706',
+                        border: '1px solid #FDE68A'
+                      }}>
+                        <QrCode size={13} /> Chờ chuyển khoản QR
+                      </span>
+                    )}
+                    {don.thanhToan?.TrangThai === 'CAN_HOAN_TIEN' && (
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        backgroundColor: '#FEF3C7',
+                        color: '#92400E',
+                        border: '1px solid #FCD34D'
+                      }}>
+                        Đang xử lý hoàn tiền
+                      </span>
+                    )}
+                    {don.thanhToan?.TrangThai === 'DA_HOAN_TIEN' && (
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        backgroundColor: '#D1FAE5',
+                        color: '#065F46',
+                        border: '1px solid #A7F3D0'
+                      }}>
+                        ✓ Đã hoàn tiền
+                      </span>
+                    )}
+                    {layBadgeTrangThai(trangThai)}
+                  </div>
                 </div>
 
                 <div className="py-3 grid grid-cols-1 md:grid-cols-3 gap-3" style={{ fontSize: '0.9rem' }}>

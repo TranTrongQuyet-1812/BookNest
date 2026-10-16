@@ -352,7 +352,7 @@ export const KeSachCuonNgang = ({
                 </div>
 
                 <button
-                  onClick={() => onThemVaoGio(sach.MaSach, sach.TenSach)}
+                  onClick={() => onThemVaoGio(sach.MaSach, sach.TenSach, sach)}
                   style={{
                     width: '100%',
                     padding: '0.45rem 0',

@@ -67,12 +67,15 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
   });
 
   if (banGhiThanhToan && banGhiThanhToan.TrangThai === 'DA_THANH_TOAN') {
-    throw new Error('Đơn hàng này đã được thanh toán thành công trước đó');
+    throw LoiNghiepVu.xungDot('Đơn hàng này đã được thanh toán thành công trước đó');
   }
 
-  // Đơn đã hủy thì không cấp QR nữa; QR quá hạn thì hủy đơn ngay (không chờ lượt quét định kỳ) rồi báo khách
+  // Đơn đã hủy hoặc đã giao/đang giao thì không cấp QR nữa
   if (donHang.TrangThai === 'DA_HUY') {
     throw LoiNghiepVu.xungDot('Đơn hàng đã bị hủy nên không thể thanh toán');
+  }
+  if (['DA_GIAO', 'DANG_GIAO'].includes(donHang.TrangThai)) {
+    throw LoiNghiepVu.xungDot(`Đơn hàng đang ở trạng thái ${donHang.TrangThai}, không thể tạo mã thanh toán QR`);
   }
   if (banGhiThanhToan?.TrangThai === 'HET_HAN' || hetHanThanhToanService.laQrHetHan(banGhiThanhToan)) {
     await hetHanThanhToanService.huyDonQrHetHan(banGhiThanhToan);
@@ -177,6 +180,16 @@ async function ghiNhanTienVeMuon(thanhToan, orderCode, noiDungTho) {
     KetQuaXuLy: 'DA_XU_LY'
   });
   console.warn(`[payOS] Tiền về cho khoản thanh toán ${thanhToan.MaThanhToan} đã hết hạn hoặc bị hủy (mã GD ${orderCode}), cần hoàn tiền`);
+  try {
+    const { phatSuKien } = require('../realtime/socket');
+    phatSuKien('thanhToan:canHoanTien', {
+      maThanhToan: thanhToan.MaThanhToan,
+      maDonHang: thanhToan.MaDonHang,
+      soTien: thanhToan.SoTien,
+      lyDo: 'Tiền về sau khi đơn đã hủy',
+      thoiGian: new Date().toISOString()
+    }, 'nhan_vien');
+  } catch (e) {}
   return { thanhCong: true, thongDiep: 'Tiền về sau khi đơn đã hủy, đã đánh dấu cần hoàn tiền' };
 }
 
@@ -254,8 +267,9 @@ async function xuLyWebhookPayOS(webhookBody) {
     return { thanhCong: true, thongDiep: 'Giao dịch đã được xử lý trước đó (Idempotent)' };
   }
 
-  // 3b. Tiền về muộn: khoản đã hết hạn/hủy thì không coi là đã thanh toán, đánh dấu cần hoàn tiền
-  if (thanhToan.TrangThai !== 'CHO_THANH_TOAN') {
+  // 3b. Tiền về muộn hoặc đơn đã bị hủy: không coi là đã thanh toán, đánh dấu cần hoàn tiền
+  const donHangLienKet = await DonHang.findByPk(thanhToan.MaDonHang);
+  if (thanhToan.TrangThai !== 'CHO_THANH_TOAN' || !donHangLienKet || donHangLienKet.TrangThai === 'DA_HUY') {
     return ghiNhanTienVeMuon(thanhToan, orderCode, noiDungTho);
   }
 
@@ -352,12 +366,20 @@ async function layThongTinThanhToanTheoDon(donHangTraCuu) {
     try {
       const thongTinPayos = await payOSClient.paymentRequests.get(thanhToan.MaGiaoDichPayos);
       if (thongTinPayos && thongTinPayos.status === 'PAID') {
+        const donHang = await DonHang.findByPk(maDonHang);
+        if (!donHang || donHang.TrangThai === 'DA_HUY') {
+          await ghiNhanTienVeMuon(
+            thanhToan,
+            thanhToan.MaGiaoDichPayos,
+            `Tiền về sau khi đơn đã hủy (phát hiện qua truy vấn trạng thái payOS: ${JSON.stringify(thongTinPayos)})`
+          );
+          return { coThanhToan: true, duLieu: await ThanhToan.findByPk(thanhToan.MaThanhToan) };
+        }
         // Đồng bộ trạng thái nếu payOS báo đã trả tiền mà webhook chưa tới
         await thanhToan.update({
           TrangThai: 'DA_THANH_TOAN',
           NgayThanhToan: new Date()
         });
-        const donHang = await DonHang.findByPk(maDonHang);
         if (donHang && donHang.TrangThai === 'CHO_DUYET') {
           await donHang.update({ TrangThai: 'DA_XAC_NHAN' });
           await LichSuTrangThaiDonHang.create({
@@ -412,11 +434,24 @@ async function xacNhanWebhookUrl(webhookUrl) {
   return await payOSClient.webhooks.confirm(webhookUrl);
 }
 
+/**
+ * Hủy link thanh toán trên cổng payOS khi đơn hàng bị hủy
+ */
+async function huyLinkPayOS(orderCode, lyDo = 'Đơn hàng đã bị hủy') {
+  if (!payOSClient || !orderCode) return;
+  try {
+    await payOSClient.paymentRequests.cancel(orderCode, String(lyDo).slice(0, 50));
+  } catch (err) {
+    console.warn(`[payOS] Không thể hủy link thanh toán ${orderCode}:`, err.message);
+  }
+}
+
 module.exports = {
   THONG_DIEP_QR_DANG_TAT,
   kiemTraCongTacQRDangBat,
   taoThanhToanQR,
   xuLyWebhookPayOS,
   layThongTinThanhToanTheoDon,
-  xacNhanWebhookUrl
+  xacNhanWebhookUrl,
+  huyLinkPayOS
 };

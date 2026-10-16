@@ -13,7 +13,8 @@ import {
   ShoppingCart,
   History,
   Settings,
-  MessageSquare
+  MessageSquare,
+  CreditCard
 } from 'lucide-react';
 
 export const AdminLayout = () => {
@@ -70,6 +71,7 @@ export const AdminLayout = () => {
     if (p.includes('/admin/books')) return laThuThu ? 'Tra Cứu Sách & Tồn Kho' : 'Quản Lý Sách & Thể Loại';
     if (p.includes('/admin/inventory')) return 'Nhập Kho & Tồn Kho';
     if (p.includes('/admin/orders')) return 'Xử Lý Đơn Hàng';
+    if (p.includes('/admin/payments')) return 'Quản Lý Thanh Toán & Hoàn Tiền';
     if (p.includes('/admin/reviews')) return 'Kiểm Duyệt Đánh Giá';
     if (p.includes('/admin/counter-sales')) return 'Bán Hàng Tại Quầy';
     if (p.includes('/admin/change-history')) return 'Lịch Sử Thay Đổi';
@@ -197,6 +199,14 @@ export const AdminLayout = () => {
                 >
                   <ClipboardList size={16} />
                   <span>Xử Lý Đơn Hàng</span>
+                </NavLink>
+
+                <NavLink
+                  to="/admin/payments"
+                  className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}
+                >
+                  <CreditCard size={16} />
+                  <span>Quản Lý Thanh Toán</span>
                 </NavLink>
 
                 <NavLink

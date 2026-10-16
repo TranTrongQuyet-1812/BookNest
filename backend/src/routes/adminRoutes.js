@@ -15,6 +15,7 @@ const lichSuQuanTriController = require('../controllers/lichSuQuanTriController'
 const cauHinhHeThongController = require('../controllers/cauHinhHeThongController');
 const aiChatbotController = require('../controllers/aiChatbotController');
 const danhGiaController = require('../controllers/danhGiaController');
+const thanhToanController = require('../controllers/thanhToanController');
 
 const router = express.Router();
 
@@ -410,7 +411,7 @@ const luatTaoNhanVien = Joi.object({
     'any.only': 'Chỉ được phép tạo tài khoản với vai trò thu_kho hoặc thu_thu',
     'any.required': 'Vai trò là bắt buộc'
   }),
-  soDienThoai: Joi.string().trim().pattern(/^(0|\+84)[3|5|7|8|9][0-9]{8}$/).allow(null, '').messages({
+  soDienThoai: Joi.string().trim().pattern(/^(0|\+84)[35789][0-9]{8}$/).allow(null, '').messages({
     'string.pattern.base': 'Số điện thoại không đúng định dạng'
   })
 });
@@ -1076,6 +1077,92 @@ router.delete(
   xacThucToken,
   phanQuyen('quan_tri'),
   batLoiAsync(danhGiaController.xuLyXoaDanhGia)
+);
+
+// ==========================================
+// 8. Quản lý thanh toán & Hoàn tiền (Deliverable 20)
+// ==========================================
+
+/**
+ * @swagger
+ * /api/admin/payments:
+ *   get:
+ *     summary: Danh sách toàn bộ các khoản thanh toán của hệ thống (Quản trị viên, Thủ thư)
+ *     tags: [Quản trị (Admin)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: method
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Danh sách thanh toán kèm thông tin đơn hàng
+ *       403:
+ *         description: Không có quyền truy cập
+ */
+router.get(
+  '/payments',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_thu'),
+  batLoiAsync(thanhToanController.layDanhSachThanhToanAdmin)
+);
+
+/**
+ * @swagger
+ * /api/admin/payments/{id}/refunded:
+ *   put:
+ *     summary: Xác nhận đã hoàn tiền thủ công cho khách qua ngân hàng (Quản trị viên, Thủ thư)
+ *     tags: [Quản trị (Admin)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               maThamChieu:
+ *                 type: string
+ *               ghiChu:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Đã xác nhận hoàn tiền thành công
+ *       403:
+ *         description: Không có quyền truy cập
+ */
+router.put(
+  '/payments/:id/refunded',
+  xacThucToken,
+  phanQuyen('quan_tri'),
+  batLoiAsync(thanhToanController.xacNhanHoanTienAdmin)
 );
 
 module.exports = router;

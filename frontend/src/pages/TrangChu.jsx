@@ -67,12 +67,23 @@ export const TrangChu = () => {
 
   // Trạng thái cho chế độ 6 Kệ Sách Động (Trang chủ mặc định)
   const [dangTaiKe, setDangTaiKe] = useState(true);
+  const [loiKeSach, setLoiKeSach] = useState('');
   const [sachMoi, setSachMoi] = useState([]);
   const [sachManga, setSachManga] = useState([]);
   const [sachDeal, setSachDeal] = useState([]);
   const [sachTacGia, setSachTacGia] = useState([]);
   const [sachVanHoc, setSachVanHoc] = useState([]);
   const [sachRandom, setSachRandom] = useState([]);
+
+  // Tiêu đề và liên kết động cho các kệ
+  const [tieuDeManga, setTieuDeManga] = useState('Series Truyện & Manga Nổi Bật');
+  const [linkManga, setLinkManga] = useState('/?categoryId=3');
+  const [tieuDeVanHoc, setTieuDeVanHoc] = useState('Văn Học & Tiểu Thuyết Chọn Lọc');
+  const [linkVanHoc, setLinkVanHoc] = useState('/?categoryId=1');
+  const [tieuDeTacGia, setTieuDeTacGia] = useState('Tác Giả Tiêu Điểm: Tô Hoài');
+  const [linkTacGia, setLinkTacGia] = useState('/?search=Tô Hoài');
+  const [tongSoTrangSach, setTongSoTrangSach] = useState(1);
+  const [lanTaiLaiKe, setLanTaiLaiKe] = useState(0);
 
   // Trạng thái cho chế độ Lọc / Tìm Kiếm có phân trang
   const [sachLocList, setSachLocList] = useState([]);
@@ -146,9 +157,9 @@ export const TrangChu = () => {
     }
   };
 
-  // Thêm nhanh vào giỏ hàng qua Zustand Store (Hỗ trợ cả Khách vãng lai & Khách hàng)
-  const handleThemVaoGio = async (maSach, tieuDe) => {
-    const ketQua = await themVaoGio(maSach, 1);
+  // Thêm nhanh vào giỏ hàng qua Zustand Store (Truyền đủ thông tin sách chống lỗi fallback 0đ)
+  const handleThemVaoGio = async (maSach, tieuDe, thongTinSach = null) => {
+    const ketQua = await themVaoGio(maSach, 1, thongTinSach);
     if (ketQua.thanhCong) {
       setThongBaoThem(`Đã thêm "${tieuDe}" vào giỏ hàng`);
       setTimeout(() => setThongBaoThem(''), 3000);
@@ -164,19 +175,51 @@ export const TrangChu = () => {
 
     const napKe = async () => {
       setDangTaiKe(true);
+      setLoiKeSach('');
       try {
-        const randomPage = Math.floor(Math.random() * 20) + 1;
-        const [resMoi, resManga, resDeal, resTacGia, resVanHoc, resRandom] = await Promise.all([
+        // Tải danh mục và sách mới nhất trước để xác định cấu trúc dữ liệu thực tế
+        const [resMoi, resCats] = await Promise.all([
           api.get('/books', { params: { limit: 12, sort: 'newest' } }),
-          api.get('/books', { params: { limit: 12, categoryId: 3 } }), // Manga - Comic
-          api.get('/books', { params: { limit: 12, sort: 'price_asc' } }), // Săn deal giá tốt
-          api.get('/books', { params: { limit: 12, search: 'Tô Hoài' } }), // Tác giả tiêu điểm
-          api.get('/books', { params: { limit: 12, categoryId: 1 } }), // Văn học & Tiểu thuyết
-          api.get('/books', { params: { limit: 12, page: randomPage } }) // Khám phá ngẫu nhiên
+          api.get('/categories')
         ]);
 
         if (daHuy) return;
         const listMoi = resMoi.data.data?.danhSach || [];
+        const maxPages = resMoi.data.data?.phanTrang?.tongSoTrang || 1;
+        setTongSoTrangSach(maxPages);
+
+        const listCats = resCats.data?.data || [];
+        // Xác định động danh mục Manga / Truyện tranh hoặc danh mục đầu tiên
+        const catManga = listCats.find(c => /manga|truyện/i.test(c.TenDanhMuc)) || listCats[0];
+        // Xác định động danh mục Văn học hoặc danh mục thứ 2
+        const catVanHoc = listCats.find(c => c.MaDanhMuc !== catManga?.MaDanhMuc && /văn học|tiểu thuyết|kỹ năng/i.test(c.TenDanhMuc)) || listCats[1] || catManga;
+
+        if (catManga) {
+          setTieuDeManga(catManga.TenDanhMuc);
+          setLinkManga(`/?categoryId=${catManga.MaDanhMuc}`);
+        }
+        if (catVanHoc) {
+          setTieuDeVanHoc(catVanHoc.TenDanhMuc);
+          setLinkVanHoc(`/?categoryId=${catVanHoc.MaDanhMuc}`);
+        }
+
+        // Tìm tác giả nổi bật từ danh sách sách mới
+        const tacGiaTieuDiem = listMoi.find(s => s.TacGia && !/nhiều tác giả/i.test(s.TacGia))?.TacGia || 'Tô Hoài';
+        setTieuDeTacGia(`Tác Giả Tiêu Điểm: ${tacGiaTieuDiem}`);
+        setLinkTacGia(`/?search=${encodeURIComponent(tacGiaTieuDiem)}`);
+
+        // Bốc ngẫu nhiên trang thực tế trong khoảng [1, maxPages]
+        const randomPage = Math.floor(Math.random() * maxPages) + 1;
+
+        const [resManga, resDeal, resTacGia, resVanHoc, resRandom] = await Promise.all([
+          catManga ? api.get('/books', { params: { limit: 12, categoryId: catManga.MaDanhMuc } }) : Promise.resolve({ data: { data: { danhSach: [] } } }),
+          api.get('/books', { params: { limit: 12, sort: 'price_asc' } }),
+          api.get('/books', { params: { limit: 12, search: tacGiaTieuDiem } }),
+          catVanHoc ? api.get('/books', { params: { limit: 12, categoryId: catVanHoc.MaDanhMuc } }) : Promise.resolve({ data: { data: { danhSach: [] } } }),
+          api.get('/books', { params: { limit: 12, page: randomPage } })
+        ]);
+
+        if (daHuy) return;
         const listManga = resManga.data.data?.danhSach || [];
         const listDeal = resDeal.data.data?.danhSach || [];
         const listTacGia = resTacGia.data.data?.danhSach || [];
@@ -198,6 +241,7 @@ export const TrangChu = () => {
         }
       } catch (err) {
         console.error('Lỗi tải các kệ sách:', err);
+        if (!daHuy) setLoiKeSach('Không thể tải các kệ sách lúc này. Vui lòng kiểm tra kết nối mạng và thử lại.');
       } finally {
         if (!daHuy) setDangTaiKe(false);
       }
@@ -205,12 +249,13 @@ export const TrangChu = () => {
 
     napKe();
     return () => { daHuy = true; };
-  }, [laCheDoLoc]);
+  }, [laCheDoLoc, lanTaiLaiKe]);
 
-  // Tráo danh sách ngẫu nhiên cho Kệ 6
+  // Tráo danh sách ngẫu nhiên cho Kệ 6 dựa trên tổng số trang thực tế
   const handleTraoRandom = async () => {
     try {
-      const randomPage = Math.floor(Math.random() * 20) + 1;
+      const maxPages = tongSoTrangSach || 1;
+      const randomPage = Math.floor(Math.random() * maxPages) + 1;
       const res = await api.get('/books', { params: { limit: 12, page: randomPage } });
       setSachRandom(res.data.data?.danhSach || []);
     } catch (err) {
@@ -452,7 +497,23 @@ export const TrangChu = () => {
       {/* ============================================================== */}
       {!laCheDoLoc ? (
         <div id="ke-sach-danh-muc" className="container" style={{ padding: '2.5rem 1rem 0' }}>
-          {dangTaiKe ? (
+          {loiKeSach ? (
+            <div style={{ textAlign: 'center', padding: '3.5rem 1rem', maxWidth: '480px', margin: '0 auto' }}>
+              <div className="alert alert-danger mb-4" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '0.75rem 1.25rem', borderRadius: '6px' }}>
+                <span>{loiKeSach}</span>
+              </div>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setLanTaiLaiKe(prev => prev + 1)}
+                  className="btn btn-primary"
+                  style={{ borderRadius: '6px' }}
+                >
+                  Thử lại
+                </button>
+              </div>
+            </div>
+          ) : dangTaiKe ? (
             <div style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--text-muted)' }}>
               Đang chuẩn bị các kệ sách...
             </div>
@@ -466,10 +527,10 @@ export const TrangChu = () => {
                 onThemVaoGio={handleThemVaoGio}
               />
 
-              {/* Kệ 2: Series Truyện & Manga Nổi Bật (Có số tập) */}
+              {/* Kệ 2: Series Truyện & Manga Nổi Bật (hoặc Danh mục nổi bật 1) */}
               <KeSachCuonNgang
-                tieuDe="Series Truyện & Manga Nổi Bật"
-                linkXemThem="/?categoryId=3"
+                tieuDe={tieuDeManga}
+                linkXemThem={linkManga}
                 danhSachSach={sachManga}
                 onThemVaoGio={handleThemVaoGio}
               />
@@ -482,18 +543,18 @@ export const TrangChu = () => {
                 onThemVaoGio={handleThemVaoGio}
               />
 
-              {/* Kệ 4: Tác Giả Tiêu Điểm: Tô Hoài */}
+              {/* Kệ 4: Tác Giả Tiêu Điểm */}
               <KeSachCuonNgang
-                tieuDe="Tác Giả Tiêu Điểm: Tô Hoài"
-                linkXemThem="/?search=Tô Hoài"
+                tieuDe={tieuDeTacGia}
+                linkXemThem={linkTacGia}
                 danhSachSach={sachTacGia}
                 onThemVaoGio={handleThemVaoGio}
               />
 
-              {/* Kệ 5: Văn Học & Tiểu Thuyết Chọn Lọc */}
+              {/* Kệ 5: Văn Học & Tiểu Thuyết Chọn Lọc (hoặc Danh mục nổi bật 2) */}
               <KeSachCuonNgang
-                tieuDe="Văn Học & Tiểu Thuyết Chọn Lọc"
-                linkXemThem="/?categoryId=1"
+                tieuDe={tieuDeVanHoc}
+                linkXemThem={linkVanHoc}
                 danhSachSach={sachVanHoc}
                 onThemVaoGio={handleThemVaoGio}
               />
@@ -687,7 +748,7 @@ export const TrangChu = () => {
                           {giaBan.toLocaleString('vi-VN')} đ
                         </div>
                         <button
-                          onClick={() => handleThemVaoGio(sach.MaSach, sach.TenSach)}
+                          onClick={() => handleThemVaoGio(sach.MaSach, sach.TenSach, sach)}
                           style={{
                             width: '100%',
                             padding: '0.45rem 0',

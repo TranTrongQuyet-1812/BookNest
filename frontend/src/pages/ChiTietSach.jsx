@@ -35,7 +35,7 @@ export const ChiTietSach = () => {
   const [sach, setSach] = useState(null);
   const [sachCungTheLoai, setSachCungTheLoai] = useState([]);
   const [danhGiaList, setDanhGiaList] = useState([]);
-  const [thongKeSao, setThongKeSao] = useState({ saoTrungBinh: 5, tongDanhGia: 0 });
+  const [thongKeSao, setThongKeSao] = useState({ saoTrungBinh: 0, soLuotDanhGia: 0 });
   const [soLuong, setSoLuong] = useState(1);
   const [dangTai, setDangTai] = useState(true);
   const [thongBao, setThongBao] = useState('');
@@ -400,12 +400,12 @@ export const ChiTietSach = () => {
             marginBottom: '1.5rem',
             borderBottom: '1px solid var(--border)'
           }}>
-            <StarRating rating={Math.round(thongKeSao.saoTrungBinh || 5)} size={17} />
+            <StarRating rating={thongKeSao.soLuotDanhGia > 0 ? Math.round(thongKeSao.saoTrungBinh || 0) : 0} size={17} />
             <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-main)' }}>
-              {thongKeSao.saoTrungBinh || '5.0'} / 5
+              {thongKeSao.soLuotDanhGia > 0 ? `${Number(thongKeSao.saoTrungBinh).toFixed(1)} / 5` : 'Chưa có đánh giá'}
             </span>
             <span style={{ color: 'var(--text-sub)', fontSize: '0.86rem' }}>
-              • {thongKeSao.tongDanhGia} nhận xét từ bạn đọc
+              • {thongKeSao.soLuotDanhGia || 0} nhận xét từ bạn đọc
             </span>
           </div>
 
@@ -623,8 +623,10 @@ export const ChiTietSach = () => {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <StarRating rating={Math.round(thongKeSao.saoTrungBinh || 5)} size={16} />
-            <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{thongKeSao.saoTrungBinh || '5.0'} / 5</span>
+            <StarRating rating={thongKeSao.soLuotDanhGia > 0 ? Math.round(thongKeSao.saoTrungBinh || 0) : 0} size={16} />
+            <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>
+              {thongKeSao.soLuotDanhGia > 0 ? `${Number(thongKeSao.saoTrungBinh).toFixed(1)} / 5` : 'Chưa có đánh giá'}
+            </span>
           </div>
         </div>
 
@@ -663,6 +665,18 @@ export const ChiTietSach = () => {
 
             {daDangNhap ? (
               <form onSubmit={handleGuiDanhGia}>
+                <div style={{
+                  padding: '0.65rem 0.85rem',
+                  backgroundColor: 'var(--bg-surface)',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--border)',
+                  fontSize: '0.82rem',
+                  color: 'var(--text-muted)',
+                  marginBottom: '1rem'
+                }}>
+                  💡 <strong>Lưu ý:</strong> Theo chính sách BookNest, chỉ bạn đọc đã mua và nhận cuốn sách này thành công mới có thể gửi nhận xét.
+                </div>
+
                 <div style={{ marginBottom: '1.25rem' }}>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
                     Mức độ yêu thích:
