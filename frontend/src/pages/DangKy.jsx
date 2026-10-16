@@ -8,6 +8,7 @@ import {
   AlertCircle, 
   CheckCircle2 
 } from 'lucide-react';
+import { ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
 export const DangKy = () => {
   const { dangKy } = useAuth();
@@ -56,8 +57,7 @@ export const DangKy = () => {
         navigate('/login', { state: location.state });
       }, 1800);
     } catch (err) {
-      const loiChiTiet = err.response?.data?.errors?.[0]?.thongDiep;
-      setLoi(loiChiTiet || err.response?.data?.message || 'Đăng ký tài khoản không thành công. Vui lòng kiểm tra lại');
+      setLoi(loiTuApi(err, 'Đăng ký tài khoản không thành công. Vui lòng kiểm tra lại'));
     } finally {
       setDangXuLy(false);
     }
@@ -177,18 +177,18 @@ export const DangKy = () => {
           </div>
 
           {loi && (
-            <div className="alert alert-danger mb-4" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertCircle size={18} style={{ flexShrink: 0 }} />
-              <span style={{ fontSize: '0.875rem' }}>{loi}</span>
+            <div className="mb-4">
+              <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>
+                {loi}
+              </ThongBaoTaiCho>
             </div>
           )}
 
           {thanhCong && (
-            <div className="alert alert-success mb-4" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CheckCircle2 size={18} style={{ flexShrink: 0 }} />
-              <span style={{ fontSize: '0.875rem' }}>
+            <div className="mb-4">
+              <ThongBaoTaiCho loai="thanhCong">
                 Đăng ký thành công! Đang chuyển hướng bạn tới trang đăng nhập...
-              </span>
+              </ThongBaoTaiCho>
             </div>
           )}
 

@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { KhungThanhToanVietQR } from '../components/KhungThanhToanVietQR';
 import { laySocket, thamGiaDonHang, roiDonHang } from '../services/socket';
-import { useThongBao } from '@booknest/shared/thongbao';
+import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 import { useHuyDonHang } from '../hooks/useHuyDonHang';
 
 export const ChiTietDonHang = () => {
@@ -70,7 +70,7 @@ export const ChiTietDonHang = () => {
       setDonHang(res.data.data);
       napThongTinThanhToan();
     } catch (err) {
-      setLoi(err.response?.data?.message || 'Không tìm thấy thông tin đơn hàng này (IDOR Protected)');
+      setLoi(loiTuApi(err, 'Không tìm thấy thông tin đơn hàng này (IDOR Protected)'));
     } finally {
       setDangTai(false);
     }
@@ -158,9 +158,8 @@ export const ChiTietDonHang = () => {
   if (loi && !donHang) {
     return (
       <div className="container py-12 text-center">
-        <div className="alert alert-danger" style={{ maxWidth: '480px', margin: '0 auto 1.5rem' }}>
-          <AlertCircle size={18} />
-          <span>{loi}</span>
+        <div style={{ maxWidth: '480px', margin: '0 auto 1.5rem', textAlign: 'left' }}>
+          <ThongBaoTaiCho loai="loi">{loi}</ThongBaoTaiCho>
         </div>
         <button type="button" onClick={handleQuayLai} className="btn btn-outline">
           <ArrowLeft size={16} /> Quay lại danh sách đơn hàng

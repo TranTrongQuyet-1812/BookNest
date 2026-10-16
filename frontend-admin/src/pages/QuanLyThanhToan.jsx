@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import api from '@booknest/shared/api';
 import { useAuth } from '@booknest/shared/auth';
-import { useThongBao, HopThoai, ThongBaoTaiCho } from '@booknest/shared/thongbao';
+import { useThongBao, HopThoai, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
 export default function QuanLyThanhToan() {
   const { user } = useAuth();
@@ -59,7 +59,7 @@ export default function QuanLyThanhToan() {
       setPhanTrang(res.data.data.phanTrang || { trangHienTai: 1, tongSoTrang: 1, tongSoBanGhi: 0 });
       setThongKe(res.data.data.thongKe || {});
     } catch (err) {
-      setLoi(err.response?.data?.message || 'Không thể tải danh sách thanh toán.');
+      setLoi(loiTuApi(err, 'Không thể tải danh sách thanh toán.'));
     } finally {
       setDangTai(false);
     }

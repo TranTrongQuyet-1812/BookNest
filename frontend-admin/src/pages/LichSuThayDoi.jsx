@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { History, RefreshCw, Trash2 } from 'lucide-react';
 import api from '@booknest/shared/api';
-import { useThongBao } from '@booknest/shared/thongbao';
+import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
 const nhan = (value) => value == null || value === '' ? '—' : value;
 const nguoiDungTruong = { TenSach: 'Tên sách', TacGia: 'Tác giả', MoTa: 'Mô tả', GiaBan: 'Giá bán', NguongCanhBao: 'Ngưỡng cảnh báo', AnhBia: 'Ảnh bìa', MaDanhMuc: 'Danh mục', DaAn: 'Trạng thái', TenDanhMuc: 'Tên danh mục', THANH_TOAN_QR_BAT: 'Thanh toán QR' };
@@ -28,7 +28,7 @@ export default function LichSuThayDoi() {
       setDanhSach(res.data.data.danhSach);
       setTongSoTrang(res.data.data.phanTrang.tongSoTrang || 1);
       setLoi('');
-    } catch (err) { setLoi(err.response?.data?.message || 'Không tải được lịch sử.'); }
+    } catch (err) { setLoi(loiTuApi(err, 'Không tải được lịch sử.')); }
     finally { setDangTai(false); }
   };
 
@@ -40,7 +40,7 @@ export default function LichSuThayDoi() {
       const res = await api.post('/admin/change-history/cleanup-preview', { truocNgay: new Date(truocNgay).toISOString() });
       setXemTruoc(res.data.data);
       setLoi('');
-    } catch (err) { setLoi(err.response?.data?.message || 'Không thể xem trước dữ liệu.'); }
+    } catch (err) { setLoi(loiTuApi(err, 'Không thể xem trước dữ liệu.')); }
   };
 
   const xacNhanDonDep = async () => {
@@ -71,7 +71,7 @@ export default function LichSuThayDoi() {
   return (
     <div className="bo-page">
       <div className="bo-page-heading"><div><span className="bo-eyebrow">THEO DÕI NGHIỆP VỤ</span><h1>Lịch sử thay đổi</h1><p>Nhật ký sách và danh mục, gồm người thực hiện, thời điểm và giá trị trước/sau.</p></div><button className="bo-secondary-button" onClick={taiLichSu}><RefreshCw size={15}/> Làm mới</button></div>
-      {loi && <div className="bo-alert" role="alert">{loi}</div>}
+      {loi && <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>{loi}</ThongBaoTaiCho>}
       <section className="bo-panel history-cleanup">
         <div className="history-cleanup-copy"><span className="history-icon"><Trash2 size={18}/></span><div><strong>Dọn lịch sử cũ</strong><p>Dữ liệu trước mốc đã chọn sẽ bị xóa vĩnh viễn. Lịch sử đơn đã giao được giữ để bảo toàn báo cáo.</p></div></div>
         <div className="history-cleanup-controls"><label>Từ trước ngày<input type="date" value={truocNgay} onChange={e => { setTruocNgay(e.target.value); setXemTruoc(null); }}/></label><button className="bo-secondary-button" onClick={kiemTraDonDep}>Xem trước</button></div>

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import api from '../services/api';
+import { loiTuApi } from '@booknest/shared/thongbao';
 
 const KEY_GUEST_CART = 'booknest_guest_cart';
 
@@ -115,7 +116,7 @@ export const useCartStore = create((set, get) => ({
       set({
         dangTai: false,
         daKhoiTao: true,
-        loi: err.response?.data?.message || 'Không thể tải dữ liệu giỏ hàng từ máy chủ'
+        loi: loiTuApi(err, 'Không thể tải dữ liệu giỏ hàng từ máy chủ')
       });
       return null;
     }
@@ -184,7 +185,7 @@ export const useCartStore = create((set, get) => ({
           thongDiep: 'Phiên đăng nhập đã hết hạn hoặc không có quyền. Vui lòng đăng nhập lại.'
         };
       }
-      const thongDiep = err.response?.data?.message || 'Lỗi khi thêm sách vào giỏ hàng';
+      const thongDiep = loiTuApi(err, 'Lỗi khi thêm sách vào giỏ hàng');
       return { thanhCong: false, thongDiep };
     }
   },
@@ -257,7 +258,7 @@ export const useCartStore = create((set, get) => ({
       });
       const thongDiep = (err.response?.status === 401 || err.response?.status === 403)
         ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để cập nhật giỏ hàng.'
-        : (err.response?.data?.message || 'Lỗi khi cập nhật số lượng');
+        : loiTuApi(err, 'Lỗi khi cập nhật số lượng');
       return { thanhCong: false, thongDiep };
     }
   },
@@ -283,7 +284,7 @@ export const useCartStore = create((set, get) => ({
     } catch (err) {
       const thongDiep = (err.response?.status === 401 || err.response?.status === 403)
         ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để xóa sản phẩm.'
-        : (err.response?.data?.message || 'Lỗi khi xóa sản phẩm');
+        : loiTuApi(err, 'Lỗi khi xóa sản phẩm');
       return { thanhCong: false, thongDiep };
     }
   },
@@ -315,7 +316,7 @@ export const useCartStore = create((set, get) => ({
     } catch (err) {
       const thongDiep = (err.response?.status === 401 || err.response?.status === 403)
         ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để dọn giỏ hàng.'
-        : (err.response?.data?.message || 'Lỗi khi dọn giỏ hàng');
+        : loiTuApi(err, 'Lỗi khi dọn giỏ hàng');
       return { thanhCong: false, thongDiep };
     }
   },
@@ -341,7 +342,7 @@ export const useCartStore = create((set, get) => ({
           console.warn(`Lỗi đồng bộ món ${item.maSach} lên server:`, itemErr.message);
           cacMonLoi.push({
             ...item,
-            lyDoLoi: itemErr.response?.data?.message || 'Không thể thêm vào giỏ'
+            lyDoLoi: loiTuApi(itemErr, 'Không thể thêm vào giỏ')
           });
         }
       }

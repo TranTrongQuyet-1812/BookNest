@@ -13,6 +13,7 @@ import {
   RefreshCw,
   ShieldCheck
 } from 'lucide-react';
+import { ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
 export const QuenMatKhau = () => {
   const navigate = useNavigate();
@@ -54,7 +55,7 @@ export const QuenMatKhau = () => {
       setBuoc(2);
       setDemNguoc(60);
     } catch (err) {
-      setLoi(err.response?.data?.message || 'Không thể gửi mã xác nhận. Vui lòng thử lại sau.');
+      setLoi(loiTuApi(err, 'Không thể gửi mã xác nhận. Vui lòng thử lại sau.'));
     } finally {
       setDangXuLy(false);
     }
@@ -71,7 +72,7 @@ export const QuenMatKhau = () => {
       setThongBaoThanhCong(res.data?.message || 'Mã xác thực mới đã được gửi tới email của bạn.');
       setDemNguoc(60);
     } catch (err) {
-      setLoi(err.response?.data?.message || 'Không thể gửi lại mã xác nhận.');
+      setLoi(loiTuApi(err, 'Không thể gửi lại mã xác nhận.'));
     } finally {
       setDangXuLy(false);
     }
@@ -109,7 +110,7 @@ export const QuenMatKhau = () => {
         navigate('/login');
       }, 2000);
     } catch (err) {
-      setLoi(err.response?.data?.message || 'Đặt lại mật khẩu không thành công. Vui lòng kiểm tra lại mã xác nhận.');
+      setLoi(loiTuApi(err, 'Đặt lại mật khẩu không thành công. Vui lòng kiểm tra lại mã xác nhận.'));
     } finally {
       setDangXuLy(false);
     }
@@ -177,39 +178,19 @@ export const QuenMatKhau = () => {
 
         {/* Cảnh báo lỗi */}
         {loi && (
-          <div className="alert alert-danger mb-4" style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '10px',
-            padding: '0.75rem 1rem',
-            borderRadius: '8px',
-            backgroundColor: 'var(--danger-light)',
-            border: '1px solid var(--danger)',
-            color: 'var(--danger)',
-            fontSize: '0.875rem',
-            marginBottom: '1.25rem'
-          }}>
-            <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
-            <span>{loi}</span>
+          <div className="mb-4">
+            <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>
+              {loi}
+            </ThongBaoTaiCho>
           </div>
         )}
 
         {/* Thông báo thành công */}
         {thongBaoThanhCong && (
-          <div className="alert alert-success mb-4" style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '10px',
-            padding: '0.75rem 1rem',
-            borderRadius: '8px',
-            backgroundColor: 'var(--accent-light)',
-            border: '1px solid var(--accent)',
-            color: 'var(--text-main)',
-            fontSize: '0.875rem',
-            marginBottom: '1.25rem'
-          }}>
-            <CheckCircle2 size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
-            <span>{thongBaoThanhCong}</span>
+          <div className="mb-4">
+            <ThongBaoTaiCho loai="thanhCong" onDong={() => setThongBaoThanhCong('')}>
+              {thongBaoThanhCong}
+            </ThongBaoTaiCho>
           </div>
         )}
 

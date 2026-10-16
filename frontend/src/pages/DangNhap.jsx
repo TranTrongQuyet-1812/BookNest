@@ -8,6 +8,7 @@ import {
   EyeOff, 
   AlertCircle 
 } from 'lucide-react';
+import { ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
 // choNhanVien = true: cổng đăng nhập của nhân viên (/admin/login), còn lại là cổng khách hàng (/login)
 export const DangNhap = ({ choNhanVien = false }) => {
@@ -54,7 +55,7 @@ export const DangNhap = ({ choNhanVien = false }) => {
         navigate(duongDanCu);
       }
     } catch (err) {
-      setLoi(err.response?.data?.message || 'Đăng nhập không thành công. Vui lòng kiểm tra lại');
+      setLoi(loiTuApi(err, 'Đăng nhập không thành công. Vui lòng kiểm tra lại'));
     } finally {
       setDangXuLy(false);
     }
@@ -161,9 +162,10 @@ export const DangNhap = ({ choNhanVien = false }) => {
           </div>
 
           {loi && (
-            <div className="alert alert-danger mb-4" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertCircle size={18} style={{ flexShrink: 0 }} />
-              <span style={{ fontSize: '0.875rem' }}>{loi}</span>
+            <div className="mb-4">
+              <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>
+                {loi}
+              </ThongBaoTaiCho>
             </div>
           )}
 

@@ -22,6 +22,12 @@ export function HopThoai({
 }) {
   const cardRef = useRef(null);
   const previousActiveElement = useRef(null);
+  const onDongRef = useRef(onDong);
+
+  // Luôn cập nhật ref cho onDong để không làm kích hoạt lại effect khi cha re-render
+  useEffect(() => {
+    onDongRef.current = onDong;
+  });
 
   // Khóa cuộn trang nền và quản lý focus
   useEffect(() => {
@@ -37,26 +43,43 @@ export function HopThoai({
       document.body.style.paddingRight = `${scrollBarWidth}px`;
     }
 
-    // Auto-focus phần tử đầu tiên hoặc thẻ card
+    // Auto-focus phần tử: Ưu tiên [autofocus], ô input/textarea, hoặc nút hành động chính
     const timer = setTimeout(() => {
-      if (cardRef.current) {
-        const focusable = cardRef.current.querySelectorAll(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        if (focusable.length > 0) {
-          focusable[0].focus();
-        } else {
-          cardRef.current.focus();
-        }
+      if (!cardRef.current) return;
+
+      const autoFocusEl = cardRef.current.querySelector(
+        '[autofocus], input:not([type="hidden"]):not(:disabled), textarea:not(:disabled)'
+      );
+      if (autoFocusEl) {
+        autoFocusEl.focus();
+        return;
+      }
+
+      // Nếu không có ô nhập thì ưu tiên nút chính (Primary / Danger) trong footer
+      const primaryBtn = cardRef.current.querySelector(
+        '.bn-dialog-footer button.bn-btn-primary, .bn-dialog-footer button.bn-btn-danger'
+      );
+      if (primaryBtn) {
+        primaryBtn.focus();
+        return;
+      }
+
+      const focusable = cardRef.current.querySelectorAll(
+        'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length > 0) {
+        focusable[0].focus();
+      } else {
+        cardRef.current.focus();
       }
     }, 50);
 
     // Xử lý phím Esc và Focus Trap
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        if (!chanClickNgoai && onDong) {
+        if (!chanClickNgoai && onDongRef.current) {
           e.preventDefault();
-          onDong();
+          onDongRef.current();
         }
         return;
       }
@@ -95,13 +118,13 @@ export function HopThoai({
         previousActiveElement.current.focus();
       }
     };
-  }, [mo, chanClickNgoai, onDong]);
+  }, [mo, chanClickNgoai]);
 
   if (!mo) return null;
 
   const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget && !chanClickNgoai && onDong) {
-      onDong();
+    if (e.target === e.currentTarget && !chanClickNgoai && onDongRef.current) {
+      onDongRef.current();
     }
   };
 

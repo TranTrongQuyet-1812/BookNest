@@ -34,7 +34,6 @@ export const KhungThanhToanVietQR = ({
   const [dangKiemTra, setDangKiemTra] = useState(false);
   const [thanhToanThanhCong, setThanhToanThanhCong] = useState(false);
   const [daHetHan, setDaHetHan] = useState(false);
-  const [thongBao, setThongBao] = useState('');
   
   // Thời gian đếm ngược 10 phút (600 giây) hoặc tính từ ngayHetHan
   const tinhGiayConLai = () => {
@@ -100,8 +99,7 @@ export const KhungThanhToanVietQR = ({
           }, 2500);
         }
       } else if (chuDong) {
-        setThongBao('Hệ thống chưa nhận được tiền. Nếu vừa chuyển, vui lòng đợi 3 - 5 giây để ngân hàng gửi xác nhận nhé!');
-        setTimeout(() => setThongBao(''), 5000);
+        tb.thongTin('Hệ thống chưa nhận được tiền. Nếu vừa chuyển, vui lòng đợi 3 - 5 giây để ngân hàng gửi xác nhận nhé!');
       }
     } catch (err) {
       console.warn('Lỗi kiểm tra trạng thái thanh toán:', err);
@@ -509,25 +507,6 @@ export const KhungThanhToanVietQR = ({
                   </div>
                 </div>
               </div>
-
-              {/* Thông báo nếu có */}
-              {thongBao && (
-                <div style={{
-                  marginTop: '1rem',
-                  padding: '0.65rem 0.9rem',
-                  backgroundColor: 'rgba(255, 193, 7, 0.12)',
-                  border: '1px solid rgba(255, 193, 7, 0.4)',
-                  borderRadius: '6px',
-                  fontSize: '0.8rem',
-                  color: 'var(--text-main)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  <AlertCircle size={16} style={{ color: '#d39e00', flexShrink: 0 }} />
-                  <span>{thongBao}</span>
-                </div>
-              )}
 
               {/* Nút hành động phía dưới */}
               <div style={{

@@ -3,6 +3,7 @@ import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { laySocket, thamGiaKhachHang, roiKhachHang } from '../services/socket';
 import { useHuyDonHang } from '../hooks/useHuyDonHang';
+import { ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 import PhanTrang from '../components/PhanTrang';
 import { 
   Package, 
@@ -65,7 +66,7 @@ export const DonHangCuaToi = () => {
         setDonHangList(Array.isArray(ds) ? ds : []);
         setPhanTrang(res.data.data.phanTrang);
       } catch (err) {
-        if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải danh sách đơn hàng');
+        if (!daHuy) setLoi(loiTuApi(err, 'Không thể tải danh sách đơn hàng'));
       } finally {
         if (!daHuy) setDangTai(false);
       }
@@ -151,10 +152,9 @@ export const DonHangCuaToi = () => {
       </div>
 
       {loi && (
-        <div className="alert alert-danger mb-4">
-          <AlertCircle size={18} />
-          <span>{loi}</span>
-        </div>
+        <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>
+          {loi}
+        </ThongBaoTaiCho>
       )}
 
       {dangTai ? (

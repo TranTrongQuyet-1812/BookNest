@@ -20,8 +20,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import { KhungThanhToanVietQR } from '../components/KhungThanhToanVietQR';
-import { laySocket } from '../services/socket';
-import { useThongBao } from '@booknest/shared/thongbao';
+import { useThongBao, loiTuApi, ThongBaoTaiCho } from '@booknest/shared/thongbao';
 
 export const ThanhToan = () => {
   const navigate = useNavigate();
@@ -160,7 +159,7 @@ export const ThanhToan = () => {
       setDuLieuQR(resQr.data.data);
       setHienModalQR(true);
     } catch (errQr) {
-      const lyDo = errQr.response?.data?.message || errQr.message;
+      const lyDo = loiTuApi(errQr, 'Không thể tạo mã VietQR');
       console.warn('Không thể tạo mã VietQR:', lyDo, errQr);
       setDonLoiQr({ maTraCuu, lyDo });
     }
@@ -262,7 +261,7 @@ export const ThanhToan = () => {
         setDonVuaDat(res.data.data);
       }
     } catch (err) {
-      const msg = err.response?.data?.message || 'Đặt hàng thất bại. Vui lòng kiểm tra lại thông tin nhận hàng';
+      const msg = loiTuApi(err, 'Đặt hàng thất bại. Vui lòng kiểm tra lại thông tin nhận hàng');
       setLoi(msg);
       // Máy chủ từ chối (403) khi khách chọn QR nghĩa là công tắc vừa tắt: đồng bộ giao diện, khách chọn lại COD
       if (err.response?.status === 403 && phuongThucThanhToan === 'CHUYEN_KHOAN_QR') setCongQrKhaDung(false);
@@ -426,7 +425,7 @@ export const ThanhToan = () => {
                   try {
                     await layGioHang();
                   } catch (e) {
-                    setLoi(e.message || 'Không thể tải lại giỏ hàng');
+                    setLoi(loiTuApi(e, 'Không thể tải lại giỏ hàng'));
                   } finally {
                     setDangTai(false);
                   }
@@ -497,9 +496,10 @@ export const ThanhToan = () => {
       </div>
 
       {loi && (
-        <div className="alert alert-danger mb-6 flex items-center gap-2" style={{ borderRadius: '8px' }}>
-          <AlertCircle size={20} style={{ flexShrink: 0 }} />
-          <span>{loi}</span>
+        <div className="mb-6">
+          <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>
+            {loi}
+          </ThongBaoTaiCho>
         </div>
       )}
 

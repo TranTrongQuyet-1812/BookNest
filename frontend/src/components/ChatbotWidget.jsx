@@ -18,6 +18,7 @@ import {
 import api from '../services/api';
 import useCartStore from '../stores/cartStore';
 import { useAuth } from '../context/AuthContext';
+import { loiTuApi } from '@booknest/shared/thongbao';
 
 const KEY_CHAT_SESSION = 'booknest_chat_history';
 
@@ -222,7 +223,7 @@ export const ChatbotWidget = () => {
       const tinNhanLoi = {
         id: 'msg_err_' + Date.now(),
         role: 'assistant',
-        content: err.response?.data?.message || 'Kết nối đến BookNest AI tạm thời bị gián đoạn. Bạn vui lòng thử lại sau ít phút nhé.',
+        content: loiTuApi(err, 'Kết nối đến BookNest AI tạm thời bị gián đoạn. Bạn vui lòng thử lại sau ít phút nhé.'),
         thoiGian: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         laLoi: true
       };

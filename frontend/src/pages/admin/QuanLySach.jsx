@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { useThongBao } from '@booknest/shared/thongbao';
+import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 import PhanTrang from '../../components/PhanTrang';
 import { 
   Plus, 
@@ -33,13 +33,14 @@ export const QuanLySach = () => {
     setTimKiem(tuKhoaDaLoc);
   }, [tuKhoaDaLoc]);
 
-  const [sachList, setSachList] = useState([]);
+  const sachListState = useState([]);
+  const sachList = sachListState[0];
+  const setSachList = sachListState[1];
   const [danhMucList, setDanhMucList] = useState([]);
   const [dangTai, setDangTai] = useState(true);
   const [phanTrang, setPhanTrang] = useState(null);
   // Tăng số này để tải lại dữ liệu sau khi thêm, sửa, ẩn sách hoặc thêm thể loại
   const [lanTai, setLanTai] = useState(0);
-  const [thongBao, setThongBao] = useState('');
   const [loi, setLoi] = useState('');
 
   // Modal Sách (Thêm / Sửa)
@@ -74,7 +75,7 @@ export const QuanLySach = () => {
         setSachList(res.data.data.danhSach);
         setPhanTrang(res.data.data.phanTrang);
       } catch (err) {
-        if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải dữ liệu sách');
+        if (!daHuy) setLoi(loiTuApi(err, 'Không thể tải dữ liệu sách'));
       } finally {
         if (!daHuy) setDangTai(false);
       }
@@ -93,7 +94,7 @@ export const QuanLySach = () => {
         const res = await api.get('/categories');
         if (!daHuy) setDanhMucList(res.data.data);
       } catch (err) {
-        if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải danh sách thể loại');
+        if (!daHuy) setLoi(loiTuApi(err, 'Không thể tải danh sách thể loại'));
       }
     };
     nap();
@@ -260,15 +261,10 @@ export const QuanLySach = () => {
         )}
       </div>
 
-      {thongBao && (
-        <div className="alert alert-success mb-4">
-          <Check size={18} /> <span>{thongBao}</span>
-        </div>
-      )}
       {loi && (
-        <div className="alert alert-danger mb-4">
-          <AlertCircle size={18} /> <span>{loi}</span>
-        </div>
+        <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>
+          {loi}
+        </ThongBaoTaiCho>
       )}
 
       {/* Ô tìm kiếm nhanh */}

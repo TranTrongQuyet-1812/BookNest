@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 import { 
   Boxes, 
   AlertTriangle, 
@@ -14,6 +15,7 @@ const tenLoaiDieuChinh = {
 };
 
 export const NhapKho = () => {
+  const { thongBao: tb } = useThongBao();
   const [sachSapHet, setSachSapHet] = useState([]);
   const [lichSuNhap, setLichSuNhap] = useState([]);
   const [lichSuDieuChinh, setLichSuDieuChinh] = useState([]);
@@ -21,7 +23,6 @@ export const NhapKho = () => {
   const [phanTrangSapHet, setPhanTrangSapHet] = useState(null);
   const [trangSapHet, setTrangSapHet] = useState(1);
   const [dangTai, setDangTai] = useState(true);
-  const [thongBao, setThongBao] = useState('');
   const [loi, setLoi] = useState('');
   // Tăng số này để tải lại cảnh báo và lịch sử sau khi nhập kho xong
   const [lanTai, setLanTai] = useState(0);
@@ -58,7 +59,7 @@ export const NhapKho = () => {
         setLichSuDieuChinh(resDieuChinh.data.data.danhSach);
         setBaoCaoKho(resBaoCao.data.data);
       } catch (err) {
-        if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải dữ liệu nhập kho');
+        if (!daHuy) setLoi(loiTuApi(err, 'Không thể tải dữ liệu nhập kho'));
       } finally {
         if (!daHuy) setDangTai(false);
       }
@@ -79,7 +80,7 @@ export const NhapKho = () => {
         const res = await api.get('/admin/books', { params });
         if (!daHuy) setKetQuaSach(res.data.data.danhSach);
       } catch (err) {
-        if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tìm sách');
+        if (!daHuy) setLoi(loiTuApi(err, 'Không thể tìm sách'));
       }
     }, 300);
     return () => {
@@ -90,7 +91,6 @@ export const NhapKho = () => {
 
   const handleNhapKho = async (e) => {
     e.preventDefault();
-    setThongBao('');
     setLoi('');
     if (!sachDangChon) {
       setLoi('Vui lòng chọn cuốn sách cần nhập');
@@ -104,12 +104,12 @@ export const NhapKho = () => {
         ghiChu: formNhap.ghiChu || undefined
       });
 
-      setThongBao(`Đã nhập kho "${sachDangChon.TenSach}" thành công! Số lượng tồn kho đã được cộng dồn.`);
+      tb.thanhCong(`Đã nhập kho "${sachDangChon.TenSach}" thành công! Số lượng tồn kho đã được cộng dồn.`);
       setSachDangChon(null);
       setFormNhap({ soLuongNhap: 10, ghiChu: '' });
       setLanTai((n) => n + 1);
     } catch (err) {
-      setLoi(err.response?.data?.message || 'Nhập kho thất bại');
+      setLoi(loiTuApi(err, 'Nhập kho thất bại'));
     } finally {
       setDangNhapKho(false);
     }
@@ -117,18 +117,17 @@ export const NhapKho = () => {
 
   const handleDieuChinhKho = async (e) => {
     e.preventDefault();
-    setThongBao('');
     setLoi('');
     if (!sachDangChon) return setLoi('Vui lòng chọn cuốn sách cần điều chỉnh.');
     setDangDieuChinh(true);
     try {
       const soLuongThayDoi = Number(formDieuChinh.soLuongThayDoi);
       await api.post(`/books/${sachDangChon.MaSach}/stock-adjustment`, { ...formDieuChinh, soLuongThayDoi });
-      setThongBao(`Đã điều chỉnh tồn kho của "${sachDangChon.TenSach}".`);
+      tb.thanhCong(`Đã điều chỉnh tồn kho của "${sachDangChon.TenSach}".`);
       setFormDieuChinh({ soLuongThayDoi: -1, loaiDieuChinh: 'HU_HONG', ghiChu: '' });
       setSachDangChon(null);
       setLanTai(n => n + 1);
-    } catch (err) { setLoi(err.response?.data?.message || 'Điều chỉnh tồn kho thất bại.'); }
+    } catch (err) { setLoi(loiTuApi(err, 'Điều chỉnh tồn kho thất bại.')); }
     finally { setDangDieuChinh(false); }
   };
 
@@ -145,15 +144,10 @@ export const NhapKho = () => {
         </div>
       </div>
 
-      {thongBao && (
-        <div className="alert alert-success mb-4">
-          <Check size={18} /> <span>{thongBao}</span>
-        </div>
-      )}
       {loi && (
-        <div className="alert alert-danger mb-4">
-          <AlertCircle size={18} /> <span>{loi}</span>
-        </div>
+        <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>
+          {loi}
+        </ThongBaoTaiCho>
       )}
 
       {baoCaoKho && (

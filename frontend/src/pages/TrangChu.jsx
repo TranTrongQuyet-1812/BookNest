@@ -10,8 +10,7 @@ import HomeAtmosphere from '../components/HomeAtmosphere';
 import { useGiamChuyenDong } from '../utils/chuyenDong';
 import { getLenis } from '../utils/lenis';
 import { khiRemMo } from '../utils/nhipMoTrang';
-import { lamSachChuoi } from '../utils/text';
-import { useThongBao } from '@booknest/shared/thongbao';
+import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
 gsap.registerPlugin(useGSAP);
 
@@ -344,7 +343,7 @@ export const TrangChu = () => {
       } catch (err) {
         console.error('Lỗi tải dữ liệu lọc:', err);
         if (!daHuy) {
-          setLoiLoc(err?.response?.data?.message || err?.message || 'Không thể tải danh sách sách. Vui lòng thử lại sau.');
+          setLoiLoc(loiTuApi(err, 'Không thể tải danh sách sách. Vui lòng thử lại sau.'));
         }
       } finally {
         if (!daHuy && !dangChuyenTrangRandom) setDangTaiLoc(false);
@@ -529,8 +528,10 @@ export const TrangChu = () => {
         <div id="ke-sach-danh-muc" className="container" style={{ padding: '2.5rem 1rem 0' }}>
           {loiKeSach ? (
             <div style={{ textAlign: 'center', padding: '3.5rem 1rem', maxWidth: '480px', margin: '0 auto' }}>
-              <div className="alert alert-danger mb-4" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '0.75rem 1.25rem', borderRadius: '6px' }}>
-                <span>{loiKeSach}</span>
+              <div className="mb-4">
+                <ThongBaoTaiCho loai="loi">
+                  {loiKeSach}
+                </ThongBaoTaiCho>
               </div>
               <div>
                 <button

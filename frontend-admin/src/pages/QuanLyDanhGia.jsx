@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import api from '@booknest/shared/api';
 import { useAuth } from '@booknest/shared/auth';
-import { useThongBao } from '@booknest/shared/thongbao';
+import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
 export default function QuanLyDanhGia() {
   const { user } = useAuth();
@@ -48,7 +48,7 @@ export default function QuanLyDanhGia() {
       setDanhSach(res.data.data.danhSach || []);
       setPhanTrang(res.data.data.phanTrang || { trangHienTai: 1, tongSoTrang: 1, tongSoBanGhi: 0 });
     } catch (err) {
-      setLoi(err.response?.data?.message || 'Không thể tải danh sách đánh giá.');
+      setLoi(loiTuApi(err, 'Không thể tải danh sách đánh giá.'));
     } finally {
       setDangTai(false);
     }
@@ -153,10 +153,9 @@ export default function QuanLyDanhGia() {
       </div>
 
       {loi && (
-        <div className="bo-alert" role="alert" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <AlertCircle size={16} />
-          <span>{loi}</span>
-        </div>
+        <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>
+          {loi}
+        </ThongBaoTaiCho>
       )}
 
 

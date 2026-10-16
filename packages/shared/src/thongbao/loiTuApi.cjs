@@ -19,7 +19,7 @@ function loiTuApi(err, macDinh = 'Đã có lỗi xảy ra. Vui lòng thử lại
       return (
         data?.message ||
         data?.thongDiep ||
-        'Phiên đăng nhập đã hết hạn hoặc chưa được xác thực. Vui lòng đăng nhập lại.'
+        'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để tiếp tục.'
       );
     }
 

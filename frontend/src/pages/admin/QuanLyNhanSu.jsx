@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { useThongBao } from '@booknest/shared/thongbao';
+import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 import PhanTrang from '../../components/PhanTrang';
 import { 
   UserPlus, 
@@ -28,7 +28,6 @@ export const QuanLyNhanSu = () => {
   const [dangTai, setDangTai] = useState(true);
   const [timKiem, setTimKiem] = useState(tuKhoaDaLoc);
   const [phanTrang, setPhanTrang] = useState(null);
-  const [thongBao, setThongBao] = useState('');
   const [loi, setLoi] = useState('');
   const [lanTai, setLanTai] = useState(0);
 
@@ -69,7 +68,7 @@ export const QuanLyNhanSu = () => {
         setNguoiDungList(Array.isArray(ds) ? ds : []);
         setPhanTrang(res.data.data.phanTrang);
       } catch (err) {
-        if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải danh sách tài khoản');
+        if (!daHuy) setLoi(loiTuApi(err, 'Không thể tải danh sách tài khoản'));
       } finally {
         if (!daHuy) setDangTai(false);
       }
@@ -201,37 +200,10 @@ export const QuanLyNhanSu = () => {
         </button>
       </div>
 
-      {thongBao && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          padding: '0.75rem 1rem',
-          borderRadius: '6px',
-          backgroundColor: 'var(--adm-success-subtle)',
-          color: 'var(--adm-success)',
-          border: '1px solid #A7F3D0',
-          fontSize: '0.85rem',
-          marginBottom: '1rem'
-        }}>
-          <Check size={16} /> <span>{thongBao}</span>
-        </div>
-      )}
       {loi && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          padding: '0.75rem 1rem',
-          borderRadius: '6px',
-          backgroundColor: 'var(--adm-danger-subtle)',
-          color: 'var(--adm-danger)',
-          border: '1px solid #FECACA',
-          fontSize: '0.85rem',
-          marginBottom: '1rem'
-        }}>
-          <AlertCircle size={16} /> <span>{loi}</span>
-        </div>
+        <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>
+          {loi}
+        </ThongBaoTaiCho>
       )}
 
       {/* Bộ Lọc & Tìm Kiếm */}

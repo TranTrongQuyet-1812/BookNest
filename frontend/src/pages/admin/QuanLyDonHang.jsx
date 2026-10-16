@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { laySocket, thamGiaNhanVien, roiNhanVien } from '../../services/socket';
-import { useThongBao } from '@booknest/shared/thongbao';
+import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 import PhanTrang from '../../components/PhanTrang';
 import { 
   ClipboardList, 
@@ -25,7 +25,6 @@ export const QuanLyDonHang = () => {
 
   const [donHangList, setDonHangList] = useState([]);
   const [dangTai, setDangTai] = useState(true);
-  const [thongBao, setThongBao] = useState('');
   const [loi, setLoi] = useState('');
   const [phanTrang, setPhanTrang] = useState(null);
   const [lanTai, setLanTai] = useState(0);
@@ -39,15 +38,13 @@ export const QuanLyDonHang = () => {
     thamGiaNhanVien(token);
 
     const xuLyDonMoi = (duLieu) => {
-      setThongBao(`Có đơn hàng mới #${duLieu?.maDonHang || ''} vừa được tạo!`);
+      tb.thongTin(`Có đơn hàng mới #${duLieu?.maDonHang || ''} vừa được tạo!`);
       taiLai();
-      setTimeout(() => setThongBao(''), 4000);
     };
 
     const xuLyCapNhatTrangThai = (duLieu) => {
-      setThongBao(`Đơn hàng #${duLieu?.maDonHang || ''} vừa cập nhật trạng thái: ${duLieu?.trangThaiMoi || ''}`);
+      tb.thongTin(`Đơn hàng #${duLieu?.maDonHang || ''} vừa cập nhật trạng thái: ${duLieu?.trangThaiMoi || ''}`);
       taiLai();
-      setTimeout(() => setThongBao(''), 4000);
     };
 
     socket.on('donHang:donMoi', xuLyDonMoi);
@@ -77,7 +74,7 @@ export const QuanLyDonHang = () => {
         setDonHangList(Array.isArray(ds) ? ds : []);
         setPhanTrang(res.data.data.phanTrang);
       } catch (err) {
-        if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải danh sách đơn hàng');
+        if (!daHuy) setLoi(loiTuApi(err, 'Không thể tải danh sách đơn hàng'));
       } finally {
         if (!daHuy) setDangTai(false);
       }
@@ -197,15 +194,10 @@ export const QuanLyDonHang = () => {
         </div>
       </div>
 
-      {thongBao && (
-        <div className="alert alert-success mb-4">
-          <Check size={18} /> <span>{thongBao}</span>
-        </div>
-      )}
       {loi && (
-        <div className="alert alert-danger mb-4">
-          <AlertCircle size={18} /> <span>{loi}</span>
-        </div>
+        <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>
+          {loi}
+        </ThongBaoTaiCho>
       )}
 
       {/* Bảng Danh Sách Đơn Hàng */}

@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import useCartStore from '../stores/cartStore';
-import { useThongBao } from '@booknest/shared/thongbao';
+import { useThongBao, loiTuApi } from '@booknest/shared/thongbao';
 import StarRating from '../components/StarRating';
 import KeSachCuonNgang from '../components/KeSachCuonNgang';
 import { giaiMaHtmlEntities, lamSachChuoi } from '../utils/text';
@@ -83,7 +83,7 @@ export const ChiTietSach = () => {
           setSachCungTheLoai(listGoiY.filter(item => item.MaSach !== sachData.MaSach));
         }
       } catch (err) {
-        if (!daHuy) setLoi(err.response?.data?.message || 'Không thể tải thông tin cuốn sách này');
+        if (!daHuy) setLoi(loiTuApi(err, 'Không thể tải thông tin cuốn sách này'));
       } finally {
         if (!daHuy) setDangTai(false);
       }
@@ -140,7 +140,7 @@ export const ChiTietSach = () => {
         setThongKeSao(resDanhGia.data.thongKe);
       }
     } catch (err) {
-      setLoiDanhGia(err.response?.data?.message || 'Bạn chỉ có thể đánh giá sau khi đã mua và nhận đơn hàng thành công');
+      setLoiDanhGia(loiTuApi(err, 'Bạn chỉ có thể đánh giá sau khi đã mua và nhận đơn hàng thành công'));
     } finally {
       setDangGuiDanhGia(false);
     }

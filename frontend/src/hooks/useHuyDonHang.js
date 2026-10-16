@@ -13,7 +13,7 @@ export function useHuyDonHang() {
   const thucHienHuyDon = async (maDonHang, onSuccess) => {
     const lyDo = await nhapLyDo({
       tieuDe: `Hủy đơn hàng #${maDonHang}`,
-      noiDung: 'Đơn hàng sẽ bị hủy và số lượng sách sẽ được hoàn trả lại vào kho.',
+      noiDung: 'Bạn có chắc chắn muốn hủy đơn hàng này không?',
       nhan: 'Lý do hủy đơn',
       placeholder: 'Nhập lý do hủy đơn hàng (tùy chọn)...',
       batBuoc: false,
@@ -28,7 +28,7 @@ export function useHuyDonHang() {
       await api.put(`/orders/${maDonHang}/cancel`, {
         lyDo: lyDo || 'Khách hàng yêu cầu hủy đơn qua giao diện',
       });
-      tb.thanhCong('Đã hủy đơn hàng thành công. Số lượng sách đã được hoàn trả lại vào kho.');
+      tb.thanhCong('Đã hủy đơn hàng thành công.');
       if (typeof onSuccess === 'function') {
         await onSuccess();
       }

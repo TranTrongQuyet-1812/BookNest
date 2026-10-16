@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { User, Lock, Check, AlertCircle, Save, KeyRound } from 'lucide-react';
+import { ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
 export const HoSo = () => {
   const { user, capNhatUser, capNhatToken } = useAuth();
@@ -59,7 +60,7 @@ export const HoSo = () => {
       capNhatUser({ fullName: res.data.data.HoTen });
       setThongBaoProfile('Đã cập nhật thông tin cá nhân thành công!');
     } catch (err) {
-      setLoiProfile(err.response?.data?.message || 'Cập nhật thông tin thất bại');
+      setLoiProfile(loiTuApi(err, 'Cập nhật thông tin thất bại'));
     } finally {
       setDangLuuProfile(false);
     }
@@ -87,7 +88,7 @@ export const HoSo = () => {
       setThongBaoPass('Đổi mật khẩu thành công! Mật khẩu mới đã có hiệu lực');
       setFormPassword({ matKhauCu: '', matKhauMoi: '', xacNhanMatKhau: '' });
     } catch (err) {
-      setLoiPass(err.response?.data?.message || 'Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ');
+      setLoiPass(loiTuApi(err, 'Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ'));
     } finally {
       setDangLuuPass(false);
     }
@@ -116,13 +117,17 @@ export const HoSo = () => {
           </div>
 
           {thongBaoProfile && (
-            <div className="alert alert-success" style={{ fontSize: '0.85rem' }}>
-              <Check size={16} /> <span>{thongBaoProfile}</span>
+            <div className="mb-4">
+              <ThongBaoTaiCho loai="thanhCong" onDong={() => setThongBaoProfile('')}>
+                {thongBaoProfile}
+              </ThongBaoTaiCho>
             </div>
           )}
           {loiProfile && (
-            <div className="alert alert-danger" style={{ fontSize: '0.85rem' }}>
-              <AlertCircle size={16} /> <span>{loiProfile}</span>
+            <div className="mb-4">
+              <ThongBaoTaiCho loai="loi" onDong={() => setLoiProfile('')}>
+                {loiProfile}
+              </ThongBaoTaiCho>
             </div>
           )}
 
@@ -179,13 +184,17 @@ export const HoSo = () => {
           </div>
 
           {thongBaoPass && (
-            <div className="alert alert-success" style={{ fontSize: '0.85rem' }}>
-              <Check size={16} /> <span>{thongBaoPass}</span>
+            <div className="mb-4">
+              <ThongBaoTaiCho loai="thanhCong" onDong={() => setThongBaoPass('')}>
+                {thongBaoPass}
+              </ThongBaoTaiCho>
             </div>
           )}
           {loiPass && (
-            <div className="alert alert-danger" style={{ fontSize: '0.85rem' }}>
-              <AlertCircle size={16} /> <span>{loiPass}</span>
+            <div className="mb-4">
+              <ThongBaoTaiCho loai="loi" onDong={() => setLoiPass('')}>
+                {loiPass}
+              </ThongBaoTaiCho>
             </div>
           )}
 

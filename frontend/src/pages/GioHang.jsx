@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useCartStore from '../stores/cartStore';
 import { useAuth } from '../context/AuthContext';
-import { useThongBao } from '@booknest/shared/thongbao';
+import { useThongBao, ThongBaoTaiCho } from '@booknest/shared/thongbao';
 import { 
   ShoppingCart, 
   Trash2, 
@@ -173,28 +173,19 @@ export const GioHang = () => {
       </div>
 
       {loi && (
-        <div className="alert alert-danger mb-4">
-          <span>{loi}</span>
-        </div>
+        <ThongBaoTaiCho loai="loi">
+          {loi}
+        </ThongBaoTaiCho>
       )}
 
       {loiDongBo && (
-        <div className="alert alert-warning mb-4" style={{ backgroundColor: '#FFFBEB', borderColor: '#FDE68A', color: '#B45309', display: 'block' }}>
-          <div className="flex items-center justify-between" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontWeight: 600 }}>{loiDongBo}</span>
-            {xoaLoiDongBo && (
-              <button 
-                type="button" 
-                onClick={xoaLoiDongBo} 
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, color: '#B45309', fontSize: '1.1rem', padding: '0 4px' }}
-                title="Đóng thông báo"
-              >
-                ✕
-              </button>
-            )}
-          </div>
+        <ThongBaoTaiCho
+          loai="canhBao"
+          tieuDe={loiDongBo}
+          onDong={xoaLoiDongBo}
+        >
           {Array.isArray(cacMonLoiDongBo) && cacMonLoiDongBo.length > 0 && (
-            <ul style={{ marginTop: '0.5rem', marginBottom: 0, paddingLeft: '1.25rem', fontSize: '0.85rem' }}>
+            <ul style={{ marginTop: '0.25rem', marginBottom: 0, paddingLeft: '1.25rem', fontSize: '0.85rem' }}>
               {cacMonLoiDongBo.map((m, idx) => (
                 <li key={idx}>
                   <strong>{m.tenSach || `Sách #${m.maSach}`}</strong>: {m.lyDoLoi || 'Không thể đồng bộ'}
@@ -202,14 +193,13 @@ export const GioHang = () => {
               ))}
             </ul>
           )}
-        </div>
+        </ThongBaoTaiCho>
       )}
 
       {coSanPhamVuotTon && (
-        <div className="alert alert-warning mb-4">
-          <AlertTriangle size={18} />
-          <span>Một số cuốn sách trong giỏ có số lượng lớn hơn số lượng còn trong kho. Vui lòng giảm số lượng để có thể đặt hàng.</span>
-        </div>
+        <ThongBaoTaiCho loai="canhBao">
+          Một số cuốn sách trong giỏ có số lượng lớn hơn số lượng còn trong kho. Vui lòng giảm số lượng để có thể đặt hàng.
+        </ThongBaoTaiCho>
       )}
 
       {items.length === 0 ? (

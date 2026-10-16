@@ -34,7 +34,7 @@ function xuLyLoi(loi, req, res, next) {
   // 4. Lỗi vi phạm ràng buộc CHECK hoặc lỗi cú pháp DB
   if (loi.name === 'SequelizeDatabaseError') {
     return phanHoiLoi(res, {
-      thongDiep: 'Dữ liệu không thỏa mãn các điều kiện ràng buộc toàn vẹn của hệ thống',
+      thongDiep: 'Dữ liệu gửi lên không đúng định dạng hoặc vi phạm quy định của hệ thống. Vui lòng kiểm tra lại',
       maTrangThai: 400
     });
   }
@@ -42,7 +42,7 @@ function xuLyLoi(loi, req, res, next) {
   // 5. Lỗi máy chủ không xác định (Internal Server Error) - Bảo mật, không trả stack trace
   console.error('[Lỗi Hệ Thống]', loi.message);
   return phanHoiLoi(res, {
-    thongDiep: 'Đã xảy ra lỗi máy chủ nội bộ. Vui lòng liên hệ quản trị viên hoặc thử lại sau',
+    thongDiep: 'Hệ thống đang bận hoặc gặp sự cố xử lý. Vui lòng thử lại sau ít phút',
     maTrangThai: 500
   });
 }

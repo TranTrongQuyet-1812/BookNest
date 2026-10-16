@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Search, Plus, Minus, Trash2, ShoppingBag, ReceiptText, Printer, RotateCw, UserRound, ArrowLeft } from 'lucide-react';
 import api from '@booknest/shared/api';
+import { ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
 const dinhDangTien = (gia) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(Number(gia || 0));
 
@@ -35,7 +36,7 @@ export default function BanHangQuay() {
     setDangTaiLichSu(true);
     api.get('/admin/counter-orders', { params: { page: 1, limit: 30 } })
       .then(res => setLichSu(res.data.data.danhSach))
-      .catch(err => setLoi(err.response?.data?.message || 'Không tải được lịch sử bán hàng'))
+      .catch(err => setLoi(loiTuApi(err, 'Không tải được lịch sử bán hàng')))
       .finally(() => setDangTaiLichSu(false));
   }, [tab, donVuaBan]);
 
@@ -70,7 +71,7 @@ export default function BanHangQuay() {
       setGioHang([]);
       setKhach({ ten: '', dienThoai: '', ma: '' });
     } catch (err) {
-      setLoi(err.response?.data?.message || 'Chưa thể hoàn tất bán hàng. Vui lòng thử lại.');
+      setLoi(loiTuApi(err, 'Chưa thể hoàn tất bán hàng. Vui lòng thử lại.'));
     } finally { setDangBan(false); }
   };
 
@@ -78,7 +79,7 @@ export default function BanHangQuay() {
     try {
       const res = await api.get(`/admin/counter-orders/${maDonHang}`);
       setDonVuaBan(res.data.data);
-    } catch (err) { setLoi(err.response?.data?.message || 'Không tải được hóa đơn.'); }
+    } catch (err) { setLoi(loiTuApi(err, 'Không tải được hóa đơn.')); }
   };
 
   return (
@@ -91,7 +92,7 @@ export default function BanHangQuay() {
         </div>
       </div>
 
-      {loi && <div className="bo-alert" role="alert">{loi}</div>}
+      {loi && <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>{loi}</ThongBaoTaiCho>}
       {tab === 'ban' && (
         <div className="counter-grid">
           <section className="bo-panel counter-catalog">

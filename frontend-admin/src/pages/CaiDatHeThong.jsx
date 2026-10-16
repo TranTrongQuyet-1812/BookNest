@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Power, QrCode, RefreshCw, ShieldAlert } from 'lucide-react';
 import api from '@booknest/shared/api';
-import { useThongBao } from '@booknest/shared/thongbao';
+import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
 // Mô tả hậu quả từng công tắc để Quản trị viên hiểu rõ trước khi tắt (hiện chỉ có công tắc thanh toán QR)
 const MO_TA_CONG_TAC = {
@@ -29,7 +29,7 @@ export default function CaiDatHeThong() {
       setDanhSach(res.data.data);
       setLoi('');
     } catch (err) {
-      setLoi(err.response?.data?.message || 'Không tải được cài đặt hệ thống.');
+      setLoi(loiTuApi(err, 'Không tải được cài đặt hệ thống.'));
     } finally {
       setDangTai(false);
     }
@@ -46,7 +46,7 @@ export default function CaiDatHeThong() {
       setLoi('');
       tb.thanhCong(`${congTac.ten}: đã ${bat ? 'BẬT' : 'TẮT'}.`);
     } catch (err) {
-      setLoi(err.response?.data?.message || 'Không đổi được công tắc. Vui lòng thử lại.');
+      setLoi(loiTuApi(err, 'Không đổi được công tắc. Vui lòng thử lại.'));
     } finally {
       setDangDoi(false);
     }
@@ -69,7 +69,7 @@ export default function CaiDatHeThong() {
         <button className="bo-secondary-button" onClick={taiDanhSach}><RefreshCw size={15} /> Làm mới</button>
       </div>
 
-      {loi && <div className="bo-alert" role="alert">{loi}</div>}
+      {loi && <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>{loi}</ThongBaoTaiCho>}
 
       {dangTai ? <div className="bo-empty">Đang tải cài đặt…</div> : danhSach.map((congTac) => (
         <section key={congTac.khoa} className="bo-panel cai-dat-the">

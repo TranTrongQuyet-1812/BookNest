@@ -422,31 +422,6 @@ textarea::placeholder {
   background-color: var(--bg-surface);
 }
 
-/* Alerts & Notices */
-.alert {
-  padding: 0.875rem 1rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.925rem;
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-.alert-danger {
-  background-color: var(--danger-light);
-  color: var(--danger);
-  border: 1px solid var(--danger);
-}
-.alert-success {
-  background-color: var(--accent-light);
-  color: var(--accent);
-  border: 1px solid var(--accent);
-}
-.alert-warning {
-  background-color: var(--warning-light);
-  color: var(--warning);
-  border: 1px solid var(--warning);
-}
 
 /* Modals */
 .modal-overlay {
