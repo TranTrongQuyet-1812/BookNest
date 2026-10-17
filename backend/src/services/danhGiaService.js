@@ -280,6 +280,5 @@ module.exports = {
   layDanhSachDanhGiaAdmin,
   anHienDanhGia,
   xoaDanhGia,
-  layTrangThaiDanhGiaCuaToi,
-  daNhanSach
+  layTrangThaiDanhGiaCuaToi
 };

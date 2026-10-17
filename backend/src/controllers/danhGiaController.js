@@ -3,10 +3,20 @@
  */
 const danhGiaService = require('../services/danhGiaService');
 const { phanHoiThanhCong } = require('../middlewares/phanHoi');
+const LoiNghiepVu = require('../middlewares/loiNghiepVu');
+
+// Kiểm tra mã sách từ params, ném 400 nếu không phải số nguyên dương hợp lệ
+function layMaSachHopLe(paramId) {
+  const maSach = parseInt(paramId, 10);
+  if (Number.isNaN(maSach) || maSach <= 0) {
+    throw LoiNghiepVu.yeuCauKhongHopLe('Mã sách không hợp lệ');
+  }
+  return maSach;
+}
 
 // Xem danh sách đánh giá công khai của một cuốn sách
 async function xuLyLayDanhSachDanhGia(req, res) {
-  const maSach = parseInt(req.params.id, 10);
+  const maSach = layMaSachHopLe(req.params.id);
   const ketQua = await danhGiaService.layDanhSachDanhGia(maSach, req.query);
   return phanHoiThanhCong(res, {
     duLieu: ketQua,
@@ -16,7 +26,7 @@ async function xuLyLayDanhSachDanhGia(req, res) {
 
 // Khách hàng viết hoặc sửa đánh giá cho sách
 async function xuLyTaoHoacCapNhatDanhGia(req, res) {
-  const maSach = parseInt(req.params.id, 10);
+  const maSach = layMaSachHopLe(req.params.id);
   const danhGia = await danhGiaService.taoHoacCapNhatDanhGia(req.user.id, maSach, req.body);
   return phanHoiThanhCong(res, {
     duLieu: danhGia,
@@ -57,7 +67,7 @@ async function xuLyXoaDanhGia(req, res) {
 
 // Khách hỏi trạng thái đánh giá của mình với một cuốn sách
 async function xuLyLayTrangThaiDanhGiaCuaToi(req, res) {
-  const maSach = parseInt(req.params.id, 10);
+  const maSach = layMaSachHopLe(req.params.id);
   const ketQua = await danhGiaService.layTrangThaiDanhGiaCuaToi(req.user.id, maSach);
   return phanHoiThanhCong(res, { duLieu: ketQua, thongDiep: 'Lấy trạng thái đánh giá của bạn thành công' });
 }
