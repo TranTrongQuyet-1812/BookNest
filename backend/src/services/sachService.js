@@ -113,6 +113,88 @@ async function layChiTietSach(maSach, laAdmin = false) {
   return sach;
 }
 
+// Chuẩn hóa tên tác giả: cắt/gộp khoảng trắng, tra cứu kiểu viết phổ biến có sẵn
+async function chuanHoaTacGia(ten, transaction) {
+  if (!ten || typeof ten !== 'string') {
+    throw LoiNghiepVu.yeuCauKhongHopLe('Vui lòng nhập tên tác giả');
+  }
+
+  // Cắt khoảng trắng đầu cuối, gộp các khoảng trắng liên tiếp (kể cả non-breaking space \u00A0)
+  const tenDaCat = ten.replace(/[\s\u00A0]+/g, ' ').trim();
+  if (!tenDaCat) {
+    throw LoiNghiepVu.yeuCauKhongHopLe('Vui lòng nhập tên tác giả');
+  }
+
+  // Tra cứu tác giả có sẵn trong DB trùng khi so sánh không phân biệt hoa thường và dấu
+  const danhSachTrung = await sequelize.query(`
+    SELECT TOP 1 TacGia, COUNT(*) AS SoLuong, MIN(MaSach) AS MaDauTien
+    FROM Sach
+    WHERE TacGia COLLATE Latin1_General_CI_AI = :tenGoc COLLATE Latin1_General_CI_AI
+    GROUP BY TacGia COLLATE Latin1_General_BIN2, TacGia
+    ORDER BY SoLuong DESC, MaDauTien ASC;
+  `, {
+    replacements: { tenGoc: tenDaCat },
+    type: sequelize.QueryTypes.SELECT,
+    transaction
+  });
+
+  if (danhSachTrung && danhSachTrung.length > 0) {
+    const tenCoSan = danhSachTrung[0].TacGia;
+    return {
+      tenChuanHoa: tenCoSan,
+      tenGoc: tenDaCat,
+      daThayThe: tenCoSan !== tenDaCat
+    };
+  }
+
+  // Chưa có thì giữ nguyên, KHÔNG tự ý viết hoa
+  return {
+    tenChuanHoa: tenDaCat,
+    tenGoc: tenDaCat,
+    daThayThe: false
+  };
+}
+
+// Lấy danh sách gợi ý tác giả cho nhân viên (chỉ lấy kiểu viết phổ biến nhất, loại bỏ "Đang cập nhật")
+async function layDanhSachTacGiaGoiY({ search = '', limit = 20 } = {}) {
+  const soLuong = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
+  const tuKhoa = (search || '').trim();
+
+  const danhSach = await sequelize.query(`
+    WITH ThongKeTacGia AS (
+      SELECT 
+        TacGia,
+        COUNT(*) AS SoLuong,
+        MIN(MaSach) AS MaDauTien
+      FROM Sach
+      WHERE TacGia IS NOT NULL 
+        AND LTRIM(RTRIM(TacGia)) <> ''
+        AND TacGia COLLATE Latin1_General_CI_AI <> N'Dang cap nhat'
+        ${tuKhoa ? "AND TacGia COLLATE Latin1_General_CI_AI LIKE N'%' + :search + N'%'" : ""}
+      GROUP BY TacGia COLLATE Latin1_General_BIN2, TacGia
+    ),
+    XepHang AS (
+      SELECT 
+        TacGia,
+        SoLuong,
+        ROW_NUMBER() OVER (
+          PARTITION BY TacGia COLLATE Latin1_General_CI_AI 
+          ORDER BY SoLuong DESC, MaDauTien ASC
+        ) AS ThuTu
+      FROM ThongKeTacGia
+    )
+    SELECT TOP (:limit) TacGia, SoLuong
+    FROM XepHang
+    WHERE ThuTu = 1
+    ORDER BY SoLuong DESC, TacGia ASC;
+  `, {
+    replacements: { search: tuKhoa, limit: soLuong },
+    type: sequelize.QueryTypes.SELECT
+  });
+
+  return danhSach.map(item => item.TacGia);
+}
+
 // Thêm sách mới (trong transaction: ghi thêm LichSuNhapKho nếu tồn kho > 0)
 async function taoSach(duLieu, maNhanVienTao) {
   const danhMuc = await DanhMuc.findByPk(duLieu.maDanhMuc);
@@ -124,10 +206,11 @@ async function taoSach(duLieu, maNhanVienTao) {
   const t = await sequelize.transaction();
 
   try {
+    const ketQuaTacGia = await chuanHoaTacGia(duLieu.tacGia, t);
     const sachMoi = await Sach.create(
       {
         TenSach: duLieu.tenSach,
-        TacGia: duLieu.tacGia,
+        TacGia: ketQuaTacGia.tenChuanHoa,
         MoTa: duLieu.moTa || null,
         GiaBan: duLieu.giaBan,
         SoLuongTon: tonKhoBanDau,
@@ -152,7 +235,13 @@ async function taoSach(duLieu, maNhanVienTao) {
     }
 
     await t.commit();
-    return layChiTietSach(sachMoi.MaSach, true);
+    const chiTiet = await layChiTietSach(sachMoi.MaSach, true);
+    const ketQuaTraVe = chiTiet.toJSON ? chiTiet.toJSON() : chiTiet;
+    if (ketQuaTacGia.daThayThe) {
+      ketQuaTraVe.thongBaoTacGia = `Đã dùng tên tác giả có sẵn: ${ketQuaTacGia.tenChuanHoa}`;
+      ketQuaTraVe.daThayTheTacGia = true;
+    }
+    return ketQuaTraVe;
   } catch (loi) {
     await t.rollback();
     throw loi;
@@ -168,6 +257,12 @@ async function capNhatSach(maSach, duLieu, maNhanVien) {
     if (duLieu.maDanhMuc && duLieu.maDanhMuc !== sach.MaDanhMuc) {
       const danhMuc = await DanhMuc.findByPk(duLieu.maDanhMuc, { transaction: t });
       if (!danhMuc) throw LoiNghiepVu.yeuCauKhongHopLe('Danh mục được chọn không tồn tại');
+    }
+
+    let ketQuaTacGia = null;
+    if (duLieu.tacGia !== undefined) {
+      ketQuaTacGia = await chuanHoaTacGia(duLieu.tacGia, t);
+      duLieu.tacGia = ketQuaTacGia.tenChuanHoa;
     }
 
     const thayDoi = {};
@@ -186,7 +281,13 @@ async function capNhatSach(maSach, duLieu, maNhanVien) {
     await sach.save({ transaction: t });
     await ghiNhanThayDoi({ loaiDoiTuong: 'SACH', maDoiTuong: sach.MaSach, maNhanVien, thayDoi, transaction: t });
     await t.commit();
-    return layChiTietSach(sach.MaSach, true);
+    const chiTiet = await layChiTietSach(sach.MaSach, true);
+    const ketQuaTraVe = chiTiet.toJSON ? chiTiet.toJSON() : chiTiet;
+    if (ketQuaTacGia && ketQuaTacGia.daThayThe) {
+      ketQuaTraVe.thongBaoTacGia = `Đã dùng tên tác giả có sẵn: ${ketQuaTacGia.tenChuanHoa}`;
+      ketQuaTraVe.daThayTheTacGia = true;
+    }
+    return ketQuaTraVe;
   } catch (loi) {
     await t.rollback();
     throw loi;
@@ -405,5 +506,7 @@ module.exports = {
   layDanhSachSapHetHang,
   dieuChinhTonKho,
   layBaoCaoKho,
-  layLichSuDieuChinhKho
+  layLichSuDieuChinhKho,
+  chuanHoaTacGia,
+  layDanhSachTacGiaGoiY
 };

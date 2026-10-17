@@ -106,6 +106,12 @@ async function xuLyLayLichSuDieuChinhKho(req, res) {
   return phanHoiThanhCong(res, { duLieu, thongDiep: 'Lấy lịch sử điều chỉnh tồn kho thành công' });
 }
 
+// Lấy danh sách gợi ý tác giả cho nhân viên (AT13)
+async function xuLyLayDanhSachTacGia(req, res) {
+  const duLieu = await sachService.layDanhSachTacGiaGoiY(req.query);
+  return phanHoiThanhCong(res, { duLieu, thongDiep: 'Lấy danh sách tác giả gợi ý thành công' });
+}
+
 module.exports = {
   xuLyLayDanhSach,
   xuLyLayDanhSachAdmin,
@@ -118,5 +124,6 @@ module.exports = {
   xuLyTatCaLichSuNhapKho,
   xuLySapHetHang,
   xuLyDieuChinhTonKho,
-  xuLyLayLichSuDieuChinhKho
+  xuLyLayLichSuDieuChinhKho,
+  xuLyLayDanhSachTacGia
 };

@@ -293,6 +293,48 @@ router.get(
   batLoiAsync(sachController.xuLyTatCaLichSuNhapKho)
 );
 
+// Schema truy vấn gợi ý tác giả (AT13)
+const luatTruyVanTacGia = Joi.object({
+  search: Joi.string().trim().allow(''),
+  limit: Joi.number().integer().min(1).max(50).default(20)
+});
+
+/**
+ * @swagger
+ * /api/books/authors:
+ *   get:
+ *     summary: Lấy danh sách gợi ý tác giả phổ biến (Quản trị viên, Thủ kho)
+ *     tags: [Sách & Kho (Books)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Từ khóa tìm kiếm tác giả
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Số lượng tác giả gợi ý tối đa (1-50)
+ *     responses:
+ *       200:
+ *         description: Danh sách tên tác giả gợi ý
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Không có quyền truy cập
+ */
+router.get(
+  '/authors',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_kho'),
+  kiemTraDuLieu(luatTruyVanTacGia, 'query'),
+  batLoiAsync(sachController.xuLyLayDanhSachTacGia)
+);
+
 /**
  * @swagger
  * /api/books/{id}:
