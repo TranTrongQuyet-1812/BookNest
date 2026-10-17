@@ -6,6 +6,7 @@ import useCartStore from '../stores/cartStore';
 import { useThongBao, loiTuApi, ThongBaoTaiCho } from '@booknest/shared/thongbao';
 import StarRating from '../components/StarRating';
 import KeSachCuonNgang from '../components/KeSachCuonNgang';
+import NhanGiamGia from '../components/NhanGiamGia';
 import { giaiMaHtmlEntities, lamSachChuoi } from '../utils/text';
 
 /**
@@ -335,6 +336,11 @@ export const ChiTietSach = () => {
   const tieuDe = sach.TenSach;
   const tacGia = lamSachChuoi(sach.TacGia);
   const giaBan = sach.GiaBan;
+  const phanTramGiam = sach.PhanTramGiam ? parseInt(sach.PhanTramGiam, 10) : 0;
+  const giaSauGiam = sach.GiaSauGiam ? Number(sach.GiaSauGiam) : null;
+  const coGiamGia = phanTramGiam > 0 && giaSauGiam && giaSauGiam < giaBan;
+  const giaHienThi = coGiamGia ? giaSauGiam : giaBan;
+  const tietKiem = coGiamGia ? giaBan - giaSauGiam : 0;
   const soLuongTon = sach.SoLuongTon ?? 0;
   const moTaSachSachSe = giaiMaHtmlEntities(sach.MoTa);
   const tenDanhMuc = sach.danhMuc?.TenDanhMuc || 'Tủ Sách Chung';
@@ -404,6 +410,16 @@ export const ChiTietSach = () => {
             justifyContent: 'center',
             position: 'relative'
           }}>
+            {/* Nhãn Giảm Giá Nổi Bật (GG08) */}
+            {coGiamGia && (
+              <NhanGiamGia
+                phanTram={phanTramGiam}
+                viTri="goc-anh"
+                kichThuoc="lon"
+                style={{ top: '12px', left: '12px' }}
+              />
+            )}
+
             {anhBia ? (
               <img
                 src={anhBia}
@@ -512,9 +528,35 @@ export const ChiTietSach = () => {
             marginBottom: '1.75rem',
             flexWrap: 'wrap'
           }}>
-            <span style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--text-main)' }}>
-              {dinhDangTien(giaBan)}
-            </span>
+            {coGiamGia ? (
+              <>
+                <span style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--danger, #DC2626)' }}>
+                  {dinhDangTien(giaHienThi)}
+                </span>
+                <span style={{
+                  fontSize: '1.2rem',
+                  color: 'var(--text-sub, #6B7280)',
+                  textDecoration: 'line-through',
+                  fontWeight: 500
+                }}>
+                  {dinhDangTien(giaBan)}
+                </span>
+                <span style={{
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  color: '#DC2626',
+                  backgroundColor: '#FEE2E2',
+                  padding: '3px 8px',
+                  borderRadius: '4px'
+                }}>
+                  Tiết kiệm {dinhDangTien(tietKiem)} (-{phanTramGiam}%)
+                </span>
+              </>
+            ) : (
+              <span style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                {dinhDangTien(giaBan)}
+              </span>
+            )}
 
             {soLuongTon <= 0 && (
               <span style={{

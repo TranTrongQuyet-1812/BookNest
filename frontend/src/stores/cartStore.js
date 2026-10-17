@@ -139,17 +139,25 @@ export const useCartStore = create((set, get) => ({
 
         const items = docGuestCart();
         const viTri = items.findIndex(item => Number(item.maSach) === maSachSo);
-        const donGia = Number(book.giaBan ?? book.GiaBan ?? 0);
+        const giaNiemYet = Number(book.giaNiemYet ?? book.GiaNiemYet ?? book.giaBan ?? book.GiaBan ?? 0);
+        const phanTramGiam = Number(book.phanTramGiam ?? book.PhanTramGiam ?? 0);
+        const giaSauGiam = Number(book.giaSauGiam ?? book.GiaSauGiam ?? 0);
+        const donGia = phanTramGiam > 0 && giaSauGiam > 0 ? giaSauGiam : Number(book.giaBan ?? book.GiaBan ?? 0);
         const tonKho = Number(book.soLuongTon ?? book.SoLuongTon ?? 99);
 
         if (viTri >= 0) {
           items[viTri].soLuong += soLuong;
+          items[viTri].donGia = donGia;
+          items[viTri].giaNiemYet = giaNiemYet;
+          items[viTri].phanTramGiam = phanTramGiam > 0 ? phanTramGiam : null;
           items[viTri].thanhTien = items[viTri].soLuong * donGia;
         } else {
           items.push({
             maSach: maSachSo,
             soLuong,
             donGia,
+            giaNiemYet,
+            phanTramGiam: phanTramGiam > 0 ? phanTramGiam : null,
             thanhTien: donGia * soLuong,
             sach: {
               maSach: maSachSo,
@@ -157,6 +165,8 @@ export const useCartStore = create((set, get) => ({
               anhBia: book.anhBia || book.AnhBia || null,
               tacGia: book.tacGia || book.TacGia || 'Đang cập nhật',
               giaBan: donGia,
+              giaNiemYet,
+              phanTramGiam: phanTramGiam > 0 ? phanTramGiam : null,
               soLuongTon: tonKho
             }
           });

@@ -12,6 +12,7 @@ import { getLenis } from '../utils/lenis';
 import { khiRemMo } from '../utils/nhipMoTrang';
 import { lamSachChuoi } from '../utils/text';
 import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
+import NhanGiamGia from '../components/NhanGiamGia';
 
 gsap.registerPlugin(useGSAP);
 
@@ -459,6 +460,7 @@ export const TrangChu = () => {
                           margin: '0 auto 1.25rem',
                           borderRadius: '6px',
                           overflow: 'hidden',
+                          position: 'relative',
                           boxShadow: '0 10px 25px rgba(76, 69, 65, 0.22)',
                           transition: 'transform 0.2s ease'
                         }}
@@ -470,6 +472,9 @@ export const TrangChu = () => {
                             alt={sachVip.TenSach}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
+                          {sachVip.PhanTramGiam && Number(sachVip.PhanTramGiam) > 0 && (
+                            <NhanGiamGia phanTram={sachVip.PhanTramGiam} viTri="goc-anh" kichThuoc="vua" />
+                          )}
                         </div>
                         <h3 style={{
                           fontSize: '1rem',
@@ -805,6 +810,9 @@ export const TrangChu = () => {
                             loading="lazy"
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
+                          {sach.PhanTramGiam && Number(sach.PhanTramGiam) > 0 && (
+                            <NhanGiamGia phanTram={sach.PhanTramGiam} viTri="goc-anh" kichThuoc="nho" />
+                          )}
                           {coTap && (
                             <span style={{
                               position: 'absolute',
@@ -851,12 +859,28 @@ export const TrangChu = () => {
 
                       <div>
                         <div style={{
-                          fontSize: '0.95rem',
-                          fontWeight: 700,
-                          color: 'var(--danger)',
-                          marginBottom: '0.5rem'
+                          display: 'flex',
+                          alignItems: 'baseline',
+                          gap: '0.4rem',
+                          marginBottom: '0.5rem',
+                          flexWrap: 'wrap'
                         }}>
-                          {giaBan.toLocaleString('vi-VN')} đ
+                          <span style={{
+                            fontSize: '0.95rem',
+                            fontWeight: 700,
+                            color: (sach.PhanTramGiam && Number(sach.PhanTramGiam) > 0) ? '#DC2626' : 'var(--danger)'
+                          }}>
+                            {Number(sach.GiaSauGiam || giaBan).toLocaleString('vi-VN')} đ
+                          </span>
+                          {sach.PhanTramGiam && Number(sach.PhanTramGiam) > 0 && (
+                            <span style={{
+                              fontSize: '0.75rem',
+                              color: 'var(--text-muted)',
+                              textDecoration: 'line-through'
+                            }}>
+                              {giaBan.toLocaleString('vi-VN')} đ
+                            </span>
+                          )}
                         </div>
                         <button
                           onClick={() => handleThemVaoGio(sach.MaSach, sach.TenSach, sach)}

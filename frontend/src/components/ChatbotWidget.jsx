@@ -599,10 +599,31 @@ export const ChatbotWidget = () => {
                             <p style={{ margin: '2px 0', fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '175px' }}>
                               {sach.tacGia || 'Nhiều tác giả'}
                             </p>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--price, #B45309)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: sach.phanTramGiam > 0 ? '#DC2626' : 'var(--price, #B45309)' }}>
                                 {Number(sach.giaBan || 0).toLocaleString('vi-VN')}đ
                               </span>
+                              {sach.phanTramGiam > 0 && sach.giaNiemYet && (
+                                <span style={{
+                                  fontSize: '0.7rem',
+                                  color: 'var(--text-sub)',
+                                  textDecoration: 'line-through'
+                                }}>
+                                  {Number(sach.giaNiemYet).toLocaleString('vi-VN')}đ
+                                </span>
+                              )}
+                              {sach.phanTramGiam > 0 && (
+                                <span style={{
+                                  fontSize: '0.65rem',
+                                  fontWeight: 700,
+                                  color: '#DC2626',
+                                  backgroundColor: '#FEE2E2',
+                                  padding: '1px 4px',
+                                  borderRadius: '3px'
+                                }}>
+                                  -{sach.phanTramGiam}%
+                                </span>
+                              )}
                               {sach.conHang ? (
                                 <span style={{ fontSize: '0.68rem', color: '#10B981', fontWeight: 600 }}>• Còn hàng</span>
                               ) : (

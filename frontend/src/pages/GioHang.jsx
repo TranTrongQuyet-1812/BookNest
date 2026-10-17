@@ -275,8 +275,37 @@ export const GioHang = () => {
                         </td>
 
                         {/* Cột đơn giá */}
-                        <td style={{ fontWeight: 500 }}>
-                          {dinhDangTien(item.donGia)}
+                        <td>
+                          {item.phanTramGiam > 0 || (item.giaNiemYet && item.giaNiemYet > item.donGia) ? (
+                            <div>
+                              <div style={{ fontWeight: 700, color: 'var(--danger, #DC2626)' }}>
+                                {dinhDangTien(item.donGia)}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                                <span style={{
+                                  fontSize: '0.78rem',
+                                  color: 'var(--text-sub, #6B7280)',
+                                  textDecoration: 'line-through'
+                                }}>
+                                  {dinhDangTien(item.giaNiemYet || item.sach?.giaBan)}
+                                </span>
+                                {item.phanTramGiam > 0 && (
+                                  <span style={{
+                                    fontSize: '0.7rem',
+                                    fontWeight: 700,
+                                    color: '#DC2626',
+                                    backgroundColor: '#FEE2E2',
+                                    padding: '1px 4px',
+                                    borderRadius: '3px'
+                                  }}>
+                                    -{item.phanTramGiam}%
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <span style={{ fontWeight: 500 }}>{dinhDangTien(item.donGia)}</span>
+                          )}
                         </td>
 
                         {/* Cột số lượng */}

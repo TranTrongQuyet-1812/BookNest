@@ -832,8 +832,16 @@ export const ThanhToan = () => {
                       }}>
                         {item.sach?.tenSach}
                       </p>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                        {dinhDangTien(item.donGia)} × {item.soLuong}
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+                        <span style={{ color: item.phanTramGiam > 0 || (item.giaNiemYet && item.giaNiemYet > item.donGia) ? 'var(--danger, #DC2626)' : 'inherit', fontWeight: item.phanTramGiam > 0 ? 600 : 400 }}>
+                          {dinhDangTien(item.donGia)}
+                        </span>
+                        {(item.phanTramGiam > 0 || (item.giaNiemYet && item.giaNiemYet > item.donGia)) && (
+                          <span style={{ textDecoration: 'line-through', opacity: 0.7, fontSize: '0.72rem' }}>
+                            {dinhDangTien(item.giaNiemYet || item.sach?.giaBan)}
+                          </span>
+                        )}
+                        <span>× {item.soLuong}</span>
                       </div>
                     </div>
 

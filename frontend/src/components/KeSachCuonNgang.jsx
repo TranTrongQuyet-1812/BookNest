@@ -5,6 +5,7 @@ import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { lamSachChuoi } from '../utils/text';
+import NhanGiamGia from './NhanGiamGia';
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -295,6 +296,9 @@ export const KeSachCuonNgang = ({
                       objectFit: 'cover'
                     }}
                   />
+                  {sach.PhanTramGiam && Number(sach.PhanTramGiam) > 0 && (
+                    <NhanGiamGia phanTram={sach.PhanTramGiam} viTri="goc-anh" kichThuoc="nho" />
+                  )}
                   {coTap && (
                     <span style={{
                       position: 'absolute',
@@ -344,12 +348,28 @@ export const KeSachCuonNgang = ({
               {/* Giá bán & Nút mua nhanh */}
               <div>
                 <div style={{
-                  fontSize: '0.95rem',
-                  fontWeight: 700,
-                  color: 'var(--price)',
-                  marginBottom: '0.5rem'
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: '0.4rem',
+                  marginBottom: '0.5rem',
+                  flexWrap: 'wrap'
                 }}>
-                  {giaBan.toLocaleString('vi-VN')} đ
+                  <span style={{
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    color: (sach.PhanTramGiam && Number(sach.PhanTramGiam) > 0) ? '#DC2626' : 'var(--price)'
+                  }}>
+                    {Number(sach.GiaSauGiam || giaBan).toLocaleString('vi-VN')} đ
+                  </span>
+                  {sach.PhanTramGiam && Number(sach.PhanTramGiam) > 0 && (
+                    <span style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--text-muted)',
+                      textDecoration: 'line-through'
+                    }}>
+                      {giaBan.toLocaleString('vi-VN')} đ
+                    </span>
+                  )}
                 </div>
 
                 <button

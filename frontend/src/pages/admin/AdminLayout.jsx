@@ -15,6 +15,7 @@ import {
   Settings,
   MessageSquare,
   CreditCard,
+  Percent,
   PanelLeftClose,
   PanelLeftOpen
 } from 'lucide-react';
@@ -94,6 +95,7 @@ export const AdminLayout = () => {
     if (p.includes('/admin/dashboard')) return 'Thống Kê Doanh Thu';
     if (p.includes('/admin/books')) return laThuThu ? 'Tra Cứu Sách & Tồn Kho' : 'Quản Lý Sách & Thể Loại';
     if (p.includes('/admin/inventory')) return 'Nhập Kho & Tồn Kho';
+    if (p.includes('/admin/discounts')) return 'Quản Lý Giảm Giá Sách';
     if (p.includes('/admin/orders')) return 'Xử Lý Đơn Hàng';
     if (p.includes('/admin/payments')) return 'Quản Lý Thanh Toán & Hoàn Tiền';
     if (p.includes('/admin/reviews')) return 'Kiểm Duyệt Đánh Giá';
@@ -238,6 +240,15 @@ export const AdminLayout = () => {
                 >
                   <Boxes size={17} style={{ flexShrink: 0 }} />
                   <span className="admindash-hide-collapsed">Nhập Kho & Tồn Kho</span>
+                </NavLink>
+
+                <NavLink
+                  to="/admin/discounts"
+                  title="Giảm Giá Sách"
+                  className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}
+                >
+                  <Percent size={17} style={{ flexShrink: 0 }} />
+                  <span className="admindash-hide-collapsed">Giảm Giá Sách</span>
                 </NavLink>
               </div>
             )}
