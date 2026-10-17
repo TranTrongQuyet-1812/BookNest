@@ -202,10 +202,26 @@ async function taoSach(duLieu, maNhanVienTao) {
     throw LoiNghiepVu.yeuCauKhongHopLe('Danh mục được chọn không tồn tại');
   }
 
+  const tenBo = duLieu.tenBo && duLieu.tenBo.trim() ? duLieu.tenBo.trim() : null;
+  const tap = duLieu.tap !== undefined && duLieu.tap !== null ? parseInt(duLieu.tap, 10) : null;
+  if (tap && !tenBo) {
+    throw LoiNghiepVu.yeuCauKhongHopLe('Sách có số tập thì phải có tên bộ');
+  }
+
   const tonKhoBanDau = parseInt(duLieu.soLuongTon, 10) || 0;
   const t = await sequelize.transaction();
 
   try {
+    if (tenBo && tap) {
+      const daCoTap = await Sach.findOne({
+        where: { TenBo: tenBo, Tap: tap },
+        transaction: t
+      });
+      if (daCoTap) {
+        throw LoiNghiepVu.xungDot(`Bộ sách này đã có tập ${tap}`);
+      }
+    }
+
     const ketQuaTacGia = await chuanHoaTacGia(duLieu.tacGia, t);
     const sachMoi = await Sach.create(
       {
@@ -216,6 +232,8 @@ async function taoSach(duLieu, maNhanVienTao) {
         SoLuongTon: tonKhoBanDau,
         NguongCanhBao: duLieu.nguongCanhBao ?? 5,
         AnhBia: duLieu.anhBia || null,
+        Tap: tap,
+        TenBo: tenBo,
         MaDanhMuc: duLieu.maDanhMuc,
         DaAn: false
       },
@@ -259,6 +277,30 @@ async function capNhatSach(maSach, duLieu, maNhanVien) {
       if (!danhMuc) throw LoiNghiepVu.yeuCauKhongHopLe('Danh mục được chọn không tồn tại');
     }
 
+    const tenBoMoi = duLieu.tenBo !== undefined ? (duLieu.tenBo && duLieu.tenBo.trim() ? duLieu.tenBo.trim() : null) : sach.TenBo;
+    const tapMoi = duLieu.tap !== undefined ? (duLieu.tap !== null ? parseInt(duLieu.tap, 10) : null) : sach.Tap;
+
+    if (tapMoi && !tenBoMoi) {
+      throw LoiNghiepVu.yeuCauKhongHopLe('Sách có số tập thì phải có tên bộ');
+    }
+
+    if (tenBoMoi && tapMoi) {
+      const daCoTap = await Sach.findOne({
+        where: {
+          TenBo: tenBoMoi,
+          Tap: tapMoi,
+          MaSach: { [Op.ne]: sach.MaSach }
+        },
+        transaction: t
+      });
+      if (daCoTap) {
+        throw LoiNghiepVu.xungDot(`Bộ sách này đã có tập ${tapMoi}`);
+      }
+    }
+
+    if (duLieu.tenBo !== undefined) duLieu.tenBo = tenBoMoi;
+    if (duLieu.tap !== undefined) duLieu.tap = tapMoi;
+
     let ketQuaTacGia = null;
     if (duLieu.tacGia !== undefined) {
       ketQuaTacGia = await chuanHoaTacGia(duLieu.tacGia, t);
@@ -269,7 +311,8 @@ async function capNhatSach(maSach, duLieu, maNhanVien) {
     const cacTruong = {
       tenSach: ['TenSach', 'TenSach'], tacGia: ['TacGia', 'TacGia'], moTa: ['MoTa', 'MoTa'],
       giaBan: ['GiaBan', 'GiaBan'], nguongCanhBao: ['NguongCanhBao', 'NguongCanhBao'],
-      anhBia: ['AnhBia', 'AnhBia'], maDanhMuc: ['MaDanhMuc', 'MaDanhMuc'], daAn: ['DaAn', 'DaAn']
+      anhBia: ['AnhBia', 'AnhBia'], maDanhMuc: ['MaDanhMuc', 'MaDanhMuc'], daAn: ['DaAn', 'DaAn'],
+      tap: ['Tap', 'Tap'], tenBo: ['TenBo', 'TenBo']
     };
     for (const [khoa, [truongDb, truongLog]] of Object.entries(cacTruong)) {
       if (duLieu[khoa] === undefined) continue;
@@ -494,6 +537,68 @@ async function dieuChinhTonKho(maSach, duLieu, maNhanVien) {
   }
 }
 
+// Lấy danh sách tên các bộ sách có sẵn để gợi ý (AT06)
+async function layDanhSachTenBoGoiY({ search = '', limit = 20 } = {}) {
+  const soLuong = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
+  const tuKhoa = (search || '').trim();
+
+  const ketQua = await sequelize.query(`
+    SELECT DISTINCT TOP (:limit) TenBo
+    FROM Sach
+    WHERE TenBo IS NOT NULL 
+      AND LTRIM(RTRIM(TenBo)) <> ''
+      ${tuKhoa ? "AND TenBo COLLATE Latin1_General_CI_AI LIKE N'%' + :search + N'%'" : ""}
+    ORDER BY TenBo ASC;
+  `, {
+    replacements: { search: tuKhoa, limit: soLuong },
+    type: sequelize.QueryTypes.SELECT
+  });
+
+  return ketQua.map(item => item.TenBo);
+}
+
+// Lấy danh sách các tập sách trong cùng bộ (AT06)
+async function layCacTapTrongBo(maSach) {
+  const ma = parseInt(maSach, 10);
+  if (isNaN(ma) || ma <= 0) {
+    throw LoiNghiepVu.yeuCauKhongHopLe('Mã sách không hợp lệ');
+  }
+
+  const sachGoc = await Sach.findByPk(ma);
+  if (!sachGoc || sachGoc.DaAn) {
+    throw LoiNghiepVu.khongTimThay('Không tìm thấy cuốn sách này');
+  }
+
+  if (!sachGoc.TenBo || !sachGoc.TenBo.trim()) {
+    return [];
+  }
+
+  const cacTap = await Sach.findAll({
+    where: {
+      TenBo: sachGoc.TenBo,
+      DaAn: false
+    },
+    order: [
+      ['Tap', 'ASC'],
+      ['MaSach', 'ASC']
+    ],
+    attributes: ['MaSach', 'TenSach', 'Tap', 'AnhBia', 'GiaBan', 'SoLuongTon']
+  });
+
+  return cacTap.map(item => {
+    const tapJson = item.toJSON ? item.toJSON() : item;
+    return {
+      maSach: tapJson.MaSach,
+      tenSach: tapJson.TenSach,
+      tap: tapJson.Tap,
+      anhBia: tapJson.AnhBia,
+      giaBan: tapJson.GiaBan,
+      conHang: tapJson.SoLuongTon > 0,
+      dangXem: tapJson.MaSach === ma
+    };
+  });
+}
+
 module.exports = {
   layDanhSachSach,
   layChiTietSach,
@@ -508,5 +613,7 @@ module.exports = {
   layBaoCaoKho,
   layLichSuDieuChinhKho,
   chuanHoaTacGia,
-  layDanhSachTacGiaGoiY
+  layDanhSachTacGiaGoiY,
+  layDanhSachTenBoGoiY,
+  layCacTapTrongBo
 };

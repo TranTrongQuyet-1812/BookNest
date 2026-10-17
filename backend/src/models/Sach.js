@@ -51,6 +51,10 @@ const Sach = sequelize.define('Sach', {
     type: DataTypes.INTEGER,
     allowNull: true
   },
+  TenBo: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
   MaDanhMuc: {
     type: DataTypes.INTEGER,
     allowNull: false

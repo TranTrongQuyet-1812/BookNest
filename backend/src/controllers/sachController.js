@@ -112,6 +112,18 @@ async function xuLyLayDanhSachTacGia(req, res) {
   return phanHoiThanhCong(res, { duLieu, thongDiep: 'Lấy danh sách tác giả gợi ý thành công' });
 }
 
+// Lấy danh sách tên các bộ sách có sẵn (AT06)
+async function xuLyLayDanhSachTenBo(req, res) {
+  const duLieu = await sachService.layDanhSachTenBoGoiY(req.query);
+  return phanHoiThanhCong(res, { duLieu, thongDiep: 'Lấy danh sách tên bộ sách gợi ý thành công' });
+}
+
+// Lấy danh sách các tập sách trong bộ (AT06)
+async function xuLyLayCacTapTrongBo(req, res) {
+  const duLieu = await sachService.layCacTapTrongBo(req.params.id);
+  return phanHoiThanhCong(res, { duLieu, thongDiep: 'Lấy danh sách các tập sách trong bộ thành công' });
+}
+
 module.exports = {
   xuLyLayDanhSach,
   xuLyLayDanhSachAdmin,
@@ -125,5 +137,7 @@ module.exports = {
   xuLySapHetHang,
   xuLyDieuChinhTonKho,
   xuLyLayLichSuDieuChinhKho,
-  xuLyLayDanhSachTacGia
+  xuLyLayDanhSachTacGia,
+  xuLyLayDanhSachTenBo,
+  xuLyLayCacTapTrongBo
 };

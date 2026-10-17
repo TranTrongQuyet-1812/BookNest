@@ -55,6 +55,12 @@ const luatTaoSach = Joi.object({
     'number.min': 'Ngưỡng cảnh báo không được âm'
   }),
   anhBia: Joi.string().trim().max(500).allow(null, ''),
+  tap: Joi.number().integer().min(1).allow(null).messages({
+    'number.min': 'Số tập phải từ 1 trở lên'
+  }),
+  tenBo: Joi.string().trim().max(255).allow(null, '').messages({
+    'string.max': 'Tên bộ không được vượt quá 255 ký tự'
+  }),
   maDanhMuc: Joi.number().integer().positive().required().messages({
     'any.required': 'Mã danh mục là bắt buộc'
   })
@@ -68,6 +74,12 @@ const luatCapNhatSach = Joi.object({
   giaBan: Joi.number().min(0),
   nguongCanhBao: Joi.number().integer().min(0),
   anhBia: Joi.string().trim().max(500).allow(null, ''),
+  tap: Joi.number().integer().min(1).allow(null).messages({
+    'number.min': 'Số tập phải từ 1 trở lên'
+  }),
+  tenBo: Joi.string().trim().max(255).allow(null, '').messages({
+    'string.max': 'Tên bộ không được vượt quá 255 ký tự'
+  }),
   maDanhMuc: Joi.number().integer().positive(),
   daAn: Joi.boolean()
 });
@@ -334,6 +346,71 @@ router.get(
   kiemTraDuLieu(luatTruyVanTacGia, 'query'),
   batLoiAsync(sachController.xuLyLayDanhSachTacGia)
 );
+
+// Schema truy vấn gợi ý tên bộ sách (AT06)
+const luatTruyVanSeries = Joi.object({
+  search: Joi.string().trim().allow(''),
+  limit: Joi.number().integer().min(1).max(50).default(20)
+});
+
+/**
+ * @swagger
+ * /api/books/series:
+ *   get:
+ *     summary: Lấy danh sách tên các bộ sách có sẵn để gợi ý (Quản trị viên, Thủ kho)
+ *     tags: [Sách & Kho (Books)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Từ khóa tìm kiếm tên bộ
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Số lượng tên bộ gợi ý tối đa
+ *     responses:
+ *       200:
+ *         description: Danh sách tên bộ sách
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Không có quyền truy cập
+ */
+router.get(
+  '/series',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_kho'),
+  kiemTraDuLieu(luatTruyVanSeries, 'query'),
+  batLoiAsync(sachController.xuLyLayDanhSachTenBo)
+);
+
+/**
+ * @swagger
+ * /api/books/{id}/volumes:
+ *   get:
+ *     summary: Lấy danh sách các tập sách trong cùng bộ (Công khai)
+ *     tags: [Sách & Kho (Books)]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Mã cuốn sách đang xem
+ *     responses:
+ *       200:
+ *         description: Danh sách các tập sách trong bộ (hoặc mảng rỗng nếu là sách lẻ)
+ *       400:
+ *         description: Mã sách không hợp lệ
+ *       404:
+ *         description: Không tìm thấy sách
+ */
+router.get('/:id/volumes', xacThucTuyChon, batLoiAsync(sachController.xuLyLayCacTapTrongBo));
 
 /**
  * @swagger
