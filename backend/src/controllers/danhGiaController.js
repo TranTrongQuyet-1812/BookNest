@@ -55,9 +55,17 @@ async function xuLyXoaDanhGia(req, res) {
   });
 }
 
+// Khách hỏi trạng thái đánh giá của mình với một cuốn sách
+async function xuLyLayTrangThaiDanhGiaCuaToi(req, res) {
+  const maSach = parseInt(req.params.id, 10);
+  const ketQua = await danhGiaService.layTrangThaiDanhGiaCuaToi(req.user.id, maSach);
+  return phanHoiThanhCong(res, { duLieu: ketQua, thongDiep: 'Lấy trạng thái đánh giá của bạn thành công' });
+}
+
 module.exports = {
   xuLyLayDanhSachDanhGia,
   xuLyTaoHoacCapNhatDanhGia,
+  xuLyLayTrangThaiDanhGiaCuaToi,
   xuLyLayDanhSachAdmin,
   xuLyAnHienDanhGia,
   xuLyXoaDanhGia

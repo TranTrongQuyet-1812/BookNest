@@ -659,4 +659,40 @@ router.post(
   batLoiAsync(danhGiaController.xuLyTaoHoacCapNhatDanhGia)
 );
 
+/**
+ * @swagger
+ * /api/books/{id}/reviews/me:
+ *   get:
+ *     summary: Lấy trạng thái và đánh giá của khách hàng đối với cuốn sách
+ *     tags: [Đánh giá sách (Reviews)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Mã sách
+ *     responses:
+ *       200:
+ *         description: Lấy trạng thái đánh giá thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Không có quyền truy cập (chỉ dành cho khách hàng)
+ *       404:
+ *         description: Không tìm thấy sách
+ */
+router.get(
+  '/:id/reviews/me',
+  xacThucToken,
+  phanQuyen('khach_hang'),
+  batLoiAsync(danhGiaController.xuLyLayTrangThaiDanhGiaCuaToi)
+);
+
 module.exports = router;

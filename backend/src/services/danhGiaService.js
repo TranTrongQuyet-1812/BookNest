@@ -56,15 +56,9 @@ async function layDanhSachDanhGia(maSach, { page = 1, limit = 10 }) {
   };
 }
 
-// Viết hoặc cập nhật đánh giá sách (chỉ cho phép khách đã nhận sách DA_GIAO)
-async function taoHoacCapNhatDanhGia(maKhachHang, maSach, { soSao, noiDung }) {
-  const sach = await Sach.findByPk(maSach);
-  if (!sach || sach.DaAn) {
-    throw LoiNghiepVu.khongTimThay('Không tìm thấy cuốn sách này');
-  }
-
-  // Kiểm tra điều kiện: Khách phải có ít nhất 1 đơn hàng trạng thái DA_GIAO chứa cuốn sách này
-  const daNhanSach = await DonHang.findOne({
+// Khách có đơn DA_GIAO chứa cuốn sách này không (dùng chung cho gửi đánh giá và hỏi trạng thái)
+async function daNhanSach(maKhachHang, maSach) {
+  const don = await DonHang.findOne({
     where: {
       MaKhachHang: maKhachHang,
       TrangThai: 'DA_GIAO'
@@ -77,8 +71,40 @@ async function taoHoacCapNhatDanhGia(maKhachHang, maSach, { soSao, noiDung }) {
       }
     ]
   });
+  return Boolean(don);
+}
 
-  if (!daNhanSach) {
+// Trạng thái đánh giá của khách với một cuốn sách, để giao diện biết có hiện form hay không
+async function layTrangThaiDanhGiaCuaToi(maKhachHang, maSach) {
+  const sach = await Sach.findByPk(maSach);
+  if (!sach || sach.DaAn) {
+    throw LoiNghiepVu.khongTimThay('Không tìm thấy cuốn sách này');
+  }
+
+  const [daMua, danhGia] = await Promise.all([
+    daNhanSach(maKhachHang, maSach),
+    DanhGia.findOne({
+      where: { MaKhachHang: maKhachHang, MaSach: maSach },
+      attributes: ['MaDanhGia', 'SoSao', 'NoiDung', 'DaAn']
+    })
+  ]);
+
+  let lyDo = null;
+  if (!daMua) lyDo = 'CHUA_MUA';
+  else if (danhGia?.DaAn) lyDo = 'BI_AN';
+
+  return { coTheDanhGia: lyDo === null, lyDo, danhGiaCuaToi: danhGia || null };
+}
+
+// Viết hoặc cập nhật đánh giá sách (chỉ cho phép khách đã nhận sách DA_GIAO)
+async function taoHoacCapNhatDanhGia(maKhachHang, maSach, { soSao, noiDung }) {
+  const sach = await Sach.findByPk(maSach);
+  if (!sach || sach.DaAn) {
+    throw LoiNghiepVu.khongTimThay('Không tìm thấy cuốn sách này');
+  }
+
+  // Kiểm tra điều kiện: Khách phải có ít nhất 1 đơn hàng trạng thái DA_GIAO chứa cuốn sách này
+  if (!(await daNhanSach(maKhachHang, maSach))) {
     throw LoiNghiepVu.camTruyCap(
       'Bạn cần mua và nhận sách này thành công trước khi có thể đánh giá'
     );
@@ -253,5 +279,7 @@ module.exports = {
   taoHoacCapNhatDanhGia,
   layDanhSachDanhGiaAdmin,
   anHienDanhGia,
-  xoaDanhGia
+  xoaDanhGia,
+  layTrangThaiDanhGiaCuaToi,
+  daNhanSach
 };
