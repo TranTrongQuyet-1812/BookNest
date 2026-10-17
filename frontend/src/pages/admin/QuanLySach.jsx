@@ -4,6 +4,7 @@ import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 import PhanTrang from '../../components/PhanTrang';
+import TaiAnhBia from '../../components/TaiAnhBia';
 import { 
   Plus, 
   Edit, 
@@ -65,6 +66,10 @@ export const QuanLySach = () => {
 
   // Danh sách gợi ý tên bộ sách có sẵn (AT08)
   const [goiYTenBo, setGoiYTenBo] = useState([]);
+
+  // Quản lý tải ảnh bìa WebP (AT07)
+  const [fileAnhMoi, setFileAnhMoi] = useState(null);
+  const [dangTaiAnh, setDangTaiAnh] = useState(false);
 
   // Tải danh sách tác giả gợi ý theo từ khóa người dùng đang gõ (debounce 250ms)
   useEffect(() => {
@@ -183,6 +188,7 @@ export const QuanLySach = () => {
   const moModalThemSach = () => {
     const defaultDm = danhMucList[0]?.MaDanhMuc ?? '';
     setSachDangSua(null);
+    setFileAnhMoi(null);
     setFormSach({
       tieuDe: '',
       tacGia: '',
@@ -200,6 +206,7 @@ export const QuanLySach = () => {
   // Mở modal sửa sách
   const moModalSuaSach = (sach) => {
     setSachDangSua(sach);
+    setFileAnhMoi(null);
     setFormSach({
       tieuDe: sach.TenSach ?? '',
       tacGia: sach.TacGia ?? '',
@@ -219,6 +226,7 @@ export const QuanLySach = () => {
     const tapHienTai = Number(sachGoc.Tap || 1);
     const tapTiepTheo = tapHienTai + 1;
     setSachDangSua(null);
+    setFileAnhMoi(null);
     setFormSach({
       tieuDe: `${sachGoc.TenBo} - Tập ${tapTiepTheo}`,
       tacGia: sachGoc.TacGia ?? '',
@@ -240,14 +248,34 @@ export const QuanLySach = () => {
       tb.canhBao('Tài khoản của bạn chỉ có quyền tra cứu, không được sửa hoặc thêm sách.');
       return;
     }
+
+    // Kiểm tra tính hợp lệ của tập và bộ sách (AT03, AT08)
+    const tenBoNhap = formSach.tenBo?.trim() || null;
+    const tapNhap = formSach.tap ? Number(formSach.tap) : null;
+    if (tapNhap && !tenBoNhap) {
+      tb.canhBao('Sách có số tập thì phải có tên bộ');
+      return;
+    }
+
+    let urlAnhVuaTai = null;
+
     try {
-      // Kiểm tra tính hợp lệ của tập và bộ sách (AT03, AT08)
-      const tenBoNhap = formSach.tenBo?.trim() || null;
-      const tapNhap = formSach.tap ? Number(formSach.tap) : null;
-      if (tapNhap && !tenBoNhap) {
-        tb.canhBao('Sách có số tập thì phải có tên bộ');
-        return;
+      // 1. Tải ảnh bìa mới lên Cloudinary nếu người dùng đã chọn file mới (AT04, AT07)
+      if (fileAnhMoi) {
+        setDangTaiAnh(true);
+        try {
+          const resAnh = await api.post('/books/cover', fileAnhMoi, {
+            headers: { 'Content-Type': fileAnhMoi.type }
+          });
+          urlAnhVuaTai = resAnh.data?.data?.url;
+        } catch (errAnh) {
+          setDangTaiAnh(false);
+          tb.loiTuApi(errAnh, 'Không thể tải ảnh bìa lên hệ thống');
+          return;
+        }
       }
+
+      const urlAnhCuoi = urlAnhVuaTai || formSach.hinhAnh || null;
 
       const payload = {
         tenSach: formSach.tieuDe,
@@ -256,7 +284,7 @@ export const QuanLySach = () => {
         giaBan: Number(formSach.gia),
         soLuongTon: Number(formSach.soLuongTon || 0),
         moTa: formSach.moTa || undefined,
-        anhBia: formSach.hinhAnh || undefined,
+        anhBia: urlAnhCuoi || undefined,
         tenBo: tenBoNhap,
         tap: tapNhap
       };
@@ -275,10 +303,17 @@ export const QuanLySach = () => {
         tb.thongTin(res.data.data.thongBaoTacGia);
       }
 
+      setFileAnhMoi(null);
       setModalSachMo(false);
       taiLai();
     } catch (err) {
+      // Nếu vừa tải ảnh mới thành công nhưng việc lưu sách thất bại -> dọn sạch ảnh mồ côi (AT05, AT07)
+      if (urlAnhVuaTai) {
+        api.delete('/books/cover', { data: { url: urlAnhVuaTai } }).catch(() => {});
+      }
       tb.loiTuApi(err, 'Lỗi khi lưu sách');
+    } finally {
+      setDangTaiAnh(false);
     }
   };
 
@@ -652,23 +687,24 @@ export const QuanLySach = () => {
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">URL Hình ảnh bìa sách</label>
-                <input
-                  type="url"
-                  disabled={!coQuyenSuaSach}
-                  className="form-input"
-                  placeholder="https://..."
-                  value={formSach.hinhAnh}
-                  onChange={(e) => setFormSach({ ...formSach, hinhAnh: e.target.value })}
-                />
-              </div>
+              {/* Chọn và xem trước ảnh bìa sách (AT07) */}
+              <TaiAnhBia
+                anhHienTai={formSach.hinhAnh}
+                fileMoi={fileAnhMoi}
+                onThayDoiFile={(file) => {
+                  setFileAnhMoi(file);
+                  if (!file) {
+                    setFormSach((cu) => ({ ...cu, hinhAnh: '' }));
+                  }
+                }}
+                disabled={!coQuyenSuaSach || dangTaiAnh}
+              />
 
               <div className="form-group">
                 <label className="form-label">Mô tả tóm tắt</label>
                 <textarea
                   rows="3"
-                  disabled={!coQuyenSuaSach}
+                  disabled={!coQuyenSuaSach || dangTaiAnh}
                   className="form-input"
                   value={formSach.moTa}
                   onChange={(e) => setFormSach({ ...formSach, moTa: e.target.value })}
@@ -678,11 +714,24 @@ export const QuanLySach = () => {
               <div className="flex justify-end gap-2 mt-4">
                 {coQuyenSuaSach ? (
                   <>
-                    <button type="button" onClick={() => setModalSachMo(false)} className="btn btn-outline">
+                    <button
+                      type="button"
+                      disabled={dangTaiAnh}
+                      onClick={() => setModalSachMo(false)}
+                      className="btn btn-outline"
+                    >
                       Hủy
                     </button>
-                    <button type="submit" className="btn btn-primary">
-                      {sachDangSua ? 'Lưu Cập Nhật' : 'Thêm Vào Kho'}
+                    <button
+                      type="submit"
+                      disabled={dangTaiAnh}
+                      className="btn btn-primary"
+                    >
+                      {dangTaiAnh
+                        ? 'Đang tải ảnh...'
+                        : sachDangSua
+                          ? 'Lưu Cập Nhật'
+                          : 'Thêm Vào Kho'}
                     </button>
                   </>
                 ) : (
