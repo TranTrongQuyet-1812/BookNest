@@ -44,7 +44,11 @@ export default defineConfig({
   server: {
     port: 5174,
     fs: { allow: [thuMucDuAn] },
-    proxy: { '/api': { target: 'http://localhost:5000', changeOrigin: true } }
+    proxy: {
+      '/api': { target: 'http://localhost:5000', changeOrigin: true },
+      // Realtime: thiếu dòng này thì Back-Office mở WebSocket vào chính cổng 5174 và bị lỗi
+      '/socket.io': { target: 'http://localhost:5000', ws: true, changeOrigin: true }
+    }
   },
   build: {
     chunkSizeWarningLimit: 800,
