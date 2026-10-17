@@ -124,7 +124,8 @@ export const QuanLyDonHang = () => {
   const handleChuyenTrangThai = async (maDonHang, trangThaiMoi, tenHanhDong) => {
     const dongY = await xacNhan({
       tieuDe: 'Cập nhật trạng thái đơn hàng',
-      noiDung: `Xác nhận ${tenHanhDong} cho đơn hàng #${maDonHang}?`,
+      // Hỏi theo trạng thái đích (cùng giọng với toast kết quả bên dưới), không ghép tên hành động vào giữa câu
+      noiDung: `Chuyển đơn hàng #${maDonHang} sang trạng thái "${layTenTrangThai(trangThaiMoi)}"?`,
       nhanXacNhan: tenHanhDong,
     });
     if (!dongY) return;
