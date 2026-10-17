@@ -34,8 +34,6 @@ const CHINH_SACH_DOI_TRA = {
 
 const CHINH_SACH_BAO_MAT_AI = {
   tieuDe: 'Bảo vệ dữ liệu hội thoại AI Chatbot',
-  nhaCungCap: 'NVIDIA Cloud NIM (meta/llama-3.2-11b-vision-instruct)',
-  canhBaoNguoiDung: 'Dữ liệu trò chuyện được xử lý qua hạ tầng AI đám mây bảo mật. Tuyệt đối không nhập mật khẩu, mã OTP hoặc thông tin thẻ ngân hàng/tài khoản cá nhân vào khung chat.',
   luuTru: 'Hệ thống chỉ lưu vết số liệu kỹ thuật và lượng token tiêu thụ để kiểm soát chất lượng, không lưu trữ thông tin nhạy cảm của khách hàng.'
 };
 
@@ -63,8 +61,7 @@ function layNguCanhChinhSachChoAI() {
    - Chi phí: ${CHINH_SACH_DOI_TRA.chiPhiDoiTra}
 
 4. BẢO MẬT & AI:
-   - Trợ lý AI vận hành bởi ${CHINH_SACH_BAO_MAT_AI.nhaCungCap}.
-   - Cảnh báo: ${CHINH_SACH_BAO_MAT_AI.canhBaoNguoiDung}
+   - Lưu trữ: ${CHINH_SACH_BAO_MAT_AI.luuTru}
 --------------------------------------------------------------------------
 `.trim();
 }

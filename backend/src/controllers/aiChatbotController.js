@@ -17,9 +17,7 @@ async function layTrangThai(req, res) {
     thongDiep: 'Trạng thái AI Chatbot',
     duLieu: {
       daBat,
-      daCauHinh: cauHinh.ai.daCauHinh,
-      nhaCungCap: cauHinh.ai.nhaCungCap,
-      moHinh: cauHinh.ai.moHinh
+      daCauHinh: cauHinh.ai.daCauHinh
     }
   });
 }
