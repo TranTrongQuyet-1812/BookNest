@@ -248,6 +248,7 @@ export const KeSachCuonNgang = ({
           return (
             <div
               key={sach.MaSach}
+              className="ke-sach-card-item"
               style={{
                 flex: '0 0 190px',
                 width: '190px',

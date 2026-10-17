@@ -15,13 +15,22 @@ export const SmoothScroll = ({ children }) => {
   const lenisRef = useRef(null);
 
   useEffect(() => {
-    // Khởi tạo Lenis với easing mũ mượt mà
+    const kiemTraGiamChuyenDong = () => {
+      return (
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+        document.documentElement.getAttribute('data-giam-chuyen-dong') === 'true'
+      );
+    };
+
+    const giamChuyenDong = kiemTraGiamChuyenDong();
+
+    // Khởi tạo Lenis với easing mũ mượt mà (Tự động nhẹ tải khi bật giảm chuyển động)
     const lenis = new Lenis({
-      duration: 1.2,
+      duration: giamChuyenDong ? 0.1 : 1.1,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
       gestureOrientation: 'vertical',
-      smoothWheel: true,
+      smoothWheel: !giamChuyenDong,
       wheelMultiplier: 1,
       touchMultiplier: 1.8,
     });
@@ -29,6 +38,15 @@ export const SmoothScroll = ({ children }) => {
     lenisRef.current = lenis;
     setGlobalLenis(lenis);
     window.lenis = lenis;
+
+    // Lắng nghe thay đổi chế độ giảm chuyển động từ app để điều chỉnh tức thì
+    const observer = new MutationObserver(() => {
+      const daGiam = kiemTraGiamChuyenDong();
+      if (lenisRef.current) {
+        lenisRef.current.options.smoothWheel = !daGiam;
+      }
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-giam-chuyen-dong'] });
 
     // Đồng bộ vị trí cuộn của Lenis với ScrollTrigger
     const handleScroll = () => {
@@ -42,9 +60,11 @@ export const SmoothScroll = ({ children }) => {
     };
 
     gsap.ticker.add(updateTicker);
-    gsap.ticker.lagSmoothing(0);
+    // lagSmoothing(500, 33) cho phép GSAP làm mượt khi CPU máy trường bị trễ frame, triệt tiêu giật khựng
+    gsap.ticker.lagSmoothing(500, 33);
 
     return () => {
+      observer.disconnect();
       gsap.ticker.remove(updateTicker);
       lenis.off('scroll', handleScroll);
       lenis.destroy();

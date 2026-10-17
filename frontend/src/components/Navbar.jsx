@@ -206,7 +206,7 @@ export const Navbar = () => {
         }}
       >
         {/* Khối Logo & Tên thương hiệu & Dropdown Danh Mục */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+        <div className="navbar-brand-group" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <Link 
             to="/" 
             style={{ 
@@ -218,7 +218,7 @@ export const Navbar = () => {
             title="BookNest - Tổ ấm của những trang sách"
           >
             <LogoBookNest height={38} />
-            <span className="font-fleur" style={{
+            <span className="font-fleur navbar-brand-text" style={{
               fontSize: '2.1rem',
               color: 'var(--text-main)',
               lineHeight: 1,
@@ -305,9 +305,10 @@ export const Navbar = () => {
         </div>
 
         {/* Thanh Tìm Kiếm Trung Tâm Tối Giản */}
-        <form onSubmit={handleTimKiem} style={{
+        <form onSubmit={handleTimKiem} className="navbar-search-form" style={{
           flex: 1,
-          maxWidth: '460px',
+          minWidth: '160px',
+          maxWidth: '440px',
           display: 'flex',
           alignItems: 'center',
           position: 'relative'
@@ -357,7 +358,7 @@ export const Navbar = () => {
         </form>
 
         {/* Khối Tiện Ích Phải: Giỏ Hàng & Người Dùng */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div className="navbar-actions-group" style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
           {laNhanSu && (
             <Link
               to="/admin"
@@ -380,6 +381,7 @@ export const Navbar = () => {
           {(!user || user.role === 'khach_hang') && (
             <Link
               to="/cart"
+              className="navbar-cart-button"
               style={{
                 position: 'relative',
                 display: 'flex',
@@ -404,7 +406,7 @@ export const Navbar = () => {
               }}
             >
               <ShoppingCart size={16} />
-              <span>Giỏ hàng</span>
+              <span className="navbar-label-cart">Giỏ hàng</span>
               {tongSoLuong > 0 && (
                 <span style={{
                   backgroundColor: 'var(--primary)',
@@ -473,6 +475,7 @@ export const Navbar = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Link
                 to="/profile"
+                className="navbar-user-link"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -488,11 +491,19 @@ export const Navbar = () => {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-surface)'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
-                <User size={15} style={{ color: 'var(--text-muted)' }} />
-                <span>{user.fullName}</span>
+                <User size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                <span className="navbar-user-name" style={{
+                  maxWidth: '120px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  display: 'inline-block',
+                  verticalAlign: 'middle'
+                }}>{user.fullName}</span>
               </Link>
               <Link
                 to="/orders"
+                className="navbar-orders-link"
                 style={{
                   padding: '0.45rem 0.75rem',
                   borderRadius: '8px',

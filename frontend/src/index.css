@@ -968,6 +968,26 @@ textarea::placeholder {
   flex-shrink: 0;
   z-index: 30;
   color: var(--adm-sidebar-text);
+  transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1), padding 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admindash-sidebar.collapsed {
+  width: 68px;
+  padding: 1.25rem 0.5rem;
+}
+
+.admindash-sidebar.collapsed .admindash-hide-collapsed {
+  display: none !important;
+}
+
+.admindash-sidebar.collapsed .admindash-nav-link {
+  justify-content: center;
+  padding: 0.65rem 0;
+  border-radius: 8px;
+}
+
+.admindash-sidebar.collapsed .admindash-nav-group {
+  margin-bottom: 0.5rem;
 }
 
 .admindash-nav-group {
@@ -1124,6 +1144,7 @@ textarea::placeholder {
 
 .admindash-table {
   width: 100%;
+  min-width: 820px;
   border-collapse: collapse;
   text-align: left;
 }
@@ -1222,3 +1243,54 @@ textarea::placeholder {
   color: var(--adm-text-main);
 }
 
+/* ==========================================================================
+   Responsive Desktop Optimization (1024px, 1280px, 1366px, 1440px, 1920px)
+   ========================================================================== */
+
+/* Navbar Storefront Responsive Desktop */
+@media (max-width: 1240px) {
+  .navbar-label-cart {
+    display: none !important;
+  }
+  .navbar-brand-group {
+    gap: 0.85rem !important;
+  }
+  .navbar-actions-group {
+    gap: 0.5rem !important;
+  }
+  .navbar-orders-link {
+    padding: 0.45rem 0.55rem !important;
+  }
+  .navbar-search-form {
+    min-width: 160px !important;
+    max-width: 320px !important;
+  }
+}
+
+@media (max-width: 1080px) {
+  .navbar-brand-text {
+    font-size: 1.85rem !important;
+  }
+  .navbar-search-form {
+    min-width: 140px !important;
+    max-width: 220px !important;
+  }
+  .navbar-user-name {
+    max-width: 85px !important;
+  }
+}
+
+/* Performance & No-Lag Optimization cho Máy Cấu Hình Thấp (Máy Trường) */
+.home-hero,
+header,
+.bn-dialog-card,
+.navbar-cart-button {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Render ảo hoá hiệu năng cho Card Sách */
+.ke-sach-card-item {
+  content-visibility: auto;
+  contain-intrinsic-size: 190px 280px;
+}

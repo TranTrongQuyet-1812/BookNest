@@ -14,13 +14,37 @@ import {
   History,
   Settings,
   MessageSquare,
-  CreditCard
+  CreditCard,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 
 export const AdminLayout = () => {
   const { user, dangXuat } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Tự động thu gọn sidebar trên màn hình laptop nhỏ (< 1180px) để tối ưu không gian bảng
+  const [thuGonSidebar, setThuGonSidebar] = React.useState(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('admindash_sidebar_collapsed');
+        if (saved !== null) return saved === 'true';
+        return window.innerWidth < 1180;
+      }
+    } catch (_e) {
+      // Phòng vệ khi trình duyệt bật chế độ chặn storage nghiêm ngặt
+    }
+    return false;
+  });
+
+  const toggleThuGon = () => {
+    setThuGonSidebar(prev => {
+      const next = !prev;
+      try { localStorage.setItem('admindash_sidebar_collapsed', String(next)); } catch (e) {}
+      return next;
+    });
+  };
 
   const handleDangXuat = () => {
     try {
@@ -83,32 +107,68 @@ export const AdminLayout = () => {
   return (
     <div className="admindash-shell" style={{ display: 'flex', minHeight: '100vh' }}>
       {/* Sidebar Deep Slate Chuyên Nghiệp */}
-      <aside className="admindash-sidebar">
+      <aside className={`admindash-sidebar ${thuGonSidebar ? 'collapsed' : ''}`}>
         <div>
           {/* Logo & Branding */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.25rem 0.5rem 1.25rem', borderBottom: '1px solid var(--adm-sidebar-border)' }}>
-            <LogoBookNest height={26} />
-            <div>
-              <div style={{ fontSize: '0.95rem', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2, color: '#FFFFFF' }}>
-                BookNest
-              </div>
-              <div style={{ fontSize: '0.65rem', color: 'var(--adm-sidebar-muted)', fontWeight: 600, letterSpacing: '0.08em' }}>
-                ADMINDASH
-              </div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: thuGonSidebar ? 'center' : 'space-between',
+            padding: thuGonSidebar ? '0.25rem 0 1.25rem' : '0.25rem 0.5rem 1.25rem',
+            borderBottom: '1px solid var(--adm-sidebar-border)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+              <LogoBookNest height={26} />
+              {!thuGonSidebar && (
+                <div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2, color: '#FFFFFF' }}>
+                    BookNest
+                  </div>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--adm-sidebar-muted)', fontWeight: 600, letterSpacing: '0.08em' }}>
+                    ADMINDASH
+                  </div>
+                </div>
+              )}
             </div>
+
+            <button
+              type="button"
+              onClick={toggleThuGon}
+              title={thuGonSidebar ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'}
+              aria-label={thuGonSidebar ? 'Mở rộng menu' : 'Thu gọn menu'}
+              style={{
+                backgroundColor: 'transparent',
+                border: 'none',
+                color: 'var(--adm-sidebar-muted)',
+                cursor: 'pointer',
+                padding: '4px',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'color 0.15s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#FFFFFF'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--adm-sidebar-muted)'}
+            >
+              {thuGonSidebar ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+            </button>
           </div>
 
           {/* Hồ Sơ Nhân Sự Tối Giản (User Profile Card) */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
+            justifyContent: thuGonSidebar ? 'center' : 'flex-start',
             gap: '0.65rem',
-            padding: '0.65rem 0.75rem',
+            padding: thuGonSidebar ? '0.65rem 0' : '0.65rem 0.75rem',
             margin: '1rem 0 1.25rem',
             backgroundColor: 'var(--adm-sidebar-hover)',
             borderRadius: '6px',
             border: '1px solid var(--adm-sidebar-border)'
-          }}>
+          }}
+          title={thuGonSidebar ? `${user?.fullName || user?.email} (${tenVaiTro})` : undefined}
+          >
             <div style={{
               width: '32px',
               height: '32px',
@@ -124,128 +184,150 @@ export const AdminLayout = () => {
             }}>
               {userInitials}
             </div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: '0.825rem', fontWeight: 600, color: '#FFFFFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {user?.fullName || user?.email}
+            {!thuGonSidebar && (
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: '0.825rem', fontWeight: 600, color: '#FFFFFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user?.fullName || user?.email}
+                </div>
+                <div style={{
+                  display: 'inline-block',
+                  marginTop: '2px',
+                  fontSize: '0.68rem',
+                  fontWeight: 600,
+                  color: '#93C5FD',
+                  letterSpacing: '0.02em'
+                }}>
+                  {tenVaiTro}
+                </div>
               </div>
-              <div style={{
-                display: 'inline-block',
-                marginTop: '2px',
-                fontSize: '0.68rem',
-                fontWeight: 600,
-                color: '#93C5FD',
-                letterSpacing: '0.02em'
-              }}>
-                {tenVaiTro}
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Danh Sách Mục Menu Theo Nhóm Chức Năng (RBAC) */}
           <nav>
             {laQuanTri && (
               <div className="admindash-nav-group">
-                <div className="admindash-group-label">Tổng Quan</div>
+                {!thuGonSidebar && <div className="admindash-group-label">Tổng Quan</div>}
                 <NavLink
                   to="/admin/dashboard"
+                  title="Thống Kê Doanh Thu"
                   className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}
                 >
-                  <BarChart3 size={16} />
-                  <span>Thống Kê Doanh Thu</span>
+                  <BarChart3 size={17} style={{ flexShrink: 0 }} />
+                  <span className="admindash-hide-collapsed">Thống Kê Doanh Thu</span>
                 </NavLink>
               </div>
             )}
 
             {coQuyenVaoKho && (
               <div className="admindash-nav-group">
-                <div className="admindash-group-label">Hàng Hóa & Kho</div>
+                {!thuGonSidebar && <div className="admindash-group-label">Hàng Hóa & Kho</div>}
                 <NavLink
                   to="/admin/books"
+                  title="Quản Lý Sách & Thể Loại"
                   className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}
                 >
-                  <BookOpen size={16} />
-                  <span>Quản Lý Sách & Thể Loại</span>
+                  <BookOpen size={17} style={{ flexShrink: 0 }} />
+                  <span className="admindash-hide-collapsed">Quản Lý Sách & Thể Loại</span>
                 </NavLink>
 
                 <NavLink
                   to="/admin/inventory"
+                  title="Nhập Kho & Tồn Kho"
                   className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}
                 >
-                  <Boxes size={16} />
-                  <span>Nhập Kho & Tồn Kho</span>
+                  <Boxes size={17} style={{ flexShrink: 0 }} />
+                  <span className="admindash-hide-collapsed">Nhập Kho & Tồn Kho</span>
                 </NavLink>
               </div>
             )}
 
             {laThuThu && (
               <div className="admindash-nav-group">
-                <div className="admindash-group-label">Ấn Phẩm</div>
+                {!thuGonSidebar && <div className="admindash-group-label">Ấn Phẩm</div>}
                 <NavLink
                   to="/admin/books"
+                  title="Tra Cứu Sách & Tồn Kho"
                   className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}
                 >
-                  <BookOpen size={16} />
-                  <span>Tra Cứu Sách & Tồn Kho</span>
+                  <BookOpen size={17} style={{ flexShrink: 0 }} />
+                  <span className="admindash-hide-collapsed">Tra Cứu Sách & Tồn Kho</span>
                 </NavLink>
               </div>
             )}
 
             {coQuyenXuLyDon && (
               <div className="admindash-nav-group">
-                <div className="admindash-group-label">Vận Hành</div>
+                {!thuGonSidebar && <div className="admindash-group-label">Vận Hành</div>}
                 <NavLink
                   to="/admin/orders"
+                  title="Xử Lý Đơn Hàng"
                   className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}
                 >
-                  <ClipboardList size={16} />
-                  <span>Xử Lý Đơn Hàng</span>
+                  <ClipboardList size={17} style={{ flexShrink: 0 }} />
+                  <span className="admindash-hide-collapsed">Xử Lý Đơn Hàng</span>
                 </NavLink>
 
                 <NavLink
                   to="/admin/payments"
+                  title="Quản Lý Thanh Toán"
                   className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}
                 >
-                  <CreditCard size={16} />
-                  <span>Quản Lý Thanh Toán</span>
+                  <CreditCard size={17} style={{ flexShrink: 0 }} />
+                  <span className="admindash-hide-collapsed">Quản Lý Thanh Toán</span>
                 </NavLink>
 
                 <NavLink
                   to="/admin/reviews"
+                  title="Kiểm Duyệt Đánh Giá"
                   className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}
                 >
-                  <MessageSquare size={16} />
-                  <span>Kiểm Duyệt Đánh Giá</span>
+                  <MessageSquare size={17} style={{ flexShrink: 0 }} />
+                  <span className="admindash-hide-collapsed">Kiểm Duyệt Đánh Giá</span>
                 </NavLink>
               </div>
             )}
 
             {coQuyenXuLyDon && (
               <div className="admindash-nav-group">
-                <div className="admindash-group-label">Bán Hàng</div>
-                <NavLink to="/admin/counter-sales" className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}>
-                  <ShoppingCart size={16} />
-                  <span>Bán tại quầy</span>
+                {!thuGonSidebar && <div className="admindash-group-label">Bán Hàng</div>}
+                <NavLink
+                  to="/admin/counter-sales"
+                  title="Bán tại quầy"
+                  className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}
+                >
+                  <ShoppingCart size={17} style={{ flexShrink: 0 }} />
+                  <span className="admindash-hide-collapsed">Bán tại quầy</span>
                 </NavLink>
               </div>
             )}
 
             {laQuanTri && (
               <div className="admindash-nav-group">
-                <div className="admindash-group-label">Hệ Thống</div>
+                {!thuGonSidebar && <div className="admindash-group-label">Hệ Thống</div>}
                 <NavLink
                   to="/admin/users"
+                  title="Quản Lý Nhân Sự & Khách"
                   className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}
                 >
-                  <Users size={16} />
-                  <span>Quản Lý Nhân Sự & Khách</span>
+                  <Users size={17} style={{ flexShrink: 0 }} />
+                  <span className="admindash-hide-collapsed">Quản Lý Nhân Sự & Khách</span>
                 </NavLink>
-                <NavLink to="/admin/change-history" className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}>
-                  <History size={16} />
-                  <span>Lịch Sử Thay Đổi</span>
+                <NavLink
+                  to="/admin/change-history"
+                  title="Lịch Sử Thay Đổi"
+                  className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}
+                >
+                  <History size={17} style={{ flexShrink: 0 }} />
+                  <span className="admindash-hide-collapsed">Lịch Sử Thay Đổi</span>
                 </NavLink>
-                <NavLink to="/admin/settings" className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}>
-                  <Settings size={16} />
-                  <span>Cài Đặt Hệ Thống</span>
+                <NavLink
+                  to="/admin/settings"
+                  title="Cài Đặt Hệ Thống"
+                  className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}
+                >
+                  <Settings size={17} style={{ flexShrink: 0 }} />
+                  <span className="admindash-hide-collapsed">Cài Đặt Hệ Thống</span>
                 </NavLink>
               </div>
             )}
@@ -257,19 +339,21 @@ export const AdminLayout = () => {
           <a
             href={`${import.meta.env.VITE_STOREFRONT_URL || 'http://localhost:3000'}/`}
             className="admindash-nav-link"
+            title="Xem Cửa Hàng Storefront"
             style={{ fontSize: '0.8rem' }}
           >
-            <ArrowUpRight size={15} />
-            <span>Xem Cửa Hàng Storefront</span>
+            <ArrowUpRight size={16} style={{ flexShrink: 0 }} />
+            <span className="admindash-hide-collapsed">Xem Cửa Hàng Storefront</span>
           </a>
 
           <button
             onClick={handleDangXuat}
             className="admindash-nav-link"
+            title="Đăng Xuất Khỏi Admindash"
             style={{ fontSize: '0.8rem', color: '#F87171' }}
           >
-            <LogOut size={15} />
-            <span>Đăng Xuất Khỏi Admindash</span>
+            <LogOut size={16} style={{ flexShrink: 0 }} />
+            <span className="admindash-hide-collapsed">Đăng Xuất Khỏi Admindash</span>
           </button>
         </div>
       </aside>
@@ -277,10 +361,35 @@ export const AdminLayout = () => {
       {/* Khu Vực Nội Dung Chính Có Topbar */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflowX: 'hidden' }}>
         <header className="admindash-topbar">
-          <div style={{ fontSize: '0.825rem', color: 'var(--adm-text-muted)', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-            <span style={{ fontWeight: 600, color: 'var(--adm-text-main)' }}>Admindash</span>
-            <span>/</span>
-            <span style={{ color: 'var(--adm-text-main)', fontWeight: 500 }}>{layTieuDeTrang()}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <button
+              type="button"
+              onClick={toggleThuGon}
+              title={thuGonSidebar ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'}
+              aria-label={thuGonSidebar ? 'Mở rộng menu' : 'Thu gọn menu'}
+              style={{
+                backgroundColor: 'transparent',
+                border: '1px solid var(--adm-border)',
+                borderRadius: '6px',
+                padding: '0.35rem 0.5rem',
+                color: 'var(--adm-text-main)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background-color 0.15s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--adm-sidebar-hover)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              {thuGonSidebar ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+            </button>
+
+            <div style={{ fontSize: '0.825rem', color: 'var(--adm-text-muted)', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <span style={{ fontWeight: 600, color: 'var(--adm-text-main)' }}>Admindash</span>
+              <span>/</span>
+              <span style={{ color: 'var(--adm-text-main)', fontWeight: 500 }}>{layTieuDeTrang()}</span>
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--adm-text-muted)' }}>
@@ -290,7 +399,7 @@ export const AdminLayout = () => {
         </header>
 
         {/* Nội Dung Các Trang Con */}
-        <main style={{ flex: 1, padding: '1.75rem 2rem', overflowY: 'auto' }}>
+        <main className="admindash-main" style={{ flex: 1, padding: thuGonSidebar ? '1.25rem 1.5rem' : '1.5rem 1.75rem', overflowY: 'auto' }}>
           <Outlet />
         </main>
       </div>
