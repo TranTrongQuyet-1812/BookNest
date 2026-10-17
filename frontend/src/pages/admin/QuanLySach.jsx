@@ -58,6 +58,35 @@ export const QuanLySach = () => {
   const [modalDanhMucMo, setModalDanhMucMo] = useState(false);
   const [formDanhMuc, setFormDanhMuc] = useState({ tenDanhMuc: '', moTa: '' });
 
+  // Danh sách gợi ý tác giả có sẵn (AT13)
+  const [goiYTacGia, setGoiYTacGia] = useState([]);
+
+  // Tải danh sách tác giả gợi ý theo từ khóa người dùng đang gõ (debounce 250ms)
+  useEffect(() => {
+    if (!modalSachMo) {
+      setGoiYTacGia([]);
+      return;
+    }
+    const tuKhoa = (formSach.tacGia || '').trim();
+    if (tuKhoa.length < 2) {
+      setGoiYTacGia([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.get('/books/authors', { params: { search: tuKhoa, limit: 15 } });
+        if (res.data?.data) {
+          setGoiYTacGia(res.data.data);
+        }
+      } catch {
+        // Lỗi gợi ý không làm gián đoạn nhập liệu
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [formSach.tacGia, modalSachMo]);
+
   const taiLai = () => setLanTai((n) => n + 1);
 
   // Tải một trang sách từ server (tìm kiếm và phân trang do backend xử lý)
@@ -169,13 +198,19 @@ export const QuanLySach = () => {
       };
 
       const maSach = sachDangSua ? sachDangSua.MaSach : null;
+      let res;
       if (sachDangSua) {
-        await api.put(`/books/${maSach}`, payload);
+        res = await api.put(`/books/${maSach}`, payload);
         tb.thanhCong(`Đã cập nhật cuốn sách "${formSach.tieuDe}"`);
       } else {
-        await api.post('/books', payload);
+        res = await api.post('/books', payload);
         tb.thanhCong(`Đã thêm mới cuốn sách "${formSach.tieuDe}" vào kho`);
       }
+
+      if (res?.data?.data?.thongBaoTacGia) {
+        tb.thongTin(res.data.data.thongBaoTacGia);
+      }
+
       setModalSachMo(false);
       taiLai();
     } catch (err) {
@@ -422,7 +457,14 @@ export const QuanLySach = () => {
                     className="form-input"
                     value={formSach.tacGia}
                     onChange={(e) => setFormSach({ ...formSach, tacGia: e.target.value })}
+                    list="goi-y-tac-gia-list"
+                    autoComplete="off"
                   />
+                  <datalist id="goi-y-tac-gia-list">
+                    {goiYTacGia.map((tg) => (
+                      <option key={tg} value={tg} />
+                    ))}
+                  </datalist>
                 </div>
 
                 <div className="form-group">
