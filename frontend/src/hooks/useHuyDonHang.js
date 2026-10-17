@@ -12,7 +12,7 @@ export function useHuyDonHang() {
 
   const thucHienHuyDon = async (maDonHang, onSuccess) => {
     const lyDo = await nhapLyDo({
-      tieuDe: `Hủy đơn hàng #${maDonHang}`,
+      tieuDe: `Hủy đơn hàng ${maDonHang}`,
       noiDung: 'Bạn có chắc chắn muốn hủy đơn hàng này không?',
       nhan: 'Lý do hủy đơn',
       placeholder: 'Nhập lý do hủy đơn hàng (tùy chọn)...',

@@ -43,12 +43,14 @@ export function HopThoai({
       document.body.style.paddingRight = `${scrollBarWidth}px`;
     }
 
-    // Auto-focus phần tử: Ưu tiên [autofocus], ô input/textarea, hoặc nút hành động chính
+    // Tự đưa tiêu điểm vào hộp: ưu tiên ô input/textarea, hoặc nút hành động chính.
+    // Không dùng prop autoFocus của React ở phần tử con: React focus lúc commit, trước khi
+    // effect này chạy, nên previousActiveElement ở trên sẽ lưu nhầm phần tử trong hộp thay vì nút gọi.
     const timer = setTimeout(() => {
       if (!cardRef.current) return;
 
       const autoFocusEl = cardRef.current.querySelector(
-        '[autofocus], input:not([type="hidden"]):not(:disabled), textarea:not(:disabled)'
+        'input:not([type="hidden"]):not(:disabled), textarea:not(:disabled)'
       );
       if (autoFocusEl) {
         autoFocusEl.focus();

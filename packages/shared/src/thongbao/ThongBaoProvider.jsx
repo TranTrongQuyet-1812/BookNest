@@ -46,6 +46,7 @@ function ToastItem({ toast, onDong }) {
 
   const dong = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;
     setDangThoat(true);
     exitTimerRef.current = setTimeout(() => {
       onDong(toast.id);
@@ -69,25 +70,40 @@ function ToastItem({ toast, onDong }) {
     };
   }, [batDauTimer, toast.thoiGian]);
 
-  // Tạm dừng khi rê chuột hoặc focus bàn phím
-  const handleTamDung = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      remainingRef.current = tinhThoiGianConLai(
-        remainingRef.current,
-        startTimeRef.current,
-        Date.now()
-      );
-    }
+  // Đếm giờ chỉ chạy khi KHÔNG rê chuột và KHÔNG có tiêu điểm bàn phím trong toast.
+  // Hai nguồn dừng độc lập nhau: rê chuột rồi bấm vào toast không bị trừ thời gian hai lần,
+  // và chuột rời đi mà tiêu điểm còn ở toast thì vẫn tiếp tục dừng.
+  const nguonDungRef = useRef({ chuot: false, banPhim: false });
+
+  const dungDemGio = () => {
+    if (!timerRef.current) return; // đã dừng rồi, không trừ thêm
+    clearTimeout(timerRef.current);
+    timerRef.current = null;
+    remainingRef.current = tinhThoiGianConLai(
+      remainingRef.current,
+      startTimeRef.current,
+      Date.now()
+    );
   };
 
-  // Tiếp tục khi chuột rời hoặc blur bàn phím
-  const handleTiepTuc = () => {
+  const chayLaiDemGio = () => {
+    const { chuot, banPhim } = nguonDungRef.current;
+    if (chuot || banPhim || timerRef.current || dangThoat) return;
     if (remainingRef.current > 0) {
       batDauTimer(remainingRef.current);
     } else {
       dong();
     }
+  };
+
+  const handleTamDung = (nguon) => {
+    nguonDungRef.current[nguon] = true;
+    dungDemGio();
+  };
+
+  const handleTiepTuc = (nguon) => {
+    nguonDungRef.current[nguon] = false;
+    chayLaiDemGio();
   };
 
   const iconMap = {
@@ -106,10 +122,14 @@ function ToastItem({ toast, onDong }) {
       }`}
       role={roleAttr}
       tabIndex={0}
-      onMouseEnter={handleTamDung}
-      onMouseLeave={handleTiepTuc}
-      onFocus={handleTamDung}
-      onBlur={handleTiepTuc}
+      onMouseEnter={() => handleTamDung('chuot')}
+      onMouseLeave={() => handleTiepTuc('chuot')}
+      onFocus={() => handleTamDung('banPhim')}
+      onBlur={(e) => {
+        // Tiêu điểm chuyển từ toast sang nút đóng bên trong thì vẫn coi là còn tiêu điểm
+        if (e.currentTarget.contains(e.relatedTarget)) return;
+        handleTiepTuc('banPhim');
+      }}
     >
       <div className="bn-toast-icon-wrapper" aria-hidden="true">
         {iconMap[toast.loai] || iconMap.thongTin}
@@ -197,7 +217,8 @@ export function ThongBaoProvider({ children }) {
        */
       loiTuApi: (err, macDinh, opt) => {
         const thongDiep = loiTuApi(err, macDinh);
-        themToast('loi', thongDiep, opt);
+        // Lỗi 401 do hết phiên đã có toast riêng (booknest_unauthorized), không hiện thêm toast trùng
+        if (!err?.daBaoHetPhien) themToast('loi', thongDiep, opt);
         return thongDiep;
       },
     };
@@ -295,7 +316,9 @@ export function ThongBaoProvider({ children }) {
 
   // 4. Bắt sự kiện hết hạn phiên đăng nhập từ axios interceptor
   useEffect(() => {
-    const handleUnauthorized = () => {
+    const handleUnauthorized = (e) => {
+      // Khách chưa đăng nhập bị 401 thì không báo "hết hạn phiên" (họ chưa từng có phiên)
+      if (!e.detail?.daCoToken) return;
       themToast(
         'canhBao',
         'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để tiếp tục.',
@@ -354,7 +377,6 @@ export function ThongBaoProvider({ children }) {
                   hopHienTai.nguyHiem ? 'bn-btn-danger' : 'bn-btn-primary'
                 }`}
                 onClick={() => dongHopHienTai(true)}
-                autoFocus
               >
                 {hopHienTai.nhanXacNhan}
               </button>
@@ -407,7 +429,6 @@ export function ThongBaoProvider({ children }) {
                 value={hopHienTai.giaTri || ''}
                 maxLength={hopHienTai.toiDa}
                 rows={3}
-                autoFocus
                 onChange={(e) =>
                   setHopHienTai((prev) =>
                     prev ? { ...prev, giaTri: e.target.value, loiInline: '' } : null
@@ -427,7 +448,6 @@ export function ThongBaoProvider({ children }) {
                 placeholder={hopHienTai.placeholder}
                 value={hopHienTai.giaTri || ''}
                 maxLength={hopHienTai.toiDa}
-                autoFocus
                 onChange={(e) =>
                   setHopHienTai((prev) =>
                     prev ? { ...prev, giaTri: e.target.value, loiInline: '' } : null

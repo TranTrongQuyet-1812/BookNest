@@ -143,7 +143,9 @@
   animation: bn-toast-progress-shrink linear forwards;
 }
 
-.bn-toast-item:hover .bn-toast-progress {
+/* Dừng thanh thời gian cùng lúc với đồng hồ đếm (rê chuột hoặc có tiêu điểm bàn phím) */
+.bn-toast-item:hover .bn-toast-progress,
+.bn-toast-item:focus-within .bn-toast-progress {
   animation-play-state: paused;
 }
 
@@ -422,7 +424,8 @@
   to { transform: scaleX(0); }
 }
 
-/* Hỗ trợ chế độ giảm chuyển động (Prefers-Reduced-Motion) */
+/* Giảm chuyển động: theo cài đặt hệ điều hành HOẶC nút "Giảm chuyển động" trong app
+   (nút này đặt thuộc tính data-giam-chuyen-dong lên <html>, xem frontend/src/utils/chuyenDong.js) */
 @media (prefers-reduced-motion: reduce) {
   .bn-toast-item,
   .bn-toast-item.bn-toast-leaving,
@@ -432,4 +435,13 @@
     animation: none !important;
     transition: none !important;
   }
+}
+
+[data-giam-chuyen-dong] .bn-toast-item,
+[data-giam-chuyen-dong] .bn-toast-item.bn-toast-leaving,
+[data-giam-chuyen-dong] .bn-dialog-backdrop,
+[data-giam-chuyen-dong] .bn-dialog-card,
+[data-giam-chuyen-dong] .bn-toast-progress {
+  animation: none !important;
+  transition: none !important;
 }

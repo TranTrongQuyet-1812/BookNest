@@ -69,7 +69,7 @@ export const ChiTietDonHang = () => {
       setDonHang(res.data.data);
       napThongTinThanhToan();
     } catch (err) {
-      setLoi(loiTuApi(err, 'Không tìm thấy thông tin đơn hàng này (IDOR Protected)'));
+      setLoi(loiTuApi(err, 'Không tìm thấy thông tin đơn hàng này'));
     } finally {
       setDangTai(false);
     }
