@@ -152,6 +152,7 @@ export const ChinhSachBaoMat = () => {
           </p>
           <ul style={{ listStyle: 'disc', paddingLeft: '1.5rem', color: 'var(--text-muted)' }} className="space-y-2">
             <li><strong>Thông tin đặt và giao hàng:</strong> Họ tên người nhận, số điện thoại, địa chỉ nhận hàng và địa chỉ email nhận thông báo.</li>
+            <li><strong>Đánh giá và nhận xét sách:</strong> Số sao, nội dung nhận xét và họ tên trong tài khoản của bạn được hiển thị công khai trên trang cuốn sách. Bạn có thể đổi họ tên ở trang hồ sơ; email, số điện thoại và địa chỉ không bao giờ hiển thị.</li>
             <li><strong>Thông tin tài khoản thành viên:</strong> Tên người dùng, email đăng nhập và mật khẩu (được mã hóa một chiều ngay khi lưu).</li>
             <li><strong>Dữ liệu cục bộ trình duyệt:</strong> Giỏ hàng của khách vãng lai được lưu trữ an toàn trong bộ nhớ máy của bạn (<code style={{ backgroundColor: 'var(--bg-surface)', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>localStorage</code>), chúng tôi không theo dõi hành vi cá nhân bên ngoài trang web.</li>
             <li>

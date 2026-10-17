@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import useCartStore from '../stores/cartStore';
-import { useThongBao, loiTuApi } from '@booknest/shared/thongbao';
+import { useThongBao, loiTuApi, ThongBaoTaiCho } from '@booknest/shared/thongbao';
 import StarRating from '../components/StarRating';
 import KeSachCuonNgang from '../components/KeSachCuonNgang';
 import { giaiMaHtmlEntities, lamSachChuoi } from '../utils/text';
@@ -35,43 +35,42 @@ export const ChiTietSach = () => {
 
   const [sach, setSach] = useState(null);
   const [sachCungTheLoai, setSachCungTheLoai] = useState([]);
-  const [danhGiaList, setDanhGiaList] = useState([]);
-  const [thongKeSao, setThongKeSao] = useState({ saoTrungBinh: 0, soLuotDanhGia: 0 });
   const [soLuong, setSoLuong] = useState(1);
   const [dangTai, setDangTai] = useState(true);
   const [loi, setLoi] = useState('');
   const { thongBao: tb } = useThongBao();
 
-  // Form gửi nhận xét (Verified Buyer)
-  const [soSaoDanhGia, setSoSaoDanhGia] = useState(5);
+  // Danh sách đánh giá & phân trang (DG03, DG04)
+  const [danhGiaList, setDanhGiaList] = useState([]);
+  const [thongKeSao, setThongKeSao] = useState({ saoTrungBinh: 0, soLuotDanhGia: 0 });
+  const [dangTaiDanhGia, setDangTaiDanhGia] = useState(false);
+  const [loiTaiDanhGia, setLoiTaiDanhGia] = useState('');
+  const [trangDanhGia, setTrangDanhGia] = useState(1);
+  const [tongSoTrangDanhGia, setTongSoTrangDanhGia] = useState(1);
+
+  // Quyền đánh giá của khách đang đăng nhập (DG05)
+  const [trangThaiToi, setTrangThaiToi] = useState(null);
+  const [dangKiemTraQuyen, setDangKiemTraQuyen] = useState(false);
+  const [loiKiemTraQuyen, setLoiKiemTraQuyen] = useState('');
+
+  // Form gửi nhận xét (Verified Buyer - DG06: mặc định 1 sao)
+  const [soSaoDanhGia, setSoSaoDanhGia] = useState(1);
   const [nhanXet, setNhanXet] = useState('');
   const [dangGuiDanhGia, setDangGuiDanhGia] = useState(false);
   const [loiDanhGia, setLoiDanhGia] = useState('');
-  const [thanhCongDanhGia, setThanhCongDanhGia] = useState('');
 
+  // 1. Tải thông tin cuốn sách và gợi ý cùng thể loại (DG03: tách riêng khỏi đánh giá)
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     let daHuy = false;
 
-    const napDuLieu = async () => {
+    const napDuLieuSach = async () => {
       try {
-        const [resSach, resDanhGia] = await Promise.all([
-          api.get(`/books/${id}`),
-          api.get(`/books/${id}/reviews`)
-        ]);
-
+        const resSach = await api.get(`/books/${id}`);
         if (daHuy) return;
 
         const sachData = resSach.data.data;
         setSach(sachData);
-
-        const dgData = resDanhGia.data.data;
-        setDanhGiaList(dgData?.danhSach || (Array.isArray(dgData) ? dgData : []));
-        if (dgData?.thongKe) {
-          setThongKeSao(dgData.thongKe);
-        } else if (resDanhGia.data.thongKe) {
-          setThongKeSao(resDanhGia.data.thongKe);
-        }
 
         // Tải gợi ý cùng thể loại nếu có
         if (sachData?.MaDanhMuc) {
@@ -89,11 +88,82 @@ export const ChiTietSach = () => {
       }
     };
 
-    napDuLieu();
+    napDuLieuSach();
     return () => {
       daHuy = true;
     };
   }, [id]);
+
+  // 2. Hàm nạp danh sách nhận xét độc lập (DG03 & DG04)
+  const napDanhGia = async (trang = 1, noiThem = false) => {
+    setLoiTaiDanhGia('');
+    setDangTaiDanhGia(true);
+    try {
+      const res = await api.get(`/books/${id}/reviews`, {
+        params: { page: trang, limit: 10 }
+      });
+      const dgData = res.data.data;
+      const danhSachMoi = dgData?.danhSach || (Array.isArray(dgData) ? dgData : []);
+
+      if (noiThem) {
+        setDanhGiaList((cu) => [...cu, ...danhSachMoi]);
+      } else {
+        setDanhGiaList(danhSachMoi);
+      }
+
+      if (dgData?.thongKe) {
+        setThongKeSao(dgData.thongKe);
+      } else if (res.data.thongKe) {
+        setThongKeSao(res.data.thongKe);
+      }
+
+      setTrangDanhGia(trang);
+      setTongSoTrangDanhGia(dgData?.phanTrang?.tongSoTrang || 1);
+    } catch (err) {
+      setLoiTaiDanhGia(loiTuApi(err, 'Không thể tải danh sách nhận xét'));
+    } finally {
+      setDangTaiDanhGia(false);
+    }
+  };
+
+  // Nạp trang đầu tiên khi đổi sách
+  useEffect(() => {
+    napDanhGia(1, false);
+  }, [id]);
+
+  // 3. Hàm kiểm tra quyền đánh giá và nạp nhận xét cũ của tôi (DG05)
+  const napTrangThaiToi = async () => {
+    if (!daDangNhap) {
+      setTrangThaiToi(null);
+      setLoiKiemTraQuyen('');
+      return;
+    }
+
+    setDangKiemTraQuyen(true);
+    setLoiKiemTraQuyen('');
+    try {
+      const res = await api.get(`/books/${id}/reviews/me`);
+      const duLieu = res.data.data;
+      setTrangThaiToi(duLieu);
+
+      // Điền sẵn nếu đã có đánh giá cũ
+      if (duLieu?.danhGiaCuaToi) {
+        setSoSaoDanhGia(duLieu.danhGiaCuaToi.SoSao || 1);
+        setNhanXet(duLieu.danhGiaCuaToi.NoiDung || '');
+      } else {
+        setSoSaoDanhGia(1);
+        setNhanXet('');
+      }
+    } catch (err) {
+      setLoiKiemTraQuyen(loiTuApi(err, 'Không thể kiểm tra quyền đánh giá sách'));
+    } finally {
+      setDangKiemTraQuyen(false);
+    }
+  };
+
+  useEffect(() => {
+    napTrangThaiToi();
+  }, [id, daDangNhap]);
 
   // Thêm sách vào giỏ hàng qua Zustand Store (Hỗ trợ cả Khách vãng lai & Khách hàng)
   const handleThemGioHang = async () => {
@@ -117,11 +187,10 @@ export const ChiTietSach = () => {
     }
   };
 
-  // Gửi đánh giá sách (Verified Buyer)
+  // Gửi hoặc cập nhật đánh giá sách (Verified Buyer - DG06)
   const handleGuiDanhGia = async (e) => {
     e.preventDefault();
     setLoiDanhGia('');
-    setThanhCongDanhGia('');
     setDangGuiDanhGia(true);
 
     try {
@@ -129,16 +198,9 @@ export const ChiTietSach = () => {
         soSao: soSaoDanhGia,
         noiDung: nhanXet.trim() || undefined
       });
-      setThanhCongDanhGia('Cảm ơn bạn đã gửi đánh giá! Nhận xét đã được ghi nhận.');
-      setNhanXet('');
-      const resDanhGia = await api.get(`/books/${id}/reviews`);
-      const dgData = resDanhGia.data.data;
-      setDanhGiaList(dgData?.danhSach || (Array.isArray(dgData) ? dgData : []));
-      if (dgData?.thongKe) {
-        setThongKeSao(dgData.thongKe);
-      } else if (resDanhGia.data.thongKe) {
-        setThongKeSao(resDanhGia.data.thongKe);
-      }
+      tb.thanhCong('Đã ghi nhận nhận xét của bạn');
+      // Làm mới trạng thái của tôi và nạp lại trang 1 danh sách đánh giá
+      await Promise.all([napTrangThaiToi(), napDanhGia(1, false)]);
     } catch (err) {
       setLoiDanhGia(loiTuApi(err, 'Bạn chỉ có thể đánh giá sau khi đã mua và nhận đơn hàng thành công'));
     } finally {
@@ -610,105 +672,15 @@ export const ChiTietSach = () => {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3rem' }}>
-          {/* CỘT FORM GỬI ĐÁNH GIÁ */}
+          {/* CỘT FORM GỬI ĐÁNH GIÁ (DG05 & DG06) */}
           <div>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-main)' }}>
-              Chia sẻ cảm nghĩ của bạn
+              {trangThaiToi?.coTheDanhGia && trangThaiToi?.danhGiaCuaToi
+                ? 'Cập nhật nhận xét của bạn'
+                : 'Chia sẻ cảm nghĩ của bạn'}
             </h3>
 
-            {loiDanhGia && (
-              <div style={{
-                padding: '0.75rem 1rem',
-                backgroundColor: 'var(--danger-light)',
-                color: 'var(--danger)',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: '0.85rem',
-                marginBottom: '1rem'
-              }}>
-                {loiDanhGia}
-              </div>
-            )}
-
-            {thanhCongDanhGia && (
-              <div style={{
-                padding: '0.75rem 1rem',
-                backgroundColor: 'var(--primary-light)',
-                color: 'var(--primary-dark)',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: '0.85rem',
-                marginBottom: '1rem'
-              }}>
-                {thanhCongDanhGia}
-              </div>
-            )}
-
-            {daDangNhap ? (
-              <form onSubmit={handleGuiDanhGia}>
-                <div style={{
-                  padding: '0.65rem 0.85rem',
-                  backgroundColor: 'var(--bg-surface)',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--border)',
-                  fontSize: '0.82rem',
-                  color: 'var(--text-muted)',
-                  marginBottom: '1rem'
-                }}>
-                  💡 <strong>Lưu ý:</strong> Theo chính sách BookNest, chỉ bạn đọc đã mua và nhận cuốn sách này thành công mới có thể gửi nhận xét.
-                </div>
-
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
-                    Mức độ yêu thích:
-                  </label>
-                  <StarRating
-                    rating={soSaoDanhGia}
-                    interactive={true}
-                    onRatingChange={(sao) => setSoSaoDanhGia(sao)}
-                    size={24}
-                  />
-                </div>
-
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
-                    Lời bình cảm nhận:
-                  </label>
-                  <textarea
-                    rows={4}
-                    placeholder="Hãy chia sẻ những rung cảm hoặc ấn tượng sâu sắc của bạn về tác phẩm này..."
-                    value={nhanXet}
-                    onChange={(e) => setNhanXet(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '1px solid var(--border)',
-                      borderRadius: 'var(--radius-sm)',
-                      backgroundColor: 'var(--bg-app)',
-                      fontSize: '0.9rem',
-                      color: 'var(--text-main)',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={dangGuiDanhGia}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    backgroundColor: 'var(--primary)',
-                    color: 'var(--primary-text)',
-                    borderRadius: 'var(--radius-sm)',
-                    fontWeight: 600,
-                    fontSize: '0.9rem',
-                    border: 'none',
-                    cursor: dangGuiDanhGia ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  {dangGuiDanhGia ? 'Đang gửi...' : 'Gửi Nhận Xét'}
-                </button>
-              </form>
-            ) : (
+            {!daDangNhap ? (
               <div style={{
                 padding: '1.25rem',
                 backgroundColor: 'var(--bg-surface)',
@@ -739,16 +711,187 @@ export const ChiTietSach = () => {
                   Đăng nhập ngay
                 </Link>
               </div>
-            )}
+            ) : dangKiemTraQuyen ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic', padding: '1rem 0' }}>
+                Đang kiểm tra quyền đánh giá tác phẩm...
+              </p>
+            ) : loiKiemTraQuyen ? (
+              <ThongBaoTaiCho
+                loai="loi"
+                hanhDong={
+                  <button
+                    type="button"
+                    onClick={napTrangThaiToi}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'inherit',
+                      textDecoration: 'underline',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      padding: 0
+                    }}
+                  >
+                    Thử lại
+                  </button>
+                }
+              >
+                {loiKiemTraQuyen}
+              </ThongBaoTaiCho>
+            ) : trangThaiToi?.lyDo === 'CHUA_MUA' ? (
+              <ThongBaoTaiCho loai="thongTin">
+                Bạn cần mua và nhận cuốn sách này thành công trước khi có thể gửi đánh giá.
+                <Link
+                  to="/orders"
+                  style={{
+                    display: 'inline-block',
+                    marginLeft: '0.4rem',
+                    color: 'inherit',
+                    fontWeight: 600,
+                    textDecoration: 'underline'
+                  }}
+                >
+                  Xem đơn hàng của bạn
+                </Link>
+              </ThongBaoTaiCho>
+            ) : trangThaiToi?.lyDo === 'BI_AN' ? (
+              <div>
+                <ThongBaoTaiCho loai="canhBao">
+                  Đánh giá của bạn về tác phẩm này đang bị quản trị viên tạm ẩn kiểm duyệt. Vui lòng liên hệ ban quản trị.
+                </ThongBaoTaiCho>
+                {trangThaiToi.danhGiaCuaToi && (
+                  <div style={{
+                    marginTop: '1rem',
+                    padding: '1rem',
+                    backgroundColor: 'var(--bg-surface)',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--border)'
+                  }}>
+                    <div style={{ marginBottom: '0.4rem' }}>
+                      <StarRating rating={trangThaiToi.danhGiaCuaToi.SoSao || 1} size={16} />
+                    </div>
+                    <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                      {trangThaiToi.danhGiaCuaToi.NoiDung || 'Không có lời bình.'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : trangThaiToi?.coTheDanhGia ? (
+              <form onSubmit={handleGuiDanhGia}>
+                {loiDanhGia && (
+                  <div style={{ marginBottom: '1rem' }}>
+                    <ThongBaoTaiCho loai="loi">
+                      {loiDanhGia}
+                    </ThongBaoTaiCho>
+                  </div>
+                )}
+
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                    Mức độ yêu thích:
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <StarRating
+                      rating={soSaoDanhGia}
+                      interactive={true}
+                      onRatingChange={(sao) => setSoSaoDanhGia(sao)}
+                      size={24}
+                    />
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--primary)' }}>
+                      Bạn đang chọn: {soSaoDanhGia} sao
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                      Lời bình cảm nhận:
+                    </label>
+                    <span style={{ fontSize: '0.78rem', color: nhanXet.length >= 1000 ? 'var(--danger)' : 'var(--text-sub)' }}>
+                      {nhanXet.length} / 1000 ký tự
+                    </span>
+                  </div>
+                  <textarea
+                    rows={4}
+                    maxLength={1000}
+                    placeholder="Hãy chia sẻ những rung cảm hoặc ấn tượng sâu sắc của bạn về tác phẩm này..."
+                    value={nhanXet}
+                    onChange={(e) => setNhanXet(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                      backgroundColor: 'var(--bg-app)',
+                      fontSize: '0.9rem',
+                      color: 'var(--text-main)',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={dangGuiDanhGia}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: 'var(--primary)',
+                    color: 'var(--primary-text)',
+                    borderRadius: 'var(--radius-sm)',
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    border: 'none',
+                    cursor: dangGuiDanhGia ? 'not-allowed' : 'pointer',
+                    boxShadow: 'var(--shadow-sm)',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {dangGuiDanhGia
+                    ? 'Đang gửi...'
+                    : trangThaiToi?.danhGiaCuaToi
+                    ? 'Cập nhật nhận xét'
+                    : 'Gửi Nhận Xét'}
+                </button>
+              </form>
+            ) : null}
           </div>
 
-          {/* CỘT DANH SÁCH NHẬN XÉT CỦA BẠN ĐỌC */}
+          {/* CỘT DANH SÁCH NHẬN XÉT CỦA BẠN ĐỌC (DG03 & DG04) */}
           <div>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-main)' }}>
-              Nhận xét đã đăng ({danhGiaList.length})
+              Nhận xét đã đăng ({thongKeSao.soLuotDanhGia || 0})
             </h3>
 
-            {danhGiaList.length === 0 ? (
+            {loiTaiDanhGia && (
+              <div style={{ marginBottom: '1rem' }}>
+                <ThongBaoTaiCho
+                  loai="loi"
+                  hanhDong={
+                    <button
+                      type="button"
+                      onClick={() => napDanhGia(trangDanhGia, false)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'inherit',
+                        textDecoration: 'underline',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        padding: 0
+                      }}
+                    >
+                      Thử lại
+                    </button>
+                  }
+                >
+                  {loiTaiDanhGia}
+                </ThongBaoTaiCho>
+              </div>
+            )}
+
+            {danhGiaList.length === 0 && !dangTaiDanhGia && !loiTaiDanhGia ? (
               <p style={{ color: 'var(--text-sub)', fontSize: '0.9rem', fontStyle: 'italic', padding: '1rem 0' }}>
                 Chưa có nhận xét nào cho cuốn sách này. Hãy là độc giả đầu tiên chia sẻ cảm nghĩ sau khi đọc nhé!
               </p>
@@ -793,6 +936,37 @@ export const ChiTietSach = () => {
                     </div>
                   );
                 })}
+
+                {/* Phân trang: Nút Xem thêm nhận xét (DG04) */}
+                {trangDanhGia < tongSoTrangDanhGia && (
+                  <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+                    <button
+                      type="button"
+                      disabled={dangTaiDanhGia}
+                      onClick={() => napDanhGia(trangDanhGia + 1, true)}
+                      style={{
+                        padding: '0.6rem 1.4rem',
+                        backgroundColor: 'var(--bg-surface)',
+                        color: 'var(--text-main)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-sm)',
+                        fontSize: '0.88rem',
+                        fontWeight: 600,
+                        cursor: dangTaiDanhGia ? 'not-allowed' : 'pointer',
+                        boxShadow: 'var(--shadow-sm)',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!dangTaiDanhGia) e.currentTarget.style.borderColor = 'var(--primary)';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!dangTaiDanhGia) e.currentTarget.style.borderColor = 'var(--border)';
+                      }}
+                    >
+                      {dangTaiDanhGia ? 'Đang nạp thêm...' : 'Xem thêm nhận xét'}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
