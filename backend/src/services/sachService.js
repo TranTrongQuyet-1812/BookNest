@@ -7,6 +7,25 @@ const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 const { chuaTuKhoa } = require('../utils/timKiem');
 const { ghiNhanThayDoi } = require('./lichSuThayDoiService');
 const anhBiaService = require('./anhBiaService');
+const { tinhGiaSauGiam } = require('../utils/giaBan');
+
+// Biểu thức SQL tính phần trăm giảm giá cao nhất đang có hiệu lực (GG04)
+const bieuThucPhanTramGiam = `(
+  SELECT MAX(ct.PhanTramGiam)
+  FROM ChuongTrinhGiamGia ct
+  INNER JOIN ChuongTrinhGiamGiaDoiTuong dt ON ct.MaChuongTrinh = dt.MaChuongTrinh
+  WHERE ct.DangHoatDong = 1 
+    AND ct.NgayBatDau <= GETDATE() 
+    AND ct.NgayKetThuc >= GETDATE()
+    AND (dt.MaSach = Sach.MaSach OR dt.MaDanhMuc = Sach.MaDanhMuc)
+)`;
+
+// Biểu thức SQL tính giá sau giảm làm tròn xuống hàng trăm đồng (GG04)
+const bieuThucGiaSauGiam = `CASE 
+  WHEN ${bieuThucPhanTramGiam} IS NOT NULL
+  THEN FLOOR(CAST(Sach.GiaBan AS BIGINT) * (100 - ${bieuThucPhanTramGiam}) / 10000.0) * 100
+  ELSE Sach.GiaBan
+END`;
 
 // Lấy danh sách sách công khai (tìm kiếm, lọc giá, lọc danh mục, phân trang)
 async function layDanhSachSach({
@@ -41,14 +60,19 @@ async function layDanhSachSach({
   }
 
   if (minPrice !== undefined || maxPrice !== undefined) {
-    dieuKien.GiaBan = {};
-    if (minPrice !== undefined) dieuKien.GiaBan[Op.gte] = parseFloat(minPrice);
-    if (maxPrice !== undefined) dieuKien.GiaBan[Op.lte] = parseFloat(maxPrice);
+    const cacDieuKienGia = [];
+    if (minPrice !== undefined) {
+      cacDieuKienGia.push(sequelize.literal(`${bieuThucGiaSauGiam} >= ${parseFloat(minPrice)}`));
+    }
+    if (maxPrice !== undefined) {
+      cacDieuKienGia.push(sequelize.literal(`${bieuThucGiaSauGiam} <= ${parseFloat(maxPrice)}`));
+    }
+    dieuKien[Op.and] = dieuKien[Op.and] ? [...dieuKien[Op.and], ...cacDieuKienGia] : cacDieuKienGia;
   }
 
   let sapXep = [['NgayTao', 'DESC']];
-  if (sort === 'price_asc') sapXep = [['GiaBan', 'ASC']];
-  if (sort === 'price_desc') sapXep = [['GiaBan', 'DESC']];
+  if (sort === 'price_asc') sapXep = [[sequelize.literal(bieuThucGiaSauGiam), 'ASC']];
+  if (sort === 'price_desc') sapXep = [[sequelize.literal(bieuThucGiaSauGiam), 'DESC']];
 
   const { rows, count } = await Sach.findAndCountAll({
     where: dieuKien,
@@ -69,10 +93,28 @@ async function layDanhSachSach({
             '(SELECT COUNT(*) FROM DanhGia WHERE DanhGia.MaSach = Sach.MaSach AND DanhGia.DaAn = 0)'
           ),
           'soLuotDanhGia'
-        ]
+        ],
+        [sequelize.literal(bieuThucPhanTramGiam), 'PhanTramGiam'],
+        [sequelize.literal(bieuThucGiaSauGiam), 'GiaSauGiam']
       ]
     }
   });
+
+  // Gán chuẩn hóa PhanTramGiam và GiaSauGiam cho từng cuốn sách
+  for (const sach of rows) {
+    const ptRaw = typeof sach.get === 'function' ? sach.get('PhanTramGiam') : sach.PhanTramGiam;
+    const pt = ptRaw !== undefined && ptRaw !== null ? Number(ptRaw) : null;
+    const giaSauRaw = typeof sach.get === 'function' ? sach.get('GiaSauGiam') : sach.GiaSauGiam;
+    const giaSau = giaSauRaw !== undefined && giaSauRaw !== null ? Number(giaSauRaw) : tinhGiaSauGiam(sach.GiaBan, pt);
+
+    if (typeof sach.setDataValue === 'function') {
+      sach.setDataValue('PhanTramGiam', pt);
+      sach.setDataValue('GiaSauGiam', giaSau);
+    } else {
+      sach.PhanTramGiam = pt;
+      sach.GiaSauGiam = giaSau;
+    }
+  }
 
   return {
     danhSach: rows,
@@ -102,13 +144,28 @@ async function layChiTietSach(maSach, laAdmin = false) {
             '(SELECT COUNT(*) FROM DanhGia WHERE DanhGia.MaSach = Sach.MaSach AND DanhGia.DaAn = 0)'
           ),
           'soLuotDanhGia'
-        ]
+        ],
+        [sequelize.literal(bieuThucPhanTramGiam), 'PhanTramGiam'],
+        [sequelize.literal(bieuThucGiaSauGiam), 'GiaSauGiam']
       ]
     }
   });
 
   if (!sach || (!laAdmin && sach.DaAn)) {
     throw LoiNghiepVu.khongTimThay('Không tìm thấy cuốn sách này');
+  }
+
+  const ptRaw = typeof sach.get === 'function' ? sach.get('PhanTramGiam') : sach.PhanTramGiam;
+  const pt = ptRaw !== undefined && ptRaw !== null ? Number(ptRaw) : null;
+  const giaSauRaw = typeof sach.get === 'function' ? sach.get('GiaSauGiam') : sach.GiaSauGiam;
+  const giaSau = giaSauRaw !== undefined && giaSauRaw !== null ? Number(giaSauRaw) : tinhGiaSauGiam(sach.GiaBan, pt);
+
+  if (typeof sach.setDataValue === 'function') {
+    sach.setDataValue('PhanTramGiam', pt);
+    sach.setDataValue('GiaSauGiam', giaSau);
+  } else {
+    sach.PhanTramGiam = pt;
+    sach.GiaSauGiam = giaSau;
   }
 
   return sach;

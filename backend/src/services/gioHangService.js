@@ -4,6 +4,8 @@
  */
 const { GioHang, Sach } = require('../models');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
+const giamGiaService = require('./giamGiaService');
+const { tinhGiaSauGiam } = require('../utils/giaBan');
 
 // Lấy danh sách sản phẩm trong giỏ của khách hàng kèm thông tin tạm tính và cảnh báo
 async function layGioHang(maKhachHang) {
@@ -13,18 +15,23 @@ async function layGioHang(maKhachHang) {
       {
         model: Sach,
         as: 'sach',
-        attributes: ['MaSach', 'TenSach', 'TacGia', 'GiaBan', 'SoLuongTon', 'AnhBia', 'DaAn']
+        attributes: ['MaSach', 'TenSach', 'TacGia', 'GiaBan', 'SoLuongTon', 'AnhBia', 'DaAn', 'MaDanhMuc']
       }
     ],
     order: [['NgayThem', 'DESC']]
   });
+
+  const danhSachSachTrongGio = cacMon.map(m => m.sach).filter(Boolean);
+  const banDoGiamGia = await giamGiaService.layPhanTramDangApDung(danhSachSachTrongGio);
 
   let tongTienTamTinh = 0;
   let tongSoLuong = 0;
 
   const danhSachMon = cacMon.map(mon => {
     const sach = mon.sach;
-    const donGia = sach ? parseFloat(sach.GiaBan) : 0;
+    const giaNiemYet = sach ? parseFloat(sach.GiaBan) : 0;
+    const ptGiam = sach ? (banDoGiamGia[sach.MaSach] || 0) : 0;
+    const donGia = tinhGiaSauGiam(giaNiemYet, ptGiam);
     const soLuong = mon.SoLuong;
     const thanhTien = donGia * soLuong;
 
@@ -41,6 +48,8 @@ async function layGioHang(maKhachHang) {
     return {
       maSach: mon.MaSach,
       soLuong: mon.SoLuong,
+      giaNiemYet,
+      phanTramGiam: ptGiam > 0 ? ptGiam : null,
       donGia,
       thanhTien,
       ngayThem: mon.NgayThem,
@@ -49,7 +58,9 @@ async function layGioHang(maKhachHang) {
         tenSach: sach.TenSach,
         tacGia: sach.TacGia,
         anhBia: sach.AnhBia,
-        giaBan: donGia,
+        giaBan: giaNiemYet,
+        giaSauGiam: donGia,
+        phanTramGiam: ptGiam > 0 ? ptGiam : null,
         soLuongTon: sach.SoLuongTon,
         daAn: sach.DaAn
       } : null,

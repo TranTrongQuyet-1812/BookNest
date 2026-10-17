@@ -19,6 +19,8 @@ const { sinhMaTraCuu } = require('../utils/maTraCuu');
 const { tinhNgayHetHan, sinhMaGiaoDich } = require('../utils/thanhToanQr');
 const emailService = require('./emailService');
 const { phatSuKien } = require('../realtime/socket');
+const giamGiaService = require('./giamGiaService');
+const { tinhGiaSauGiam } = require('../utils/giaBan');
 
 // Phát sự kiện Socket.IO an toàn tới phòng nhân viên và phòng khách hàng (không làm gián đoạn transaction CSDL nếu socket gặp lỗi)
 function baoNhanVienRealtime(tenSuKien, duLieu) {
@@ -99,6 +101,14 @@ async function truTonKhoVaChotChiTiet(cacMon, transaction) {
     .map(([maSach, soLuong]) => ({ maSach, soLuong }))
     .sort((a, b) => a.maSach - b.maSach);
 
+  // Lấy trước thông tin giảm giá đang có hiệu lực cho tất cả sách trong đơn
+  const danhSachSachTrongDon = await Sach.findAll({
+    where: { MaSach: { [Op.in]: cacMonSapXep.map(m => m.maSach) } },
+    attributes: ['MaSach', 'MaDanhMuc', 'GiaBan'],
+    transaction
+  });
+  const banDoGiamGia = await giamGiaService.layPhanTramDangApDung(danhSachSachTrongDon);
+
   for (const mon of cacMonSapXep) {
     const maSach = mon.maSach;
     const soLuong = mon.soLuong;
@@ -120,7 +130,8 @@ async function truTonKhoVaChotChiTiet(cacMon, transaction) {
       );
     }
 
-    const donGia = Number(sach.GiaBan);
+    const ptGiam = banDoGiamGia[maSach] || 0;
+    const donGia = tinhGiaSauGiam(sach.GiaBan, ptGiam);
     tongTien += donGia * soLuong;
     danhSachChiTiet.push({ MaSach: maSach, SoLuong: soLuong, DonGia: donGia });
   }
@@ -765,6 +776,7 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
 
 module.exports = {
   kiemTraChuyenTrangThai,
+  truTonKhoVaChotChiTiet,
   datHang,
   datHangKhachVangLai,
   taoDonQuay,

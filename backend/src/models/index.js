@@ -19,6 +19,8 @@ const ThanhToan = require('./ThanhToan');
 const NhatKyWebhookPayos = require('./NhatKyWebhookPayos');
 const CauHinhHeThong = require('./CauHinhHeThong');
 const NhatKyChatbot = require('./NhatKyChatbot');
+const ChuongTrinhGiamGia = require('./ChuongTrinhGiamGia');
+const ChuongTrinhGiamGiaDoiTuong = require('./ChuongTrinhGiamGiaDoiTuong');
 
 // ==========================================
 // 1. Quan hệ DanhMuc ↔ Sach (1 - n)
@@ -110,6 +112,15 @@ CauHinhHeThong.belongsTo(NhanVien, { foreignKey: 'MaNhanVienCapNhat', as: 'nhanV
 KhachHang.hasMany(NhatKyChatbot, { foreignKey: 'MaKhachHang', as: 'nhatKyChatbot' });
 NhatKyChatbot.belongsTo(KhachHang, { foreignKey: 'MaKhachHang', as: 'khachHang' });
 
+// ==========================================
+// 10. Quan hệ Chương trình giảm giá (GG02)
+// ==========================================
+ChuongTrinhGiamGia.hasMany(ChuongTrinhGiamGiaDoiTuong, { foreignKey: 'MaChuongTrinh', as: 'danhSachDoiTuong' });
+ChuongTrinhGiamGiaDoiTuong.belongsTo(ChuongTrinhGiamGia, { foreignKey: 'MaChuongTrinh', as: 'chuongTrinh' });
+ChuongTrinhGiamGiaDoiTuong.belongsTo(Sach, { foreignKey: 'MaSach', as: 'sach' });
+ChuongTrinhGiamGiaDoiTuong.belongsTo(DanhMuc, { foreignKey: 'MaDanhMuc', as: 'danhMuc' });
+ChuongTrinhGiamGia.belongsTo(NhanVien, { foreignKey: 'MaNhanVienTao', as: 'nhanVienTao' });
+
 module.exports = {
   sequelize,
   NhanVien,
@@ -127,5 +138,7 @@ module.exports = {
   ThanhToan,
   NhatKyWebhookPayos,
   CauHinhHeThong,
-  NhatKyChatbot
+  NhatKyChatbot,
+  ChuongTrinhGiamGia,
+  ChuongTrinhGiamGiaDoiTuong
 };

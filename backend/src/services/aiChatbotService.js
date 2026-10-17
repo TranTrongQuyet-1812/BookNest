@@ -9,6 +9,8 @@ const { chuaTuKhoa, chuaTuKhoaLinhHoat, locTuKhoaThucSu, tinhDiemTrungKhop, boDa
 const { goiNhaCungCapAI } = require('./trinhCungCapAI');
 const { layNguCanhChinhSachChoAI } = require('./chinhSachService');
 const cauHinhHeThongService = require('./cauHinhHeThongService');
+const giamGiaService = require('./giamGiaService');
+const { tinhGiaSauGiam } = require('../utils/giaBan');
 
 // Trích xuất cuốn sách gần nhất mà AI đã hỏi hoặc gợi ý trong lịch sử chat
 function trichXuatSachGanNhatTuLichSu(lichSuChat) {
@@ -279,6 +281,8 @@ async function thucThiTimSach({ tu_khoa, the_loai, gia_toi_da }, tinNhanGoc = ''
           include: [{ model: DanhMuc, as: 'danhMuc', attributes: ['MaDanhMuc', 'TenDanhMuc'] }]
         });
         if (sach) {
+          const pt = (await giamGiaService.layPhanTramDangApDung([sach]))[sach.MaSach] || 0;
+          const giaSau = tinhGiaSauGiam(sach.GiaBan, pt);
           return {
             timThay: true,
             soLuong: 1,
@@ -290,7 +294,9 @@ async function thucThiTimSach({ tu_khoa, the_loai, gia_toi_da }, tinNhanGoc = ''
               maSach: sach.MaSach,
               tenSach: sach.TenSach,
               tacGia: sach.TacGia,
-              giaBan: sach.GiaBan,
+              giaBan: giaSau,
+              giaNiemYet: sach.GiaBan,
+              phanTramGiam: pt > 0 ? pt : null,
               conHang: sach.SoLuongTon > 0,
               soLuongTon: sach.SoLuongTon,
               theLoai: sach.danhMuc?.TenDanhMuc || 'Khác',
@@ -356,30 +362,44 @@ async function thucThiTimSach({ tu_khoa, the_loai, gia_toi_da }, tinNhanGoc = ''
     const khopChinhXac = cauKhachKhongDau.includes(tenSachDauKhongDau);
     const canXacNhan = !khopChinhXac;
 
-    const giaFmt = new Intl.NumberFormat('vi-VN').format(danhSach[0].GiaBan);
-    const tacGiaFmt = danhSach[0].TacGia || 'Đang cập nhật';
+    const banDoGiamGia = await giamGiaService.layPhanTramDangApDung(danhSach);
+    const sachDau = danhSach[0];
+    const ptDau = banDoGiamGia[sachDau.MaSach] || 0;
+    const giaSauDau = tinhGiaSauGiam(sachDau.GiaBan, ptDau);
+    const giaFmt = new Intl.NumberFormat('vi-VN').format(giaSauDau);
+    const giaGocFmt = new Intl.NumberFormat('vi-VN').format(sachDau.GiaBan);
+    const chuoiGiaDau = ptDau > 0 
+      ? `Giá ưu đãi: ${giaFmt}đ (đang giảm ${ptDau}% từ ${giaGocFmt}đ)`
+      : `Giá: ${giaFmt}đ`;
+    const tacGiaFmt = sachDau.TacGia || 'Đang cập nhật';
     const thongDiep = canXacNhan
-      ? `GỢI Ý TÌM KIẾM GẦN ĐÚNG: Tìm thấy cuốn sách phù hợp nhất là "${danhSach[0].TenSach}" (Tác giả: ${tacGiaFmt}, Giá: ${giaFmt}đ). Vì khách hàng gõ sai chính tả, không dấu hoặc chỉ gõ một phần tên, BẠN PHẢI HỎI XÁC NHẬN VỚI KHÁCH BẰNG CÂU: "Dạ, có phải bạn đang muốn tìm cuốn sách '${danhSach[0].TenSach}' (Tác giả: ${tacGiaFmt}, Giá: ${giaFmt}đ) không ạ?" trước khi thêm vào giỏ hoặc lên đơn.`
-      : `Đã tìm thấy chính xác cuốn sách: "${danhSach[0].TenSach}" (Tác giả: ${tacGiaFmt}, Giá: ${giaFmt}đ).`;
+      ? `GỢI Ý TÌM KIẾM GẦN ĐÚNG: Tìm thấy cuốn sách phù hợp nhất là "${sachDau.TenSach}" (Tác giả: ${tacGiaFmt}, ${chuoiGiaDau}). Vì khách hàng gõ sai chính tả, không dấu hoặc chỉ gõ một phần tên, BẠN PHẢI HỎI XÁC NHẬN VỚI KHÁCH BẰNG CÂU: "Dạ, có phải bạn đang muốn tìm cuốn sách '${sachDau.TenSach}' (Tác giả: ${tacGiaFmt}, ${chuoiGiaDau}) không ạ?" trước khi thêm vào giỏ hoặc lên đơn.`
+      : `Đã tìm thấy chính xác cuốn sách: "${sachDau.TenSach}" (Tác giả: ${tacGiaFmt}, ${chuoiGiaDau}).`;
 
     return {
       timThay: true,
       soLuong: danhSach.length,
       khopChinhXac,
       canXacNhan,
-      cuonGoiY: danhSach[0].TenSach,
+      cuonGoiY: sachDau.TenSach,
       thongDiep,
-      danhSach: danhSach.map(s => ({
-        maSach: s.MaSach,
-        tenSach: s.TenSach,
-        tacGia: s.TacGia,
-        giaBan: s.GiaBan,
-        conHang: s.SoLuongTon > 0,
-        soLuongTon: s.SoLuongTon,
-        theLoai: s.danhMuc?.TenDanhMuc || 'Khác',
-        hinhAnh: s.AnhBia,
-        moTaNgan: s.MoTa ? s.MoTa.substring(0, 100) + '...' : ''
-      }))
+      danhSach: danhSach.map(s => {
+        const pt = banDoGiamGia[s.MaSach] || 0;
+        const giaSau = tinhGiaSauGiam(s.GiaBan, pt);
+        return {
+          maSach: s.MaSach,
+          tenSach: s.TenSach,
+          tacGia: s.TacGia,
+          giaBan: giaSau,
+          giaNiemYet: s.GiaBan,
+          phanTramGiam: pt > 0 ? pt : null,
+          conHang: s.SoLuongTon > 0,
+          soLuongTon: s.SoLuongTon,
+          theLoai: s.danhMuc?.TenDanhMuc || 'Khác',
+          hinhAnh: s.AnhBia,
+          moTaNgan: s.MoTa ? s.MoTa.substring(0, 100) + '...' : ''
+        };
+      })
     };
   } catch (err) {
     return { timThay: false, loi: 'Lỗi tra cứu dữ liệu sách: ' + err.message };
@@ -421,11 +441,16 @@ async function thucThiKiemTraTonKho({ ma_sach, ten_sach }, tinNhanGoc = '') {
       return { tonTai: false, thongDiep: 'Không tìm thấy thông tin cuốn sách này trong kho.' };
     }
 
+    const pt = (await giamGiaService.layPhanTramDangApDung([sach]))[sach.MaSach] || 0;
+    const giaSau = tinhGiaSauGiam(sach.GiaBan, pt);
+
     return {
       tonTai: true,
       maSach: sach.MaSach,
       tenSach: sach.TenSach,
-      giaBan: sach.GiaBan,
+      giaBan: giaSau,
+      giaNiemYet: sach.GiaBan,
+      phanTramGiam: pt > 0 ? pt : null,
       soLuongTon: sach.SoLuongTon,
       conHang: sach.SoLuongTon > 0,
       trangThaiKho: sach.SoLuongTon > 10 ? 'Còn nhiều hàng' : (sach.SoLuongTon > 0 ? `Chỉ còn ${sach.SoLuongTon} cuốn` : 'Tạm hết hàng')
@@ -540,14 +565,18 @@ async function thucThiSoanThanhToan({ danh_sach_sach, ten_nguoi_nhan, so_dien_th
         };
       }
 
-      const thanhTien = sach.GiaBan * soLuong;
+      const pt = (await giamGiaService.layPhanTramDangApDung([sach]))[sach.MaSach] || 0;
+      const donGia = tinhGiaSauGiam(sach.GiaBan, pt);
+      const thanhTien = donGia * soLuong;
       tamTinh += thanhTien;
 
       itemsThanhToan.push({
         maSach: sach.MaSach,
         tenSach: sach.TenSach,
         hinhAnh: sach.AnhBia,
-        giaBan: sach.GiaBan,
+        giaBan: donGia,
+        giaNiemYet: sach.GiaBan,
+        phanTramGiam: pt > 0 ? pt : null,
         soLuong,
         thanhTien
       });
@@ -563,7 +592,7 @@ async function thucThiSoanThanhToan({ danh_sach_sach, ten_nguoi_nhan, so_dien_th
     if (!coThongTinNhan) {
       const sachDau = itemsThanhToan[0];
       const tenSachHienThi = sachDau ? sachDau.tenSach : (sachHienTai || 'sách');
-      const giaBanHienThi = sachDau ? sachDau.giaBan.toLocaleString('vi-VN') + 'đ' : '';
+      const giaBanHienThi = sachDau ? (sachDau.phanTramGiam ? `${sachDau.giaBan.toLocaleString('vi-VN')}đ (đang giảm ${sachDau.phanTramGiam}%)` : `${sachDau.giaBan.toLocaleString('vi-VN')}đ`) : '';
       return {
         hopLe: false,
         canDienThongTin: true,
@@ -667,6 +696,12 @@ async function thucThiThemVaoGioHang({ ma_sach, ten_sach, so_luong = 1 }, tinNha
 
     laKhopChinhXac = daKhopTenTronVen || Boolean(laXacNhanSachHienTai);
 
+    const pt = (await giamGiaService.layPhanTramDangApDung([sach]))[sach.MaSach] || 0;
+    const giaSau = tinhGiaSauGiam(sach.GiaBan, pt);
+    const giaFmt = new Intl.NumberFormat('vi-VN').format(giaSau);
+    const giaGocFmt = new Intl.NumberFormat('vi-VN').format(sach.GiaBan);
+    const chuoiGia = pt > 0 ? `Giá ưu đãi: ${giaFmt}đ (đang giảm ${pt}% từ ${giaGocFmt}đ)` : `Giá: ${giaFmt}đ`;
+
     // Nếu tên sách chỉ là gợi ý hoặc nghi ngờ (khách gõ sai chính tả, không dấu hoặc chỉ gõ một nửa tên)
     // TUYỆT ĐỐI KHÔNG tự tiện thêm vào giỏ hàng ngay mà phải ép AI hỏi xác nhận lại với khách!
     if (!laKhopChinhXac) {
@@ -675,8 +710,10 @@ async function thucThiThemVaoGioHang({ ma_sach, ten_sach, so_luong = 1 }, tinNha
         canXacNhan: true,
         cuonGoiY: sach.TenSach,
         maSach: sach.MaSach,
-        giaBan: sach.GiaBan,
-        thongDiep: `Chưa thể thêm vào giỏ hàng vì tựa sách bạn yêu cầu chỉ khớp gần đúng với cuốn "${sach.TenSach}" (Giá: ${sach.GiaBan}đ). Bạn PHẢI in ra câu hỏi xác nhận lại với khách hàng: "Dạ, có phải bạn đang muốn tìm cuốn sách '${sach.TenSach}' không ạ?" trước khi thêm vào giỏ.`
+        giaBan: giaSau,
+        giaNiemYet: sach.GiaBan,
+        phanTramGiam: pt > 0 ? pt : null,
+        thongDiep: `Chưa thể thêm vào giỏ hàng vì tựa sách bạn yêu cầu chỉ khớp gần đúng với cuốn "${sach.TenSach}" (${chuoiGia}). Bạn PHẢI in ra câu hỏi xác nhận lại với khách hàng: "Dạ, có phải bạn đang muốn tìm cuốn sách '${sach.TenSach}' không ạ?" trước khi thêm vào giỏ.`
       };
     }
 
@@ -694,7 +731,9 @@ async function thucThiThemVaoGioHang({ ma_sach, ten_sach, so_luong = 1 }, tinNha
       sach: {
         maSach: sach.MaSach,
         tenSach: sach.TenSach,
-        giaBan: sach.GiaBan,
+        giaBan: giaSau,
+        giaNiemYet: sach.GiaBan,
+        phanTramGiam: pt > 0 ? pt : null,
         hinhAnh: sach.AnhBia,
         soLuong: soLuongMua
       },
