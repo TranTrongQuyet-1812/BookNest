@@ -51,7 +51,9 @@ export const QuanLySach = () => {
     gia: '',
     soLuongTon: 0,
     moTa: '',
-    hinhAnh: ''
+    hinhAnh: '',
+    tenBo: '',
+    tap: ''
   });
 
   // Modal Danh Mục
@@ -60,6 +62,9 @@ export const QuanLySach = () => {
 
   // Danh sách gợi ý tác giả có sẵn (AT13)
   const [goiYTacGia, setGoiYTacGia] = useState([]);
+
+  // Danh sách gợi ý tên bộ sách có sẵn (AT08)
+  const [goiYTenBo, setGoiYTenBo] = useState([]);
 
   // Tải danh sách tác giả gợi ý theo từ khóa người dùng đang gõ (debounce 250ms)
   useEffect(() => {
@@ -86,6 +91,32 @@ export const QuanLySach = () => {
 
     return () => clearTimeout(timer);
   }, [formSach.tacGia, modalSachMo]);
+
+  // Tải danh sách tên bộ sách gợi ý (debounce 250ms) (AT08)
+  useEffect(() => {
+    if (!modalSachMo) {
+      setGoiYTenBo([]);
+      return;
+    }
+    const tuKhoa = (formSach.tenBo || '').trim();
+    if (tuKhoa.length < 2) {
+      setGoiYTenBo([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.get('/books/series', { params: { search: tuKhoa, limit: 15 } });
+        if (res.data?.data) {
+          setGoiYTenBo(res.data.data);
+        }
+      } catch {
+        // Lỗi gợi ý không làm gián đoạn nhập liệu
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [formSach.tenBo, modalSachMo]);
 
   const taiLai = () => setLanTai((n) => n + 1);
 
@@ -159,7 +190,9 @@ export const QuanLySach = () => {
       gia: '',
       soLuongTon: 0,
       moTa: '',
-      hinhAnh: ''
+      hinhAnh: '',
+      tenBo: '',
+      tap: ''
     });
     setModalSachMo(true);
   };
@@ -174,7 +207,28 @@ export const QuanLySach = () => {
       gia: sach.GiaBan ?? '',
       soLuongTon: sach.SoLuongTon ?? 0,
       moTa: sach.MoTa ?? '',
-      hinhAnh: sach.AnhBia ?? ''
+      hinhAnh: sach.AnhBia ?? '',
+      tenBo: sach.TenBo ?? '',
+      tap: sach.Tap != null ? String(sach.Tap) : ''
+    });
+    setModalSachMo(true);
+  };
+
+  // Mở modal thêm tập mới cho bộ sách có sẵn (AT08)
+  const moModalThemTap = (sachGoc) => {
+    const tapHienTai = Number(sachGoc.Tap || 1);
+    const tapTiepTheo = tapHienTai + 1;
+    setSachDangSua(null);
+    setFormSach({
+      tieuDe: `${sachGoc.TenBo} - Tập ${tapTiepTheo}`,
+      tacGia: sachGoc.TacGia ?? '',
+      maDanhMuc: sachGoc.MaDanhMuc ?? '',
+      gia: sachGoc.GiaBan ?? '',
+      soLuongTon: 0,
+      moTa: sachGoc.MoTa ?? '',
+      hinhAnh: '',
+      tenBo: sachGoc.TenBo ?? '',
+      tap: String(tapTiepTheo)
     });
     setModalSachMo(true);
   };
@@ -187,6 +241,14 @@ export const QuanLySach = () => {
       return;
     }
     try {
+      // Kiểm tra tính hợp lệ của tập và bộ sách (AT03, AT08)
+      const tenBoNhap = formSach.tenBo?.trim() || null;
+      const tapNhap = formSach.tap ? Number(formSach.tap) : null;
+      if (tapNhap && !tenBoNhap) {
+        tb.canhBao('Sách có số tập thì phải có tên bộ');
+        return;
+      }
+
       const payload = {
         tenSach: formSach.tieuDe,
         tacGia: formSach.tacGia,
@@ -194,7 +256,9 @@ export const QuanLySach = () => {
         giaBan: Number(formSach.gia),
         soLuongTon: Number(formSach.soLuongTon || 0),
         moTa: formSach.moTa || undefined,
-        anhBia: formSach.hinhAnh || undefined
+        anhBia: formSach.hinhAnh || undefined,
+        tenBo: tenBoNhap,
+        tap: tapNhap
       };
 
       const maSach = sachDangSua ? sachDangSua.MaSach : null;
@@ -350,9 +414,28 @@ export const QuanLySach = () => {
                     <td style={{ fontWeight: 600, color: 'var(--adm-text-muted)' }} className="tabular-nums">#{ma}</td>
                     <td>
                       <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--adm-text-main)' }}>{ten}</div>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)' }}>
-                        Tác giả: {tg}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)' }}>
+                          Tác giả: {tg}
+                        </span>
+                        {sach.TenBo && (
+                          <span
+                            className="badge badge-role"
+                            style={{ fontSize: '0.7rem', padding: '1px 6px', fontWeight: 600 }}
+                            title={`Thuộc bộ sách: ${sach.TenBo}`}
+                          >
+                            Bộ: {sach.TenBo}
+                          </span>
+                        )}
+                        {sach.Tap != null && (
+                          <span
+                            className="badge badge-delivered"
+                            style={{ fontSize: '0.7rem', padding: '1px 6px', fontWeight: 600 }}
+                          >
+                            Tập {sach.Tap}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td>
                       <span className="badge badge-role" style={{ fontSize: '0.72rem' }}>
@@ -378,9 +461,24 @@ export const QuanLySach = () => {
                       )}
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <div className="inline-flex gap-2">
+                      <div className="inline-flex gap-2" style={{ flexWrap: 'nowrap', justifyContent: 'flex-end' }}>
                         {coQuyenSuaSach ? (
                           <>
+                            {sach.TenBo && (
+                              <button
+                                onClick={() => moModalThemTap(sach)}
+                                className="btn btn-outline btn-sm"
+                                style={{
+                                  borderColor: 'var(--adm-primary)',
+                                  color: 'var(--adm-primary)',
+                                  padding: '0.25rem 0.5rem',
+                                  fontSize: '0.78rem'
+                                }}
+                                title={`Thêm tập tiếp theo cho bộ "${sach.TenBo}"`}
+                              >
+                                <Plus size={13} /> Thêm tập
+                              </button>
+                            )}
                             <button
                               onClick={() => moModalSuaSach(sach)}
                               className="btn btn-outline btn-sm"
@@ -487,6 +585,43 @@ export const QuanLySach = () => {
                       );
                     })}
                   </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="form-group">
+                  <label className="form-label">Tên bộ sách (nếu có)</label>
+                  <input
+                    type="text"
+                    disabled={!coQuyenSuaSach}
+                    className="form-input"
+                    placeholder="Để trống nếu là sách lẻ"
+                    value={formSach.tenBo}
+                    onChange={(e) => setFormSach({ ...formSach, tenBo: e.target.value })}
+                    list="goi-y-ten-bo-list"
+                    autoComplete="off"
+                  />
+                  <datalist id="goi-y-ten-bo-list">
+                    {goiYTenBo.map((tbItem) => (
+                      <option key={tbItem} value={tbItem} />
+                    ))}
+                  </datalist>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">
+                    Số tập {formSach.tenBo?.trim() ? '*' : ''}
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    disabled={!coQuyenSuaSach || !formSach.tenBo?.trim()}
+                    className="form-input"
+                    placeholder={formSach.tenBo?.trim() ? 'Ví dụ: 1, 2...' : 'Nhập tên bộ trước'}
+                    value={formSach.tap}
+                    onChange={(e) => setFormSach({ ...formSach, tap: e.target.value })}
+                  />
                 </div>
               </div>
 

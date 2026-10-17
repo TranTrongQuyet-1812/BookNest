@@ -4,7 +4,7 @@ import api from '@booknest/shared/api';
 import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
 const nhan = (value) => value == null || value === '' ? '—' : value;
-const nguoiDungTruong = { TenSach: 'Tên sách', TacGia: 'Tác giả', MoTa: 'Mô tả', GiaBan: 'Giá bán', NguongCanhBao: 'Ngưỡng cảnh báo', AnhBia: 'Ảnh bìa', MaDanhMuc: 'Danh mục', DaAn: 'Trạng thái', TenDanhMuc: 'Tên danh mục', THANH_TOAN_QR_BAT: 'Thanh toán QR' };
+const nguoiDungTruong = { TenSach: 'Tên sách', TacGia: 'Tác giả', MoTa: 'Mô tả', GiaBan: 'Giá bán', NguongCanhBao: 'Ngưỡng cảnh báo', AnhBia: 'Ảnh bìa', MaDanhMuc: 'Danh mục', DaAn: 'Trạng thái', TenDanhMuc: 'Tên danh mục', THANH_TOAN_QR_BAT: 'Thanh toán QR', Tap: 'Số tập', TenBo: 'Tên bộ' };
 const tenDoiTuong = { SACH: 'Sách', DANH_MUC: 'Danh mục', CAU_HINH: 'Cài đặt hệ thống' };
 // Công tắc lưu '1'/'0' trong CSDL, hiển thị cho người đọc là Bật/Tắt
 const hienGiaTri = (item, giaTri) => item.LoaiDoiTuong === 'CAU_HINH' ? (giaTri === '1' ? 'Bật' : 'Tắt') : nhan(giaTri);

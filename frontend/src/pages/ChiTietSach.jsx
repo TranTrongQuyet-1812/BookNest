@@ -59,6 +59,10 @@ export const ChiTietSach = () => {
   const [dangGuiDanhGia, setDangGuiDanhGia] = useState(false);
   const [loiDanhGia, setLoiDanhGia] = useState('');
 
+  // Danh sách các tập khác trong cùng bộ (AT09)
+  const [cacTap, setCacTap] = useState([]);
+  const [dangTaiCacTap, setDangTaiCacTap] = useState(false);
+
   // 1. Tải thông tin cuốn sách và gợi ý cùng thể loại (DG03: tách riêng khỏi đánh giá)
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -189,6 +193,31 @@ export const ChiTietSach = () => {
     setTrangThaiToi(null);
     napTrangThaiToi();
   }, [id, daDangNhap]);
+
+  // 4. Hàm nạp danh sách các tập trong bộ (AT09)
+  const napCacTap = async () => {
+    const idGoi = id;
+    const conHieuLuc = () => idDangXemRef.current === idGoi;
+
+    setDangTaiCacTap(true);
+    try {
+      const res = await api.get(`/books/${idGoi}/volumes`);
+      if (!conHieuLuc()) return;
+      const data = res.data?.data || [];
+      setCacTap(Array.isArray(data) ? data : []);
+    } catch {
+      // Lỗi nạp các tập trong bộ không được làm hỏng trang sách
+      if (conHieuLuc()) setCacTap([]);
+    } finally {
+      if (conHieuLuc()) setDangTaiCacTap(false);
+    }
+  };
+
+  // Đổi sách thì đặt lại danh sách tập và nạp lại
+  useEffect(() => {
+    setCacTap([]);
+    napCacTap();
+  }, [id]);
 
   // Thêm sách vào giỏ hàng qua Zustand Store (Hỗ trợ cả Khách vãng lai & Khách hàng)
   const handleThemGioHang = async () => {
@@ -497,6 +526,92 @@ export const ChiTietSach = () => {
               </span>
             )}
           </div>
+
+          {/* Khối các tập khác trong cùng bộ sách (AT09) */}
+          {cacTap.length > 0 && (
+            <div style={{
+              marginBottom: '1.75rem',
+              padding: '1.1rem 1.25rem',
+              backgroundColor: 'var(--bg-surface)',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border)'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '0.85rem'
+              }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                  Các tập trong bộ: {sach?.TenBo || 'Bộ sách'}
+                </span>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  {cacTap.length} tập
+                </span>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                gap: '0.65rem',
+                flexWrap: 'wrap',
+                alignItems: 'center'
+              }}>
+                {cacTap.map((tapItem) => {
+                  const laTapHienTai = tapItem.dangXem || String(tapItem.maSach) === String(id);
+                  const hetHang = !tapItem.conHang;
+
+                  return (
+                    <Link
+                      key={tapItem.maSach}
+                      to={laTapHienTai ? '#' : `/books/${tapItem.maSach}`}
+                      onClick={(e) => {
+                        if (laTapHienTai) e.preventDefault();
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.45rem 0.85rem',
+                        borderRadius: '6px',
+                        fontSize: '0.84rem',
+                        fontWeight: laTapHienTai ? 700 : 500,
+                        textDecoration: 'none',
+                        backgroundColor: laTapHienTai
+                          ? 'var(--primary)'
+                          : 'var(--bg-card)',
+                        color: laTapHienTai
+                          ? 'var(--primary-text)'
+                          : hetHang
+                            ? 'var(--text-muted)'
+                            : 'var(--text-main)',
+                        border: laTapHienTai
+                          ? '1.5px solid var(--primary)'
+                          : '1px solid var(--border)',
+                        cursor: laTapHienTai ? 'default' : 'pointer',
+                        opacity: hetHang && !laTapHienTai ? 0.65 : 1,
+                        transition: 'all 0.15s ease'
+                      }}
+                      title={tapItem.tenSach}
+                    >
+                      <span>Tập {tapItem.tap || '?'}</span>
+                      {hetHang && (
+                        <span style={{
+                          fontSize: '0.7rem',
+                          backgroundColor: laTapHienTai ? 'rgba(0,0,0,0.15)' : 'rgba(239, 68, 68, 0.1)',
+                          color: laTapHienTai ? 'var(--primary-text)' : 'var(--danger)',
+                          padding: '1px 5px',
+                          borderRadius: '3px',
+                          fontWeight: 600
+                        }}>
+                          Hết hàng
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Khối Đặt Mua & Chọn Số Lượng */}
           <div style={{
