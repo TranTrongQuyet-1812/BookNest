@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -94,14 +94,27 @@ export const ChiTietSach = () => {
     };
   }, [id]);
 
+  // Sách và trạng thái đăng nhập đang xem. Phản hồi của sách cũ (hoặc phiên cũ) về muộn thì bỏ,
+  // kẻo ghi đè dữ liệu của sách đang hiện. Phải khai báo trước các effect nạp để được cập nhật trước
+  const idDangXemRef = useRef(id);
+  const dangNhapDangXemRef = useRef(daDangNhap);
+  useEffect(() => {
+    idDangXemRef.current = id;
+    dangNhapDangXemRef.current = daDangNhap;
+  }, [id, daDangNhap]);
+
   // 2. Hàm nạp danh sách nhận xét độc lập (DG03 & DG04)
   const napDanhGia = async (trang = 1, noiThem = false) => {
+    const idGoi = id;
+    const conHieuLuc = () => idDangXemRef.current === idGoi;
+
     setLoiTaiDanhGia('');
     setDangTaiDanhGia(true);
     try {
-      const res = await api.get(`/books/${id}/reviews`, {
+      const res = await api.get(`/books/${idGoi}/reviews`, {
         params: { page: trang, limit: 10 }
       });
+      if (!conHieuLuc()) return;
       const dgData = res.data.data;
       const danhSachMoi = dgData?.danhSach || (Array.isArray(dgData) ? dgData : []);
 
@@ -120,29 +133,39 @@ export const ChiTietSach = () => {
       setTrangDanhGia(trang);
       setTongSoTrangDanhGia(dgData?.phanTrang?.tongSoTrang || 1);
     } catch (err) {
-      setLoiTaiDanhGia(loiTuApi(err, 'Không thể tải danh sách nhận xét'));
+      if (conHieuLuc()) setLoiTaiDanhGia(loiTuApi(err, 'Không thể tải danh sách nhận xét'));
     } finally {
-      setDangTaiDanhGia(false);
+      if (conHieuLuc()) setDangTaiDanhGia(false);
     }
   };
 
-  // Nạp trang đầu tiên khi đổi sách
+  // Đổi sách thì xóa sạch dữ liệu của sách trước rồi nạp trang đầu tiên
   useEffect(() => {
+    setDanhGiaList([]);
+    setThongKeSao({ saoTrungBinh: 0, soLuotDanhGia: 0 });
+    setTrangDanhGia(1);
+    setTongSoTrangDanhGia(1);
+    setLoiDanhGia('');
     napDanhGia(1, false);
   }, [id]);
 
   // 3. Hàm kiểm tra quyền đánh giá và nạp nhận xét cũ của tôi (DG05)
-  const napTrangThaiToi = async () => {
+  // imLang = true: nạp lại sau khi gửi, không bật dòng "Đang kiểm tra" để form không bị gỡ rồi dựng lại
+  const napTrangThaiToi = async ({ imLang = false } = {}) => {
+    const idGoi = id;
+    const conHieuLuc = () => idDangXemRef.current === idGoi && dangNhapDangXemRef.current === daDangNhap;
+
     if (!daDangNhap) {
       setTrangThaiToi(null);
       setLoiKiemTraQuyen('');
       return;
     }
 
-    setDangKiemTraQuyen(true);
+    if (!imLang) setDangKiemTraQuyen(true);
     setLoiKiemTraQuyen('');
     try {
-      const res = await api.get(`/books/${id}/reviews/me`);
+      const res = await api.get(`/books/${idGoi}/reviews/me`);
+      if (!conHieuLuc()) return;
       const duLieu = res.data.data;
       setTrangThaiToi(duLieu);
 
@@ -155,13 +178,15 @@ export const ChiTietSach = () => {
         setNhanXet('');
       }
     } catch (err) {
-      setLoiKiemTraQuyen(loiTuApi(err, 'Không thể kiểm tra quyền đánh giá sách'));
+      if (conHieuLuc()) setLoiKiemTraQuyen(loiTuApi(err, 'Không thể kiểm tra quyền đánh giá sách'));
     } finally {
-      setDangKiemTraQuyen(false);
+      if (conHieuLuc()) setDangKiemTraQuyen(false);
     }
   };
 
+  // Đổi sách hoặc đổi trạng thái đăng nhập thì bỏ trạng thái cũ và hỏi lại
   useEffect(() => {
+    setTrangThaiToi(null);
     napTrangThaiToi();
   }, [id, daDangNhap]);
 
@@ -200,7 +225,7 @@ export const ChiTietSach = () => {
       });
       tb.thanhCong('Đã ghi nhận nhận xét của bạn');
       // Làm mới trạng thái của tôi và nạp lại trang 1 danh sách đánh giá
-      await Promise.all([napTrangThaiToi(), napDanhGia(1, false)]);
+      await Promise.all([napTrangThaiToi({ imLang: true }), napDanhGia(1, false)]);
     } catch (err) {
       setLoiDanhGia(loiTuApi(err, 'Bạn chỉ có thể đánh giá sau khi đã mua và nhận đơn hàng thành công'));
     } finally {
@@ -721,7 +746,7 @@ export const ChiTietSach = () => {
                 hanhDong={
                   <button
                     type="button"
-                    onClick={napTrangThaiToi}
+                    onClick={() => napTrangThaiToi()}
                     style={{
                       background: 'none',
                       border: 'none',

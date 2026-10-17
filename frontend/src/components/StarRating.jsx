@@ -38,11 +38,25 @@ export const StarRating = ({ rating = 0, onRatingChange, interactive = false, si
     );
   }
 
+  // Nhóm radio đúng chuẩn bàn phím: Tab chỉ vào một nút (sao đang chọn), mũi tên đổi số sao
+  const saoDangChon = Math.min(Math.max(rating, 1), 5);
+  const handlePhim = (e) => {
+    let saoMoi = null;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowUp') saoMoi = Math.min(saoDangChon + 1, 5);
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') saoMoi = Math.max(saoDangChon - 1, 1);
+    if (saoMoi === null) return;
+
+    e.preventDefault();
+    if (onRatingChange) onRatingChange(saoMoi);
+    e.currentTarget.querySelectorAll('[role="radio"]')[saoMoi - 1]?.focus();
+  };
+
   return (
     <div
       className="inline-flex items-center gap-1"
       role="radiogroup"
       aria-label="Chọn số sao"
+      onKeyDown={handlePhim}
     >
       {stars.map((sao) => {
         const isFilled = sao <= rating;
@@ -51,6 +65,7 @@ export const StarRating = ({ rating = 0, onRatingChange, interactive = false, si
             key={sao}
             type="button"
             role="radio"
+            tabIndex={sao === saoDangChon ? 0 : -1}
             aria-checked={sao === rating}
             aria-label={`${sao} sao`}
             onClick={() => onRatingChange && onRatingChange(sao)}
