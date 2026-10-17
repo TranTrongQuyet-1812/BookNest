@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
+import { laySocket } from '../services/socket';
 import useCartStore from '../stores/cartStore';
 import { useAuth } from '../context/AuthContext';
 import { 

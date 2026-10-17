@@ -10,6 +10,7 @@ import HomeAtmosphere from '../components/HomeAtmosphere';
 import { useGiamChuyenDong } from '../utils/chuyenDong';
 import { getLenis } from '../utils/lenis';
 import { khiRemMo } from '../utils/nhipMoTrang';
+import { lamSachChuoi } from '../utils/text';
 import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
 gsap.registerPlugin(useGSAP);
