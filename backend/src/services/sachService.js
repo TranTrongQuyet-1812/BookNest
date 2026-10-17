@@ -6,6 +6,7 @@ const { sequelize, Sach, DanhMuc, LichSuNhapKho, LichSuDieuChinhKho, NhanVien } 
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 const { chuaTuKhoa } = require('../utils/timKiem');
 const { ghiNhanThayDoi } = require('./lichSuThayDoiService');
+const anhBiaService = require('./anhBiaService');
 
 // Lấy danh sách sách công khai (tìm kiếm, lọc giá, lọc danh mục, phân trang)
 async function layDanhSachSach({
@@ -307,6 +308,7 @@ async function capNhatSach(maSach, duLieu, maNhanVien) {
       duLieu.tacGia = ketQuaTacGia.tenChuanHoa;
     }
 
+    const anhBiaCu = sach.AnhBia;
     const thayDoi = {};
     const cacTruong = {
       tenSach: ['TenSach', 'TenSach'], tacGia: ['TacGia', 'TacGia'], moTa: ['MoTa', 'MoTa'],
@@ -324,6 +326,14 @@ async function capNhatSach(maSach, duLieu, maNhanVien) {
     await sach.save({ transaction: t });
     await ghiNhanThayDoi({ loaiDoiTuong: 'SACH', maDoiTuong: sach.MaSach, maNhanVien, thayDoi, transaction: t });
     await t.commit();
+
+    // Dọn dẹp ảnh bìa cũ trên Cloudinary nếu ảnh bìa bị thay đổi hoặc gỡ bỏ (AT05)
+    if (anhBiaCu && thayDoi.AnhBia) {
+      anhBiaService.xoaAnhCu(anhBiaCu).catch(err => {
+        console.error('[Lỗi Xóa Ảnh Cũ]', err.message);
+      });
+    }
+
     const chiTiet = await layChiTietSach(sach.MaSach, true);
     const ketQuaTraVe = chiTiet.toJSON ? chiTiet.toJSON() : chiTiet;
     if (ketQuaTacGia && ketQuaTacGia.daThayThe) {

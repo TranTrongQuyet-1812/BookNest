@@ -40,7 +40,15 @@ function xuLyLoi(loi, req, res, next) {
     });
   }
 
-  // 5. Lỗi máy chủ không xác định (Internal Server Error) - Bảo mật, không trả stack trace
+  // 5. Lỗi kích thước file vượt quá giới hạn (Payload Too Large - 413)
+  if (loi.type === 'entity.too.large' || loi.status === 413) {
+    return phanHoiLoi(res, {
+      thongDiep: 'Dung lượng file vượt quá giới hạn cho phép (tối đa 5MB)',
+      maTrangThai: 413
+    });
+  }
+
+  // 6. Lỗi máy chủ không xác định (Internal Server Error) - Bảo mật, không trả stack trace
   console.error('[Lỗi Hệ Thống]', loi.message);
   return phanHoiLoi(res, {
     thongDiep: 'Hệ thống đang bận hoặc gặp sự cố xử lý. Vui lòng thử lại sau ít phút',

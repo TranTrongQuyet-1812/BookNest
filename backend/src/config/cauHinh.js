@@ -78,6 +78,17 @@ const cauHinh = {
       process.env.EMAIL_USER !== 'your_email@gmail.com' &&
       process.env.EMAIL_MOCK !== 'true'
     )
+  },
+  // Dịch vụ lưu trữ ảnh Cloudinary (AT04)
+  cloudinary: {
+    tenDamMay: process.env.CLOUDINARY_CLOUD_NAME || '',
+    khoa: process.env.CLOUDINARY_API_KEY || '',
+    matKhau: process.env.CLOUDINARY_API_SECRET || '',
+    daCauHinh: Boolean(
+      process.env.CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET
+    )
   }
 };
 

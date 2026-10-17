@@ -389,6 +389,114 @@ router.get(
   batLoiAsync(sachController.xuLyLayDanhSachTenBo)
 );
 
+// Middleware kiểm tra Content-Type ảnh (AT04)
+const kiemTraLoaiAnhBia = (req, res, next) => {
+  const contentType = (req.headers['content-type'] || '').toLowerCase();
+  const loaiHopLe = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!loaiHopLe.some((t) => contentType.startsWith(t))) {
+    return res.status(415).json({
+      success: false,
+      message: 'Định dạng file không hỗ trợ. Vui lòng gửi ảnh định dạng JPG, PNG hoặc WebP'
+    });
+  }
+  next();
+};
+
+const boNhanRawAnh = express.raw({
+  type: ['image/jpeg', 'image/png', 'image/webp'],
+  limit: '5mb'
+});
+
+const luatXoaAnhBia = Joi.object({
+  url: Joi.string().uri().required().messages({
+    'any.required': 'Vui lòng cung cấp đường dẫn ảnh cần xóa',
+    'string.uri': 'Đường dẫn ảnh không đúng định dạng'
+  })
+});
+
+/**
+ * @swagger
+ * /api/books/cover:
+ *   post:
+ *     summary: Tải ảnh bìa sách lên Cloudinary WebP (Quản trị viên, Thủ kho)
+ *     tags: [Sách & Kho (Books)]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         image/jpeg:
+ *           schema:
+ *             type: string
+ *             format: binary
+ *         image/png:
+ *           schema:
+ *             type: string
+ *             format: binary
+ *         image/webp:
+ *           schema:
+ *             type: string
+ *             format: binary
+ *     responses:
+ *       201:
+ *         description: Tải ảnh thành công, trả về URL WebP trên Cloudinary
+ *       400:
+ *         description: File không phải ảnh hợp lệ
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Không có quyền truy cập
+ *       413:
+ *         description: Dung lượng file vượt quá giới hạn 5MB
+ *       415:
+ *         description: Định dạng file không hỗ trợ
+ *       502:
+ *         description: Lỗi kết nối dịch vụ lưu trữ ảnh
+ *       503:
+ *         description: Chức năng tải ảnh chưa được cấu hình
+ *   delete:
+ *     summary: Xóa ảnh bìa vừa tải lên khi việc lưu sách gặp sự cố (Quản trị viên, Thủ kho)
+ *     tags: [Sách & Kho (Books)]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - url
+ *             properties:
+ *               url:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Xóa ảnh thành công
+ *       400:
+ *         description: Thiếu đường dẫn ảnh
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Không có quyền truy cập
+ */
+router.post(
+  '/cover',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_kho'),
+  kiemTraLoaiAnhBia,
+  boNhanRawAnh,
+  batLoiAsync(sachController.xuLyTaiAnhBia)
+);
+
+router.delete(
+  '/cover',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_kho'),
+  kiemTraDuLieu(luatXoaAnhBia, 'body'),
+  batLoiAsync(sachController.xuLyXoaAnhBia)
+);
+
 /**
  * @swagger
  * /api/books/{id}/volumes:

@@ -2,6 +2,8 @@
  * Tầng Controller điều phối các yêu cầu liên quan đến sách và quản lý kho.
  */
 const sachService = require('../services/sachService');
+const anhBiaService = require('../services/anhBiaService');
+const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 const { phanHoiThanhCong } = require('../middlewares/phanHoi');
 
 // Lấy danh sách sách công khai (tìm kiếm, lọc, phân trang)
@@ -124,6 +126,31 @@ async function xuLyLayCacTapTrongBo(req, res) {
   return phanHoiThanhCong(res, { duLieu, thongDiep: 'Lấy danh sách các tập sách trong bộ thành công' });
 }
 
+// Tải ảnh bìa lên Cloudinary (AT04)
+async function xuLyTaiAnhBia(req, res) {
+  if (!req.body || !Buffer.isBuffer(req.body) || req.body.length === 0) {
+    throw LoiNghiepVu.yeuCauKhongHopLe('Vui lòng chọn file ảnh để tải lên');
+  }
+  const ketQua = await anhBiaService.taiAnhBiaLen(req.body);
+  return phanHoiThanhCong(res, {
+    duLieu: ketQua,
+    thongDiep: 'Tải ảnh bìa thành công',
+    maTrangThai: 201
+  });
+}
+
+// Xóa ảnh bìa vừa tải lên khi lưu sách lỗi (AT05, AT07)
+async function xuLyXoaAnhBia(req, res) {
+  const { url } = req.body || {};
+  if (!url) {
+    throw LoiNghiepVu.yeuCauKhongHopLe('Vui lòng cung cấp đường dẫn ảnh cần xóa');
+  }
+  await anhBiaService.xoaAnhVuaTai(url);
+  return phanHoiThanhCong(res, {
+    thongDiep: 'Xóa ảnh bìa thành công'
+  });
+}
+
 module.exports = {
   xuLyLayDanhSach,
   xuLyLayDanhSachAdmin,
@@ -139,5 +166,7 @@ module.exports = {
   xuLyLayLichSuDieuChinhKho,
   xuLyLayDanhSachTacGia,
   xuLyLayDanhSachTenBo,
-  xuLyLayCacTapTrongBo
+  xuLyLayCacTapTrongBo,
+  xuLyTaiAnhBia,
+  xuLyXoaAnhBia
 };
