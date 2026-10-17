@@ -1,9 +1,8 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
-  ShieldCheck, 
-  Lock, 
-  KeyRound, 
+  ShieldCheck,
+  KeyRound,
   EyeOff, 
   FileCheck, 
   ArrowLeft,
@@ -184,34 +183,13 @@ export const ChinhSachBaoMat = () => {
         </section>
 
         {/* Mục 3 */}
-        <section id="bien-phap-ky-thuat">
-          <h2 
-            className="font-serif flex items-center gap-2 mb-3"
-            style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-main)' }}
-          >
-            <Lock size={20} style={{ color: 'var(--accent)' }} />
-            3. Các Biện Pháp Kỹ Thuật Bảo Vệ Dữ Liệu
-          </h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-            Hệ thống áp dụng các tiêu chuẩn an toàn thông tin hiện đại trong kiến trúc phần mềm:
-          </p>
-          <ul style={{ listStyle: 'disc', paddingLeft: '1.5rem', color: 'var(--text-muted)' }} className="space-y-2">
-            <li><strong>Mã hóa mật khẩu bcrypt:</strong> Mật khẩu tài khoản được băm (hash) một chiều với độ muối (salt) cao. Ngay cả quản trị viên hệ thống cũng không thể đọc được mật khẩu gốc của bạn.</li>
-            <li><strong>Xác thực phiên qua JWT:</strong> Mã định danh JSON Web Token có thời hạn hiệu lực, kiểm tra quyền truy cập chặt chẽ ở từng thao tác.</li>
-            <li><strong>Chống rò rỉ mã đơn hàng (IDOR Defense):</strong> Đơn hàng công khai được định danh bằng <em>Mã tra cứu ngẫu nhiên khó đoán</em> (<code style={{ backgroundColor: 'var(--bg-surface)', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>BN-XXXXXX</code>) thay vì số thứ tự tăng dần thông thường, ngăn chặn việc người lạ dò tìm hoặc xem trộm đơn hàng của bạn.</li>
-            <li><strong>Tường lửa giới hạn tần suất (Rate Limiting):</strong> Trang bị bộ lọc giới hạn số lần gọi API tra cứu đơn và tạo thanh toán để chống lại các cuộc tấn công dò quét tự động.</li>
-            <li><strong>Bảo vệ dữ liệu hội thoại AI Chatbot:</strong> Trợ lý ảo BookNest AI sử dụng giao diện lập trình đám mây bảo mật của nhà cung cấp mô hình trí tuệ nhân tạo (NVIDIA NIM). Dữ liệu hội thoại chỉ phục vụ tư vấn sách và soạn nháp đơn hàng, không lưu trữ hay yêu cầu thông tin tài khoản ngân hàng của bạn.</li>
-          </ul>
-        </section>
-
-        {/* Mục 4 */}
         <section id="quyen-cua-ban">
           <h2 
             className="font-serif flex items-center gap-2 mb-3"
             style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-main)' }}
           >
             <KeyRound size={20} style={{ color: 'var(--accent)' }} />
-            4. Quyền Của Bạn Đối Với Dữ Liệu Cá Nhân
+            3. Quyền Của Bạn Đối Với Dữ Liệu Cá Nhân
           </h2>
           <p style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
             Bạn đọc luôn nắm toàn quyền kiểm soát thông tin cá nhân của mình tại BookNest:
@@ -222,7 +200,7 @@ export const ChinhSachBaoMat = () => {
           </ul>
         </section>
 
-        {/* Mục 5: Thông tin liên hệ */}
+        {/* Mục 4: Thông tin liên hệ */}
         <section id="lien-he" style={{
           backgroundColor: 'var(--bg-surface)',
           padding: '1.5rem',
