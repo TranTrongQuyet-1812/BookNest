@@ -31,8 +31,9 @@ function xuLyLoi(loi, req, res, next) {
     });
   }
 
-  // 4. Lỗi vi phạm ràng buộc CHECK hoặc lỗi cú pháp DB
-  if (loi.name === 'SequelizeDatabaseError') {
+  // 4. Vi phạm ràng buộc CHECK (mã SQL Server 547) là do dữ liệu người dùng gửi nên trả 400.
+  // Mọi lỗi SQL khác (thiếu cột/bảng, sai cú pháp...) là lỗi máy chủ: để rơi xuống nhánh 5 để ghi log và trả 500
+  if (loi.name === 'SequelizeDatabaseError' && (loi.original?.number ?? loi.parent?.number) === 547) {
     return phanHoiLoi(res, {
       thongDiep: 'Dữ liệu gửi lên không đúng định dạng hoặc vi phạm quy định của hệ thống. Vui lòng kiểm tra lại',
       maTrangThai: 400
