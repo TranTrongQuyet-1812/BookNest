@@ -12,6 +12,7 @@ import {
   Layers,
   RotateCcw
 } from 'lucide-react';
+import KhoiViecCanLam from './KhoiViecCanLam.jsx';
 
 export const DashboardThongKe = () => {
   const [tongQuan, setTongQuan] = useState({ tongDoanhThu: 0, soDonThanhCong: 0, tongSachDaBan: 0 });
@@ -107,6 +108,9 @@ export const DashboardThongKe = () => {
           </p>
         </div>
       </div>
+
+      {/* Khối Việc Cần Làm Theo Vai Trò (T40) */}
+      <KhoiViecCanLam />
 
       {/* Thanh Bộ Lọc Kênh Bán & Thời Gian */}
       <div className="card mb-6" style={{ padding: '0.9rem 1.15rem' }}>

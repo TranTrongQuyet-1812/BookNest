@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Search, Plus, Minus, Trash2, ShoppingBag, ReceiptText, Printer, RotateCw, UserRound, ArrowLeft } from 'lucide-react';
 import api from '@booknest/shared/api';
 import { ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
+import KhoiViecCanLam from '../../../frontend/src/pages/admin/KhoiViecCanLam.jsx';
 
 const dinhDangTien = (gia) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(Number(gia || 0));
 
@@ -101,6 +102,7 @@ export default function BanHangQuay() {
       </div>
 
       {loi && <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>{loi}</ThongBaoTaiCho>}
+      <KhoiViecCanLam />
       {tab === 'ban' && (
         <div className="counter-grid">
           <section className="bo-panel counter-catalog">

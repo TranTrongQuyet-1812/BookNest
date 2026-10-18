@@ -7,6 +7,7 @@ import {
   PlusCircle, 
   History 
 } from 'lucide-react';
+import KhoiViecCanLam from './KhoiViecCanLam.jsx';
 
 const tenLoaiDieuChinh = {
   KIEM_KE: 'Kiểm kê', HU_HONG: 'Hư hỏng', THAT_LAC: 'Thất lạc', TRA_NXB: 'Trả nhà xuất bản', KHAC: 'Khác'
@@ -141,6 +142,9 @@ export const NhapKho = () => {
           </p>
         </div>
       </div>
+
+      {/* Khối Việc Cần Làm Theo Vai Trò (T40) */}
+      <KhoiViecCanLam />
 
       {loi && (
         <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>
