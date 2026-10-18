@@ -556,7 +556,13 @@ async function adminLayDanhSachDon({ page = 1, limit = 10, status, tuNgay, denNg
   if (tuNgay || denNgay) {
     dieuKien.NgayDat = {};
     if (tuNgay) dieuKien.NgayDat[Op.gte] = new Date(tuNgay);
-    if (denNgay) dieuKien.NgayDat[Op.lte] = new Date(denNgay);
+    if (denNgay) {
+      const dNgay = new Date(denNgay);
+      if (dNgay.getUTCHours() === 0 && dNgay.getUTCMinutes() === 0 && dNgay.getUTCSeconds() === 0 && dNgay.getUTCMilliseconds() === 0) {
+        dNgay.setUTCHours(23, 59, 59, 999);
+      }
+      dieuKien.NgayDat[Op.lte] = dNgay;
+    }
   }
 
   const { rows, count } = await DonHang.findAndCountAll({
