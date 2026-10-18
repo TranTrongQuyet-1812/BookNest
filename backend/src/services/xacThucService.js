@@ -6,7 +6,8 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { NhanVien, KhachHang } = require('../models');
+const { Op } = require('sequelize');
+const { sequelize, NhanVien, KhachHang, OtpQuenMatKhau } = require('../models');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 const cauHinh = require('../config/cauHinh');
 const { AUD_KHACH_HANG, AUD_NHAN_VIEN, thongTinTaiKhoan } = require('../utils/taiKhoan');
@@ -86,45 +87,109 @@ function dangNhapNhanVien(thongTin) {
 }
 
 // ==========================================
-// Nghiệp vụ Quên Mật Khẩu qua Email OTP
+// Nghiệp vụ Quên Mật Khẩu qua Email OTP (R12 - DATABASE_SCHEMA mục 3.12)
+// Lưu trữ băm HMAC-SHA256 trong bảng OtpQuenMatKhau, tuyệt đối không lưu mã gốc
 // ==========================================
 const emailService = require('./emailService');
-const khoLuuOtpQuenMatKhau = new Map();
+
+/**
+ * Tạo chuỗi băm HMAC-SHA256 cho mã OTP (không lưu mã gốc trong CSDL)
+ * @param {number} maKhachHang
+ * @param {string} maOtp
+ * @returns {string} Chuỗi băm hex 64 ký tự
+ */
+function tinhOtpHash(maKhachHang, maOtp) {
+  return crypto
+    .createHmac('sha256', cauHinh.jwt.biMat)
+    .update(`otp:${maKhachHang}:${String(maOtp).trim()}`)
+    .digest('hex');
+}
+
+/**
+ * So sánh an toàn thời gian (timing-safe) giữa hai chuỗi băm HMAC-SHA256
+ */
+function soSanhOtpHash(hash1, hash2) {
+  if (!hash1 || !hash2 || typeof hash1 !== 'string' || typeof hash2 !== 'string') {
+    return false;
+  }
+  const buf1 = Buffer.from(hash1, 'hex');
+  const buf2 = Buffer.from(hash2, 'hex');
+  if (buf1.length !== 32 || buf2.length !== 32) {
+    return false;
+  }
+  return crypto.timingSafeEqual(buf1, buf2);
+}
 
 /**
  * Gửi mã OTP xác nhận về email khi khách yêu cầu đặt lại mật khẩu
  */
 async function guiOtpQuenMatKhau(email) {
-  const emailChuanHoa = email.trim().toLowerCase();
+  const emailChuanHoa = String(email || '').trim().toLowerCase();
   const khachHang = await KhachHang.findOne({ where: { Email: emailChuanHoa } });
 
-  // Bảo mật chống dò email: Trả về thông báo thành công chung ngay cả khi email không có trong DB hoặc tài khoản bị khóa
-  if (!khachHang || !khachHang.DangHoatDong) {
+  // Bảo mật chống dò email: Khách không tồn tại hoặc bị khóa (DaKhoa = true hoặc DangHoatDong = false)
+  // thì TUYỆT ĐỐI KHÔNG TẠO DÒNG NÀO trong OtpQuenMatKhau và vẫn trả thông báo thành công chung
+  const biKhoa = Boolean(khachHang && (khachHang.DaKhoa || !khachHang.DangHoatDong));
+  if (!khachHang || biKhoa) {
     return {
       thanhCong: true,
       thongBao: 'Nếu địa chỉ email tồn tại và hợp lệ trên hệ thống, mã xác nhận đã được gửi thành công.'
     };
   }
 
-  // Chống gửi dồn dập (thời gian giãn cách tối thiểu 60 giây giữa các lần gửi mã)
-  const banGhiCu = khoLuuOtpQuenMatKhau.get(emailChuanHoa);
-  const now = Date.now();
-  if (banGhiCu && now - banGhiCu.taoLuc < 60 * 1000) {
-    const soGiayConLai = Math.ceil((60 * 1000 - (now - banGhiCu.taoLuc)) / 1000);
-    throw LoiNghiepVu.yeuCauKhongHopLe(`Vui lòng chờ ${soGiayConLai} giây trước khi yêu cầu gửi lại mã xác thực.`);
+  // Chống gửi dồn dập (thời gian giãn cách tối thiểu 60 giây giữa các lần gửi mã theo TaoLuc mới nhất)
+  const banGhiMoiNhat = await OtpQuenMatKhau.findOne({
+    where: { MaKhachHang: khachHang.MaKhachHang },
+    order: [['TaoLuc', 'DESC']]
+  });
+
+  const nowMs = Date.now();
+  if (banGhiMoiNhat) {
+    const taoLucMs = new Date(banGhiMoiNhat.TaoLuc).getTime();
+    if (nowMs - taoLucMs < 60 * 1000) {
+      const soGiayConLai = Math.ceil((60 * 1000 - (nowMs - taoLucMs)) / 1000);
+      throw LoiNghiepVu.yeuCauKhongHopLe(`Vui lòng chờ ${soGiayConLai} giây trước khi yêu cầu gửi lại mã xác thực.`);
+    }
   }
 
   // Sinh mã OTP ngẫu nhiên 6 chữ số bằng crypto.randomInt an toàn mật mã học
   const maOtp = crypto.randomInt(100000, 1000000).toString();
+  const maOtpBam = tinhOtpHash(khachHang.MaKhachHang, maOtp);
   const thoiHanPhut = 15;
-  const hetHanLuc = now + thoiHanPhut * 60 * 1000;
+  const taoLuc = new Date();
+  const hetHanLuc = new Date(taoLuc.getTime() + thoiHanPhut * 60 * 1000);
 
-  khoLuuOtpQuenMatKhau.set(emailChuanHoa, {
-    maOtp,
-    taoLuc: now,
-    hetHanLuc,
-    soLanThu: 0
-  });
+  // Trong một transaction: Đánh DaDung = 1 cho mã cũ chưa dùng, tạo dòng mới, dọn dòng hết hạn hơn 1 ngày
+  const t = await sequelize.transaction();
+  try {
+    // 1. Đánh dấu vô hiệu hóa các mã cũ chưa dùng của khách này
+    await OtpQuenMatKhau.update(
+      { DaDung: true },
+      { where: { MaKhachHang: khachHang.MaKhachHang, DaDung: false }, transaction: t }
+    );
+
+    // 2. Dọn các dòng đã hết hạn hơn 1 ngày (dọn khi gửi, không cần tác vụ nền)
+    const motNgayTruoc = new Date(Date.now() - 24 * 3600 * 1000);
+    await OtpQuenMatKhau.destroy({
+      where: { HetHanLuc: { [Op.lt]: motNgayTruoc } },
+      transaction: t
+    });
+
+    // 3. Tạo dòng OTP mới với mã băm HMAC-SHA256
+    await OtpQuenMatKhau.create({
+      MaKhachHang: khachHang.MaKhachHang,
+      MaOtpBam: maOtpBam,
+      TaoLuc: taoLuc,
+      HetHanLuc: hetHanLuc,
+      SoLanThu: 0,
+      DaDung: false
+    }, { transaction: t });
+
+    await t.commit();
+  } catch (err) {
+    await t.rollback();
+    throw err;
+  }
 
   // Gửi email bất đồng bộ
   await emailService.guiEmailMaXacNhan(khachHang.Email, maOtp, thoiHanPhut);
@@ -139,61 +204,81 @@ async function guiOtpQuenMatKhau(email) {
  * Kiểm tra tính hợp lệ của mã OTP
  */
 async function xacMinhOtpQuenMatKhau(email, maOtp) {
-  const emailChuanHoa = email.trim().toLowerCase();
-  const banGhi = khoLuuOtpQuenMatKhau.get(emailChuanHoa);
+  const emailChuanHoa = String(email || '').trim().toLowerCase();
+  const khachHang = await KhachHang.findOne({ where: { Email: emailChuanHoa } });
 
-  if (!banGhi || Date.now() > banGhi.hetHanLuc) {
-    khoLuuOtpQuenMatKhau.delete(emailChuanHoa);
+  const biKhoa = Boolean(khachHang && (khachHang.DaKhoa || !khachHang.DangHoatDong));
+  if (!khachHang || biKhoa) {
     throw LoiNghiepVu.yeuCauKhongHopLe('Mã xác nhận không tồn tại hoặc đã hết hạn. Vui lòng yêu cầu mã mới.');
   }
 
-  if (banGhi.soLanThu >= 5) {
-    khoLuuOtpQuenMatKhau.delete(emailChuanHoa);
+  // Lấy dòng mới nhất chưa dùng của khách
+  const banGhi = await OtpQuenMatKhau.findOne({
+    where: {
+      MaKhachHang: khachHang.MaKhachHang,
+      DaDung: false
+    },
+    order: [['TaoLuc', 'DESC']]
+  });
+
+  const now = new Date();
+  if (!banGhi || now > new Date(banGhi.HetHanLuc)) {
+    throw LoiNghiepVu.yeuCauKhongHopLe('Mã xác nhận không tồn tại hoặc đã hết hạn. Vui lòng yêu cầu mã mới.');
+  }
+
+  // Nếu số lần thử đã chạm hoặc vượt quá 5 lần thì mã bị hủy
+  if (banGhi.SoLanThu >= 5) {
+    await banGhi.update({ DaDung: true });
     throw LoiNghiepVu.yeuCauKhongHopLe('Bạn đã nhập sai mã xác nhận quá 5 lần. Mã này đã bị hủy vì lý do an toàn.');
   }
 
-  if (banGhi.maOtp !== String(maOtp).trim()) {
-    banGhi.soLanThu += 1;
+  const hashThu = tinhOtpHash(khachHang.MaKhachHang, maOtp);
+  const hopLe = soSanhOtpHash(hashThu, banGhi.MaOtpBam);
+
+  if (!hopLe) {
+    // Tăng SoLanThu bằng một câu UPDATE có điều kiện SoLanThu < 5 chống race condition
+    await OtpQuenMatKhau.update(
+      { SoLanThu: sequelize.literal('SoLanThu + 1') },
+      { where: { MaOtp: banGhi.MaOtp, SoLanThu: { [Op.lt]: 5 } } }
+    );
+    const soLanSauDo = banGhi.SoLanThu + 1;
+    if (soLanSauDo >= 5) {
+      await banGhi.update({ DaDung: true });
+      throw LoiNghiepVu.yeuCauKhongHopLe('Bạn đã nhập sai mã xác nhận quá 5 lần. Mã này đã bị hủy vì lý do an toàn.');
+    }
     throw LoiNghiepVu.yeuCauKhongHopLe('Mã xác nhận không chính xác. Vui lòng kiểm tra lại.');
   }
 
-  return { hopLe: true };
+  return { hopLe: true, banGhiOtp: banGhi, khachHang };
 }
 
 /**
  * Xác thực mã OTP và đặt lại mật khẩu mới cho khách hàng
  */
 async function datLaiMatKhau(email, maOtp, matKhauMoi) {
-  const emailChuanHoa = email.trim().toLowerCase();
-  
-  // Kiểm tra mã OTP trước khi cập nhật
-  await xacMinhOtpQuenMatKhau(emailChuanHoa, maOtp);
+  const emailChuanHoa = String(email || '').trim().toLowerCase();
 
-  const khachHang = await KhachHang.findOne({ where: { Email: emailChuanHoa } });
-  if (!khachHang) {
-    throw LoiNghiepVu.khongTimThay('Không tìm thấy tài khoản người dùng.');
-  }
+  // Xác minh tính hợp lệ của mã OTP
+  const { banGhiOtp, khachHang } = await xacMinhOtpQuenMatKhau(emailChuanHoa, maOtp);
 
   // Mã hóa mật khẩu mới bằng bcrypt salt rounds = 10
   const matKhauHash = await bcrypt.hash(matKhauMoi, 10);
-  await khachHang.update({ MatKhauHash: matKhauHash });
 
-  // Hủy mã OTP sau khi đổi mật khẩu thành công
-  khoLuuOtpQuenMatKhau.delete(emailChuanHoa);
+  // Đổi mật khẩu và cập nhật DaDung = 1 trong cùng transaction
+  const t = await sequelize.transaction();
+  try {
+    await khachHang.update({ MatKhauHash: matKhauHash }, { transaction: t });
+    await banGhiOtp.update({ DaDung: true }, { transaction: t });
+    await t.commit();
+  } catch (err) {
+    await t.rollback();
+    throw err;
+  }
 
   return {
     thanhCong: true,
     thongBao: 'Đặt lại mật khẩu thành công! Bạn có thể sử dụng mật khẩu mới để đăng nhập ngay bây giờ.'
   };
-}
-
-function layOtpChoTest(email) {
-  const banGhi = khoLuuOtpQuenMatKhau.get(email.trim().toLowerCase());
-  return banGhi?.maOtp || null;
-}
-
-function xoaTatCaOtpChoTest() {
-  khoLuuOtpQuenMatKhau.clear();
 }
 
 module.exports = {
@@ -203,8 +288,9 @@ module.exports = {
   guiOtpQuenMatKhau,
   xacMinhOtpQuenMatKhau,
   datLaiMatKhau,
-  layOtpChoTest,
-  xoaTatCaOtpChoTest,
+  tinhOtpHash,
+  soSanhOtpHash,
   taoToken,
   tinhMaPhienMatKhau
 };
+

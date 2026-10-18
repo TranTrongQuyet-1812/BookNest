@@ -21,6 +21,7 @@ const CauHinhHeThong = require('./CauHinhHeThong');
 const NhatKyChatbot = require('./NhatKyChatbot');
 const ChuongTrinhGiamGia = require('./ChuongTrinhGiamGia');
 const ChuongTrinhGiamGiaDoiTuong = require('./ChuongTrinhGiamGiaDoiTuong');
+const OtpQuenMatKhau = require('./OtpQuenMatKhau');
 
 // ==========================================
 // 1. Quan hệ DanhMuc ↔ Sach (1 - n)
@@ -121,6 +122,12 @@ ChuongTrinhGiamGiaDoiTuong.belongsTo(Sach, { foreignKey: 'MaSach', as: 'sach' })
 ChuongTrinhGiamGiaDoiTuong.belongsTo(DanhMuc, { foreignKey: 'MaDanhMuc', as: 'danhMuc' });
 ChuongTrinhGiamGia.belongsTo(NhanVien, { foreignKey: 'MaNhanVienTao', as: 'nhanVienTao' });
 
+// ==========================================
+// 11. Quan hệ Khách hàng ↔ OtpQuenMatKhau (1 - n) (R12)
+// ==========================================
+KhachHang.hasMany(OtpQuenMatKhau, { foreignKey: 'MaKhachHang', as: 'danhSachOtp' });
+OtpQuenMatKhau.belongsTo(KhachHang, { foreignKey: 'MaKhachHang', as: 'khachHang' });
+
 module.exports = {
   sequelize,
   NhanVien,
@@ -140,5 +147,6 @@ module.exports = {
   CauHinhHeThong,
   NhatKyChatbot,
   ChuongTrinhGiamGia,
-  ChuongTrinhGiamGiaDoiTuong
+  ChuongTrinhGiamGiaDoiTuong,
+  OtpQuenMatKhau
 };
