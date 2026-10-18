@@ -88,11 +88,11 @@ export const TrangChu = () => {
 
   // Tiêu đề và liên kết động cho các kệ
   const [tieuDeManga, setTieuDeManga] = useState('Series Truyện & Manga Nổi Bật');
-  const [linkManga, setLinkManga] = useState('/?categoryId=3');
+  const [linkManga, setLinkManga] = useState('');
   const [tieuDeVanHoc, setTieuDeVanHoc] = useState('Văn Học & Tiểu Thuyết Chọn Lọc');
-  const [linkVanHoc, setLinkVanHoc] = useState('/?categoryId=1');
-  const [tieuDeTacGia, setTieuDeTacGia] = useState('Tác Giả Tiêu Điểm: Tô Hoài');
-  const [linkTacGia, setLinkTacGia] = useState('/?search=Tô Hoài');
+  const [linkVanHoc, setLinkVanHoc] = useState('');
+  const [tieuDeTacGia, setTieuDeTacGia] = useState('Tác Giả Tiêu Điểm');
+  const [linkTacGia, setLinkTacGia] = useState('');
   const [tongSoTrangSach, setTongSoTrangSach] = useState(1);
   const [lanTaiLaiKe, setLanTaiLaiKe] = useState(0);
 
@@ -214,10 +214,15 @@ export const TrangChu = () => {
           setLinkVanHoc(`/?categoryId=${catVanHoc.MaDanhMuc}`);
         }
 
-        // Tìm tác giả nổi bật từ danh sách sách mới
-        const tacGiaTieuDiem = listMoi.find(s => s.TacGia && !/nhiều tác giả/i.test(s.TacGia))?.TacGia || 'Tô Hoài';
-        setTieuDeTacGia(`Tác Giả Tiêu Điểm: ${tacGiaTieuDiem}`);
-        setLinkTacGia(`/?search=${encodeURIComponent(tacGiaTieuDiem)}`);
+        // Tìm tác giả nổi bật từ danh sách sách mới (không dùng giá trị gán cứng Tô Hoài)
+        const tacGiaTieuDiem = listMoi.find(s => s.TacGia && !/nhiều tác giả/i.test(s.TacGia))?.TacGia || listMoi[0]?.TacGia || '';
+        if (tacGiaTieuDiem) {
+          setTieuDeTacGia(`Tác Giả Tiêu Điểm: ${tacGiaTieuDiem}`);
+          setLinkTacGia(`/?search=${encodeURIComponent(tacGiaTieuDiem)}`);
+        } else {
+          setTieuDeTacGia('Tác Phẩm Tiêu Điểm');
+          setLinkTacGia('/?sort=newest');
+        }
 
         // Bốc ngẫu nhiên trang thực tế trong khoảng [1, maxPages]
         const randomPage = Math.floor(Math.random() * maxPages) + 1;
@@ -225,7 +230,7 @@ export const TrangChu = () => {
         const [resManga, resDeal, resTacGia, resVanHoc, resRandom] = await Promise.all([
           catManga ? api.get('/books', { params: { limit: 12, categoryId: catManga.MaDanhMuc } }) : Promise.resolve({ data: { data: { danhSach: [] } } }),
           api.get('/books', { params: { limit: 12, sort: 'price_asc' } }),
-          api.get('/books', { params: { limit: 12, search: tacGiaTieuDiem } }),
+          tacGiaTieuDiem ? api.get('/books', { params: { limit: 12, search: tacGiaTieuDiem } }) : api.get('/books', { params: { limit: 12, sort: 'newest' } }),
           catVanHoc ? api.get('/books', { params: { limit: 12, categoryId: catVanHoc.MaDanhMuc } }) : Promise.resolve({ data: { data: { danhSach: [] } } }),
           api.get('/books', { params: { limit: 12, page: randomPage } })
         ]);
@@ -252,7 +257,7 @@ export const TrangChu = () => {
         }
       } catch (err) {
         console.error('Lỗi tải các kệ sách:', err);
-        if (!daHuy) setLoiKeSach('Không thể tải các kệ sách lúc này. Vui lòng kiểm tra kết nối mạng và thử lại.');
+        if (!daHuy) setLoiKeSach(loiTuApi(err, 'Không thể tải các kệ sách lúc này. Vui lòng kiểm tra kết nối mạng và thử lại.'));
       } finally {
         if (!daHuy) setDangTaiKe(false);
       }
