@@ -1,22 +1,38 @@
 /**
- * Tầng Service xử lý thống kê doanh thu và báo cáo phân tích cho Admin (T18).
+ * Tầng Service xử lý thống kê doanh thu và báo cáo phân tích cho Admin (T18, T31, T39).
  * Toàn bộ tính toán được gom nhóm trực tiếp tại SQL Server để tối ưu hiệu năng.
+ * Hỗ trợ phân tích theo kênh bán (TRUC_TUYEN / TAI_QUAY), chuỗi thời gian và danh mục.
  */
 const { sequelize } = require('../models');
 
-// 1. Thống kê tổng quan doanh thu, số đơn hoàn thành, số sách đã bán
-async function layTongQuanDoanhThu({ tuNgay, denNgay }) {
-  let dieuKienNgay = '';
+// Hàm bổ trợ xử lý điều kiện ngày và kênh bán cho câu lệnh SQL
+function xayDungDieuKienLoc({ tuNgay, denNgay, kenhBan, cotNgay = 'ls.NgayHoanThanh', aliasDonHang = 'dh' }) {
+  let dieuKienSql = '';
   const replacements = {};
 
   if (tuNgay) {
-    dieuKienNgay += ' AND ls.NgayThayDoi >= :tuNgay';
+    dieuKienSql += ` AND ${cotNgay} >= :tuNgay`;
     replacements.tuNgay = new Date(tuNgay);
   }
   if (denNgay) {
-    dieuKienNgay += ' AND ls.NgayThayDoi <= :denNgay';
-    replacements.denNgay = new Date(denNgay);
+    const dNgay = new Date(denNgay);
+    if (dNgay.getUTCHours() === 0 && dNgay.getUTCMinutes() === 0 && dNgay.getUTCSeconds() === 0 && dNgay.getUTCMilliseconds() === 0) {
+      dNgay.setUTCHours(23, 59, 59, 999);
+    }
+    dieuKienSql += ` AND ${cotNgay} <= :denNgay`;
+    replacements.denNgay = dNgay;
   }
+  if (kenhBan) {
+    dieuKienSql += ` AND ${aliasDonHang}.KenhBan = :kenhBan`;
+    replacements.kenhBan = kenhBan;
+  }
+
+  return { dieuKienSql, replacements };
+}
+
+// 1. Thống kê tổng quan doanh thu, số đơn hoàn thành, số sách đã bán
+async function layTongQuanDoanhThu({ tuNgay, denNgay, kenhBan } = {}) {
+  const { dieuKienSql, replacements } = xayDungDieuKienLoc({ tuNgay, denNgay, kenhBan });
 
   const cauTruyVan = `
     SELECT 
@@ -24,14 +40,18 @@ async function layTongQuanDoanhThu({ tuNgay, denNgay }) {
       COUNT(DISTINCT dh.MaDonHang) AS soDonThanhCong,
       COALESCE(SUM(ct.TongSach), 0) AS tongSachDaBan
     FROM DonHang dh
-    INNER JOIN LichSuTrangThaiDonHang ls 
-      ON dh.MaDonHang = ls.MaDonHang AND ls.TrangThaiMoi = 'DA_GIAO'
+    INNER JOIN (
+      SELECT MaDonHang, MAX(NgayThayDoi) AS NgayHoanThanh
+      FROM LichSuTrangThaiDonHang
+      WHERE TrangThaiMoi = 'DA_GIAO'
+      GROUP BY MaDonHang
+    ) ls ON dh.MaDonHang = ls.MaDonHang
     LEFT JOIN (
       SELECT MaDonHang, SUM(SoLuong) AS TongSach
       FROM ChiTietDonHang
       GROUP BY MaDonHang
     ) ct ON dh.MaDonHang = ct.MaDonHang
-    WHERE dh.TrangThai = 'DA_GIAO' ${dieuKienNgay}
+    WHERE dh.TrangThai = 'DA_GIAO' ${dieuKienSql}
   `;
 
   const [ketQua] = await sequelize.query(cauTruyVan, {
@@ -42,13 +62,21 @@ async function layTongQuanDoanhThu({ tuNgay, denNgay }) {
   return {
     tongDoanhThu: ketQua ? parseFloat(ketQua.tongDoanhThu) : 0,
     soDonThanhCong: ketQua ? parseInt(ketQua.soDonThanhCong, 10) : 0,
-    tongSachDaBan: ketQua ? parseInt(ketQua.tongSachDaBan, 10) : 0
+    tongSachDaBan: ketQua ? parseInt(ketQua.tongSachDaBan, 10) : 0,
+    kenhBan: kenhBan || 'TAT_CA'
   };
 }
 
 // 2. Thống kê top sách bán chạy nhất
-async function layTopSachBanChay({ limit = 10 }) {
+async function layTopSachBanChay({ limit = 10, kenhBan } = {}) {
   const gioiHan = Math.min(50, Math.max(1, parseInt(limit, 10) || 10));
+  let dieuKienKenh = '';
+  const replacements = { gioiHan };
+
+  if (kenhBan) {
+    dieuKienKenh = ' AND dh.KenhBan = :kenhBan';
+    replacements.kenhBan = kenhBan;
+  }
 
   const cauTruyVan = `
     SELECT 
@@ -59,7 +87,7 @@ async function layTopSachBanChay({ limit = 10 }) {
       COALESCE(SUM(ct.SoLuong), 0) AS daBan,
       COALESCE(SUM(ct.SoLuong * ct.DonGia), 0) AS doanhThu
     FROM ChiTietDonHang ct
-    INNER JOIN DonHang dh ON ct.MaDonHang = dh.MaDonHang AND dh.TrangThai = 'DA_GIAO'
+    INNER JOIN DonHang dh ON ct.MaDonHang = dh.MaDonHang AND dh.TrangThai = 'DA_GIAO' ${dieuKienKenh}
     INNER JOIN Sach s ON ct.MaSach = s.MaSach
     LEFT JOIN DanhMuc dm ON s.MaDanhMuc = dm.MaDanhMuc
     GROUP BY s.MaSach, s.TenSach, s.AnhBia, dm.TenDanhMuc
@@ -68,7 +96,7 @@ async function layTopSachBanChay({ limit = 10 }) {
   `;
 
   const danhSach = await sequelize.query(cauTruyVan, {
-    replacements: { gioiHan },
+    replacements,
     type: sequelize.QueryTypes.SELECT
   });
 
@@ -82,15 +110,25 @@ async function layTopSachBanChay({ limit = 10 }) {
   }));
 }
 
-// 3. Thống kê tỷ lệ đơn hàng theo các trạng thái
-async function layTyLeDonHang() {
+// 3. Thống kê tỷ lệ đơn hàng theo các trạng thái (Tùy chọn lọc theo kênh)
+async function layTyLeDonHang({ kenhBan } = {}) {
+  let dieuKienKenh = '';
+  const replacements = {};
+
+  if (kenhBan) {
+    dieuKienKenh = ' WHERE KenhBan = :kenhBan';
+    replacements.kenhBan = kenhBan;
+  }
+
   const cauTruyVan = `
     SELECT TrangThai AS trangThai, COUNT(*) AS soLuong
     FROM DonHang
+    ${dieuKienKenh}
     GROUP BY TrangThai
   `;
 
   const cacTrangThai = await sequelize.query(cauTruyVan, {
+    replacements,
     type: sequelize.QueryTypes.SELECT
   });
 
@@ -120,12 +158,102 @@ async function layTyLeDonHang() {
     tongSoDon,
     tyLeHoanThanh,
     tyLeHuy,
+    kenhBan: kenhBan || 'TAT_CA',
     chiTiet
   };
+}
+
+// 4. Thống kê chuỗi thời gian doanh thu (T39: revenue-series theo day hoặc month)
+async function layDoanhThuTheoChuoi({ tuNgay, denNgay, kenhBan, group = 'day' } = {}) {
+  const { dieuKienSql, replacements } = xayDungDieuKienLoc({ tuNgay, denNgay, kenhBan });
+  const dinhDang = group === 'month' ? 'yyyy-MM' : 'yyyy-MM-dd';
+  replacements.dinhDangThoiGian = dinhDang;
+
+  const cauTruyVan = `
+    SELECT 
+      FORMAT(ls.NgayHoanThanh, :dinhDangThoiGian) AS thoiGian,
+      COALESCE(SUM(dh.TongTien), 0) AS tongDoanhThu,
+      COUNT(DISTINCT dh.MaDonHang) AS soDonThanhCong,
+      COALESCE(SUM(ct.TongSach), 0) AS tongSachDaBan
+    FROM DonHang dh
+    INNER JOIN (
+      SELECT MaDonHang, MAX(NgayThayDoi) AS NgayHoanThanh
+      FROM LichSuTrangThaiDonHang
+      WHERE TrangThaiMoi = 'DA_GIAO'
+      GROUP BY MaDonHang
+    ) ls ON dh.MaDonHang = ls.MaDonHang
+    LEFT JOIN (
+      SELECT MaDonHang, SUM(SoLuong) AS TongSach
+      FROM ChiTietDonHang
+      GROUP BY MaDonHang
+    ) ct ON dh.MaDonHang = ct.MaDonHang
+    WHERE dh.TrangThai = 'DA_GIAO' ${dieuKienSql}
+    GROUP BY FORMAT(ls.NgayHoanThanh, :dinhDangThoiGian)
+    ORDER BY thoiGian ASC
+  `;
+
+  const danhSach = await sequelize.query(cauTruyVan, {
+    replacements,
+    type: sequelize.QueryTypes.SELECT
+  });
+
+  return danhSach.map(item => ({
+    thoiGian: item.thoiGian,
+    tongDoanhThu: parseFloat(item.tongDoanhThu || 0),
+    soDonThanhCong: parseInt(item.soDonThanhCong || 0, 10),
+    tongSachDaBan: parseInt(item.tongSachDaBan || 0, 10)
+  }));
+}
+
+// 5. Thống kê doanh thu theo thể loại sách (T39: by-category)
+async function layDoanhThuTheoDanhMuc({ tuNgay, denNgay, kenhBan } = {}) {
+  const { dieuKienSql, replacements } = xayDungDieuKienLoc({ tuNgay, denNgay, kenhBan });
+
+  const cauTruyVan = `
+    SELECT 
+      dm.MaDanhMuc AS maDanhMuc,
+      COALESCE(dm.TenDanhMuc, N'Chưa phân loại') AS tenDanhMuc,
+      COALESCE(SUM(ct.SoLuong), 0) AS daBan,
+      COALESCE(SUM(ct.SoLuong * ct.DonGia), 0) AS doanhThu
+    FROM ChiTietDonHang ct
+    INNER JOIN DonHang dh ON ct.MaDonHang = dh.MaDonHang AND dh.TrangThai = 'DA_GIAO'
+    INNER JOIN (
+      SELECT MaDonHang, MAX(NgayThayDoi) AS NgayHoanThanh
+      FROM LichSuTrangThaiDonHang
+      WHERE TrangThaiMoi = 'DA_GIAO'
+      GROUP BY MaDonHang
+    ) ls ON dh.MaDonHang = ls.MaDonHang
+    INNER JOIN Sach s ON ct.MaSach = s.MaSach
+    LEFT JOIN DanhMuc dm ON s.MaDanhMuc = dm.MaDanhMuc
+    WHERE 1=1 ${dieuKienSql}
+    GROUP BY dm.MaDanhMuc, dm.TenDanhMuc
+    ORDER BY doanhThu DESC
+  `;
+
+  const danhSach = await sequelize.query(cauTruyVan, {
+    replacements,
+    type: sequelize.QueryTypes.SELECT
+  });
+
+  const tongDoanhThuTatCa = danhSach.reduce((tong, item) => tong + parseFloat(item.doanhThu || 0), 0);
+
+  return danhSach.map(item => {
+    const doanhThu = parseFloat(item.doanhThu || 0);
+    const tyLeDoanhThu = tongDoanhThuTatCa > 0 ? parseFloat(((doanhThu / tongDoanhThuTatCa) * 100).toFixed(1)) : 0;
+    return {
+      maDanhMuc: item.maDanhMuc,
+      tenDanhMuc: item.tenDanhMuc,
+      daBan: parseInt(item.daBan || 0, 10),
+      doanhThu,
+      tyLeDoanhThu
+    };
+  });
 }
 
 module.exports = {
   layTongQuanDoanhThu,
   layTopSachBanChay,
-  layTyLeDonHang
+  layTyLeDonHang,
+  layDoanhThuTheoChuoi,
+  layDoanhThuTheoDanhMuc
 };

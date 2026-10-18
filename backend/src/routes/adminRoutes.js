@@ -946,15 +946,34 @@ router.put(
 );
 
 // ==========================================
-// 4. Thống kê báo cáo doanh thu (T18)
+// 4. Thống kê báo cáo doanh thu (T18, T31, T39)
 // ==========================================
 const luatTruyVanDoanhThu = Joi.object({
   tuNgay: Joi.date().iso(),
-  denNgay: Joi.date().iso()
+  denNgay: Joi.date().iso(),
+  kenhBan: Joi.string().valid('TRUC_TUYEN', 'TAI_QUAY')
 });
 
 const luatTruyVanTopSach = Joi.object({
-  limit: Joi.number().integer().min(1).max(50).default(10)
+  limit: Joi.number().integer().min(1).max(50).default(10),
+  kenhBan: Joi.string().valid('TRUC_TUYEN', 'TAI_QUAY')
+});
+
+const luatTruyVanTyLeDon = Joi.object({
+  kenhBan: Joi.string().valid('TRUC_TUYEN', 'TAI_QUAY')
+});
+
+const luatTruyVanChuoiDoanhThu = Joi.object({
+  tuNgay: Joi.date().iso(),
+  denNgay: Joi.date().iso(),
+  kenhBan: Joi.string().valid('TRUC_TUYEN', 'TAI_QUAY'),
+  group: Joi.string().valid('day', 'month').default('day')
+});
+
+const luatTruyVanTheoDanhMuc = Joi.object({
+  tuNgay: Joi.date().iso(),
+  denNgay: Joi.date().iso(),
+  kenhBan: Joi.string().valid('TRUC_TUYEN', 'TAI_QUAY')
 });
 
 /**
@@ -976,6 +995,11 @@ const luatTruyVanTopSach = Joi.object({
  *         schema:
  *           type: string
  *           format: date-time
+ *       - in: query
+ *         name: kenhBan
+ *         schema:
+ *           type: string
+ *           enum: [TRUC_TUYEN, TAI_QUAY]
  *     responses:
  *       200:
  *         description: Số liệu báo cáo tổng quan
@@ -1011,6 +1035,11 @@ router.get(
  *           type: integer
  *           default: 10
  *         description: Số lượng sách trong top
+ *       - in: query
+ *         name: kenhBan
+ *         schema:
+ *           type: string
+ *           enum: [TRUC_TUYEN, TAI_QUAY]
  *     responses:
  *       200:
  *         description: Danh sách sách bán chạy
@@ -1039,6 +1068,12 @@ router.get(
  *     tags: [Thống kê báo cáo (Admin Stats)]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: kenhBan
+ *         schema:
+ *           type: string
+ *           enum: [TRUC_TUYEN, TAI_QUAY]
  *     responses:
  *       200:
  *         description: Bảng tỷ lệ phần trăm theo từng trạng thái
@@ -1055,7 +1090,102 @@ router.get(
   '/stats/order-rates',
   xacThucToken,
   phanQuyen('quan_tri'),
+  kiemTraDuLieu(luatTruyVanTyLeDon, 'query'),
   batLoiAsync(thongKeController.xuLyLayTyLeDon)
+);
+
+/**
+ * @swagger
+ * /api/admin/stats/revenue-series:
+ *   get:
+ *     summary: Thống kê chuỗi thời gian doanh thu gom nhóm theo ngày hoặc tháng (Quản trị viên)
+ *     tags: [Thống kê báo cáo (Admin Stats)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: tuNgay
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: denNgay
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: kenhBan
+ *         schema:
+ *           type: string
+ *           enum: [TRUC_TUYEN, TAI_QUAY]
+ *       - in: query
+ *         name: group
+ *         schema:
+ *           type: string
+ *           enum: [day, month]
+ *           default: day
+ *     responses:
+ *       200:
+ *         description: Chuỗi số liệu doanh thu theo thời gian
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Chỉ dành cho Quản trị viên
+ */
+router.get(
+  '/stats/revenue-series',
+  xacThucToken,
+  phanQuyen('quan_tri'),
+  kiemTraDuLieu(luatTruyVanChuoiDoanhThu, 'query'),
+  batLoiAsync(thongKeController.xuLyLayChuoiDoanhThu)
+);
+
+/**
+ * @swagger
+ * /api/admin/stats/by-category:
+ *   get:
+ *     summary: Thống kê doanh thu và sản lượng bán theo thể loại sách (Quản trị viên)
+ *     tags: [Thống kê báo cáo (Admin Stats)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: tuNgay
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: denNgay
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: kenhBan
+ *         schema:
+ *           type: string
+ *           enum: [TRUC_TUYEN, TAI_QUAY]
+ *     responses:
+ *       200:
+ *         description: Báo cáo phân tích doanh thu theo thể loại
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Chỉ dành cho Quản trị viên
+ */
+router.get(
+  '/stats/by-category',
+  xacThucToken,
+  phanQuyen('quan_tri'),
+  kiemTraDuLieu(luatTruyVanTheoDanhMuc, 'query'),
+  batLoiAsync(thongKeController.xuLyLayTheoDanhMuc)
 );
 
 /**
