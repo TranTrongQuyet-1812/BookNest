@@ -23,14 +23,21 @@ const nguoiDungTruong = {
   NgayKetThuc: 'Kết thúc',
   DangHoatDong: 'Trạng thái',
   DoiTuong: 'Đối tượng áp dụng',
-  SoLuongDoiTuong: 'Số đối tượng áp dụng'
+  SoLuongDoiTuong: 'Số đối tượng áp dụng',
+  HoTen: 'Họ và tên',
+  Email: 'Email',
+  SoDienThoai: 'Số điện thoại',
+  VaiTro: 'Vai trò',
+  DiaChiMacDinh: 'Địa chỉ mặc định'
 };
 
 const tenDoiTuong = {
   SACH: 'Sách',
   DANH_MUC: 'Danh mục',
   CAU_HINH: 'Cài đặt hệ thống',
-  GIAM_GIA: 'Chương trình giảm giá'
+  GIAM_GIA: 'Chương trình giảm giá',
+  NHAN_VIEN: 'Nhân viên',
+  KHACH_HANG: 'Khách hàng'
 };
 
 // Hiển thị giá trị thân thiện cho người đọc (GGB)
@@ -41,6 +48,18 @@ const hienGiaTri = (item, giaTri) => {
   }
   if (item.LoaiDoiTuong === 'GIAM_GIA' && item.TruongDuLieu === 'DangHoatDong') {
     return (giaTri === '1' || giaTri === 1 || giaTri === true || giaTri === 'true') ? 'Bật' : 'Tạm dừng';
+  }
+  if ((item.LoaiDoiTuong === 'NHAN_VIEN' || item.LoaiDoiTuong === 'KHACH_HANG') && item.TruongDuLieu === 'DangHoatDong') {
+    return (giaTri === '1' || giaTri === 1 || giaTri === true || giaTri === 'true') ? 'Hoạt động' : 'Đã khóa';
+  }
+  if (item.TruongDuLieu === 'VaiTro') {
+    const vaiTroMap = {
+      quan_tri: 'Quản trị viên',
+      thu_kho: 'Thủ kho',
+      thu_thu: 'Thủ thư',
+      khach_hang: 'Khách hàng'
+    };
+    return vaiTroMap[giaTri] || giaTri;
   }
   if (item.TruongDuLieu === 'NgayBatDau' || item.TruongDuLieu === 'NgayKetThuc') {
     const d = new Date(giaTri);

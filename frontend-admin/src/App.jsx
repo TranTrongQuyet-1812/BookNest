@@ -14,6 +14,7 @@ import CaiDatHeThong from './pages/CaiDatHeThong.jsx';
 import QuanLyDanhGia from './pages/QuanLyDanhGia.jsx';
 import QuanLyThanhToan from './pages/QuanLyThanhToan.jsx';
 import QuanLyGiamGia from '../../frontend/src/pages/admin/QuanLyGiamGia.jsx';
+import HoSoNhanVien from './pages/HoSoNhanVien.jsx';
 
 function BaoVeNhanVien({ children, vaiTro }) {
   const { user, daDangNhap, loading } = useAuth();
@@ -59,7 +60,8 @@ export default function App() {
           <Route path="counter-sales" element={<BaoVeNhanVien vaiTro={['quan_tri', 'thu_thu']}><BanHangQuay /></BaoVeNhanVien>} />
           <Route path="change-history" element={<BaoVeNhanVien vaiTro={['quan_tri']}><LichSuThayDoi /></BaoVeNhanVien>} />
           <Route path="settings" element={<BaoVeNhanVien vaiTro={['quan_tri']}><CaiDatHeThong /></BaoVeNhanVien>} />
-          <Route path="users"element={<BaoVeNhanVien vaiTro={['quan_tri']}><QuanLyNhanSu /></BaoVeNhanVien>} />
+          <Route path="users" element={<BaoVeNhanVien vaiTro={['quan_tri', 'thu_thu']}><QuanLyNhanSu /></BaoVeNhanVien>} />
+          <Route path="profile" element={<BaoVeNhanVien vaiTro={['quan_tri', 'thu_kho', 'thu_thu']}><HoSoNhanVien /></BaoVeNhanVien>} />
         </Route>
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>

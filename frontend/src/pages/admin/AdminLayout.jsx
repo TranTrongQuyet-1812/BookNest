@@ -103,6 +103,7 @@ export const AdminLayout = () => {
     if (p.includes('/admin/change-history')) return 'Lịch Sử Thay Đổi';
     if (p.includes('/admin/settings')) return 'Cài Đặt Hệ Thống';
     if (p.includes('/admin/users')) return 'Quản Lý Nhân Sự & Khách';
+    if (p.includes('/admin/profile')) return 'Hồ Sơ & Đổi Mật Khẩu';
     return 'Bảng Điều Hành';
   };
 
@@ -157,19 +158,23 @@ export const AdminLayout = () => {
             </button>
           </div>
 
-          {/* Hồ Sơ Nhân Sự Tối Giản (User Profile Card) */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: thuGonSidebar ? 'center' : 'flex-start',
-            gap: '0.65rem',
-            padding: thuGonSidebar ? '0.65rem 0' : '0.65rem 0.75rem',
-            margin: '1rem 0 1.25rem',
-            backgroundColor: 'var(--adm-sidebar-hover)',
-            borderRadius: '6px',
-            border: '1px solid var(--adm-sidebar-border)'
-          }}
-          title={thuGonSidebar ? `${user?.fullName || user?.email} (${tenVaiTro})` : undefined}
+          {/* Hồ Sơ Nhân Sự Tối Giản (User Profile Card) - Nhấn để xem/sửa hồ sơ và đổi mật khẩu */}
+          <NavLink
+            to="/admin/profile"
+            style={({ isActive }) => ({
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: thuGonSidebar ? 'center' : 'flex-start',
+              gap: '0.65rem',
+              padding: thuGonSidebar ? '0.65rem 0' : '0.65rem 0.75rem',
+              margin: '1rem 0 1.25rem',
+              backgroundColor: isActive ? 'var(--adm-primary-hover, rgba(37, 99, 235, 0.2))' : 'var(--adm-sidebar-hover)',
+              borderRadius: '6px',
+              border: isActive ? '1px solid var(--adm-primary)' : '1px solid var(--adm-sidebar-border)',
+              textDecoration: 'none',
+              transition: 'background-color 0.15s ease'
+            })}
+            title={thuGonSidebar ? `Hồ sơ: ${user?.fullName || user?.email} (${tenVaiTro})` : undefined}
           >
             <div style={{
               width: '32px',
@@ -199,11 +204,11 @@ export const AdminLayout = () => {
                   color: '#93C5FD',
                   letterSpacing: '0.02em'
                 }}>
-                  {tenVaiTro}
+                  {tenVaiTro} • Hồ sơ
                 </div>
               </div>
             )}
-          </div>
+          </NavLink>
 
           {/* Danh Sách Mục Menu Theo Nhóm Chức Năng (RBAC) */}
           <nav>
@@ -310,6 +315,17 @@ export const AdminLayout = () => {
                   <ShoppingCart size={17} style={{ flexShrink: 0 }} />
                   <span className="admindash-hide-collapsed">Bán tại quầy</span>
                 </NavLink>
+
+                {laThuThu && (
+                  <NavLink
+                    to="/admin/users?role=khach_hang"
+                    title="Tra cứu khách hàng"
+                    className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}
+                  >
+                    <Users size={17} style={{ flexShrink: 0 }} />
+                    <span className="admindash-hide-collapsed">Tra cứu khách hàng</span>
+                  </NavLink>
+                )}
               </div>
             )}
 
