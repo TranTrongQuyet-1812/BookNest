@@ -15,18 +15,21 @@ const TaiAnhBia = ({
   const [urlXemTruoc, setUrlXemTruoc] = useState('');
   const [thongBaoLoi, setThongBaoLoi] = useState('');
 
-  // Thu hồi ObjectURL khi đổi file hoặc unmount để tránh rò rỉ bộ nhớ trình duyệt
+  // Thu hồi ObjectURL khi đổi file hoặc unmount để tránh rò rỉ bộ nhớ trình duyệt (BA9)
   useEffect(() => {
     if (!fileMoi) {
-      if (urlXemTruoc) {
-        URL.revokeObjectURL(urlXemTruoc);
-        setUrlXemTruoc('');
-      }
+      setUrlXemTruoc((cu) => {
+        if (cu) URL.revokeObjectURL(cu);
+        return '';
+      });
       return;
     }
 
     const objectUrl = URL.createObjectURL(fileMoi);
-    setUrlXemTruoc(objectUrl);
+    setUrlXemTruoc((cu) => {
+      if (cu) URL.revokeObjectURL(cu);
+      return objectUrl;
+    });
 
     return () => {
       URL.revokeObjectURL(objectUrl);
@@ -72,7 +75,7 @@ const TaiAnhBia = ({
       <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span>Ảnh bìa sách</span>
         <span style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)', fontWeight: 400 }}>
-          Hỗ trợ JPG, PNG, WebP (tối đa 5MB)
+          Chọn ảnh bìa (tối đa 5MB)
         </span>
       </label>
 
@@ -134,7 +137,7 @@ const TaiAnhBia = ({
                   {anhDangHienThi ? 'Đổi ảnh khác' : 'Chọn ảnh bìa'}
                 </button>
 
-                {(fileMoi || anhHienTai) && (
+                {fileMoi && (
                   <button
                     type="button"
                     className="btn btn-outline btn-sm"
@@ -145,9 +148,9 @@ const TaiAnhBia = ({
                       color: 'var(--adm-danger, #EF4444)',
                       borderColor: 'rgba(239, 68, 68, 0.3)'
                     }}
-                    title="Gỡ ảnh này"
+                    title="Hủy chọn file ảnh mới"
                   >
-                    <X size={14} /> Bỏ ảnh
+                    <X size={14} /> Hủy ảnh mới
                   </button>
                 )}
               </>

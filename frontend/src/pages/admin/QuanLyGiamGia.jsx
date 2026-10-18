@@ -9,17 +9,13 @@ import {
   Percent, 
   Plus, 
   Search, 
-  Calendar, 
   BookOpen, 
   Tags, 
   Play, 
   Pause, 
   Edit, 
   Eye, 
-  X, 
-  Check, 
-  Trash2,
-  AlertCircle
+  X
 } from 'lucide-react';
 
 /**
@@ -884,7 +880,7 @@ export const QuanLyGiamGia = () => {
 
                   <div>
                     <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
-                      Ngày kết thúc (tính hết ngày) <span style={{ color: '#EF4444' }}>*</span>
+                      Kết thúc lúc <span style={{ color: '#EF4444' }}>*</span>
                     </label>
                     <input
                       type="datetime-local"
@@ -979,6 +975,11 @@ export const QuanLyGiamGia = () => {
                               outline: 'none'
                             }}
                           />
+                          {dangTimSach && (
+                            <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', color: '#64748B' }}>
+                              Đang tìm...
+                            </span>
+                          )}
                           {/* Gợi ý tìm kiếm sách */}
                           {ketQuaTimSach.length > 0 && (
                             <div style={{

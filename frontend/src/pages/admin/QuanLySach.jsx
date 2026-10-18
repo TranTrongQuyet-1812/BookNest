@@ -147,6 +147,7 @@ export const QuanLySach = () => {
     return () => {
       daHuy = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trang, tuKhoaDaLoc, lanTai]);
 
   // Tải danh sách thể loại (dùng cho ô chọn thể loại khi thêm/sửa sách)
@@ -221,10 +222,22 @@ export const QuanLySach = () => {
     setModalSachMo(true);
   };
 
-  // Mở modal thêm tập mới cho bộ sách có sẵn (AT08)
-  const moModalThemTap = (sachGoc) => {
-    const tapHienTai = Number(sachGoc.Tap || 1);
-    const tapTiepTheo = tapHienTai + 1;
+  // Mở modal thêm tập mới cho bộ sách có sẵn (AT08, BA4)
+  const moModalThemTap = async (sachGoc) => {
+    let tapTiepTheo = Number(sachGoc.Tap || 1) + 1;
+    try {
+      const res = await api.get(`/books/${sachGoc.MaSach}/volumes`);
+      const cacTap = res.data?.data?.cacTap;
+      if (Array.isArray(cacTap) && cacTap.length > 0) {
+        const tapLonNhat = Math.max(...cacTap.map(t => Number(t.tap || t.Tap || 0)));
+        if (tapLonNhat > 0) {
+          tapTiepTheo = tapLonNhat + 1;
+        }
+      }
+    } catch (err) {
+      console.warn('Không thể lấy danh sách tập, dùng gợi ý mặc định:', err);
+    }
+
     setSachDangSua(null);
     setFileAnhMoi(null);
     setFormSach({

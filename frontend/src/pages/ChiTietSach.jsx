@@ -60,9 +60,9 @@ export const ChiTietSach = () => {
   const [dangGuiDanhGia, setDangGuiDanhGia] = useState(false);
   const [loiDanhGia, setLoiDanhGia] = useState('');
 
-  // Danh sách các tập khác trong cùng bộ (AT09)
+  // Danh sách các tập khác trong cùng bộ (AT09, BA5)
   const [cacTap, setCacTap] = useState([]);
-  const [dangTaiCacTap, setDangTaiCacTap] = useState(false);
+  const [loiTaiCacTap, setLoiTaiCacTap] = useState('');
 
   // 1. Tải thông tin cuốn sách và gợi ý cùng thể loại (DG03: tách riêng khỏi đánh giá)
   useEffect(() => {
@@ -152,6 +152,7 @@ export const ChiTietSach = () => {
     setTongSoTrangDanhGia(1);
     setLoiDanhGia('');
     napDanhGia(1, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // 3. Hàm kiểm tra quyền đánh giá và nạp nhận xét cũ của tôi (DG05)
@@ -193,24 +194,26 @@ export const ChiTietSach = () => {
   useEffect(() => {
     setTrangThaiToi(null);
     napTrangThaiToi();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, daDangNhap]);
 
-  // 4. Hàm nạp danh sách các tập trong bộ (AT09)
+  // 4. Hàm nạp danh sách các tập trong bộ (AT09, BA5)
   const napCacTap = async () => {
     const idGoi = id;
     const conHieuLuc = () => idDangXemRef.current === idGoi;
+    setLoiTaiCacTap('');
 
-    setDangTaiCacTap(true);
     try {
       const res = await api.get(`/books/${idGoi}/volumes`);
       if (!conHieuLuc()) return;
-      const data = res.data?.data || [];
+      const data = res.data?.data?.cacTap || res.data?.data || [];
       setCacTap(Array.isArray(data) ? data : []);
     } catch {
-      // Lỗi nạp các tập trong bộ không được làm hỏng trang sách
-      if (conHieuLuc()) setCacTap([]);
-    } finally {
-      if (conHieuLuc()) setDangTaiCacTap(false);
+      // Lỗi nạp các tập trong bộ không được làm hỏng trang sách (BA5)
+      if (conHieuLuc()) {
+        setCacTap([]);
+        setLoiTaiCacTap('Không thể tải các tập khác của bộ sách');
+      }
     }
   };
 
@@ -218,6 +221,7 @@ export const ChiTietSach = () => {
   useEffect(() => {
     setCacTap([]);
     napCacTap();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // Thêm sách vào giỏ hàng qua Zustand Store (Hỗ trợ cả Khách vãng lai & Khách hàng)
@@ -569,8 +573,8 @@ export const ChiTietSach = () => {
             )}
           </div>
 
-          {/* Khối các tập khác trong cùng bộ sách (AT09) */}
-          {cacTap.length > 0 && (
+          {/* Khối các tập khác trong cùng bộ sách (AT09, BA5) */}
+          {cacTap.length > 1 && (
             <div style={{
               marginBottom: '1.75rem',
               padding: '1.1rem 1.25rem',
@@ -613,7 +617,7 @@ export const ChiTietSach = () => {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '0.5rem',
-                        padding: '0.45rem 0.85rem',
+                        padding: '0.35rem 0.75rem',
                         borderRadius: '6px',
                         fontSize: '0.84rem',
                         fontWeight: laTapHienTai ? 700 : 500,
@@ -635,6 +639,19 @@ export const ChiTietSach = () => {
                       }}
                       title={tapItem.tenSach}
                     >
+                      {tapItem.anhBia && (
+                        <img
+                          src={tapItem.anhBia}
+                          alt=""
+                          style={{
+                            width: '20px',
+                            height: '28px',
+                            objectFit: 'cover',
+                            borderRadius: '3px',
+                            border: '1px solid rgba(0,0,0,0.1)'
+                          }}
+                        />
+                      )}
                       <span>Tập {tapItem.tap || '?'}</span>
                       {hetHang && (
                         <span style={{
@@ -653,6 +670,12 @@ export const ChiTietSach = () => {
                 })}
               </div>
             </div>
+          )}
+
+          {loiTaiCacTap && sach?.TenBo && (
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '-1rem 0 1.5rem' }}>
+              {loiTaiCacTap}
+            </p>
           )}
 
           {/* Khối Đặt Mua & Chọn Số Lượng */}

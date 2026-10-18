@@ -4,10 +4,46 @@ import api from '@booknest/shared/api';
 import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
 const nhan = (value) => value == null || value === '' ? '—' : value;
-const nguoiDungTruong = { TenSach: 'Tên sách', TacGia: 'Tác giả', MoTa: 'Mô tả', GiaBan: 'Giá bán', NguongCanhBao: 'Ngưỡng cảnh báo', AnhBia: 'Ảnh bìa', MaDanhMuc: 'Danh mục', DaAn: 'Trạng thái', TenDanhMuc: 'Tên danh mục', THANH_TOAN_QR_BAT: 'Thanh toán QR', Tap: 'Số tập', TenBo: 'Tên bộ' };
-const tenDoiTuong = { SACH: 'Sách', DANH_MUC: 'Danh mục', CAU_HINH: 'Cài đặt hệ thống' };
-// Công tắc lưu '1'/'0' trong CSDL, hiển thị cho người đọc là Bật/Tắt
-const hienGiaTri = (item, giaTri) => item.LoaiDoiTuong === 'CAU_HINH' ? (giaTri === '1' ? 'Bật' : 'Tắt') : nhan(giaTri);
+const nguoiDungTruong = {
+  TenSach: 'Tên sách',
+  TacGia: 'Tác giả',
+  MoTa: 'Mô tả',
+  GiaBan: 'Giá bán',
+  NguongCanhBao: 'Ngưỡng cảnh báo',
+  AnhBia: 'Ảnh bìa',
+  MaDanhMuc: 'Danh mục',
+  DaAn: 'Trạng thái',
+  TenDanhMuc: 'Tên danh mục',
+  THANH_TOAN_QR_BAT: 'Thanh toán QR',
+  Tap: 'Số tập',
+  TenBo: 'Tên bộ',
+  TenChuongTrinh: 'Tên chương trình',
+  PhanTramGiam: 'Mức giảm (%)',
+  NgayBatDau: 'Bắt đầu',
+  NgayKetThuc: 'Kết thúc',
+  DangHoatDong: 'Trạng thái',
+  DoiTuong: 'Đối tượng áp dụng',
+  SoLuongDoiTuong: 'Số đối tượng áp dụng'
+};
+
+const tenDoiTuong = {
+  SACH: 'Sách',
+  DANH_MUC: 'Danh mục',
+  CAU_HINH: 'Cài đặt hệ thống',
+  GIAM_GIA: 'Chương trình giảm giá'
+};
+
+// Hiển thị giá trị thân thiện cho người đọc (GGB)
+const hienGiaTri = (item, giaTri) => {
+  if (giaTri == null || giaTri === '') return '—';
+  if (item.LoaiDoiTuong === 'CAU_HINH') {
+    return (giaTri === '1' || giaTri === 1 || giaTri === true) ? 'Bật' : 'Tắt';
+  }
+  if (item.LoaiDoiTuong === 'GIAM_GIA' && item.TruongDuLieu === 'DangHoatDong') {
+    return (giaTri === '1' || giaTri === 1 || giaTri === true || giaTri === 'true') ? 'Bật' : 'Tạm dừng';
+  }
+  return nhan(giaTri);
+};
 
 export default function LichSuThayDoi() {
   const { thongBao: tb, xacNhan } = useThongBao();
