@@ -555,13 +555,23 @@ async function adminLayDanhSachDon({ page = 1, limit = 10, status, tuNgay, denNg
   if (vaiTro !== 'quan_tri' && maNhanVien) dieuKien.MaNhanVienLap = maNhanVien;
   if (tuNgay || denNgay) {
     dieuKien.NgayDat = {};
-    if (tuNgay) dieuKien.NgayDat[Op.gte] = new Date(tuNgay);
-    if (denNgay) {
-      const dNgay = new Date(denNgay);
-      if (dNgay.getUTCHours() === 0 && dNgay.getUTCMinutes() === 0 && dNgay.getUTCSeconds() === 0 && dNgay.getUTCMilliseconds() === 0) {
-        dNgay.setUTCHours(23, 59, 59, 999);
+    if (tuNgay) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(tuNgay)) {
+        dieuKien.NgayDat[Op.gte] = new Date(`${tuNgay}T00:00:00+07:00`);
+      } else {
+        dieuKien.NgayDat[Op.gte] = new Date(tuNgay);
       }
-      dieuKien.NgayDat[Op.lte] = dNgay;
+    }
+    if (denNgay) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(denNgay)) {
+        dieuKien.NgayDat[Op.lte] = new Date(`${denNgay}T23:59:59.999+07:00`);
+      } else {
+        const dNgay = new Date(denNgay);
+        if (dNgay.getUTCHours() === 0 && dNgay.getUTCMinutes() === 0 && dNgay.getUTCSeconds() === 0 && dNgay.getUTCMilliseconds() === 0) {
+          dNgay.setUTCHours(23, 59, 59, 999);
+        }
+        dieuKien.NgayDat[Op.lte] = dNgay;
+      }
     }
   }
 
@@ -785,12 +795,12 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
 async function layDanhSachDonCanSoan() {
   const cacDonHang = await DonHang.findAll({
     where: { TrangThai: 'DA_XAC_NHAN' },
-    attributes: ['MaDonHang', 'MaTraCuu', 'NgayTao', 'TrangThai', 'KenhBan', 'GhiChuKhachHang'],
+    attributes: ['MaDonHang', 'MaTraCuu', 'NgayDat', 'TrangThai', 'KenhBan', 'GhiChu'],
     include: [
       {
         model: ChiTietDonHang,
         as: 'chiTietDonHang',
-        attributes: ['MaChiTiet', 'MaSach', 'SoLuong', 'GiaBanLucMua'],
+        attributes: ['MaDonHang', 'MaSach', 'SoLuong', 'DonGia'],
         include: [
           {
             model: Sach,
@@ -800,7 +810,7 @@ async function layDanhSachDonCanSoan() {
         ]
       }
     ],
-    order: [['NgayTao', 'ASC']]
+    order: [['NgayDat', 'ASC']]
   });
 
   // Gom tổng số lượng từng cuốn sách cần soạn để thủ kho lấy hàng một lượt từ giá kệ

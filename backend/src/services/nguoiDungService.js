@@ -5,7 +5,7 @@
  */
 const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
-const { NhanVien, KhachHang, DonHang } = require('../models');
+const { NhanVien, KhachHang, DonHang, ThanhToan } = require('../models');
 const { sequelize } = require('../config/ketNoiDb');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 const { chuaTuKhoa } = require('../utils/timKiem');
@@ -149,7 +149,6 @@ async function adminTaoNhanVien({ email, matKhau, hoTen, vaiTro, soDienThoai }) 
   return layThongTinHoSo(AUD_NHAN_VIEN, nhanVienMoi.MaNhanVien);
 }
 
-// Back-Office: Khóa hoặc mở khóa tài khoản nhân viên (chặn quản trị viên tự khóa chính mình)
 // Back-Office: Cập nhật thông tin nhân viên (họ tên, SĐT, vai trò) kèm kiểm tra an toàn và ghi lịch sử
 async function adminCapNhatNhanVien(maNhanVien, { hoTen, soDienThoai, vaiTro }, maQuanTriHienTai) {
   const nhanVien = await NhanVien.findByPk(maNhanVien);
@@ -284,8 +283,15 @@ async function adminLayChiTietKhachHang(maKhachHang) {
 
   const donHangGanDay = await DonHang.findAll({
     where: { MaKhachHang: maKhachHang },
-    attributes: ['MaDonHang', 'NgayTao', 'TrangThai', 'TongTien', 'KenhBan', 'PhuongThucThanhToan'],
-    order: [['NgayTao', 'DESC']],
+    attributes: ['MaDonHang', 'MaTraCuu', 'NgayDat', 'TrangThai', 'TongTien', 'KenhBan'],
+    include: [
+      {
+        model: ThanhToan,
+        as: 'thanhToan',
+        attributes: ['PhuongThuc', 'TrangThai']
+      }
+    ],
+    order: [['NgayDat', 'DESC']],
     limit: 5
   });
 

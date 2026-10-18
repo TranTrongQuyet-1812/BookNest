@@ -6,22 +6,30 @@
 const { sequelize, DonHang, Sach, KhachHang, DanhGia } = require('../models');
 const { Op } = require('sequelize');
 
-// Hàm bổ trợ xử lý điều kiện ngày và kênh bán cho câu lệnh SQL
+// Hàm bổ trợ xử lý điều kiện ngày và kênh bán cho câu lệnh SQL theo chuẩn múi giờ Việt Nam (UTC+7)
 function xayDungDieuKienLoc({ tuNgay, denNgay, kenhBan, cotNgay = 'ls.NgayHoanThanh', aliasDonHang = 'dh' }) {
   let dieuKienSql = '';
   const replacements = {};
 
   if (tuNgay) {
     dieuKienSql += ` AND ${cotNgay} >= :tuNgay`;
-    replacements.tuNgay = new Date(tuNgay);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(tuNgay)) {
+      replacements.tuNgay = new Date(`${tuNgay}T00:00:00+07:00`);
+    } else {
+      replacements.tuNgay = new Date(tuNgay);
+    }
   }
   if (denNgay) {
-    const dNgay = new Date(denNgay);
-    if (dNgay.getUTCHours() === 0 && dNgay.getUTCMinutes() === 0 && dNgay.getUTCSeconds() === 0 && dNgay.getUTCMilliseconds() === 0) {
-      dNgay.setUTCHours(23, 59, 59, 999);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(denNgay)) {
+      replacements.denNgay = new Date(`${denNgay}T23:59:59.999+07:00`);
+    } else {
+      const dNgay = new Date(denNgay);
+      if (dNgay.getUTCHours() === 0 && dNgay.getUTCMinutes() === 0 && dNgay.getUTCSeconds() === 0 && dNgay.getUTCMilliseconds() === 0) {
+        dNgay.setUTCHours(23, 59, 59, 999);
+      }
+      replacements.denNgay = dNgay;
     }
     dieuKienSql += ` AND ${cotNgay} <= :denNgay`;
-    replacements.denNgay = dNgay;
   }
   if (kenhBan) {
     dieuKienSql += ` AND ${aliasDonHang}.KenhBan = :kenhBan`;
@@ -172,7 +180,7 @@ async function layDoanhThuTheoChuoi({ tuNgay, denNgay, kenhBan, group = 'day' } 
 
   const cauTruyVan = `
     SELECT 
-      FORMAT(ls.NgayHoanThanh, :dinhDangThoiGian) AS thoiGian,
+      FORMAT(DATEADD(hour, 7, ls.NgayHoanThanh), :dinhDangThoiGian) AS thoiGian,
       COALESCE(SUM(dh.TongTien), 0) AS tongDoanhThu,
       COUNT(DISTINCT dh.MaDonHang) AS soDonThanhCong,
       COALESCE(SUM(ct.TongSach), 0) AS tongSachDaBan
@@ -189,7 +197,7 @@ async function layDoanhThuTheoChuoi({ tuNgay, denNgay, kenhBan, group = 'day' } 
       GROUP BY MaDonHang
     ) ct ON dh.MaDonHang = ct.MaDonHang
     WHERE dh.TrangThai = 'DA_GIAO' ${dieuKienSql}
-    GROUP BY FORMAT(ls.NgayHoanThanh, :dinhDangThoiGian)
+    GROUP BY FORMAT(DATEADD(hour, 7, ls.NgayHoanThanh), :dinhDangThoiGian)
     ORDER BY thoiGian ASC
   `;
 
@@ -251,11 +259,19 @@ async function layDoanhThuTheoDanhMuc({ tuNgay, denNgay, kenhBan } = {}) {
   });
 }
 
+// Tính đầu ngày hôm nay theo giờ Việt Nam (UTC+7) độc lập với múi giờ máy chủ
+function layDauNgayHomNayVN() {
+  const now = new Date();
+  const vnTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+  const nam = vnTime.getUTCFullYear();
+  const thang = vnTime.getUTCMonth();
+  const ngay = vnTime.getUTCDate();
+  return new Date(Date.UTC(nam, thang, ngay, 0, 0, 0) - 7 * 60 * 60 * 1000);
+}
+
 // 6. Bảng điều khiển theo vai trò (T40: GET /api/admin/summary)
 async function layTongHopCongViecTheoVaiTro(maNhanVien, vaiTro) {
-  const dauNgayHomNay = new Date();
-  dauNgayHomNay.setHours(0, 0, 0, 0);
-
+  const dauNgayHomNay = layDauNgayHomNayVN();
   const bayNgayTruoc = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   if (vaiTro === 'thu_kho') {
@@ -316,16 +332,28 @@ async function layTongHopCongViecTheoVaiTro(maNhanVien, vaiTro) {
     donCanSoan,
     sachSapHet,
     danhGiaMoi,
-    donHoanTatHomNay,
+    ketQuaDonHoanTat,
     khachMoiHomNay
   ] = await Promise.all([
     DonHang.count({ where: { TrangThai: 'CHO_DUYET', KenhBan: 'TRUC_TUYEN' } }),
     DonHang.count({ where: { TrangThai: 'DA_XAC_NHAN' } }),
     Sach.count({ where: { SoLuongTon: { [Op.lte]: 10 }, DaAn: false } }),
     DanhGia.count({ where: { NgayTao: { [Op.gte]: bayNgayTruoc } } }),
-    DonHang.count({ where: { TrangThai: 'DA_GIAO', NgayDat: { [Op.gte]: dauNgayHomNay } } }),
+    sequelize.query(`
+      SELECT COUNT(DISTINCT ls.MaDonHang) AS soDonHoanTat
+      FROM LichSuTrangThaiDonHang ls
+      INNER JOIN DonHang dh ON ls.MaDonHang = dh.MaDonHang
+      WHERE ls.TrangThaiMoi = 'DA_GIAO'
+        AND dh.TrangThai = 'DA_GIAO'
+        AND ls.NgayThayDoi >= :dauNgay
+    `, {
+      replacements: { dauNgay: dauNgayHomNay },
+      type: sequelize.QueryTypes.SELECT
+    }),
     KhachHang.count({ where: { NgayTao: { [Op.gte]: dauNgayHomNay } } })
   ]);
+
+  const donHoanTatHomNay = parseInt(ketQuaDonHoanTat?.[0]?.soDonHoanTat || 0, 10);
 
   return {
     vaiTro: 'quan_tri',

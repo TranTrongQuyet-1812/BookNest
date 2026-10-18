@@ -226,24 +226,36 @@ async function xacMinhOtpQuenMatKhau(email, maOtp) {
     throw LoiNghiepVu.yeuCauKhongHopLe('Mã xác nhận không tồn tại hoặc đã hết hạn. Vui lòng yêu cầu mã mới.');
   }
 
-  // Nếu số lần thử đã chạm hoặc vượt quá 5 lần thì mã bị hủy
-  if (banGhi.SoLanThu >= 5) {
-    await banGhi.update({ DaDung: true });
-    throw LoiNghiepVu.yeuCauKhongHopLe('Bạn đã nhập sai mã xác nhận quá 5 lần. Mã này đã bị hủy vì lý do an toàn.');
+  // Tăng số lần thử nguyên tử bằng câu lệnh UPDATE có điều kiện SoLanThu < 5 và DaDung = 0 chống race condition
+  const [soDongCapNhat] = await OtpQuenMatKhau.update(
+    { SoLanThu: sequelize.literal('SoLanThu + 1') },
+    {
+      where: {
+        MaOtp: banGhi.MaOtp,
+        SoLanThu: { [Op.lt]: 5 },
+        DaDung: false
+      }
+    }
+  );
+
+  if (soDongCapNhat === 0) {
+    // Đã có tiến trình khác dùng hết 5 lần hoặc mã đã bị hủy/sử dụng
+    await OtpQuenMatKhau.update({ DaDung: true }, { where: { MaOtp: banGhi.MaOtp } });
+    if (typeof banGhi.update === 'function') await banGhi.update({ DaDung: true });
+    throw LoiNghiepVu.yeuCauKhongHopLe('Mã xác nhận đã hết hạn, đã sử dụng hoặc bị hủy do nhập sai quá 5 lần.');
   }
 
+  // Tăng số lần thử trên đối tượng trong bộ nhớ
+  banGhi.SoLanThu = (banGhi.SoLanThu || 0) + 1;
+
+  // Sau khi đã chiếm giữ 1 lượt thử hợp lệ trong hạn mức (< 5), mới tính băm và so khớp
   const hashThu = tinhOtpHash(khachHang.MaKhachHang, maOtp);
   const hopLe = soSanhOtpHash(hashThu, banGhi.MaOtpBam);
 
   if (!hopLe) {
-    // Tăng SoLanThu bằng một câu UPDATE có điều kiện SoLanThu < 5 chống race condition
-    await OtpQuenMatKhau.update(
-      { SoLanThu: sequelize.literal('SoLanThu + 1') },
-      { where: { MaOtp: banGhi.MaOtp, SoLanThu: { [Op.lt]: 5 } } }
-    );
-    const soLanSauDo = banGhi.SoLanThu + 1;
-    if (soLanSauDo >= 5) {
-      await banGhi.update({ DaDung: true });
+    if (banGhi.SoLanThu >= 5) {
+      await OtpQuenMatKhau.update({ DaDung: true }, { where: { MaOtp: banGhi.MaOtp } });
+      if (typeof banGhi.update === 'function') await banGhi.update({ DaDung: true });
       throw LoiNghiepVu.yeuCauKhongHopLe('Bạn đã nhập sai mã xác nhận quá 5 lần. Mã này đã bị hủy vì lý do an toàn.');
     }
     throw LoiNghiepVu.yeuCauKhongHopLe('Mã xác nhận không chính xác. Vui lòng kiểm tra lại.');
@@ -264,11 +276,27 @@ async function datLaiMatKhau(email, maOtp, matKhauMoi) {
   // Mã hóa mật khẩu mới bằng bcrypt salt rounds = 10
   const matKhauHash = await bcrypt.hash(matKhauMoi, 10);
 
-  // Đổi mật khẩu và cập nhật DaDung = 1 trong cùng transaction
+  // Đổi mật khẩu và cập nhật DaDung = 1 trong cùng transaction có điều kiện DaDung = 0
   const t = await sequelize.transaction();
   try {
+    const [soDongCapNhat] = await OtpQuenMatKhau.update(
+      { DaDung: true },
+      {
+        where: { MaOtp: banGhiOtp.MaOtp, DaDung: false },
+        transaction: t
+      }
+    );
+
+    if (soDongCapNhat === 0) {
+      throw LoiNghiepVu.yeuCauKhongHopLe('Mã xác nhận đã được sử dụng hoặc không còn hiệu lực.');
+    }
+
+    banGhiOtp.DaDung = true;
+    if (typeof banGhiOtp.update === 'function') {
+      await banGhiOtp.update({ DaDung: true }, { transaction: t });
+    }
+
     await khachHang.update({ MatKhauHash: matKhauHash }, { transaction: t });
-    await banGhiOtp.update({ DaDung: true }, { transaction: t });
     await t.commit();
   } catch (err) {
     await t.rollback();
