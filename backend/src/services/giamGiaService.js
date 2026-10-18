@@ -229,6 +229,39 @@ async function layChiTietChuongTrinh(maChuongTrinh) {
 }
 
 /**
+ * Kiểm tra các MaSach và MaDanhMuc có tồn tại trong CSDL không (GGD)
+ */
+async function kiemTraTonTaiDoiTuongGiamGia({ danhSachMaSach, danhSachMaDanhMuc, transaction }) {
+  if (Array.isArray(danhSachMaSach) && danhSachMaSach.length > 0) {
+    const cacSach = await Sach.findAll({
+      where: { MaSach: { [Op.in]: danhSachMaSach } },
+      attributes: ['MaSach'],
+      transaction
+    });
+    const setMaSach = new Set(cacSach.map(s => Number(s.MaSach)));
+    for (const ma of danhSachMaSach) {
+      if (!setMaSach.has(Number(ma))) {
+        throw LoiNghiepVu.yeuCauKhongHopLe(`Cuốn sách #${ma} không tồn tại`);
+      }
+    }
+  }
+
+  if (Array.isArray(danhSachMaDanhMuc) && danhSachMaDanhMuc.length > 0) {
+    const cacDm = await DanhMuc.findAll({
+      where: { MaDanhMuc: { [Op.in]: danhSachMaDanhMuc } },
+      attributes: ['MaDanhMuc'],
+      transaction
+    });
+    const setMaDm = new Set(cacDm.map(d => Number(d.MaDanhMuc)));
+    for (const ma of danhSachMaDanhMuc) {
+      if (!setMaDm.has(Number(ma))) {
+        throw LoiNghiepVu.yeuCauKhongHopLe(`Thể loại #${ma} không tồn tại`);
+      }
+    }
+  }
+}
+
+/**
  * Tạo chương trình giảm giá mới (GG03)
  */
 async function taoChuongTrinh(duLieu, maNhanVienTao) {
@@ -257,6 +290,13 @@ async function taoChuongTrinh(duLieu, maNhanVienTao) {
 
   const t = await sequelize.transaction();
   try {
+    // Kiểm tra các cuốn sách và danh mục có tồn tại không trước khi tạo (GGD)
+    await kiemTraTonTaiDoiTuongGiamGia({
+      danhSachMaSach: coSach ? danhSachMaSach : [],
+      danhSachMaDanhMuc: coDanhMuc ? danhSachMaDanhMuc : [],
+      transaction: t
+    });
+
     const chuongTrinh = await ChuongTrinhGiamGia.create({
       TenChuongTrinh: tenChuongTrinh.trim(),
       PhanTramGiam: pt,
@@ -367,6 +407,13 @@ async function capNhatChuongTrinh(maChuongTrinh, duLieu, maNhanVien) {
     const coCapNhatDm = Array.isArray(duLieu.danhSachMaDanhMuc);
 
     if (coCapNhatSach || coCapNhatDm) {
+      // Kiểm tra các cuốn sách và danh mục có tồn tại không trước khi lưu (GGD)
+      await kiemTraTonTaiDoiTuongGiamGia({
+        danhSachMaSach: coCapNhatSach ? duLieu.danhSachMaSach : [],
+        danhSachMaDanhMuc: coCapNhatDm ? duLieu.danhSachMaDanhMuc : [],
+        transaction: t
+      });
+
       await ChuongTrinhGiamGiaDoiTuong.destroy({
         where: { MaChuongTrinh: maChuongTrinh },
         transaction: t

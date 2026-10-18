@@ -136,13 +136,21 @@ const xoaAnhTrenCloudinary = async (url) => {
   const { tenDamMay, khoa, matKhau, daCauHinh } = cauHinh.cloudinary;
   if (!daCauHinh) return false;
 
-  // Điều kiện 1: URL thuộc cloud của dự án
-  if (!url.includes(`res.cloudinary.com/${tenDamMay}/`)) {
+  // Phân tích cú pháp URL an toàn (BA7)
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    return false;
+  }
+
+  // Điều kiện 1: Hostname phải là res.cloudinary.com và pathname bắt đầu bằng /<tenDamMay>/
+  if (parsedUrl.hostname !== 'res.cloudinary.com' || !parsedUrl.pathname.startsWith(`/${tenDamMay}/`)) {
     return false;
   }
 
   // Điều kiện 2: URL nằm trong thư mục booknest/sach/
-  if (!url.includes('/booknest/sach/')) {
+  if (!parsedUrl.pathname.includes('/booknest/sach/')) {
     return false;
   }
 

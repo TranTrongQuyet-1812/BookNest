@@ -309,8 +309,6 @@ async function thucThiTimSach({ tu_khoa, the_loai, gia_toi_da }, tinNhanGoc = ''
       return { timThay: false, thongDiep: 'Vui lòng cung cấp tên cuốn sách hoặc tác giả bạn muốn tìm nhé.' };
     }
 
-    const boLocGia = (gia_toi_da && Number(gia_toi_da) > 0) ? { GiaBan: { [Op.lte]: Number(gia_toi_da) } } : {};
-
     const includeOptions = [{
       model: DanhMuc,
       as: 'danhMuc',
@@ -324,18 +322,18 @@ async function thucThiTimSach({ tu_khoa, the_loai, gia_toi_da }, tinNhanGoc = ''
     let danhSach = [];
 
     // 1. Tìm chính xác qua Tokenized AND với tu_khoa (nếu AI truyền đúng)
+    // Tăng limit lên 10 để sau khi lọc theo giá sau giảm vẫn đảm bảo số lượng kết quả (GGC)
     if (tu_khoa && tu_khoa.trim()) {
       danhSach = await Sach.findAll({
         where: {
           ...dieuKien,
-          ...boLocGia,
           [Op.or]: [
             chuaTuKhoaLinhHoat('[Sach].[TenSach]', tu_khoa.trim()),
             chuaTuKhoaLinhHoat('[Sach].[TacGia]', tu_khoa.trim())
           ]
         },
         include: includeOptions,
-        limit: 5,
+        limit: 10,
         order: [['NgayTao', 'DESC']],
         attributes: ['MaSach', 'TenSach', 'TacGia', 'GiaBan', 'SoLuongTon', 'AnhBia', 'MoTa']
       });
@@ -344,17 +342,37 @@ async function thucThiTimSach({ tu_khoa, the_loai, gia_toi_da }, tinNhanGoc = ''
     // 2. Nếu tu_khoa không khớp chính xác, ƯU TIÊN tìm mờ theo tinNhanGoc của người dùng
     // (Bảo vệ chống hiện tượng LLM trích xuất méo ký tự tiếng Việt)
     if (danhSach.length === 0 && tinNhanGoc && tinNhanGoc.trim()) {
-      danhSach = await timSachMoDiem(tinNhanGoc.trim(), { limit: 5, whereThem: boLocGia });
+      danhSach = await timSachMoDiem(tinNhanGoc.trim(), { limit: 10 });
     }
 
     // 3. Nếu tinNhanGoc vẫn chưa ra, mới tìm mờ theo tu_khoa của AI
     if (danhSach.length === 0 && tu_khoa && tu_khoa.trim()) {
-      danhSach = await timSachMoDiem(tu_khoa.trim(), { limit: 5, whereThem: boLocGia });
+      danhSach = await timSachMoDiem(tu_khoa.trim(), { limit: 10 });
     }
 
     if (danhSach.length === 0) {
       return { timThay: false, thongDiep: 'Không tìm thấy cuốn sách nào phù hợp với yêu cầu trong kho.' };
     }
+
+    // Lấy phần trăm giảm giá để tính giá thực tế sau giảm
+    const banDoGiamGia = await giamGiaService.layPhanTramDangApDung(danhSach);
+
+    // GGC: Lọc gia_toi_da theo giá sau giảm (giaSau <= gia_toi_da), không lọc theo giá niêm yết
+    if (gia_toi_da && Number(gia_toi_da) > 0) {
+      const giaTran = Number(gia_toi_da);
+      danhSach = danhSach.filter(s => {
+        const pt = banDoGiamGia[s.MaSach] || 0;
+        const giaSau = tinhGiaSauGiam(s.GiaBan, pt);
+        return giaSau <= giaTran;
+      });
+
+      if (danhSach.length === 0) {
+        return { timThay: false, thongDiep: 'Không tìm thấy cuốn sách nào có giá sau giảm phù hợp với mức ngân sách yêu cầu.' };
+      }
+    }
+
+    // Giữ tối đa 5 kết quả tốt nhất
+    danhSach = danhSach.slice(0, 5);
 
     // Kiểm tra xem câu của khách có chứa trọn vẹn tên sách không (để phân biệt khớp chính xác vs khớp nghi ngờ)
     const tenSachDauKhongDau = boDauTiengViet(danhSach[0].TenSach).toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -362,7 +380,6 @@ async function thucThiTimSach({ tu_khoa, the_loai, gia_toi_da }, tinNhanGoc = ''
     const khopChinhXac = cauKhachKhongDau.includes(tenSachDauKhongDau);
     const canXacNhan = !khopChinhXac;
 
-    const banDoGiamGia = await giamGiaService.layPhanTramDangApDung(danhSach);
     const sachDau = danhSach[0];
     const ptDau = banDoGiamGia[sachDau.MaSach] || 0;
     const giaSauDau = tinhGiaSauGiam(sachDau.GiaBan, ptDau);

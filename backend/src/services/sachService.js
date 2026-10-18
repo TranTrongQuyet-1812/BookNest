@@ -9,14 +9,14 @@ const { ghiNhanThayDoi } = require('./lichSuThayDoiService');
 const anhBiaService = require('./anhBiaService');
 const { tinhGiaSauGiam } = require('../utils/giaBan');
 
-// Biểu thức SQL tính phần trăm giảm giá cao nhất đang có hiệu lực (GG04)
+// Biểu thức SQL tính phần trăm giảm giá cao nhất đang có hiệu lực (GG04 - Sử dụng GETUTCDATE() đồng bộ UTC)
 const bieuThucPhanTramGiam = `(
   SELECT MAX(ct.PhanTramGiam)
   FROM ChuongTrinhGiamGia ct
   INNER JOIN ChuongTrinhGiamGiaDoiTuong dt ON ct.MaChuongTrinh = dt.MaChuongTrinh
   WHERE ct.DangHoatDong = 1 
-    AND ct.NgayBatDau <= GETDATE() 
-    AND ct.NgayKetThuc >= GETDATE()
+    AND ct.NgayBatDau <= GETUTCDATE() 
+    AND ct.NgayKetThuc >= GETUTCDATE()
     AND (dt.MaSach = Sach.MaSach OR dt.MaDanhMuc = Sach.MaDanhMuc)
 )`;
 
@@ -335,34 +335,44 @@ async function capNhatSach(maSach, duLieu, maNhanVien) {
       if (!danhMuc) throw LoiNghiepVu.yeuCauKhongHopLe('Danh mục được chọn không tồn tại');
     }
 
-    const tenBoMoi = duLieu.tenBo !== undefined ? (duLieu.tenBo && duLieu.tenBo.trim() ? duLieu.tenBo.trim() : null) : sach.TenBo;
-    const tapMoi = duLieu.tap !== undefined ? (duLieu.tap !== null ? parseInt(duLieu.tap, 10) : null) : sach.Tap;
+    // Luật kiểm tra tập và bộ chỉ chạy khi người dùng có thay đổi tập hoặc bộ (BA3)
+    if (duLieu.tenBo !== undefined || duLieu.tap !== undefined) {
+      const tenBoMoi = duLieu.tenBo !== undefined ? (duLieu.tenBo && duLieu.tenBo.trim() ? duLieu.tenBo.trim() : null) : sach.TenBo;
+      const tapMoi = duLieu.tap !== undefined ? (duLieu.tap !== null ? parseInt(duLieu.tap, 10) : null) : sach.Tap;
 
-    if (tapMoi && !tenBoMoi) {
-      throw LoiNghiepVu.yeuCauKhongHopLe('Sách có số tập thì phải có tên bộ');
-    }
-
-    if (tenBoMoi && tapMoi) {
-      const daCoTap = await Sach.findOne({
-        where: {
-          TenBo: tenBoMoi,
-          Tap: tapMoi,
-          MaSach: { [Op.ne]: sach.MaSach }
-        },
-        transaction: t
-      });
-      if (daCoTap) {
-        throw LoiNghiepVu.xungDot(`Bộ sách này đã có tập ${tapMoi}`);
+      if (tapMoi && !tenBoMoi) {
+        throw LoiNghiepVu.yeuCauKhongHopLe('Sách có số tập thì phải có tên bộ');
       }
+
+      if (tenBoMoi && tapMoi) {
+        const daCoTap = await Sach.findOne({
+          where: {
+            TenBo: tenBoMoi,
+            Tap: tapMoi,
+            MaSach: { [Op.ne]: sach.MaSach }
+          },
+          transaction: t
+        });
+        if (daCoTap) {
+          throw LoiNghiepVu.xungDot(`Bộ sách này đã có tập ${tapMoi}`);
+        }
+      }
+
+      duLieu.tenBo = tenBoMoi;
+      duLieu.tap = tapMoi;
     }
 
-    if (duLieu.tenBo !== undefined) duLieu.tenBo = tenBoMoi;
-    if (duLieu.tap !== undefined) duLieu.tap = tapMoi;
-
+    // Chỉ chuẩn hóa tác giả khi giá trị gửi lên khác giá trị hiện tại của sách (BA2)
     let ketQuaTacGia = null;
     if (duLieu.tacGia !== undefined) {
-      ketQuaTacGia = await chuanHoaTacGia(duLieu.tacGia, t);
-      duLieu.tacGia = ketQuaTacGia.tenChuanHoa;
+      const tacGiaMoi = (duLieu.tacGia || '').trim();
+      const tacGiaHienTai = (sach.TacGia || '').trim();
+      if (tacGiaMoi !== tacGiaHienTai) {
+        ketQuaTacGia = await chuanHoaTacGia(duLieu.tacGia, t);
+        duLieu.tacGia = ketQuaTacGia.tenChuanHoa;
+      } else {
+        duLieu.tacGia = sach.TacGia;
+      }
     }
 
     const anhBiaCu = sach.AnhBia;
