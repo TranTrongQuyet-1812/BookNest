@@ -40,7 +40,15 @@ export default function BanHangQuay() {
       .finally(() => setDangTaiLichSu(false));
   }, [tab, donVuaBan]);
 
-  const tongTien = useMemo(() => gioHang.reduce((tong, mon) => tong + Number(mon.GiaBan) * mon.soLuong, 0), [gioHang]);
+  const layDonGiaBan = (mon) => {
+    const phanTram = Number(mon.PhanTramGiam || 0);
+    if (phanTram > 0 && mon.GiaSauGiam !== undefined && mon.GiaSauGiam !== null) {
+      return Number(mon.GiaSauGiam);
+    }
+    return Number(mon.GiaBan || 0);
+  };
+
+  const tongTien = useMemo(() => gioHang.reduce((tong, mon) => tong + layDonGiaBan(mon) * mon.soLuong, 0), [gioHang]);
 
   const themSach = (sach) => {
     setLoi('');
@@ -99,27 +107,59 @@ export default function BanHangQuay() {
             <div className="bo-panel-title"><div><h2>Chọn sách</h2><p>Tìm theo tên sách hoặc tác giả</p></div><span className="bo-soft-badge">{sachTimDuoc.length} kết quả</span></div>
             <label className="bo-search"><Search size={18}/><input value={tuKhoa} onChange={e => setTuKhoa(e.target.value)} placeholder="Ví dụ: Dế mèn phiêu lưu ký"/><kbd>⌕</kbd></label>
             <div className="counter-results">
-              {dangTim ? <div className="bo-empty">Đang tìm sách…</div> : sachTimDuoc.length === 0 ? <div className="bo-empty">Không tìm thấy sách còn bán.</div> : sachTimDuoc.map(sach => (
-                <article className="counter-book" key={sach.MaSach}>
-                  <img src={sach.AnhBia || '/placeholder-book.png'} alt="" loading="lazy"/>
-                  <div className="counter-book-info"><strong>{sach.TenSach}</strong><span>{sach.TacGia}</span><b>{dinhDangTien(sach.GiaBan)}</b><small>Còn {sach.SoLuongTon}</small></div>
-                  <button className="bo-icon-button" onClick={() => themSach(sach)} disabled={!sach.SoLuongTon} aria-label={`Thêm ${sach.TenSach}`}><Plus size={18}/></button>
-                </article>
-              ))}
+              {dangTim ? <div className="bo-empty">Đang tìm sách…</div> : sachTimDuoc.length === 0 ? <div className="bo-empty">Không tìm thấy sách còn bán.</div> : sachTimDuoc.map(sach => {
+                const coGiam = Number(sach.PhanTramGiam || 0) > 0;
+                const donGia = layDonGiaBan(sach);
+                return (
+                  <article className="counter-book" key={sach.MaSach}>
+                    <img src={sach.AnhBia || '/placeholder-book.png'} alt="" loading="lazy"/>
+                    <div className="counter-book-info">
+                      <strong>{sach.TenSach}</strong>
+                      <span>{sach.TacGia}</span>
+                      <div className="counter-book-price">
+                        <b>{dinhDangTien(donGia)}</b>
+                        {coGiam && (
+                          <>
+                            <span className="counter-book-old">{dinhDangTien(sach.GiaBan)}</span>
+                            <span className="counter-book-badge">-{sach.PhanTramGiam}%</span>
+                          </>
+                        )}
+                      </div>
+                      <small>Còn {sach.SoLuongTon}</small>
+                    </div>
+                    <button className="bo-icon-button" onClick={() => themSach(sach)} disabled={!sach.SoLuongTon} aria-label={`Thêm ${sach.TenSach}`}><Plus size={18}/></button>
+                  </article>
+                );
+              })}
             </div>
           </section>
 
           <section className="bo-panel counter-checkout">
             <div className="bo-panel-title"><div><h2>Hóa đơn mới</h2><p>{gioHang.length} đầu sách · {gioHang.reduce((sum, mon) => sum + mon.soLuong, 0)} cuốn</p></div><span className="counter-order-mark">BN · QUẦY</span></div>
             <div className="counter-lines">
-              {!gioHang.length ? <div className="bo-empty counter-empty"><ShoppingBag size={28}/><span>Chọn sách để bắt đầu hóa đơn</span></div> : gioHang.map(mon => (
-                <div className="counter-line" key={mon.MaSach}>
-                  <div className="counter-line-main"><strong>{mon.TenSach}</strong><small>{dinhDangTien(mon.GiaBan)} / cuốn</small></div>
-                  <div className="counter-quantity"><button onClick={() => doiSoLuong(mon.MaSach, mon.soLuong - 1)} aria-label="Giảm"><Minus size={13}/></button><input aria-label="Số lượng" type="number" min="1" max={mon.SoLuongTon} value={mon.soLuong} onChange={e => doiSoLuong(mon.MaSach, Number(e.target.value))}/><button disabled={mon.soLuong >= mon.SoLuongTon} onClick={() => doiSoLuong(mon.MaSach, mon.soLuong + 1)} aria-label="Tăng"><Plus size={13}/></button></div>
-                  <strong className="counter-line-total">{dinhDangTien(mon.GiaBan * mon.soLuong)}</strong>
-                  <button className="bo-quiet-button" onClick={() => setGioHang(list => list.filter(s => s.MaSach !== mon.MaSach))} aria-label="Xóa khỏi hóa đơn"><Trash2 size={15}/></button>
-                </div>
-              ))}
+              {!gioHang.length ? <div className="bo-empty counter-empty"><ShoppingBag size={28}/><span>Chọn sách để bắt đầu hóa đơn</span></div> : gioHang.map(mon => {
+                const coGiam = Number(mon.PhanTramGiam || 0) > 0;
+                const donGia = layDonGiaBan(mon);
+                return (
+                  <div className="counter-line" key={mon.MaSach}>
+                    <div className="counter-line-main">
+                      <strong>{mon.TenSach}</strong>
+                      <small>
+                        {dinhDangTien(donGia)} / cuốn
+                        {coGiam && (
+                          <>
+                            <span className="counter-line-old">{dinhDangTien(mon.GiaBan)}</span>
+                            <span className="counter-line-badge">-{mon.PhanTramGiam}%</span>
+                          </>
+                        )}
+                      </small>
+                    </div>
+                    <div className="counter-quantity"><button onClick={() => doiSoLuong(mon.MaSach, mon.soLuong - 1)} aria-label="Giảm"><Minus size={13}/></button><input aria-label="Số lượng" type="number" min="1" max={mon.SoLuongTon} value={mon.soLuong} onChange={e => doiSoLuong(mon.MaSach, Number(e.target.value))}/><button disabled={mon.soLuong >= mon.SoLuongTon} onClick={() => doiSoLuong(mon.MaSach, mon.soLuong + 1)} aria-label="Tăng"><Plus size={13}/></button></div>
+                    <strong className="counter-line-total">{dinhDangTien(donGia * mon.soLuong)}</strong>
+                    <button className="bo-quiet-button" onClick={() => setGioHang(list => list.filter(s => s.MaSach !== mon.MaSach))} aria-label="Xóa khỏi hóa đơn"><Trash2 size={15}/></button>
+                  </div>
+                );
+              })}
             </div>
             <div className="counter-customer-title"><UserRound size={16}/><span>Thông tin khách (không bắt buộc)</span></div>
             <div className="counter-customer-fields">
