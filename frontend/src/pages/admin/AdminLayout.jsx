@@ -16,6 +16,7 @@ import {
   MessageSquare,
   CreditCard,
   Percent,
+  ClipboardCheck,
   PanelLeftClose,
   PanelLeftOpen
 } from 'lucide-react';
@@ -104,6 +105,7 @@ export const AdminLayout = () => {
     if (p.includes('/admin/settings')) return 'Cài Đặt Hệ Thống';
     if (p.includes('/admin/users')) return 'Quản Lý Nhân Sự & Khách';
     if (p.includes('/admin/profile')) return 'Hồ Sơ & Đổi Mật Khẩu';
+    if (p.includes('/admin/pick-list')) return 'Đơn Cần Soạn (Pick List)';
     return 'Bảng Điều Hành';
   };
 
@@ -255,6 +257,15 @@ export const AdminLayout = () => {
                   <Percent size={17} style={{ flexShrink: 0 }} />
                   <span className="admindash-hide-collapsed">Giảm Giá Sách</span>
                 </NavLink>
+
+                <NavLink
+                  to="/admin/pick-list"
+                  title="Đơn Cần Soạn (Pick List)"
+                  className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}
+                >
+                  <ClipboardCheck size={17} style={{ flexShrink: 0 }} />
+                  <span className="admindash-hide-collapsed">Đơn Cần Soạn</span>
+                </NavLink>
               </div>
             )}
 
@@ -283,6 +294,17 @@ export const AdminLayout = () => {
                   <ClipboardList size={17} style={{ flexShrink: 0 }} />
                   <span className="admindash-hide-collapsed">Xử Lý Đơn Hàng</span>
                 </NavLink>
+
+                {laThuThu && (
+                  <NavLink
+                    to="/admin/pick-list"
+                    title="Đơn Cần Soạn (Pick List)"
+                    className={({ isActive }) => `admindash-nav-link ${isActive ? 'active' : ''}`}
+                  >
+                    <ClipboardCheck size={17} style={{ flexShrink: 0 }} />
+                    <span className="admindash-hide-collapsed">Đơn Cần Soạn</span>
+                  </NavLink>
+                )}
 
                 <NavLink
                   to="/admin/payments"
