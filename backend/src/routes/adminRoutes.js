@@ -1211,6 +1211,33 @@ router.get(
 
 /**
  * @swagger
+ * /api/admin/summary:
+ *   get:
+ *     summary: Tổng hợp danh sách đầu việc cần xử lý theo vai trò nhân sự đăng nhập (Quản trị viên, Thủ kho, Thủ thư)
+ *     tags: [Quản trị (Admin)]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Dữ liệu tổng hợp việc cần làm và danh mục điều hướng nhanh
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Không có quyền truy cập
+ */
+router.get(
+  '/summary',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
+  batLoiAsync(thongKeController.xuLyLaySummary)
+);
+
+/**
+ * @swagger
  * /api/admin/change-history:
  *   get:
  *     summary: Xem nhật ký lịch sử thay đổi quản trị (Chỉ Quản trị viên)

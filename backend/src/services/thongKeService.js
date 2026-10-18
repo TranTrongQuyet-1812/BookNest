@@ -3,7 +3,8 @@
  * Toàn bộ tính toán được gom nhóm trực tiếp tại SQL Server để tối ưu hiệu năng.
  * Hỗ trợ phân tích theo kênh bán (TRUC_TUYEN / TAI_QUAY), chuỗi thời gian và danh mục.
  */
-const { sequelize } = require('../models');
+const { sequelize, DonHang, Sach, KhachHang, DanhGia } = require('../models');
+const { Op } = require('sequelize');
 
 // Hàm bổ trợ xử lý điều kiện ngày và kênh bán cho câu lệnh SQL
 function xayDungDieuKienLoc({ tuNgay, denNgay, kenhBan, cotNgay = 'ls.NgayHoanThanh', aliasDonHang = 'dh' }) {
@@ -250,10 +251,107 @@ async function layDoanhThuTheoDanhMuc({ tuNgay, denNgay, kenhBan } = {}) {
   });
 }
 
+// 6. Bảng điều khiển theo vai trò (T40: GET /api/admin/summary)
+async function layTongHopCongViecTheoVaiTro(maNhanVien, vaiTro) {
+  const dauNgayHomNay = new Date();
+  dauNgayHomNay.setHours(0, 0, 0, 0);
+
+  const bayNgayTruoc = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  if (vaiTro === 'thu_kho') {
+    const [donCanSoan, sachSapHet, sachHetHang] = await Promise.all([
+      DonHang.count({ where: { TrangThai: 'DA_XAC_NHAN' } }),
+      Sach.count({ where: { SoLuongTon: { [Op.lte]: 10, [Op.gt]: 0 }, DaAn: false } }),
+      Sach.count({ where: { SoLuongTon: 0, DaAn: false } })
+    ]);
+
+    return {
+      vaiTro,
+      thongDiep: 'Công việc kho vận và kiểm soát hàng tồn',
+      viecCanLam: {
+        donCanSoan,
+        sachSapHet,
+        sachHetHang
+      },
+      dieuHuongNhanh: [
+        { tieuDe: 'Đơn cần soạn hàng', soLuong: donCanSoan, duongDan: '/admin/pick-list', mauSac: 'primary' },
+        { tieuDe: 'Sách sắp hết hàng (<= 10)', soLuong: sachSapHet, duongDan: '/admin/inventory', mauSac: 'warning' },
+        { tieuDe: 'Sách đã hết hàng (0)', soLuong: sachHetHang, duongDan: '/admin/inventory', mauSac: 'danger' }
+      ]
+    };
+  }
+
+  if (vaiTro === 'thu_thu') {
+    const [donQuayCuaToiHomNay, donChoDuyet, donDangGiao] = await Promise.all([
+      DonHang.count({
+        where: {
+          KenhBan: 'TAI_QUAY',
+          MaNhanVienLap: maNhanVien,
+          NgayDat: { [Op.gte]: dauNgayHomNay }
+        }
+      }),
+      DonHang.count({ where: { TrangThai: 'CHO_DUYET', KenhBan: 'TRUC_TUYEN' } }),
+      DonHang.count({ where: { TrangThai: 'DANG_GIAO' } })
+    ]);
+
+    return {
+      vaiTro,
+      thongDiep: 'Công việc bán hàng tại quầy và phục vụ bạn đọc',
+      viecCanLam: {
+        donQuayCuaToiHomNay,
+        donChoDuyet,
+        donDangGiao
+      },
+      dieuHuongNhanh: [
+        { tieuDe: 'Đơn quầy lập hôm nay', soLuong: donQuayCuaToiHomNay, duongDan: '/admin/counter-sales', mauSac: 'success' },
+        { tieuDe: 'Đơn trực tuyến chờ duyệt', soLuong: donChoDuyet, duongDan: '/admin/orders?status=CHO_DUYET', mauSac: 'warning' },
+        { tieuDe: 'Đơn hàng đang giao', soLuong: donDangGiao, duongDan: '/admin/orders?status=DANG_GIAO', mauSac: 'info' }
+      ]
+    };
+  }
+
+  // Mặc định hoặc quan_tri: Toàn cảnh hệ thống
+  const [
+    donChoDuyet,
+    donCanSoan,
+    sachSapHet,
+    danhGiaMoi,
+    donHoanTatHomNay,
+    khachMoiHomNay
+  ] = await Promise.all([
+    DonHang.count({ where: { TrangThai: 'CHO_DUYET', KenhBan: 'TRUC_TUYEN' } }),
+    DonHang.count({ where: { TrangThai: 'DA_XAC_NHAN' } }),
+    Sach.count({ where: { SoLuongTon: { [Op.lte]: 10 }, DaAn: false } }),
+    DanhGia.count({ where: { NgayTao: { [Op.gte]: bayNgayTruoc } } }),
+    DonHang.count({ where: { TrangThai: 'DA_GIAO', NgayDat: { [Op.gte]: dauNgayHomNay } } }),
+    KhachHang.count({ where: { NgayTao: { [Op.gte]: dauNgayHomNay } } })
+  ]);
+
+  return {
+    vaiTro: 'quan_tri',
+    thongDiep: 'Toàn cảnh vận hành và các đầu việc cần xử lý',
+    viecCanLam: {
+      donChoDuyet,
+      donCanSoan,
+      sachSapHet,
+      danhGiaMoi,
+      donHoanTatHomNay,
+      khachMoiHomNay
+    },
+    dieuHuongNhanh: [
+      { tieuDe: 'Đơn trực tuyến chờ duyệt', soLuong: donChoDuyet, duongDan: '/admin/orders?status=CHO_DUYET', mauSac: 'warning' },
+      { tieuDe: 'Đơn cần soạn (Kho)', soLuong: donCanSoan, duongDan: '/admin/pick-list', mauSac: 'primary' },
+      { tieuDe: 'Sách sắp hết tồn kho', soLuong: sachSapHet, duongDan: '/admin/inventory', mauSac: 'danger' },
+      { tieuDe: 'Đánh giá mới (7 ngày)', soLuong: danhGiaMoi, duongDan: '/admin/reviews', mauSac: 'info' }
+    ]
+  };
+}
+
 module.exports = {
   layTongQuanDoanhThu,
   layTopSachBanChay,
   layTyLeDonHang,
   layDoanhThuTheoChuoi,
-  layDoanhThuTheoDanhMuc
+  layDoanhThuTheoDanhMuc,
+  layTongHopCongViecTheoVaiTro
 };

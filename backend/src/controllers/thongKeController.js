@@ -56,11 +56,20 @@ async function xuLyLayBaoCaoKho(req, res) {
   return phanHoiThanhCong(res, { duLieu: ketQua, thongDiep: 'Lấy báo cáo tồn kho thành công' });
 }
 
+// Bảng điều khiển theo vai trò (T40: GET /api/admin/summary)
+async function xuLyLaySummary(req, res) {
+  const maNhanVien = req.user?.id;
+  const vaiTro = req.user?.role;
+  const ketQua = await thongKeService.layTongHopCongViecTheoVaiTro(maNhanVien, vaiTro);
+  return phanHoiThanhCong(res, { duLieu: ketQua, thongDiep: 'Lấy dữ liệu tổng hợp việc cần làm thành công' });
+}
+
 module.exports = {
   xuLyLayTongQuan,
   xuLyLayTopSach,
   xuLyLayTyLeDon,
   xuLyLayChuoiDoanhThu,
   xuLyLayTheoDanhMuc,
-  xuLyLayBaoCaoKho
+  xuLyLayBaoCaoKho,
+  xuLyLaySummary
 };
