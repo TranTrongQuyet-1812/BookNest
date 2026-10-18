@@ -6,7 +6,11 @@ import {
   BookOpen, 
   Calendar, 
   TrendingUp, 
-  PieChart 
+  PieChart,
+  Filter,
+  BarChart3,
+  Layers,
+  RotateCcw
 } from 'lucide-react';
 
 export const DashboardThongKe = () => {
@@ -15,71 +19,81 @@ export const DashboardThongKe = () => {
   const [tyLeDon, setTyLeDon] = useState([]);
   const [tongDonToanHeThong, setTongDonToanHeThong] = useState(0);
 
+  // Nâng cao (T31 + T39)
+  const [chuoiDoanhThu, setChuoiDoanhThu] = useState([]);
+  const [doanhThuDanhMuc, setDoanhThuDanhMuc] = useState([]);
+  const [kieuGomNhom, setKieuGomNhom] = useState('day'); // 'day' hoặc 'month'
+
+  // Bộ lọc
+  const [kenhBan, setKenhBan] = useState(''); // '' (tất cả), 'TRUC_TUYEN', 'TAI_QUAY'
   const [tuNgay, setTuNgay] = useState('');
   const [denNgay, setDenNgay] = useState('');
   const [dangTai, setDangTai] = useState(true);
-
-  const taiThongKe = async (tu, den) => {
-    setDangTai(true);
-    try {
-      const params = {};
-      if (tu) params.tuNgay = tu;
-      if (den) params.denNgay = den;
-
-      const [resTongQuan, resTopSach, resTyLe] = await Promise.all([
-        api.get('/admin/stats/overview', { params }),
-        api.get('/admin/stats/top-books', { params: { limit: 5 } }),
-        api.get('/admin/stats/order-rates')
-      ]);
-
-      setTongQuan(resTongQuan.data.data || {});
-      setTopSach(resTopSach.data.data || []);
-      const dataTyLe = resTyLe.data.data || {};
-      setTyLeDon(dataTyLe.chiTiet);
-      setTongDonToanHeThong(dataTyLe.tongSoDon ?? 0);
-    } catch (err) {
-      console.error('Lỗi tải số liệu thống kê:', err);
-    } finally {
-      setDangTai(false);
-    }
-  };
+  const [lanTai, setLanTai] = useState(0);
 
   useEffect(() => {
     let daHuy = false;
-    const napDuLieuDau = async () => {
+    const napDuLieu = async () => {
       try {
-        const [resTongQuan, resTopSach, resTyLe] = await Promise.all([
-          api.get('/admin/stats/overview'),
-          api.get('/admin/stats/top-books', { params: { limit: 5 } }),
-          api.get('/admin/stats/order-rates')
+        const params = {};
+        if (kenhBan) params.kenhBan = kenhBan;
+        if (tuNgay) params.tuNgay = tuNgay;
+        if (denNgay) params.denNgay = denNgay;
+
+        const paramsChuoi = { ...params, group: kieuGomNhom || 'day' };
+
+        const [resTongQuan, resTopSach, resTyLe, resChuoi, resDanhMuc] = await Promise.all([
+          api.get('/admin/stats/overview', { params }),
+          api.get('/admin/stats/top-books', { params: { ...params, limit: 5 } }),
+          api.get('/admin/stats/order-rates', { params }),
+          api.get('/admin/stats/revenue-series', { params: paramsChuoi }),
+          api.get('/admin/stats/by-category', { params })
         ]);
 
         if (daHuy) return;
         setTongQuan(resTongQuan.data.data || {});
         setTopSach(resTopSach.data.data || []);
         const dataTyLe = resTyLe.data.data || {};
-        setTyLeDon(dataTyLe.chiTiet);
+        setTyLeDon(dataTyLe.chiTiet || []);
         setTongDonToanHeThong(dataTyLe.tongSoDon ?? 0);
+        setChuoiDoanhThu(resChuoi.data.data || []);
+        setDoanhThuDanhMuc(resDanhMuc.data.data || []);
       } catch (err) {
         console.error('Lỗi tải số liệu thống kê:', err);
       } finally {
         if (!daHuy) setDangTai(false);
       }
     };
-    napDuLieuDau();
+
+    napDuLieu();
     return () => {
       daHuy = true;
     };
-  }, []);
+  }, [kenhBan, tuNgay, denNgay, kieuGomNhom, lanTai]);
 
-  const handleLocNgay = (e) => {
-    e.preventDefault();
-    taiThongKe(tuNgay, denNgay);
+  const handleLocDuLieu = (e) => {
+    if (e) e.preventDefault();
+    setDangTai(true);
+    setLanTai((n) => n + 1);
+  };
+
+  const handleDatLaiLoc = () => {
+    setKenhBan('');
+    setTuNgay('');
+    setDenNgay('');
+    setKieuGomNhom('day');
+    setDangTai(true);
+    setLanTai((n) => n + 1);
   };
 
   const dinhDangTien = (soTien) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(soTien || 0);
   };
+
+  const coLocDangChay = Boolean(kenhBan || tuNgay || denNgay);
+
+  // Tìm doanh thu lớn nhất trong chuỗi để tính thanh tỷ lệ phần trăm trực quan
+  const maxDoanhThuChuoi = chuoiDoanhThu.reduce((max, c) => Math.max(max, c.tongDoanhThu || 0), 0);
 
   return (
     <div>
@@ -89,31 +103,68 @@ export const DashboardThongKe = () => {
             Thống Kê Doanh Thu & Vận Hành
           </h1>
           <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
-            Tổng hợp dữ liệu kinh doanh và luân chuyển đơn hàng trên toàn hệ thống
+            Tổng hợp dữ liệu kinh doanh đa kênh (Trực tuyến & Tại quầy), phân tích chuỗi thời gian và cơ cấu thể loại
           </p>
         </div>
+      </div>
 
-        {/* Bộ Lọc Theo Khoảng Thời Gian */}
-        <form onSubmit={handleLocNgay} className="flex items-center gap-2">
-          <Calendar size={15} style={{ color: 'var(--adm-text-muted)' }} />
-          <input
-            type="date"
-            className="form-input"
-            style={{ width: '140px', padding: '0.35rem 0.55rem', fontSize: '0.825rem' }}
-            value={tuNgay}
-            onChange={(e) => setTuNgay(e.target.value)}
-          />
-          <span style={{ color: 'var(--adm-text-muted)', fontSize: '0.8rem' }}>–</span>
-          <input
-            type="date"
-            className="form-input"
-            style={{ width: '140px', padding: '0.35rem 0.55rem', fontSize: '0.825rem' }}
-            value={denNgay}
-            onChange={(e) => setDenNgay(e.target.value)}
-          />
-          <button type="submit" className="btn btn-primary btn-sm" style={{ padding: '0.35rem 0.75rem', fontSize: '0.825rem' }}>
+      {/* Thanh Bộ Lọc Kênh Bán & Thời Gian */}
+      <div className="card mb-6" style={{ padding: '0.9rem 1.15rem' }}>
+        <form onSubmit={handleLocDuLieu} className="flex items-center flex-wrap gap-3">
+          {/* Lọc Kênh Bán (T31) */}
+          <div className="flex items-center gap-2">
+            <Filter size={15} style={{ color: 'var(--adm-text-muted)' }} />
+            <span style={{ fontSize: '0.825rem', color: 'var(--adm-text-muted)' }}>Kênh:</span>
+            <select
+              className="form-input"
+              style={{ width: '160px', padding: '0.4rem 0.65rem', fontSize: '0.825rem' }}
+              value={kenhBan}
+              onChange={(e) => setKenhBan(e.target.value)}
+            >
+              <option value="">Tất cả kênh</option>
+              <option value="TRUC_TUYEN">Trực tuyến (Online)</option>
+              <option value="TAI_QUAY">Tại quầy (POS)</option>
+            </select>
+          </div>
+
+          {/* Lọc Khoảng Ngày */}
+          <div className="flex items-center gap-2">
+            <Calendar size={15} style={{ color: 'var(--adm-text-muted)' }} />
+            <span style={{ fontSize: '0.825rem', color: 'var(--adm-text-muted)' }}>Từ:</span>
+            <input
+              type="date"
+              className="form-input"
+              style={{ padding: '0.4rem 0.6rem', fontSize: '0.825rem' }}
+              value={tuNgay}
+              onChange={(e) => setTuNgay(e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: '0.825rem', color: 'var(--adm-text-muted)' }}>Đến:</span>
+            <input
+              type="date"
+              className="form-input"
+              style={{ padding: '0.4rem 0.6rem', fontSize: '0.825rem' }}
+              value={denNgay}
+              onChange={(e) => setDenNgay(e.target.value)}
+            />
+          </div>
+
+          <button type="submit" className="btn btn-primary btn-sm" style={{ padding: '0.42rem 0.85rem' }}>
             Lọc Dữ Liệu
           </button>
+
+          {coLocDangChay && (
+            <button
+              type="button"
+              onClick={handleDatLaiLoc}
+              className="btn btn-outline btn-sm"
+              style={{ padding: '0.42rem 0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+            >
+              <RotateCcw size={13} /> Đặt Lại
+            </button>
+          )}
         </form>
       </div>
 
@@ -134,7 +185,7 @@ export const DashboardThongKe = () => {
                 {dinhDangTien(tongQuan.tongDoanhThu)}
               </div>
               <span style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)' }}>
-                Từ các đơn hàng giao thành công
+                {kenhBan === 'TRUC_TUYEN' ? 'Kênh trực tuyến giao thành công' : kenhBan === 'TAI_QUAY' ? 'Bán trực tiếp tại quầy thu ngân' : 'Tổng cả hai kênh trực tuyến & quầy'}
               </span>
             </div>
 
@@ -147,7 +198,7 @@ export const DashboardThongKe = () => {
                 {tongQuan.soDonThanhCong} <span style={{ fontSize: '1rem', fontWeight: 500 }}>đơn</span>
               </div>
               <span style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)' }}>
-                Hoàn tất chu trình giao nhận
+                Hoàn tất chu trình luân chuyển đơn
               </span>
             </div>
 
@@ -160,8 +211,134 @@ export const DashboardThongKe = () => {
                 {tongQuan.tongSachDaBan} <span style={{ fontSize: '1rem', fontWeight: 500 }}>cuốn</span>
               </div>
               <span style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)' }}>
-                Tổng ấn phẩm đã xuất kho
+                Tổng ấn phẩm đã xuất kho thành công
               </span>
+            </div>
+          </div>
+
+          {/* Khối Phân Tích Nâng Cao (T39): Chuỗi Thời Gian & Cơ Cấu Danh Mục */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-7">
+            {/* Chuỗi Thời Gian Doanh Thu (revenue-series) */}
+            <div className="card" style={{ padding: '1.25rem' }}>
+              <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+                <div className="flex items-center gap-2">
+                  <BarChart3 size={18} style={{ color: 'var(--adm-primary)' }} />
+                  <h3 style={{ fontSize: '1rem', fontWeight: 600, letterSpacing: '-0.01em', margin: 0, color: 'var(--adm-text-main)' }}>
+                    Biến Động Doanh Thu Theo Thời Gian
+                  </h3>
+                </div>
+                {/* Nút chuyển đổi gom nhóm ngày / tháng */}
+                <div className="inline-flex rounded-md shadow-sm" role="group">
+                  <button
+                    type="button"
+                    onClick={() => setKieuGomNhom('day')}
+                    className="btn btn-sm"
+                    style={{
+                      padding: '0.2rem 0.55rem',
+                      fontSize: '0.75rem',
+                      borderRadius: '4px 0 0 4px',
+                      background: kieuGomNhom === 'day' ? 'var(--adm-primary)' : 'var(--adm-bg-surface, #F1F5F9)',
+                      color: kieuGomNhom === 'day' ? '#FFF' : 'var(--adm-text-muted)',
+                      border: '1px solid var(--adm-border, #CBD5E1)'
+                    }}
+                  >
+                    Theo Ngày
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setKieuGomNhom('month')}
+                    className="btn btn-sm"
+                    style={{
+                      padding: '0.2rem 0.55rem',
+                      fontSize: '0.75rem',
+                      borderRadius: '0 4px 4px 0',
+                      background: kieuGomNhom === 'month' ? 'var(--adm-primary)' : 'var(--adm-bg-surface, #F1F5F9)',
+                      color: kieuGomNhom === 'month' ? '#FFF' : 'var(--adm-text-muted)',
+                      border: '1px solid var(--adm-border, #CBD5E1)',
+                      borderLeft: 'none'
+                    }}
+                  >
+                    Theo Tháng
+                  </button>
+                </div>
+              </div>
+
+              {chuoiDoanhThu.length === 0 ? (
+                <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem' }}>
+                  Chưa có dữ liệu giao dịch trong khoảng thời gian này.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-2.5">
+                  {chuoiDoanhThu.slice(-8).map((item) => {
+                    const tyLeThanh = maxDoanhThuChuoi > 0 ? (item.tongDoanhThu / maxDoanhThuChuoi) * 100 : 0;
+                    return (
+                      <div key={item.thoiGian} style={{ fontSize: '0.825rem' }}>
+                        <div className="flex justify-between items-center mb-1">
+                          <span style={{ fontWeight: 600, color: 'var(--adm-text-main)' }}>
+                            {item.thoiGian}
+                          </span>
+                          <span style={{ color: 'var(--adm-text-muted)' }}>
+                            <strong style={{ color: 'var(--adm-primary)' }}>{dinhDangTien(item.tongDoanhThu)}</strong> • {item.soDonThanhCong} đơn ({item.tongSachDaBan} cuốn)
+                          </span>
+                        </div>
+                        <div style={{ height: '6px', background: 'var(--adm-bg-surface, #F1F5F9)', borderRadius: '999px', overflow: 'hidden' }}>
+                          <div
+                            style={{
+                              height: '100%',
+                              width: `${tyLeThanh}%`,
+                              background: 'var(--adm-primary)',
+                              borderRadius: '999px',
+                              transition: 'width 0.4s ease'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Cơ Cấu Doanh Thu Theo Danh Mục (by-category) */}
+            <div className="card" style={{ padding: '1.25rem' }}>
+              <div className="flex items-center gap-2 mb-4">
+                <Layers size={18} style={{ color: 'var(--adm-primary)' }} />
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, letterSpacing: '-0.01em', margin: 0, color: 'var(--adm-text-main)' }}>
+                  Doanh Thu Theo Thể Loại Sách
+                </h3>
+              </div>
+
+              {doanhThuDanhMuc.length === 0 ? (
+                <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem' }}>
+                  Chưa có dữ liệu doanh thu theo danh mục.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-2.5">
+                  {doanhThuDanhMuc.slice(0, 6).map((dm) => (
+                    <div key={dm.maDanhMuc || dm.tenDanhMuc} style={{ fontSize: '0.825rem' }}>
+                      <div className="flex justify-between items-center mb-1">
+                        <span style={{ fontWeight: 600, color: 'var(--adm-text-main)' }}>
+                          {dm.tenDanhMuc}
+                        </span>
+                        <span style={{ color: 'var(--adm-text-muted)' }}>
+                          <strong>{dinhDangTien(dm.doanhThu)}</strong> ({dm.tyLeDoanhThu}%) • {dm.daBan} cuốn
+                        </span>
+                      </div>
+                      <div style={{ height: '6px', background: 'var(--adm-bg-surface, #F1F5F9)', borderRadius: '999px', overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            height: '100%',
+                            width: `${dm.tyLeDoanhThu}%`,
+                            background: '#10B981',
+                            borderRadius: '999px',
+                            transition: 'width 0.4s ease'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
