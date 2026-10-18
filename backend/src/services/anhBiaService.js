@@ -234,5 +234,6 @@ module.exports = {
   taiAnhBiaLen,
   trichXuatPublicId,
   xoaAnhCu,
-  xoaAnhVuaTai
+  xoaAnhVuaTai,
+  xoaAnhTrenCloudinary
 };
