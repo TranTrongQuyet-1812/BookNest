@@ -241,7 +241,6 @@ async function xacMinhOtpQuenMatKhau(email, maOtp) {
   if (soDongCapNhat === 0) {
     // Đã có tiến trình khác dùng hết 5 lần hoặc mã đã bị hủy/sử dụng
     await OtpQuenMatKhau.update({ DaDung: true }, { where: { MaOtp: banGhi.MaOtp } });
-    if (typeof banGhi.update === 'function') await banGhi.update({ DaDung: true });
     throw LoiNghiepVu.yeuCauKhongHopLe('Mã xác nhận đã hết hạn, đã sử dụng hoặc bị hủy do nhập sai quá 5 lần.');
   }
 
@@ -255,7 +254,6 @@ async function xacMinhOtpQuenMatKhau(email, maOtp) {
   if (!hopLe) {
     if (banGhi.SoLanThu >= 5) {
       await OtpQuenMatKhau.update({ DaDung: true }, { where: { MaOtp: banGhi.MaOtp } });
-      if (typeof banGhi.update === 'function') await banGhi.update({ DaDung: true });
       throw LoiNghiepVu.yeuCauKhongHopLe('Bạn đã nhập sai mã xác nhận quá 5 lần. Mã này đã bị hủy vì lý do an toàn.');
     }
     throw LoiNghiepVu.yeuCauKhongHopLe('Mã xác nhận không chính xác. Vui lòng kiểm tra lại.');
@@ -289,11 +287,6 @@ async function datLaiMatKhau(email, maOtp, matKhauMoi) {
 
     if (soDongCapNhat === 0) {
       throw LoiNghiepVu.yeuCauKhongHopLe('Mã xác nhận đã được sử dụng hoặc không còn hiệu lực.');
-    }
-
-    banGhiOtp.DaDung = true;
-    if (typeof banGhiOtp.update === 'function') {
-      await banGhiOtp.update({ DaDung: true }, { transaction: t });
     }
 
     await khachHang.update({ MatKhauHash: matKhauHash }, { transaction: t });

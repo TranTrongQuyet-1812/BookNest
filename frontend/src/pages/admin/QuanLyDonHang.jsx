@@ -567,9 +567,9 @@ export const QuanLyDonHang = () => {
                     <div><strong>Họ tên:</strong> {chiTietDon.TenNguoiNhan || '—'}</div>
                     <div><strong>Số điện thoại:</strong> {chiTietDon.SoDienThoaiNhan || '—'}</div>
                     <div><strong>Địa chỉ:</strong> {chiTietDon.DiaChiGiaoHang || '—'}</div>
-                    {chiTietDon.GhiChuKhachHang && (
+                    {chiTietDon.GhiChu && (
                       <div style={{ marginTop: '0.35rem', fontStyle: 'italic', color: 'var(--adm-text-muted)' }}>
-                        <strong>Ghi chú:</strong> {chiTietDon.GhiChuKhachHang}
+                        <strong>Ghi chú:</strong> {chiTietDon.GhiChu}
                       </div>
                     )}
                   </div>
