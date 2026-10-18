@@ -10,9 +10,10 @@ import {
   Edit, 
   Eye, 
   EyeOff, 
-  FolderPlus, 
   X, 
-  Search 
+  Search,
+  FolderKanban,
+  Trash2
 } from 'lucide-react';
 
 export const QuanLySach = () => {
@@ -57,9 +58,11 @@ export const QuanLySach = () => {
     tap: ''
   });
 
-  // Modal Danh Mục
+  // Modal Quản Lý Thể Loại (Thêm / Sửa / Xóa)
   const [modalDanhMucMo, setModalDanhMucMo] = useState(false);
+  const [danhMucDangSua, setDanhMucDangSua] = useState(null);
   const [formDanhMuc, setFormDanhMuc] = useState({ tenDanhMuc: '', moTa: '' });
+  const [dangLuuDanhMuc, setDangLuuDanhMuc] = useState(false);
 
   // Danh sách gợi ý tác giả có sẵn (AT13)
   const [goiYTacGia, setGoiYTacGia] = useState([]);
@@ -359,21 +362,76 @@ export const QuanLySach = () => {
     }
   };
 
-  // Thêm danh mục mới
-  const handleThemDanhMuc = async (e) => {
+  // Mở modal quản lý thể loại
+  const moModalQuanLyDanhMuc = () => {
+    setDanhMucDangSua(null);
+    setFormDanhMuc({ tenDanhMuc: '', moTa: '' });
+    setModalDanhMucMo(true);
+  };
+
+  // Chọn thể loại để sửa
+  const batDauSuaDanhMuc = (dm) => {
+    setDanhMucDangSua(dm);
+    setFormDanhMuc({
+      tenDanhMuc: dm.TenDanhMuc || '',
+      moTa: dm.MoTa || ''
+    });
+  };
+
+  // Hủy chế độ sửa, quay về thêm mới
+  const huySuaDanhMuc = () => {
+    setDanhMucDangSua(null);
+    setFormDanhMuc({ tenDanhMuc: '', moTa: '' });
+  };
+
+  // Thêm mới hoặc cập nhật danh mục
+  const handleLuuDanhMuc = async (e) => {
     e.preventDefault();
     if (!coQuyenSuaSach) {
-      tb.canhBao('Tài khoản của bạn không có quyền tạo thể loại mới.');
+      tb.canhBao('Tài khoản của bạn không có quyền thao tác thể loại.');
       return;
     }
+    setDangLuuDanhMuc(true);
     try {
-      await api.post('/categories', formDanhMuc);
-      tb.thanhCong(`Đã tạo thể loại "${formDanhMuc.tenDanhMuc}"`);
-      setFormDanhMuc({ tenDanhMuc: '', moTa: '' });
-      setModalDanhMucMo(false);
+      if (danhMucDangSua) {
+        await api.put(`/categories/${danhMucDangSua.MaDanhMuc}`, formDanhMuc);
+        tb.thanhCong(`Đã cập nhật thể loại "${formDanhMuc.tenDanhMuc}"`);
+      } else {
+        await api.post('/categories', formDanhMuc);
+        tb.thanhCong(`Đã tạo thể loại "${formDanhMuc.tenDanhMuc}"`);
+      }
+      huySuaDanhMuc();
       taiLai();
     } catch (err) {
-      tb.loiTuApi(err, 'Lỗi khi tạo thể loại');
+      tb.loiTuApi(err, danhMucDangSua ? 'Lỗi khi cập nhật thể loại' : 'Lỗi khi tạo thể loại');
+    } finally {
+      setDangLuuDanhMuc(false);
+    }
+  };
+
+  // Xóa danh mục kèm hộp xác nhận và thông báo lỗi tiếng Việt nếu còn sách
+  const handleXoaDanhMuc = async (dm) => {
+    if (!coQuyenSuaSach) {
+      tb.canhBao('Tài khoản của bạn không có quyền xóa thể loại.');
+      return;
+    }
+    const dongY = await xacNhan({
+      tieuDe: 'Xóa Thể Loại Sách',
+      noiDung: `Bạn có chắc chắn muốn xóa thể loại "${dm.TenDanhMuc}"? Thao tác này sẽ xóa vĩnh viễn thể loại khỏi hệ thống nếu không còn sách gắn kèm.`,
+      nhanXacNhan: 'Xóa thể loại',
+      nguyHiem: true
+    });
+    if (!dongY) return;
+
+    try {
+      await api.delete(`/categories/${dm.MaDanhMuc}`);
+      tb.thanhCong(`Đã xóa thành công thể loại "${dm.TenDanhMuc}"`);
+      if (danhMucDangSua?.MaDanhMuc === dm.MaDanhMuc) {
+        huySuaDanhMuc();
+      }
+      taiLai();
+    } catch (err) {
+      tb.loiTuApi(err, 'Không thể xóa thể loại này');
     }
   };
 
@@ -397,8 +455,8 @@ export const QuanLySach = () => {
 
         {coQuyenSuaSach && (
           <div className="flex gap-2">
-            <button onClick={() => setModalDanhMucMo(true)} className="btn btn-outline btn-sm">
-              <FolderPlus size={15} /> Thêm Thể Loại
+            <button onClick={moModalQuanLyDanhMuc} className="btn btn-outline btn-sm">
+              <FolderKanban size={15} /> Quản Lý Thể Loại
             </button>
             <button onClick={moModalThemSach} className="btn btn-primary btn-sm">
               <Plus size={15} /> Thêm Sách Mới
@@ -756,51 +814,150 @@ export const QuanLySach = () => {
         </div>
       )}
 
-      {/* Modal Thêm Thể Loại */}
+      {/* Modal Quản Lý Thể Loại (Thêm, Sửa, Xóa) */}
       {modalDanhMucMo && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '440px' }}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--adm-text-main)' }}>
-                Thêm Thể Loại Sách
-              </h3>
-              <button onClick={() => setModalDanhMucMo(false)}>
+        <div className="modal-overlay" style={{ zIndex: 1050 }}>
+          <div className="modal-content" style={{ maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="flex justify-between items-center pb-3 mb-4 border-b">
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--adm-text-main)' }}>
+                  Quản Lý Thể Loại Sách
+                </h3>
+                <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.8rem', marginTop: '0.2rem', marginBottom: 0 }}>
+                  Thêm mới, đổi tên, cập nhật mô tả hoặc xóa các danh mục thể loại
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setModalDanhMucMo(false); huySuaDanhMuc(); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--adm-text-muted)' }}
+              >
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleThemDanhMuc}>
-              <div className="form-group">
-                <label className="form-label">Tên thể loại *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Khoa học viễn tưởng"
-                  className="form-input"
-                  value={formDanhMuc.tenDanhMuc}
-                  onChange={(e) => setFormDanhMuc({ ...formDanhMuc, tenDanhMuc: e.target.value })}
-                />
+            {/* Form Thêm Mới / Chỉnh Sửa */}
+            <div style={{ background: 'var(--adm-bg-surface, #F8FAFC)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--adm-border, #E2E8F0)', marginBottom: '1.25rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.65rem', color: 'var(--adm-text-main)' }}>
+                {danhMucDangSua ? `Chỉnh sửa thể loại #${danhMucDangSua.MaDanhMuc}` : 'Thêm thể loại mới'}
               </div>
+              <form onSubmit={handleLuuDanhMuc}>
+                <div className="form-group mb-2.5">
+                  <label className="form-label" style={{ fontSize: '0.8rem' }}>Tên thể loại *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ví dụ: Khoa học viễn tưởng"
+                    className="form-input w-full"
+                    value={formDanhMuc.tenDanhMuc}
+                    onChange={(e) => setFormDanhMuc({ ...formDanhMuc, tenDanhMuc: e.target.value })}
+                  />
+                </div>
 
-              <div className="form-group">
-                <label className="form-label">Mô tả thể loại</label>
-                <textarea
-                  rows="2"
-                  className="form-input"
-                  value={formDanhMuc.moTa}
-                  onChange={(e) => setFormDanhMuc({ ...formDanhMuc, moTa: e.target.value })}
-                />
-              </div>
+                <div className="form-group mb-3">
+                  <label className="form-label" style={{ fontSize: '0.8rem' }}>Mô tả thể loại</label>
+                  <textarea
+                    rows="2"
+                    placeholder="Mô tả tóm lược về nhóm sách này..."
+                    className="form-input w-full"
+                    value={formDanhMuc.moTa}
+                    onChange={(e) => setFormDanhMuc({ ...formDanhMuc, moTa: e.target.value })}
+                  />
+                </div>
 
-              <div className="flex justify-end gap-2 mt-4">
-                <button type="button" onClick={() => setModalDanhMucMo(false)} className="btn btn-outline">
-                  Đóng
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  Tạo Thể Loại
-                </button>
+                <div className="flex justify-end items-center gap-2">
+                  {danhMucDangSua && (
+                    <button
+                      type="button"
+                      onClick={huySuaDanhMuc}
+                      className="btn btn-outline btn-sm"
+                      style={{ fontSize: '0.8rem' }}
+                    >
+                      Hủy Sửa
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={dangLuuDanhMuc}
+                    className="btn btn-primary btn-sm"
+                    style={{ fontSize: '0.8rem' }}
+                  >
+                    {danhMucDangSua ? 'Lưu Thay Đổi' : 'Tạo Thể Loại'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Danh Sách Thể Loại Hiện Có */}
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--adm-text-main)' }}>
+                Danh Sách Thể Loại ({danhMucList.length})
               </div>
-            </form>
+              {danhMucList.length === 0 ? (
+                <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem' }}>Chưa có thể loại nào.</p>
+              ) : (
+                <div style={{ border: '1px solid var(--adm-border, #E2E8F0)', borderRadius: '6px', overflow: 'hidden' }}>
+                  <table className="admindash-table" style={{ margin: 0, fontSize: '0.825rem' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ width: '45px' }}>ID</th>
+                        <th>Tên Thể Loại</th>
+                        <th>Mô Tả</th>
+                        <th style={{ textAlign: 'center', width: '80px' }}>Số Sách</th>
+                        <th style={{ textAlign: 'right', width: '90px' }}>Thao Tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {danhMucList.map((dm) => (
+                        <tr key={dm.MaDanhMuc} style={{ background: danhMucDangSua?.MaDanhMuc === dm.MaDanhMuc ? '#EFF6FF' : 'transparent' }}>
+                          <td style={{ color: 'var(--adm-text-muted)' }} className="tabular-nums">#{dm.MaDanhMuc}</td>
+                          <td style={{ fontWeight: 600, color: 'var(--adm-text-main)' }}>{dm.TenDanhMuc}</td>
+                          <td style={{ color: 'var(--adm-text-muted)', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {dm.MoTa || '—'}
+                          </td>
+                          <td style={{ textAlign: 'center', fontWeight: 600 }} className="tabular-nums">
+                            {dm.soLuongSach || 0}
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <div className="inline-flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => batDauSuaDanhMuc(dm)}
+                                className="btn btn-outline btn-sm"
+                                style={{ padding: '0.2rem 0.45rem', color: 'var(--adm-primary)' }}
+                                title="Sửa tên và mô tả thể loại"
+                              >
+                                <Edit size={12} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleXoaDanhMuc(dm)}
+                                className="btn btn-outline btn-sm"
+                                style={{ padding: '0.2rem 0.45rem', color: 'var(--adm-danger)', borderColor: '#FECACA' }}
+                                title="Xóa thể loại (chặn nếu còn sách)"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-3 mt-4 border-t">
+              <button
+                type="button"
+                onClick={() => { setModalDanhMucMo(false); huySuaDanhMuc(); }}
+                className="btn btn-outline"
+                style={{ padding: '0.4rem 1.15rem', fontSize: '0.85rem' }}
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}
