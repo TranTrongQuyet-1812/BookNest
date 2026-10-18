@@ -857,7 +857,7 @@ export const QuanLyNhanSu = () => {
                         {khachHangChiTiet.donHangGanDay.map((dh) => (
                           <tr key={dh.MaDonHang}>
                             <td className="tabular-nums" style={{ fontWeight: 600 }}>#{dh.MaDonHang}</td>
-                            <td className="tabular-nums">{new Date(dh.NgayTao).toLocaleDateString('vi-VN')}</td>
+                            <td className="tabular-nums">{new Date(dh.NgayDat || dh.NgayTao).toLocaleDateString('vi-VN')}</td>
                             <td className="tabular-nums" style={{ fontWeight: 600 }}>{Number(dh.TongTien || 0).toLocaleString('vi-VN')}đ</td>
                             <td>{dh.KenhBan === 'TAI_QUAY' ? 'Tại quầy' : 'Trực tuyến'}</td>
                             <td>{layBadgeTrangThaiDon(dh.TrangThai)}</td>

@@ -309,14 +309,14 @@ export default function DonCanSoan() {
 
                 <div style={{ fontSize: '0.78rem', color: 'var(--adm-text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                   <Clock size={13} />
-                  {new Date(don.NgayTao).toLocaleString('vi-VN')}
+                  {new Date(don.NgayDat || don.NgayTao).toLocaleString('vi-VN')}
                 </div>
               </div>
 
-              {don.GhiChuKhachHang && (
+              {(don.GhiChu || don.GhiChuKhachHang) && (
                 <div style={{ fontSize: '0.78rem', backgroundColor: '#FFFBEB', color: '#B45309', padding: '0.4rem 0.65rem', borderRadius: '4px', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                   <FileText size={13} />
-                  <strong>Ghi chú:</strong> {don.GhiChuKhachHang}
+                  <strong>Ghi chú:</strong> {don.GhiChu || don.GhiChuKhachHang}
                 </div>
               )}
 
@@ -324,7 +324,7 @@ export default function DonCanSoan() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
                 {(don.chiTietDonHang || []).map((ct) => (
                   <div 
-                    key={ct.MaChiTiet}
+                    key={ct.MaChiTiet || `${don.MaDonHang}-${ct.MaSach}`}
                     style={{ 
                       display: 'flex', 
                       justifyContent: 'space-between', 
