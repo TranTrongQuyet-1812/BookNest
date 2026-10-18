@@ -12,24 +12,20 @@ function xayDungDieuKienLoc({ tuNgay, denNgay, kenhBan, cotNgay = 'ls.NgayHoanTh
   const replacements = {};
 
   if (tuNgay) {
-    dieuKienSql += ` AND ${cotNgay} >= :tuNgay`;
+    dieuKienSql += ` AND DATEADD(hour, 7, ${cotNgay}) >= :tuNgay`;
     if (/^\d{4}-\d{2}-\d{2}$/.test(tuNgay)) {
-      replacements.tuNgay = new Date(`${tuNgay}T00:00:00+07:00`);
+      replacements.tuNgay = `${tuNgay} 00:00:00`;
     } else {
-      replacements.tuNgay = new Date(tuNgay);
+      replacements.tuNgay = tuNgay;
     }
   }
   if (denNgay) {
+    dieuKienSql += ` AND DATEADD(hour, 7, ${cotNgay}) <= :denNgay`;
     if (/^\d{4}-\d{2}-\d{2}$/.test(denNgay)) {
-      replacements.denNgay = new Date(`${denNgay}T23:59:59.999+07:00`);
+      replacements.denNgay = `${denNgay} 23:59:59.999`;
     } else {
-      const dNgay = new Date(denNgay);
-      if (dNgay.getUTCHours() === 0 && dNgay.getUTCMinutes() === 0 && dNgay.getUTCSeconds() === 0 && dNgay.getUTCMilliseconds() === 0) {
-        dNgay.setUTCHours(23, 59, 59, 999);
-      }
-      replacements.denNgay = dNgay;
+      replacements.denNgay = denNgay;
     }
-    dieuKienSql += ` AND ${cotNgay} <= :denNgay`;
   }
   if (kenhBan) {
     dieuKienSql += ` AND ${aliasDonHang}.KenhBan = :kenhBan`;
