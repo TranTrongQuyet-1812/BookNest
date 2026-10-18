@@ -12,7 +12,14 @@ import {
   PackageCheck, 
   XCircle, 
   Filter, 
-  Ban 
+  Ban,
+  Eye,
+  Calendar,
+  RotateCcw,
+  X,
+  History,
+  CreditCard,
+  ShoppingBag
 } from 'lucide-react';
 
 const NHAN_TRANG_THAI_DON_HANG = {
@@ -36,12 +43,20 @@ export const QuanLyDonHang = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const trang = parseInt(searchParams.get('page') || '1', 10);
   const trangThaiLoc = searchParams.get('status') || '';
+  const tuNgayLoc = searchParams.get('tuNgay') || '';
+  const denNgayLoc = searchParams.get('denNgay') || '';
 
   const [donHangList, setDonHangList] = useState([]);
   const [dangTai, setDangTai] = useState(true);
   const [loi, setLoi] = useState('');
   const [phanTrang, setPhanTrang] = useState(null);
   const [lanTai, setLanTai] = useState(0);
+
+  // State xem chi tiết đơn hàng & timeline lịch sử trạng thái
+  const [donDangXemId, setDonDangXemId] = useState(null);
+  const [chiTietDon, setChiTietDon] = useState(null);
+  const [dangTaiChiTiet, setDangTaiChiTiet] = useState(false);
+  const [loiChiTiet, setLoiChiTiet] = useState('');
 
   const taiLai = () => setLanTai((n) => n + 1);
 
@@ -75,6 +90,7 @@ export const QuanLyDonHang = () => {
     };
   }, [tb]);
 
+  // Nạp danh sách đơn hàng
   useEffect(() => {
     let daHuy = false;
     const nap = async () => {
@@ -85,6 +101,8 @@ export const QuanLyDonHang = () => {
           limit: 15
         };
         if (trangThaiLoc) params.status = trangThaiLoc;
+        if (tuNgayLoc) params.tuNgay = tuNgayLoc;
+        if (denNgayLoc) params.denNgay = denNgayLoc;
 
         const res = await api.get('/admin/orders', { params });
         if (daHuy) return;
@@ -101,7 +119,41 @@ export const QuanLyDonHang = () => {
     return () => {
       daHuy = true;
     };
-  }, [trang, trangThaiLoc, lanTai]);
+  }, [trang, trangThaiLoc, tuNgayLoc, denNgayLoc, lanTai]);
+
+  // Nạp chi tiết đơn hàng khi mở modal
+  useEffect(() => {
+    if (!donDangXemId) return;
+
+    let daHuy = false;
+    api.get(`/admin/orders/${donDangXemId}`)
+      .then((res) => {
+        if (!daHuy) setChiTietDon(res.data.data);
+      })
+      .catch((err) => {
+        if (!daHuy) setLoiChiTiet(loiTuApi(err, 'Không thể tải thông tin chi tiết đơn hàng'));
+      })
+      .finally(() => {
+        if (!daHuy) setDangTaiChiTiet(false);
+      });
+
+    return () => {
+      daHuy = true;
+    };
+  }, [donDangXemId, lanTai]);
+
+  const handleMoChiTiet = (maDon) => {
+    setDonDangXemId(maDon);
+    setDangTaiChiTiet(true);
+    setLoiChiTiet('');
+  };
+
+  const handleDongChiTiet = () => {
+    setDonDangXemId(null);
+    setChiTietDon(null);
+    setLoiChiTiet('');
+    setDangTaiChiTiet(false);
+  };
 
   const handleLocTrangThai = (status) => {
     const params = new URLSearchParams(searchParams);
@@ -110,6 +162,32 @@ export const QuanLyDonHang = () => {
     } else {
       params.delete('status');
     }
+    params.set('page', '1');
+    setSearchParams(params);
+  };
+
+  const handleApDungLocNgay = (e) => {
+    if (e) e.preventDefault();
+    const form = e.currentTarget;
+    const tu = form.tuNgay.value;
+    const den = form.denNgay.value;
+    const params = new URLSearchParams(searchParams);
+    if (tu) {
+      params.set('tuNgay', tu);
+    } else {
+      params.delete('tuNgay');
+    }
+    if (den) {
+      params.set('denNgay', den);
+    } else {
+      params.delete('denNgay');
+    }
+    params.set('page', '1');
+    setSearchParams(params);
+  };
+
+  const handleXoaTatCaLoc = () => {
+    const params = new URLSearchParams();
     params.set('page', '1');
     setSearchParams(params);
   };
@@ -124,7 +202,6 @@ export const QuanLyDonHang = () => {
   const handleChuyenTrangThai = async (maDonHang, trangThaiMoi, tenHanhDong) => {
     const dongY = await xacNhan({
       tieuDe: 'Cập nhật trạng thái đơn hàng',
-      // Hỏi theo trạng thái đích (cùng giọng với toast kết quả bên dưới), không ghép tên hành động vào giữa câu
       noiDung: `Chuyển đơn hàng #${maDonHang} sang trạng thái "${layTenTrangThai(trangThaiMoi)}"?`,
       nhanXacNhan: tenHanhDong,
     });
@@ -184,6 +261,8 @@ export const QuanLyDonHang = () => {
     }
   };
 
+  const coLocDangChay = Boolean(trangThaiLoc || tuNgayLoc || denNgayLoc);
+
   return (
     <div>
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
@@ -195,24 +274,69 @@ export const QuanLyDonHang = () => {
             Luân chuyển trạng thái đơn hàng theo quy trình State Machine nghiêm ngặt
           </p>
         </div>
+      </div>
 
-        {/* Lọc Trạng Thái */}
-        <div className="flex items-center gap-2">
-          <Filter size={15} style={{ color: 'var(--adm-text-muted)' }} />
-          <select
-            className="form-input"
-            style={{ width: '170px', padding: '0.4rem 0.65rem', fontSize: '0.825rem' }}
-            value={trangThaiLoc}
-            onChange={(e) => handleLocTrangThai(e.target.value)}
-          >
-            <option value="">Tất cả trạng thái</option>
-            <option value="CHO_DUYET">Chờ duyệt</option>
-            <option value="DA_XAC_NHAN">Đã xác nhận</option>
-            <option value="DANG_GIAO">Đang giao</option>
-            <option value="DA_GIAO">Đã giao</option>
-            <option value="DA_HUY">Đã hủy</option>
-          </select>
-        </div>
+      {/* Thanh Công Cụ Bộ Lọc: Trạng thái & Khoảng Ngày */}
+      <div className="card mb-5" style={{ padding: '0.9rem 1.15rem' }}>
+        <form key={`${tuNgayLoc}_${denNgayLoc}`} onSubmit={handleApDungLocNgay} className="flex items-center flex-wrap gap-3">
+          {/* Lọc Trạng Thái */}
+          <div className="flex items-center gap-2">
+            <Filter size={15} style={{ color: 'var(--adm-text-muted)' }} />
+            <select
+              className="form-input"
+              style={{ width: '160px', padding: '0.4rem 0.65rem', fontSize: '0.825rem' }}
+              value={trangThaiLoc}
+              onChange={(e) => handleLocTrangThai(e.target.value)}
+            >
+              <option value="">Tất cả trạng thái</option>
+              <option value="CHO_DUYET">Chờ duyệt</option>
+              <option value="DA_XAC_NHAN">Đã xác nhận</option>
+              <option value="DANG_GIAO">Đang giao</option>
+              <option value="DA_GIAO">Đã giao</option>
+              <option value="DA_HUY">Đã hủy</option>
+            </select>
+          </div>
+
+          {/* Lọc Từ Ngày */}
+          <div className="flex items-center gap-2">
+            <Calendar size={15} style={{ color: 'var(--adm-text-muted)' }} />
+            <span style={{ fontSize: '0.825rem', color: 'var(--adm-text-muted)' }}>Từ:</span>
+            <input
+              type="date"
+              name="tuNgay"
+              className="form-input"
+              style={{ padding: '0.4rem 0.6rem', fontSize: '0.825rem' }}
+              defaultValue={tuNgayLoc}
+            />
+          </div>
+
+          {/* Lọc Đến Ngày */}
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: '0.825rem', color: 'var(--adm-text-muted)' }}>Đến:</span>
+            <input
+              type="date"
+              name="denNgay"
+              className="form-input"
+              style={{ padding: '0.4rem 0.6rem', fontSize: '0.825rem' }}
+              defaultValue={denNgayLoc}
+            />
+          </div>
+
+          <button type="submit" className="btn btn-primary btn-sm" style={{ padding: '0.42rem 0.85rem' }}>
+            Lọc Ngày
+          </button>
+
+          {coLocDangChay && (
+            <button
+              type="button"
+              onClick={handleXoaTatCaLoc}
+              className="btn btn-outline btn-sm"
+              style={{ padding: '0.42rem 0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+            >
+              <RotateCcw size={13} /> Đặt Lại
+            </button>
+          )}
+        </form>
       </div>
 
       {loi && (
@@ -230,18 +354,23 @@ export const QuanLyDonHang = () => {
         <div className="card text-center py-12">
           <ClipboardList size={40} style={{ margin: '0 auto 0.75rem', color: 'var(--adm-text-muted)' }} />
           <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--adm-text-main)' }}>Không tìm thấy đơn hàng nào</h3>
+          {coLocDangChay && (
+            <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem', marginTop: '0.35rem' }}>
+              Hãy thử nới lỏng hoặc xóa bộ lọc ngày/trạng thái.
+            </p>
+          )}
         </div>
       ) : (
         <div className="admindash-table-wrap">
           <table className="admindash-table">
             <thead>
               <tr>
-                <th style={{ width: '85px' }}>Mã Đơn</th>
+                <th style={{ width: '100px' }}>Mã Đơn</th>
                 <th>Thời Gian</th>
                 <th>Khách Hàng & Liên Hệ</th>
                 <th>Tổng Tiền</th>
                 <th>Trạng Thái</th>
-                <th style={{ textAlign: 'right' }}>Xử Lý Trạng Thái</th>
+                <th style={{ textAlign: 'right' }}>Thao Tác</th>
               </tr>
             </thead>
             <tbody>
@@ -256,7 +385,26 @@ export const QuanLyDonHang = () => {
 
                 return (
                   <tr key={maDon}>
-                    <td style={{ fontWeight: 700, color: 'var(--adm-primary)' }} className="tabular-nums">#{maDon}<div style={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.7 }}>{don.MaTraCuu}</div></td>
+                    <td>
+                      <button
+                        type="button"
+                        onClick={() => handleMoChiTiet(maDon)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          color: 'var(--adm-primary)',
+                          fontWeight: 700
+                        }}
+                        className="tabular-nums"
+                        title="Xem chi tiết đơn và lịch sử trạng thái"
+                      >
+                        #{maDon}
+                      </button>
+                      <div style={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.7 }}>{don.MaTraCuu}</div>
+                    </td>
                     <td style={{ fontSize: '0.825rem', color: 'var(--adm-text-muted)' }} className="tabular-nums">
                       {ngay ? new Date(ngay).toLocaleString('vi-VN') : '—'}
                     </td>
@@ -290,7 +438,18 @@ export const QuanLyDonHang = () => {
                       )}
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <div className="inline-flex gap-2">
+                      <div className="inline-flex items-center gap-1.5">
+                        {/* Nút Xem Chi Tiết */}
+                        <button
+                          type="button"
+                          onClick={() => handleMoChiTiet(maDon)}
+                          className="btn btn-outline btn-sm"
+                          style={{ padding: '0.3rem 0.55rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                          title="Xem chi tiết đơn hàng và dòng thời gian lịch sử trạng thái"
+                        >
+                          <Eye size={13} /> Chi tiết
+                        </button>
+
                         {/* Nút chuyển tiến theo State Machine */}
                         {trangThai === 'CHO_DUYET' && (
                           don.thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && don.thanhToan?.TrangThai === 'CHO_THANH_TOAN' ? (
@@ -347,7 +506,7 @@ export const QuanLyDonHang = () => {
                             style={{ color: 'var(--adm-danger)', borderColor: '#FECACA' }}
                             title="Hủy đơn hàng và hoàn kho"
                           >
-                            <Ban size={14} /> Hủy
+                            <Ban size={13} /> Hủy
                           </button>
                         )}
                       </div>
@@ -361,6 +520,233 @@ export const QuanLyDonHang = () => {
       )}
 
       <PhanTrang phanTrang={phanTrang} onChuyenTrang={handleChuyenTrang} donVi="đơn" />
+
+      {/* Modal Chi Tiết Đơn Hàng & Dòng Thời Gian Lịch Sử Trạng Thái */}
+      {donDangXemId && (
+        <div className="modal-overlay" style={{ zIndex: 1050 }}>
+          <div className="modal-content" style={{ maxWidth: '820px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="flex justify-between items-start pb-3 mb-4 border-b">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--adm-text-main)' }}>
+                    Chi Tiết Đơn Hàng #{donDangXemId}
+                  </h3>
+                  {chiTietDon && layBadgeTrangThai(chiTietDon.TrangThai)}
+                </div>
+                {chiTietDon && (
+                  <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.8rem', marginTop: '0.25rem', marginBottom: 0 }}>
+                    Mã tra cứu: <span style={{ fontWeight: 600, color: 'var(--adm-primary)' }}>{chiTietDon.MaTraCuu}</span> • 
+                    Kênh: <span style={{ fontWeight: 600 }}>{chiTietDon.KenhBan === 'TAI_QUAY' ? 'Tại quầy' : 'Trực tuyến'}</span> • 
+                    Đặt lúc: {chiTietDon.NgayDat ? new Date(chiTietDon.NgayDat).toLocaleString('vi-VN') : '—'}
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handleDongChiTiet}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--adm-text-muted)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {dangTaiChiTiet ? (
+              <div className="text-center py-10">
+                <p style={{ color: 'var(--adm-text-muted)' }}>Đang nạp chi tiết đơn hàng...</p>
+              </div>
+            ) : loiChiTiet ? (
+              <ThongBaoTaiCho loai="loi">{loiChiTiet}</ThongBaoTaiCho>
+            ) : chiTietDon ? (
+              <div className="space-y-4">
+                {/* Khối Thông Tin Giao Hàng & Thanh Toán */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3" style={{ fontSize: '0.85rem' }}>
+                  <div style={{ background: 'var(--adm-bg-surface, #F8FAFC)', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid var(--adm-border, #E2E8F0)' }}>
+                    <div style={{ fontWeight: 700, marginBottom: '0.4rem', color: 'var(--adm-text-main)' }}>
+                      📍 Người Nhận Hàng
+                    </div>
+                    <div><strong>Họ tên:</strong> {chiTietDon.TenNguoiNhan || '—'}</div>
+                    <div><strong>Số điện thoại:</strong> {chiTietDon.SoDienThoaiNhan || '—'}</div>
+                    <div><strong>Địa chỉ:</strong> {chiTietDon.DiaChiGiaoHang || '—'}</div>
+                    {chiTietDon.GhiChuKhachHang && (
+                      <div style={{ marginTop: '0.35rem', fontStyle: 'italic', color: 'var(--adm-text-muted)' }}>
+                        <strong>Ghi chú:</strong> {chiTietDon.GhiChuKhachHang}
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ background: 'var(--adm-bg-surface, #F8FAFC)', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid var(--adm-border, #E2E8F0)' }}>
+                    <div style={{ fontWeight: 700, marginBottom: '0.4rem', color: 'var(--adm-text-main)' }} className="flex items-center gap-1.5">
+                      <CreditCard size={15} /> Thanh Toán
+                    </div>
+                    <div>
+                      <strong>Hình thức:</strong>{' '}
+                      {chiTietDon.thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' ? 'Chuyển khoản VietQR' : 'Tiền mặt (COD)'}
+                    </div>
+                    <div>
+                      <strong>Trạng thái tiền:</strong>{' '}
+                      {chiTietDon.thanhToan?.TrangThai === 'DA_THANH_TOAN' ? (
+                        <span style={{ color: '#059669', fontWeight: 600 }}>✓ Đã thanh toán</span>
+                      ) : chiTietDon.thanhToan?.TrangThai === 'CAN_HOAN_TIEN' ? (
+                        <span style={{ color: '#DC2626', fontWeight: 700 }}>⚠️ Cần hoàn tiền</span>
+                      ) : chiTietDon.thanhToan?.TrangThai === 'CHO_THANH_TOAN' ? (
+                        <span style={{ color: '#D97706', fontWeight: 600 }}>⏳ Chờ thanh toán</span>
+                      ) : (
+                        chiTietDon.thanhToan?.TrangThai || 'Chưa thanh toán'
+                      )}
+                    </div>
+                    <div style={{ marginTop: '0.35rem', fontSize: '1rem', fontWeight: 700, color: 'var(--adm-primary)' }}>
+                      Tổng tiền: {dinhDangTien(chiTietDon.TongTien)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Khối Danh Sách Sản Phẩm Trong Đơn */}
+                <div style={{ border: '1px solid var(--adm-border, #E2E8F0)', borderRadius: '8px', overflow: 'hidden' }}>
+                  <div style={{ background: 'var(--adm-bg-surface, #F8FAFC)', padding: '0.6rem 0.85rem', fontWeight: 700, fontSize: '0.85rem', color: 'var(--adm-text-main)' }} className="flex items-center gap-1.5">
+                    <ShoppingBag size={15} /> Danh Sách Sách Trong Đơn ({chiTietDon.chiTietDonHang?.length || 0} mục)
+                  </div>
+                  <table className="admindash-table" style={{ margin: 0, fontSize: '0.825rem' }}>
+                    <thead>
+                      <tr>
+                        <th>Tên Sách</th>
+                        <th style={{ textAlign: 'right' }}>Đơn Giá Lúc Mua</th>
+                        <th style={{ textAlign: 'center', width: '80px' }}>Số Lượng</th>
+                        <th style={{ textAlign: 'right' }}>Thành Tiền</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(chiTietDon.chiTietDonHang || []).map((ct, idx) => {
+                        const thanhTien = (ct.SoLuong || 0) * (ct.GiaBanLucMua || 0);
+                        return (
+                          <tr key={idx}>
+                            <td>
+                              <div style={{ fontWeight: 600, color: 'var(--adm-text-main)' }}>
+                                {ct.sach?.TenSach || `Sách #${ct.MaSach}`}
+                              </div>
+                              <span style={{ fontSize: '0.725rem', color: 'var(--adm-text-muted)' }}>
+                                Mã sách: #{ct.MaSach}
+                              </span>
+                            </td>
+                            <td style={{ textAlign: 'right' }} className="tabular-nums">
+                              {dinhDangTien(ct.GiaBanLucMua)}
+                            </td>
+                            <td style={{ textAlign: 'center', fontWeight: 600 }} className="tabular-nums">
+                              {ct.SoLuong}
+                            </td>
+                            <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--adm-text-main)' }} className="tabular-nums">
+                              {dinhDangTien(thanhTien)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Khối Dòng Thời Gian Lịch Sử Trạng Thái (Timeline) */}
+                <div style={{ border: '1px solid var(--adm-border, #E2E8F0)', borderRadius: '8px', padding: '0.9rem 1.15rem' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.75rem', color: 'var(--adm-text-main)' }} className="flex items-center gap-1.5">
+                    <History size={16} /> Dòng Thời Gian Lịch Sử Trạng Thái
+                  </div>
+
+                  {(!chiTietDon.lichSuTrangThai || chiTietDon.lichSuTrangThai.length === 0) ? (
+                    <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.825rem', margin: 0 }}>
+                      Chưa ghi nhận sự kiện chuyển trạng thái nào cho đơn hàng này.
+                    </p>
+                  ) : (
+                    <div style={{ position: 'relative', paddingLeft: '1.25rem' }}>
+                      {/* Đường kẻ trục timeline dọc */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: '6px',
+                          top: '6px',
+                          bottom: '6px',
+                          width: '2px',
+                          background: 'var(--adm-border, #CBD5E1)'
+                        }}
+                      />
+
+                      <div className="space-y-4">
+                        {chiTietDon.lichSuTrangThai.map((ls, idx) => {
+                          const nguoiSua = ls.nhanVienThucHien 
+                            ? `${ls.nhanVienThucHien.HoTen} (${ls.nhanVienThucHien.VaiTro === 'quan_tri' ? 'Quản trị viên' : ls.nhanVienThucHien.VaiTro === 'thu_kho' ? 'Thủ kho' : 'Thủ thư'})`
+                            : ls.khachHangThucHien
+                            ? `${ls.khachHangThucHien.HoTen} (Khách hàng)`
+                            : 'Hệ thống tự động';
+
+                          return (
+                            <div key={idx} style={{ position: 'relative', fontSize: '0.825rem' }}>
+                              {/* Điểm mốc tròn trên đường kẻ */}
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  left: '-1.25rem',
+                                  top: '4px',
+                                  width: '10px',
+                                  height: '10px',
+                                  borderRadius: '50%',
+                                  background: ls.TrangThaiMoi === 'DA_HUY' ? '#DC2626' : ls.TrangThaiMoi === 'DA_GIAO' ? '#059669' : 'var(--adm-primary, #6366F1)',
+                                  border: '2px solid #FFF'
+                                }}
+                              />
+
+                              <div>
+                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                  <div style={{ fontWeight: 600, color: 'var(--adm-text-main)' }}>
+                                    {ls.TrangThaiCu ? (
+                                      <span>{layTenTrangThai(ls.TrangThaiCu)} → <strong style={{ color: ls.TrangThaiMoi === 'DA_HUY' ? '#DC2626' : 'inherit' }}>{layTenTrangThai(ls.TrangThaiMoi)}</strong></span>
+                                    ) : (
+                                      <span>Khởi tạo đơn: <strong>{layTenTrangThai(ls.TrangThaiMoi)}</strong></span>
+                                    )}
+                                  </div>
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)' }} className="tabular-nums">
+                                    {ls.NgayThayDoi ? new Date(ls.NgayThayDoi).toLocaleString('vi-VN') : '—'}
+                                  </span>
+                                </div>
+
+                                <div style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)', marginTop: '0.15rem' }}>
+                                  Thực hiện bởi: <span style={{ color: 'var(--adm-text-main)', fontWeight: 500 }}>{nguoiSua}</span>
+                                </div>
+
+                                {ls.GhiChu && (
+                                  <div
+                                    style={{
+                                      marginTop: '0.35rem',
+                                      padding: '0.4rem 0.65rem',
+                                      borderRadius: '4px',
+                                      background: ls.TrangThaiMoi === 'DA_HUY' ? '#FEF2F2' : '#F1F5F9',
+                                      color: ls.TrangThaiMoi === 'DA_HUY' ? '#991B1B' : 'var(--adm-text-main)',
+                                      fontSize: '0.775rem'
+                                    }}
+                                  >
+                                    <strong>Ghi chú/Lý do:</strong> {ls.GhiChu}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="flex justify-end pt-3 mt-4 border-t">
+              <button
+                type="button"
+                onClick={handleDongChiTiet}
+                className="btn btn-outline"
+                style={{ padding: '0.4rem 1.15rem', fontSize: '0.85rem' }}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
