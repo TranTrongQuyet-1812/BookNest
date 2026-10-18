@@ -42,6 +42,13 @@ const hienGiaTri = (item, giaTri) => {
   if (item.LoaiDoiTuong === 'GIAM_GIA' && item.TruongDuLieu === 'DangHoatDong') {
     return (giaTri === '1' || giaTri === 1 || giaTri === true || giaTri === 'true') ? 'Bật' : 'Tạm dừng';
   }
+  if (item.TruongDuLieu === 'NgayBatDau' || item.TruongDuLieu === 'NgayKetThuc') {
+    const d = new Date(giaTri);
+    if (!isNaN(d.getTime())) return d.toLocaleString('vi-VN');
+  }
+  if (item.TruongDuLieu === 'PhanTramGiam') {
+    return `${giaTri}%`;
+  }
   return nhan(giaTri);
 };
 

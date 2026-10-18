@@ -227,8 +227,9 @@ export const QuanLySach = () => {
     let tapTiepTheo = Number(sachGoc.Tap || 1) + 1;
     try {
       const res = await api.get(`/books/${sachGoc.MaSach}/volumes`);
-      const cacTap = res.data?.data?.cacTap;
-      if (Array.isArray(cacTap) && cacTap.length > 0) {
+      const data = res.data?.data?.cacTap || res.data?.data || [];
+      const cacTap = Array.isArray(data) ? data : [];
+      if (cacTap.length > 0) {
         const tapLonNhat = Math.max(...cacTap.map(t => Number(t.tap || t.Tap || 0)));
         if (tapLonNhat > 0) {
           tapTiepTheo = tapLonNhat + 1;
@@ -706,9 +707,6 @@ export const QuanLySach = () => {
                 fileMoi={fileAnhMoi}
                 onThayDoiFile={(file) => {
                   setFileAnhMoi(file);
-                  if (!file) {
-                    setFormSach((cu) => ({ ...cu, hinhAnh: '' }));
-                  }
                 }}
                 disabled={!coQuyenSuaSach || dangTaiAnh}
               />
