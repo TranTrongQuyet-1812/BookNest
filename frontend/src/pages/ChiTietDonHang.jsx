@@ -124,7 +124,7 @@ export const ChiTietDonHang = () => {
     thamGiaDonHang(id);
 
     const xuLyCapNhat = (duLieu) => {
-      if (duLieu?.maTraCuu === id || duLieu?.maDonHang === donHang?.MaDonHang) {
+      if (!duLieu?.maTraCuu || duLieu?.maTraCuu === id || duLieu?.maDonHang === donHang?.MaDonHang) {
         napChiTiet();
       }
     };
