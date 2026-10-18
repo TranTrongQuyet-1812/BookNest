@@ -73,9 +73,9 @@ const AppContent = () => {
     setDisplayLocation(location);
   }, [location]);
 
-  // Nếu là khu vực Admindash, lập tức đồng bộ route không chờ animation
+  // Nếu là khu vực Admindash hoặc chuyển hướng bảo vệ (redirect từ ProtectedRoute), lập tức đồng bộ route để tránh vòng lặp re-render
   React.useEffect(() => {
-    if (laKhuAdmin) {
+    if (laKhuAdmin || location.state?.from || location.pathname === '/login' || location.pathname === '/unauthorized') {
       setDisplayLocation(location);
     }
   }, [location, laKhuAdmin]);
