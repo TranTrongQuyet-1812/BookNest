@@ -114,7 +114,9 @@ async function guiTinNhan(req, res) {
       duLieu: ketQua
     });
   } catch (err) {
-    console.error('[Lỗi AI Chatbot Controller]:', err.message);
+    const laTimeout = err.name === 'AbortError' || err.message?.includes('quá lâu');
+    const maTrangThaiLoi = err.status || (laTimeout ? 504 : 500);
+    console.error(`[Lỗi AI Chatbot Controller] Nguyên nhân: ${laTimeout ? 'Hết thời gian chờ (Timeout)' : 'Lỗi từ nhà cung cấp AI'} | Chi tiết: ${err.message} | HTTP Status: ${maTrangThaiLoi}`);
     return phanHoiLoi(res, {
       maTrangThai: 500,
       thongDiep: 'Không thể kết nối đến máy chủ AI vào lúc này. Vui lòng thử lại sau ít phút.'

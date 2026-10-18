@@ -52,7 +52,7 @@ async function goiNhaCungCapAI({ messages, tools, maxTokens = 600, temperature =
   }
 
   const controller = new AbortController();
-  const thoiGianCho = setTimeout(() => controller.abort(), 30000); // 30s timeout tránh timeout mạng chậm
+  const thoiGianCho = setTimeout(() => controller.abort(), 60000); // 60s timeout tránh timeout mạng quốc tế khi gọi nhiều vòng Function Calling
 
   try {
     const phanHoi = await fetch(url, {
