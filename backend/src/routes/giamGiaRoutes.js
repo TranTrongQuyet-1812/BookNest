@@ -39,8 +39,12 @@ const luatTaoChuongTrinh = Joi.object({
     'date.min': 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu',
     'any.required': 'Ngày kết thúc là bắt buộc'
   }),
-  danhSachMaSach: Joi.array().items(Joi.number().integer().positive()).unique().default([]),
-  danhSachMaDanhMuc: Joi.array().items(Joi.number().integer().positive()).unique().default([])
+  danhSachMaSach: Joi.array().items(Joi.number().integer().positive()).unique().messages({
+    'array.unique': 'Danh sách mã sách không được chứa phần tử trùng lặp'
+  }).default([]),
+  danhSachMaDanhMuc: Joi.array().items(Joi.number().integer().positive()).unique().messages({
+    'array.unique': 'Danh sách thể loại không được chứa phần tử trùng lặp'
+  }).default([])
 }).custom((value, helpers) => {
   const coSach = value.danhSachMaSach && value.danhSachMaSach.length > 0;
   const coDm = value.danhSachMaDanhMuc && value.danhSachMaDanhMuc.length > 0;
@@ -55,8 +59,12 @@ const luatCapNhatChuongTrinh = Joi.object({
   phanTramGiam: Joi.number().integer().min(1).max(60),
   ngayBatDau: Joi.date().iso(),
   ngayKetThuc: Joi.date().iso(),
-  danhSachMaSach: Joi.array().items(Joi.number().integer().positive()).unique(),
-  danhSachMaDanhMuc: Joi.array().items(Joi.number().integer().positive()).unique()
+  danhSachMaSach: Joi.array().items(Joi.number().integer().positive()).unique().messages({
+    'array.unique': 'Danh sách mã sách không được chứa phần tử trùng lặp'
+  }),
+  danhSachMaDanhMuc: Joi.array().items(Joi.number().integer().positive()).unique().messages({
+    'array.unique': 'Danh sách thể loại không được chứa phần tử trùng lặp'
+  })
 });
 
 /**
