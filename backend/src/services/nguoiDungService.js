@@ -5,10 +5,12 @@
  */
 const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
-const { NhanVien, KhachHang } = require('../models');
+const { NhanVien, KhachHang, DonHang } = require('../models');
+const { sequelize } = require('../config/ketNoiDb');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 const { chuaTuKhoa } = require('../utils/timKiem');
 const { AUD_KHACH_HANG, AUD_NHAN_VIEN } = require('../utils/taiKhoan');
+const { ghiNhanThayDoi } = require('./lichSuThayDoiService');
 
 // Vai trò quản trị viên được phép tạo qua giao diện (không tạo quan_tri để tránh nhân bản quyền cao nhất)
 const VAI_TRO_TAO_DUOC = ['thu_kho', 'thu_thu'];
@@ -148,6 +150,83 @@ async function adminTaoNhanVien({ email, matKhau, hoTen, vaiTro, soDienThoai }) 
 }
 
 // Back-Office: Khóa hoặc mở khóa tài khoản nhân viên (chặn quản trị viên tự khóa chính mình)
+// Back-Office: Cập nhật thông tin nhân viên (họ tên, SĐT, vai trò) kèm kiểm tra an toàn và ghi lịch sử
+async function adminCapNhatNhanVien(maNhanVien, { hoTen, soDienThoai, vaiTro }, maQuanTriHienTai) {
+  const nhanVien = await NhanVien.findByPk(maNhanVien);
+  if (!nhanVien) {
+    throw LoiNghiepVu.khongTimThay('Không tìm thấy nhân viên yêu cầu');
+  }
+
+  // Chặn tự thay đổi vai trò của chính mình
+  if (parseInt(maNhanVien, 10) === parseInt(maQuanTriHienTai, 10) && vaiTro !== undefined && vaiTro !== nhanVien.VaiTro) {
+    throw LoiNghiepVu.yeuCauKhongHopLe('Quản trị viên không thể tự thay đổi vai trò của chính mình');
+  }
+
+  // Nếu hạ vai trò của một quản trị viên khác: đảm bảo hệ thống luôn còn ít nhất 1 quản trị viên hoạt động
+  if (nhanVien.VaiTro === 'quan_tri' && vaiTro !== undefined && vaiTro !== 'quan_tri') {
+    const soLuongQuanTri = await NhanVien.count({
+      where: { VaiTro: 'quan_tri', DangHoatDong: true }
+    });
+    if (soLuongQuanTri <= 1) {
+      throw LoiNghiepVu.yeuCauKhongHopLe('Không thể hạ vai trò quản trị viên duy nhất còn lại trong hệ thống');
+    }
+  }
+
+  const thayDoi = {};
+  if (hoTen !== undefined && hoTen.trim() !== nhanVien.HoTen) {
+    thayDoi.HoTen = { cu: nhanVien.HoTen, moi: hoTen.trim() };
+  }
+  if (soDienThoai !== undefined) {
+    const sdtMoi = soDienThoai ? soDienThoai.trim() : null;
+    if (sdtMoi !== nhanVien.SoDienThoai) {
+      thayDoi.SoDienThoai = { cu: nhanVien.SoDienThoai, moi: sdtMoi };
+    }
+  }
+  if (vaiTro !== undefined && vaiTro !== nhanVien.VaiTro) {
+    thayDoi.VaiTro = { cu: nhanVien.VaiTro, moi: vaiTro };
+  }
+
+  const t = await sequelize.transaction();
+  try {
+    if (thayDoi.HoTen) nhanVien.HoTen = thayDoi.HoTen.moi;
+    if (thayDoi.SoDienThoai) nhanVien.SoDienThoai = thayDoi.SoDienThoai.moi;
+    if (thayDoi.VaiTro) nhanVien.VaiTro = thayDoi.VaiTro.moi;
+
+    await nhanVien.save({ transaction: t });
+
+    if (Object.keys(thayDoi).length > 0) {
+      await ghiNhanThayDoi({
+        loaiDoiTuong: 'NHAN_VIEN',
+        maDoiTuong: maNhanVien,
+        maNhanVien: maQuanTriHienTai,
+        thayDoi,
+        transaction: t
+      });
+    }
+
+    await t.commit();
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
+
+  return layThongTinHoSo(AUD_NHAN_VIEN, maNhanVien);
+}
+
+// Back-Office: Đặt lại mật khẩu nhân viên (băm bcrypt, không ghi mật khẩu vào lịch sử)
+async function adminDatLaiMatKhauNhanVien(maNhanVien, matKhauMoi) {
+  const nhanVien = await NhanVien.findByPk(maNhanVien);
+  if (!nhanVien) {
+    throw LoiNghiepVu.khongTimThay('Không tìm thấy nhân viên yêu cầu');
+  }
+
+  nhanVien.MatKhauHash = await bcrypt.hash(matKhauMoi, 10);
+  await nhanVien.save();
+
+  return { thanhCong: true, thongDiep: 'Đặt lại mật khẩu thành công' };
+}
+
+// Back-Office: Khóa hoặc mở khóa tài khoản nhân viên (chặn quản trị viên tự khóa chính mình hoặc khóa quản trị viên cuối cùng)
 async function adminCapNhatTrangThaiNhanVien(maNhanVien, dangHoatDong, maQuanTri) {
   if (parseInt(maNhanVien, 10) === parseInt(maQuanTri, 10) && dangHoatDong === false) {
     throw LoiNghiepVu.yeuCauKhongHopLe('Quản trị viên không thể tự khóa tài khoản của chính mình');
@@ -158,21 +237,143 @@ async function adminCapNhatTrangThaiNhanVien(maNhanVien, dangHoatDong, maQuanTri
     throw LoiNghiepVu.khongTimThay('Không tìm thấy nhân viên yêu cầu');
   }
 
-  nhanVien.DangHoatDong = dangHoatDong;
-  await nhanVien.save();
+  // Nếu khóa một tài khoản quản trị: đảm bảo hệ thống luôn còn ít nhất 1 quản trị viên hoạt động
+  if (nhanVien.VaiTro === 'quan_tri' && dangHoatDong === false) {
+    const soLuongQuanTri = await NhanVien.count({
+      where: { VaiTro: 'quan_tri', DangHoatDong: true }
+    });
+    if (soLuongQuanTri <= 1) {
+      throw LoiNghiepVu.yeuCauKhongHopLe('Không thể khóa quản trị viên duy nhất còn lại trong hệ thống');
+    }
+  }
+
+  const giaTriCu = nhanVien.DangHoatDong;
+  const t = await sequelize.transaction();
+  try {
+    nhanVien.DangHoatDong = dangHoatDong;
+    await nhanVien.save({ transaction: t });
+
+    if (giaTriCu !== dangHoatDong) {
+      await ghiNhanThayDoi({
+        loaiDoiTuong: 'NHAN_VIEN',
+        maDoiTuong: maNhanVien,
+        maNhanVien: maQuanTri,
+        thayDoi: { DangHoatDong: { cu: giaTriCu, moi: dangHoatDong } },
+        transaction: t
+      });
+    }
+
+    await t.commit();
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
 
   return layThongTinHoSo(AUD_NHAN_VIEN, maNhanVien);
 }
 
-// Back-Office: Khóa hoặc mở khóa tài khoản khách hàng
-async function adminCapNhatTrangThaiKhachHang(maKhachHang, dangHoatDong) {
+// Back-Office: Xem chi tiết khách hàng và 5 đơn hàng gần nhất
+async function adminLayChiTietKhachHang(maKhachHang) {
+  const khachHang = await KhachHang.findByPk(maKhachHang, {
+    attributes: { exclude: ['MatKhauHash'] }
+  });
+
+  if (!khachHang) {
+    throw LoiNghiepVu.khongTimThay('Không tìm thấy khách hàng yêu cầu');
+  }
+
+  const donHangGanDay = await DonHang.findAll({
+    where: { MaKhachHang: maKhachHang },
+    attributes: ['MaDonHang', 'NgayTao', 'TrangThai', 'TongTien', 'KenhBan', 'PhuongThucThanhToan'],
+    order: [['NgayTao', 'DESC']],
+    limit: 5
+  });
+
+  return {
+    ...khachHang.toJSON(),
+    donHangGanDay
+  };
+}
+
+// Back-Office: Cập nhật thông tin khách hàng (họ tên, SĐT, địa chỉ mặc định) kèm ghi lịch sử
+async function adminCapNhatKhachHang(maKhachHang, { hoTen, soDienThoai, diaChiMacDinh }, maNhanVien) {
   const khachHang = await KhachHang.findByPk(maKhachHang);
   if (!khachHang) {
     throw LoiNghiepVu.khongTimThay('Không tìm thấy khách hàng yêu cầu');
   }
 
-  khachHang.DangHoatDong = dangHoatDong;
-  await khachHang.save();
+  const thayDoi = {};
+  if (hoTen !== undefined && hoTen.trim() !== khachHang.HoTen) {
+    thayDoi.HoTen = { cu: khachHang.HoTen, moi: hoTen.trim() };
+  }
+  if (soDienThoai !== undefined) {
+    const sdtMoi = soDienThoai ? soDienThoai.trim() : null;
+    if (sdtMoi !== khachHang.SoDienThoai) {
+      thayDoi.SoDienThoai = { cu: khachHang.SoDienThoai, moi: sdtMoi };
+    }
+  }
+  if (diaChiMacDinh !== undefined) {
+    const diaChiMoi = diaChiMacDinh ? diaChiMacDinh.trim() : null;
+    if (diaChiMoi !== khachHang.DiaChiMacDinh) {
+      thayDoi.DiaChiMacDinh = { cu: khachHang.DiaChiMacDinh, moi: diaChiMoi };
+    }
+  }
+
+  const t = await sequelize.transaction();
+  try {
+    if (thayDoi.HoTen) khachHang.HoTen = thayDoi.HoTen.moi;
+    if (thayDoi.SoDienThoai) khachHang.SoDienThoai = thayDoi.SoDienThoai.moi;
+    if (thayDoi.DiaChiMacDinh) khachHang.DiaChiMacDinh = thayDoi.DiaChiMacDinh.moi;
+
+    await khachHang.save({ transaction: t });
+
+    if (Object.keys(thayDoi).length > 0) {
+      await ghiNhanThayDoi({
+        loaiDoiTuong: 'KHACH_HANG',
+        maDoiTuong: maKhachHang,
+        maNhanVien: maNhanVien,
+        thayDoi,
+        transaction: t
+      });
+    }
+
+    await t.commit();
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
+
+  return layThongTinHoSo(AUD_KHACH_HANG, maKhachHang);
+}
+
+// Back-Office: Khóa hoặc mở khóa tài khoản khách hàng kèm ghi lịch sử
+async function adminCapNhatTrangThaiKhachHang(maKhachHang, dangHoatDong, maNhanVien) {
+  const khachHang = await KhachHang.findByPk(maKhachHang);
+  if (!khachHang) {
+    throw LoiNghiepVu.khongTimThay('Không tìm thấy khách hàng yêu cầu');
+  }
+
+  const giaTriCu = khachHang.DangHoatDong;
+  const t = await sequelize.transaction();
+  try {
+    khachHang.DangHoatDong = dangHoatDong;
+    await khachHang.save({ transaction: t });
+
+    if (giaTriCu !== dangHoatDong) {
+      await ghiNhanThayDoi({
+        loaiDoiTuong: 'KHACH_HANG',
+        maDoiTuong: maKhachHang,
+        maNhanVien: maNhanVien,
+        thayDoi: { DangHoatDong: { cu: giaTriCu, moi: dangHoatDong } },
+        transaction: t
+      });
+    }
+
+    await t.commit();
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
 
   return layThongTinHoSo(AUD_KHACH_HANG, maKhachHang);
 }
@@ -184,6 +385,10 @@ module.exports = {
   adminLayDanhSachNhanVien,
   adminLayDanhSachKhachHang,
   adminTaoNhanVien,
+  adminCapNhatNhanVien,
+  adminDatLaiMatKhauNhanVien,
   adminCapNhatTrangThaiNhanVien,
+  adminLayChiTietKhachHang,
+  adminCapNhatKhachHang,
   adminCapNhatTrangThaiKhachHang
 };

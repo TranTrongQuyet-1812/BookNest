@@ -416,6 +416,69 @@ const luatTaoNhanVien = Joi.object({
   })
 });
 
+const luatCapNhatHoSoAdmin = Joi.object({
+  hoTen: Joi.string().trim().min(2).max(100).messages({
+    'string.min': 'Họ và tên phải có ít nhất 2 ký tự',
+    'string.max': 'Họ và tên không được vượt quá 100 ký tự'
+  }),
+  soDienThoai: Joi.string().trim().pattern(/^(0|\+84)[35789][0-9]{8}$/).allow(null, '').messages({
+    'string.pattern.base': 'Số điện thoại không đúng định dạng số di động Việt Nam'
+  })
+}).min(1).messages({
+  'object.min': 'Cần cung cấp ít nhất một thông tin để cập nhật hồ sơ'
+});
+
+const luatDoiMatKhauAdmin = Joi.object({
+  matKhauCu: Joi.string().required().messages({
+    'string.empty': 'Vui lòng nhập mật khẩu hiện tại',
+    'any.required': 'Mật khẩu hiện tại là bắt buộc'
+  }),
+  matKhauMoi: Joi.string().min(8).pattern(/^(?=.*[A-Za-z])(?=.*\d)/).required().messages({
+    'string.empty': 'Vui lòng nhập mật khẩu mới',
+    'string.min': 'Mật khẩu mới phải có tối thiểu 8 ký tự',
+    'string.pattern.base': 'Mật khẩu mới phải chứa ít nhất một chữ cái và một chữ số',
+    'any.required': 'Mật khẩu mới là bắt buộc'
+  })
+});
+
+const luatCapNhatNhanVien = Joi.object({
+  hoTen: Joi.string().trim().min(2).max(100).messages({
+    'string.min': 'Họ tên phải có ít nhất 2 ký tự',
+    'string.max': 'Họ tên không được vượt quá 100 ký tự'
+  }),
+  vaiTro: Joi.string().valid('quan_tri', 'thu_kho', 'thu_thu').messages({
+    'any.only': 'Vai trò chỉ có thể là quan_tri, thu_kho hoặc thu_thu'
+  }),
+  soDienThoai: Joi.string().trim().pattern(/^(0|\+84)[35789][0-9]{8}$/).allow(null, '').messages({
+    'string.pattern.base': 'Số điện thoại không đúng định dạng'
+  })
+}).min(1).messages({
+  'object.min': 'Cần cung cấp ít nhất một thông tin để cập nhật'
+});
+
+const luatDatLaiMatKhauNhanVien = Joi.object({
+  matKhauMoi: Joi.string().min(8).pattern(/^(?=.*[A-Za-z])(?=.*\d)/).required().messages({
+    'string.min': 'Mật khẩu phải có ít nhất 8 ký tự',
+    'string.pattern.base': 'Mật khẩu phải chứa ít nhất 1 chữ cái và 1 chữ số',
+    'any.required': 'Mật khẩu mới là bắt buộc'
+  })
+});
+
+const luatCapNhatKhachHang = Joi.object({
+  hoTen: Joi.string().trim().min(2).max(100).messages({
+    'string.min': 'Họ tên phải có ít nhất 2 ký tự',
+    'string.max': 'Họ tên không được vượt quá 100 ký tự'
+  }),
+  soDienThoai: Joi.string().trim().pattern(/^(0|\+84)[35789][0-9]{8}$/).allow(null, '').messages({
+    'string.pattern.base': 'Số điện thoại không đúng định dạng'
+  }),
+  diaChiMacDinh: Joi.string().trim().max(255).allow(null, '').messages({
+    'string.max': 'Địa chỉ không được vượt quá 255 ký tự'
+  })
+}).min(1).messages({
+  'object.min': 'Cần cung cấp ít nhất một thông tin để cập nhật'
+});
+
 const luatCapNhatTrangThaiKhoa = Joi.object({
   dangHoatDong: Joi.boolean().required().messages({
     'any.required': 'Trạng thái hoạt động là bắt buộc'
@@ -526,6 +589,143 @@ router.post(
   batLoiAsync(nguoiDungController.xuLyAdminTaoNhanVien)
 );
 
+// ==========================================
+// 3.1. Hồ sơ và đổi mật khẩu cá nhân Back-Office (Mọi nhân viên: quan_tri, thu_kho, thu_thu)
+// ==========================================
+/**
+ * @swagger
+ * /api/admin/profile:
+ *   get:
+ *     summary: Xem thông tin hồ sơ nhân viên đang đăng nhập Back-Office
+ *     tags: [Quản trị nhân sự (Admin Users)]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Thông tin hồ sơ nhân viên
+ */
+router.get(
+  '/profile',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
+  batLoiAsync(nguoiDungController.xuLyLayHoSo)
+);
+
+/**
+ * @swagger
+ * /api/admin/profile:
+ *   put:
+ *     summary: Cập nhật thông tin hồ sơ nhân viên đang đăng nhập Back-Office
+ *     tags: [Quản trị nhân sự (Admin Users)]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               hoTen:
+ *                 type: string
+ *               soDienThoai:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Cập nhật thông tin hồ sơ thành công
+ */
+router.put(
+  '/profile',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
+  kiemTraDuLieu(luatCapNhatHoSoAdmin),
+  batLoiAsync(nguoiDungController.xuLyCapNhatHoSo)
+);
+
+/**
+ * @swagger
+ * /api/admin/change-password:
+ *   put:
+ *     summary: Đổi mật khẩu cá nhân nhân viên Back-Office
+ *     tags: [Quản trị nhân sự (Admin Users)]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [matKhauCu, matKhauMoi]
+ *             properties:
+ *               matKhauCu:
+ *                 type: string
+ *               matKhauMoi:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Đổi mật khẩu thành công và cấp token mới
+ */
+router.put(
+  '/change-password',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
+  kiemTraDuLieu(luatDoiMatKhauAdmin),
+  batLoiAsync(nguoiDungController.xuLyDoiMatKhau)
+);
+
+/**
+ * @swagger
+ * /api/admin/staff/{id}:
+ *   put:
+ *     summary: Sửa thông tin nhân viên (họ tên, SĐT, vai trò) - Quản trị viên
+ *     tags: [Quản trị nhân sự (Admin Users)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Cập nhật thông tin nhân viên thành công
+ */
+router.put(
+  '/staff/:id',
+  xacThucToken,
+  phanQuyen('quan_tri'),
+  kiemTraDuLieu(luatCapNhatNhanVien),
+  batLoiAsync(nguoiDungController.xuLyAdminCapNhatNhanVien)
+);
+
+/**
+ * @swagger
+ * /api/admin/staff/{id}/password:
+ *   put:
+ *     summary: Đặt lại mật khẩu nhân viên - Quản trị viên
+ *     tags: [Quản trị nhân sự (Admin Users)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Đặt lại mật khẩu thành công
+ */
+router.put(
+  '/staff/:id/password',
+  xacThucToken,
+  phanQuyen('quan_tri'),
+  kiemTraDuLieu(luatDatLaiMatKhauNhanVien),
+  batLoiAsync(nguoiDungController.xuLyAdminDatLaiMatKhauNhanVien)
+);
+
 /**
  * @swagger
  * /api/admin/staff/{id}/status:
@@ -580,7 +780,7 @@ router.put(
  * @swagger
  * /api/admin/customers:
  *   get:
- *     summary: Xem danh sách khách hàng có phân trang và tìm kiếm (Quản trị viên)
+ *     summary: Xem danh sách khách hàng có phân trang và tìm kiếm (Quản trị viên, Thủ thư)
  *     tags: [Quản trị nhân sự (Admin Users)]
  *     security:
  *       - bearerAuth: []
@@ -609,14 +809,69 @@ router.put(
  *       401:
  *         description: Chưa đăng nhập
  *       403:
- *         description: Chỉ dành cho Quản trị viên
+ *         description: Chỉ dành cho Quản trị viên hoặc Thủ thư
  */
 router.get(
   '/customers',
   xacThucToken,
-  phanQuyen('quan_tri'),
+  phanQuyen('quan_tri', 'thu_thu'),
   kiemTraDuLieu(luatTruyVanKhachHang, 'query'),
   batLoiAsync(nguoiDungController.xuLyAdminLayDanhSachKhachHang)
+);
+
+/**
+ * @swagger
+ * /api/admin/customers/{id}:
+ *   get:
+ *     summary: Xem chi tiết thông tin khách hàng và 5 đơn hàng gần nhất (Quản trị viên, Thủ thư)
+ *     tags: [Quản trị nhân sự (Admin Users)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Chi tiết khách hàng kèm 5 đơn hàng gần nhất
+ *       404:
+ *         description: Không tìm thấy khách hàng
+ */
+router.get(
+  '/customers/:id',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_thu'),
+  batLoiAsync(nguoiDungController.xuLyAdminLayChiTietKhachHang)
+);
+
+/**
+ * @swagger
+ * /api/admin/customers/{id}:
+ *   put:
+ *     summary: Sửa thông tin khách hàng (họ tên, SĐT, địa chỉ mặc định) (Quản trị viên, Thủ thư)
+ *     tags: [Quản trị nhân sự (Admin Users)]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Cập nhật thông tin khách hàng thành công
+ *       404:
+ *         description: Không tìm thấy khách hàng
+ */
+router.put(
+  '/customers/:id',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_thu'),
+  kiemTraDuLieu(luatCapNhatKhachHang),
+  batLoiAsync(nguoiDungController.xuLyAdminCapNhatKhachHang)
 );
 
 /**

@@ -69,6 +69,31 @@ async function xuLyAdminTaoNhanVien(req, res) {
   });
 }
 
+// Back-Office: Cập nhật thông tin nhân viên (họ tên, SĐT, vai trò)
+async function xuLyAdminCapNhatNhanVien(req, res) {
+  const ketQua = await nguoiDungService.adminCapNhatNhanVien(
+    req.params.id,
+    req.body,
+    req.user.id
+  );
+  return phanHoiThanhCong(res, {
+    duLieu: ketQua,
+    thongDiep: 'Cập nhật thông tin nhân viên thành công'
+  });
+}
+
+// Back-Office: Đặt lại mật khẩu nhân viên
+async function xuLyAdminDatLaiMatKhauNhanVien(req, res) {
+  const ketQua = await nguoiDungService.adminDatLaiMatKhauNhanVien(
+    req.params.id,
+    req.body.matKhauMoi
+  );
+  return phanHoiThanhCong(res, {
+    duLieu: ketQua,
+    thongDiep: 'Đặt lại mật khẩu nhân viên thành công'
+  });
+}
+
 // Back-Office: Khóa / mở khóa tài khoản nhân viên
 async function xuLyAdminCapNhatTrangThaiNhanVien(req, res) {
   const ketQua = await nguoiDungService.adminCapNhatTrangThaiNhanVien(
@@ -82,11 +107,34 @@ async function xuLyAdminCapNhatTrangThaiNhanVien(req, res) {
   });
 }
 
+// Back-Office: Xem chi tiết khách hàng và 5 đơn hàng gần nhất
+async function xuLyAdminLayChiTietKhachHang(req, res) {
+  const ketQua = await nguoiDungService.adminLayChiTietKhachHang(req.params.id);
+  return phanHoiThanhCong(res, {
+    duLieu: ketQua,
+    thongDiep: 'Lấy thông tin chi tiết khách hàng thành công'
+  });
+}
+
+// Back-Office: Cập nhật thông tin khách hàng (họ tên, SĐT, địa chỉ mặc định)
+async function xuLyAdminCapNhatKhachHang(req, res) {
+  const ketQua = await nguoiDungService.adminCapNhatKhachHang(
+    req.params.id,
+    req.body,
+    req.user.id
+  );
+  return phanHoiThanhCong(res, {
+    duLieu: ketQua,
+    thongDiep: 'Cập nhật thông tin khách hàng thành công'
+  });
+}
+
 // Back-Office: Khóa / mở khóa tài khoản khách hàng
 async function xuLyAdminCapNhatTrangThaiKhachHang(req, res) {
   const ketQua = await nguoiDungService.adminCapNhatTrangThaiKhachHang(
     req.params.id,
-    req.body.dangHoatDong
+    req.body.dangHoatDong,
+    req.user.id
   );
   return phanHoiThanhCong(res, {
     duLieu: ketQua,
@@ -101,6 +149,10 @@ module.exports = {
   xuLyAdminLayDanhSachNhanVien,
   xuLyAdminLayDanhSachKhachHang,
   xuLyAdminTaoNhanVien,
+  xuLyAdminCapNhatNhanVien,
+  xuLyAdminDatLaiMatKhauNhanVien,
   xuLyAdminCapNhatTrangThaiNhanVien,
+  xuLyAdminLayChiTietKhachHang,
+  xuLyAdminCapNhatKhachHang,
   xuLyAdminCapNhatTrangThaiKhachHang
 };
