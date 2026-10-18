@@ -20,6 +20,7 @@ import { KhungThanhToanVietQR } from '../components/KhungThanhToanVietQR';
 import { laySocket, thamGiaDonHang, roiDonHang } from '../services/socket';
 import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 import { useHuyDonHang } from '../hooks/useHuyDonHang';
+import DemNguocHanQR from '../components/DemNguocHanQR';
 
 export const ChiTietDonHang = () => {
   const { id } = useParams();
@@ -464,7 +465,9 @@ export const ChiTietDonHang = () => {
                         </span>
                       ) : thongTinThanhToan?.phuongThuc === 'CHUYEN_KHOAN_QR' ? (
                         <span style={{
-                          display: 'inline-block',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
                           backgroundColor: '#fef7e0',
                           color: '#b06000',
                           fontSize: '0.78rem',
@@ -472,7 +475,13 @@ export const ChiTietDonHang = () => {
                           padding: '2px 8px',
                           borderRadius: '4px'
                         }}>
-                          ⏳ Chờ chuyển khoản
+                          <span>⏳ Chờ chuyển khoản</span>
+                          {thongTinThanhToan?.ngayHetHan && (
+                            <>
+                              <span style={{ opacity: 0.5 }}>•</span>
+                              <DemNguocHanQR ngayHetHan={thongTinThanhToan.ngayHetHan} />
+                            </>
+                          )}
                         </span>
                       ) : (
                         <span style={{

@@ -15,6 +15,7 @@ import {
   Filter,
   QrCode
 } from 'lucide-react';
+import DemNguocHanQR from '../components/DemNguocHanQR';
 
 export const DonHangCuaToi = () => {
   const { thucHienHuyDon } = useHuyDonHang();
@@ -199,7 +200,7 @@ export const DonHangCuaToi = () => {
                       <span style={{
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '4px',
+                        gap: '6px',
                         padding: '2px 8px',
                         borderRadius: '4px',
                         fontSize: '0.78rem',
@@ -208,7 +209,15 @@ export const DonHangCuaToi = () => {
                         color: '#D97706',
                         border: '1px solid #FDE68A'
                       }}>
-                        <QrCode size={13} /> Chờ chuyển khoản QR
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <QrCode size={13} /> Chờ chuyển khoản QR
+                        </span>
+                        {don.thanhToan?.NgayHetHan && (
+                          <>
+                            <span style={{ opacity: 0.5 }}>•</span>
+                            <DemNguocHanQR ngayHetHan={don.thanhToan.NgayHetHan} />
+                          </>
+                        )}
                       </span>
                     )}
                     {don.thanhToan?.TrangThai === 'CAN_HOAN_TIEN' && (
