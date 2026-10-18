@@ -186,7 +186,7 @@ export const ChatbotWidget = () => {
       const res = await api.post('/chat', {
         messages: payloadMessages,
         tinNhan: textCanGui
-      });
+      }, { timeout: 60000 }); // Trợ lý AI gọi mô hình LLM và Function Calling qua mạng cần thời gian chờ tối đa 60s
 
       const duLieuPhanHoi = res.data?.data;
       const tinNhanAI = {
