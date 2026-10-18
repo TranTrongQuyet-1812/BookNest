@@ -1,5 +1,13 @@
 {
   "name": "booknest-workspace",
   "private": true,
-  "workspaces": ["frontend", "frontend-admin", "packages/shared"]
+  "workspaces": [
+    "frontend",
+    "frontend-admin",
+    "packages/shared"
+  ],
+  "scripts": {
+    "lint": "npm --prefix frontend run lint",
+    "lint:all": "node frontend/node_modules/oxlint/bin/oxlint frontend/src frontend-admin/src packages/shared"
+  }
 }

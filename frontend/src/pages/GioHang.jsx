@@ -213,8 +213,8 @@ export const GioHang = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Bảng Các Mục Sách */}
           <div className="lg:col-span-2">
-            <div className="table-container">
-              <table className="table">
+            <div className="table-container" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <table className="table" style={{ minWidth: '580px' }}>
                 <thead>
                   <tr>
                     <th>Sách</th>

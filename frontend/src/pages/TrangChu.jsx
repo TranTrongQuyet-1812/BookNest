@@ -504,9 +504,13 @@ export const TrangChu = () => {
                       </Link>
                     );
                   })()
-                ) : (
+                ) : dangTaiKe ? (
                   <div style={{ height: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
                     Đang nạp tác phẩm...
+                  </div>
+                ) : (
+                  <div style={{ height: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    {loiKeSach ? 'Không thể tải sách hôm nay' : 'Đang cập nhật tác phẩm'}
                   </div>
                 )}
 
