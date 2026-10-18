@@ -119,6 +119,15 @@ async function xuLyAdminHuyDon(req, res) {
   });
 }
 
+// Back-Office: Danh sách đơn hàng cần soạn (Pick list)
+async function xuLyLayDanhSachDonCanSoan(req, res) {
+  const duLieu = await donHangService.layDanhSachDonCanSoan();
+  return phanHoiThanhCong(res, {
+    duLieu,
+    thongDiep: 'Lấy danh sách đơn cần soạn thành công'
+  });
+}
+
 module.exports = {
   xuLyDatHang,
   xuLyDatHangKhachVangLai,
@@ -131,5 +140,6 @@ module.exports = {
   xuLyLayChiTietDonQuay,
   xuLyAdminLayChiTietDon,
   xuLyAdminCapNhatTrangThai,
-  xuLyAdminHuyDon
+  xuLyAdminHuyDon,
+  xuLyLayDanhSachDonCanSoan
 };

@@ -375,6 +375,29 @@ router.put(
   batLoiAsync(donHangController.xuLyAdminHuyDon)
 );
 
+/**
+ * @swagger
+ * /api/admin/pick-list:
+ *   get:
+ *     summary: Danh sách đơn hàng cần soạn (Pick list) cho kho (Quản trị viên, Thủ kho, Thủ thư)
+ *     tags: [Quản trị đơn hàng (Admin Orders)]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Danh sách đơn cần soạn và tổng hợp số lượng sách cần lấy từ kệ (không lộ thông tin khách)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PhanHoiThanhCong'
+ */
+router.get(
+  '/pick-list',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
+  batLoiAsync(donHangController.xuLyLayDanhSachDonCanSoan)
+);
+
 // ==========================================
 // 3. Quản lý tài khoản nhân viên và khách hàng (T17)
 // ==========================================

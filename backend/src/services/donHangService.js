@@ -774,6 +774,62 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
   }
 }
 
+// Back-Office: Danh sách đơn hàng cần soạn (Pick list) cho thủ kho (T33)
+// Đơn ở trạng thái DA_XAC_NHAN, CHỈ trả thông tin sách và số lượng, TUYỆT ĐỐI không trả thông tin cá nhân khách
+async function layDanhSachDonCanSoan() {
+  const cacDonHang = await DonHang.findAll({
+    where: { TrangThai: 'DA_XAC_NHAN' },
+    attributes: ['MaDonHang', 'MaTraCuu', 'NgayTao', 'TrangThai', 'KenhBan', 'GhiChuKhachHang'],
+    include: [
+      {
+        model: ChiTietDonHang,
+        as: 'chiTietDonHang',
+        attributes: ['MaChiTiet', 'MaSach', 'SoLuong', 'GiaBanLucMua'],
+        include: [
+          {
+            model: Sach,
+            as: 'sach',
+            attributes: ['MaSach', 'TenSach', 'AnhBia', 'TacGia']
+          }
+        ]
+      }
+    ],
+    order: [['NgayTao', 'ASC']]
+  });
+
+  // Gom tổng số lượng từng cuốn sách cần soạn để thủ kho lấy hàng một lượt từ giá kệ
+  const banDoTongHop = {};
+  cacDonHang.forEach(don => {
+    (don.chiTietDonHang || []).forEach(ct => {
+      const maSach = ct.MaSach;
+      if (!banDoTongHop[maSach]) {
+        banDoTongHop[maSach] = {
+          maSach,
+          tenSach: ct.sach?.TenSach || `Sách #${maSach}`,
+          anhBia: ct.sach?.AnhBia || null,
+          tacGia: ct.sach?.TacGia || null,
+          tongSoLuongCanSoan: 0,
+          cacDonLienQuan: []
+        };
+      }
+      banDoTongHop[maSach].tongSoLuongCanSoan += ct.SoLuong;
+      banDoTongHop[maSach].cacDonLienQuan.push({
+        maDonHang: don.MaDonHang,
+        soLuong: ct.SoLuong
+      });
+    });
+  });
+
+  const tongHopSachCanSoan = Object.values(banDoTongHop).sort((a, b) => b.tongSoLuongCanSoan - a.tongSoLuongCanSoan);
+
+  return {
+    tongSoDonCanSoan: cacDonHang.length,
+    tongSoCuonSachCanSoan: tongHopSachCanSoan.reduce((tong, s) => tong + s.tongSoLuongCanSoan, 0),
+    danhSachDonHang: cacDonHang,
+    tongHopSachCanSoan
+  };
+}
+
 module.exports = {
   kiemTraChuyenTrangThai,
   truTonKhoVaChotChiTiet,
@@ -785,6 +841,7 @@ module.exports = {
   layDanhSachDonQuay,
   layChiTietDonQuay,
   layDanhSachDonKhach,
+  layDanhSachDonCanSoan,
   khachHuyDon,
   adminLayDanhSachDon,
   adminCapNhatTrangThai,
