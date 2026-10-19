@@ -313,7 +313,7 @@ router.get(
  *                 example: DA_DUYET
  *               ghiChu:
  *                 type: string
- *                 example: Đã xác nhận đơn hàng với khách
+ *                 example: Đã duyệt đơn hàng và chuyển đóng gói
  *     responses:
  *       200:
  *         description: Chuyển trạng thái thành công
