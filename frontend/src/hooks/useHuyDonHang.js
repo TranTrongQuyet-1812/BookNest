@@ -10,10 +10,14 @@ export function useHuyDonHang() {
   const [dangHuy, setDangHuy] = useState(false);
   const { thongBao: tb, nhapLyDo } = useThongBao();
 
-  const thucHienHuyDon = async (maDonHang, onSuccess) => {
+  const thucHienHuyDon = async (maDonHang, onSuccess, daThanhToan = false) => {
+    const noiDungXacNhan = daThanhToan
+      ? 'Đơn này đã thanh toán qua VietQR. Khi hủy, cửa hàng sẽ hoàn tiền lại cho bạn.'
+      : 'Bạn có chắc chắn muốn hủy đơn hàng này không?';
+
     const lyDo = await nhapLyDo({
       tieuDe: `Hủy đơn hàng ${maDonHang}`,
-      noiDung: 'Bạn có chắc chắn muốn hủy đơn hàng này không?',
+      noiDung: noiDungXacNhan,
       nhan: 'Lý do hủy đơn',
       placeholder: 'Nhập lý do hủy đơn hàng (tùy chọn)...',
       batBuoc: false,
@@ -28,7 +32,10 @@ export function useHuyDonHang() {
       await api.put(`/orders/${maDonHang}/cancel`, {
         lyDo: lyDo || 'Khách hàng yêu cầu hủy đơn qua giao diện',
       });
-      tb.thanhCong('Đã hủy đơn hàng thành công.');
+      const thongDiepThanhCong = daThanhToan
+        ? 'Đã hủy đơn hàng thành công. Cửa hàng sẽ liên hệ hoàn tiền lại cho bạn.'
+        : 'Đã hủy đơn hàng thành công.';
+      tb.thanhCong(thongDiepThanhCong);
       if (typeof onSuccess === 'function') {
         await onSuccess();
       }

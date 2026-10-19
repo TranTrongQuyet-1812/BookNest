@@ -218,10 +218,15 @@ export const QuanLyDonHang = () => {
   };
 
   // Hủy đơn hàng và hoàn lại tồn kho
-  const handleHuyDon = async (maDonHang) => {
+  const handleHuyDon = async (maDonHang, don) => {
+    const laQkDaTraTien = don?.thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && don?.thanhToan?.TrangThai === 'DA_THANH_TOAN';
+    const noiDungXacNhan = laQkDaTraTien
+      ? 'Thao tác này sẽ hủy đơn và hoàn trả toàn bộ số lượng sách vào kho. Khoản đã thanh toán sẽ chuyển sang danh sách Cần hoàn tiền.'
+      : 'Thao tác này sẽ hủy đơn và hoàn trả toàn bộ số lượng sách vào kho.';
+
     const lyDo = await nhapLyDo({
       tieuDe: `Hủy đơn hàng #${maDonHang}`,
-      noiDung: 'Thao tác này sẽ hủy đơn và hoàn trả toàn bộ số lượng sách vào kho.',
+      noiDung: noiDungXacNhan,
       nhan: 'Lý do hủy đơn',
       placeholder: 'Nhập lý do hủy đơn hàng (bắt buộc)...',
       batBuoc: true,
@@ -233,7 +238,10 @@ export const QuanLyDonHang = () => {
     donVuaTuThaoTac.current.set(String(maDonHang), Date.now());
     try {
       await api.put(`/admin/orders/${maDonHang}/cancel`, { lyDo });
-      tb.thanhCong(`Đã hủy đơn hàng #${maDonHang} và hoàn lại sách vào kho.`);
+      const thongBaoThanhCong = laQkDaTraTien
+        ? `Đã hủy đơn hàng #${maDonHang} và hoàn lại sách vào kho. Vui lòng vào mục Quản lý thanh toán để thực hiện hoàn tiền.`
+        : `Đã hủy đơn hàng #${maDonHang} và hoàn lại sách vào kho.`;
+      tb.thanhCong(thongBaoThanhCong);
       taiLai();
     } catch (err) {
       tb.loiTuApi(err, 'Không thể hủy đơn hàng này');
@@ -509,7 +517,7 @@ export const QuanLyDonHang = () => {
                         {/* Nút hủy đơn (Chỉ áp dụng cho CHO_DUYET và DA_DUYET) */}
                         {['CHO_DUYET', 'DA_DUYET'].includes(trangThai) && (
                           <button
-                            onClick={() => handleHuyDon(maDon)}
+                            onClick={() => handleHuyDon(maDon, don)}
                             className="btn btn-outline btn-sm"
                             style={{ color: 'var(--adm-danger)', borderColor: '#FECACA' }}
                             title="Hủy đơn hàng và hoàn kho"

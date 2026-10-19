@@ -95,8 +95,9 @@ export const DonHangCuaToi = () => {
   };
 
   // Hủy đơn hàng CHO_DUYET
-  const handleHuyDon = async (maDonHang) => {
-    await thucHienHuyDon(maDonHang, taiLai);
+  const handleHuyDon = async (maDonHang, don) => {
+    const daThanhToan = don?.thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && don?.thanhToan?.TrangThai === 'DA_THANH_TOAN';
+    await thucHienHuyDon(maDonHang, taiLai, daThanhToan);
   };
 
   const dinhDangTien = (soTien) => {
@@ -196,6 +197,22 @@ export const DonHangCuaToi = () => {
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
+                    {don.thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && don.thanhToan?.TrangThai === 'DA_THANH_TOAN' && trangThai === 'CHO_DUYET' && (
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        backgroundColor: '#D1FAE5',
+                        color: '#065F46',
+                        border: '1px solid #A7F3D0'
+                      }}>
+                        <CheckCircle size={13} /> Đã thanh toán
+                      </span>
+                    )}
                     {don.thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && don.thanhToan?.TrangThai === 'CHO_THANH_TOAN' && trangThai === 'CHO_DUYET' && (
                       <span style={{
                         display: 'inline-flex',
@@ -280,7 +297,7 @@ export const DonHangCuaToi = () => {
                 <div className="flex justify-end items-center gap-2 pt-2" style={{ borderTop: '1px solid var(--border)' }}>
                   {trangThai === 'CHO_DUYET' && (
                     <button
-                      onClick={() => handleHuyDon(maDon)}
+                      onClick={() => handleHuyDon(maDon, don)}
                       className="btn btn-outline btn-sm"
                       style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
                     >

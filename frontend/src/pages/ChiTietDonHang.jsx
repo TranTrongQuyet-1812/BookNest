@@ -77,7 +77,10 @@ export const ChiTietDonHang = () => {
   };
 
   const handleHuyDon = async () => {
-    await thucHienHuyDon(id, napChiTiet);
+    const daThanhToan =
+      (thongTinThanhToan?.phuongThuc === 'CHUYEN_KHOAN_QR' && thongTinThanhToan?.trangThai === 'DA_THANH_TOAN') ||
+      (donHang?.thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && donHang?.thanhToan?.TrangThai === 'DA_THANH_TOAN');
+    await thucHienHuyDon(id, napChiTiet, daThanhToan);
   };
 
   // Khách chủ động đổi sang COD trước khi QR hết hạn (hết hạn là đơn bị hủy)
@@ -199,9 +202,29 @@ export const ChiTietDonHang = () => {
 
       <div className="flex items-center justify-between flex-wrap gap-2 mb-6">
         <div>
-          <h1 className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700 }}>
-            Chi Tiết Đơn Hàng {maHienThi}
-          </h1>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700 }}>
+              Chi Tiết Đơn Hàng {maHienThi}
+            </h1>
+            {((thongTinThanhToan?.phuongThuc === 'CHUYEN_KHOAN_QR' && thongTinThanhToan?.trangThai === 'DA_THANH_TOAN') ||
+              (donHang?.thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && donHang?.thanhToan?.TrangThai === 'DA_THANH_TOAN')) &&
+              trangThaiDon === 'CHO_DUYET' && (
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                backgroundColor: '#D1FAE5',
+                color: '#065F46',
+                border: '1px solid #A7F3D0'
+              }}>
+                <CheckCircle2 size={14} /> Đã thanh toán
+              </span>
+            )}
+          </div>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
             Đặt vào lúc: {ngayTaoDon ? new Date(ngayTaoDon).toLocaleString('vi-VN') : ''}
           </p>
