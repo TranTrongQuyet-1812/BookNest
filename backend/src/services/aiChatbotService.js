@@ -115,7 +115,7 @@ const DANH_SACH_CONG_CU = [
         properties: {
           tu_khoa: {
             type: 'string',
-            description: 'Tên cuốn sách hoặc tên tác giả cần tìm'
+            description: 'Tên cuốn sách hoặc tên tác giả cần tìm. Để trống khi khách chỉ hỏi theo thể loại (khi đó chỉ điền the_loai)'
           },
           the_loai: {
             type: 'string',
@@ -276,23 +276,15 @@ async function layDanhSachDanhMucCache() {
 }
 
 /**
- * Nhận diện danh mục thể loại từ chuỗi tìm kiếm hoặc the_loai.
- * Chỉ coi là hỏi thể loại khi chuỗi khớp gần như nguyên vẹn tên danh mục hoặc 1 vế (tỷ lệ độ dài >= 70%).
- * Bỏ chiều chuỗi dài chứa vế ngắn vô điều kiện và bỏ chuỗi con ngắn.
+ * Nhận diện danh mục thể loại từ chuỗi tìm kiếm hoặc the_loai, đối chiếu với bảng DanhMuc (không dùng bảng từ khóa cứng).
+ * - Trùng nguyên tên danh mục hoặc một vế của nó (vd "văn học" trùng vế của "Văn Học & Tiểu Thuyết").
+ * - Nếu không đặt chiTrungNguyen: thêm so khớp theo tỷ lệ độ dài (chuỗi khách gõ >= 70% độ dài vế danh mục).
+ * Chế độ chiTrungNguyen dùng cho tu_khoa, để tên sách có chứa cụm danh mục không bị nuốt thành "hỏi theo thể loại".
  */
-async function nhanDienDanhSachDanhMuc(chuoi) {
+async function nhanDienDanhSachDanhMuc(chuoi, { chiTrungNguyen = false } = {}) {
   if (!chuoi || typeof chuoi !== 'string') return [];
   const chuoiKd = boDauTiengViet(chuoi).toLowerCase().trim();
   if (chuoiKd.length < 2) return [];
-
-  let chuoiLamSach = chuoiKd;
-  let daThayDoi = true;
-  while (daThayDoi) {
-    const truoc = chuoiLamSach;
-    chuoiLamSach = chuoiLamSach.replace(/^(sach|cuon sach|cuon|goi y|the loai|chu de|tim|muon tim|cho toi|co|nhung|cac)\s+/i, '').trim();
-    daThayDoi = chuoiLamSach !== truoc;
-  }
-  if (chuoiLamSach.length < 2) return [];
 
   const danhSachDanhMuc = await layDanhSachDanhMucCache();
   const ketQua = new Map();
@@ -301,23 +293,17 @@ async function nhanDienDanhSachDanhMuc(chuoi) {
     const dmKd = boDauTiengViet(dm.TenDanhMuc).toLowerCase().trim();
     const cacVe = dmKd.split(/[&\-\/,]+/).map(v => v.trim()).filter(Boolean);
 
-    // 1. Khớp hoàn toàn cả tên danh mục hoặc 1 vế
-    if (chuoiLamSach === dmKd || cacVe.includes(chuoiLamSach)) {
+    if (chuoiKd === dmKd || cacVe.includes(chuoiKd)) {
       ketQua.set(dm.MaDanhMuc, dm);
       continue;
     }
+    if (chiTrungNguyen) continue;
 
-    // 2. So khớp theo tỷ lệ độ dài (chuỗi khách gõ phải >= 70% độ dài vế danh mục, bỏ chuỗi con ngắn)
-    for (const ve of cacVe) {
-      if (ve.length < 3) continue;
-      if (chuoiLamSach.includes(ve)) {
-        const tyLe = Math.min(chuoiLamSach.length, ve.length) / Math.max(chuoiLamSach.length, ve.length);
-        if (tyLe >= 0.7) {
-          ketQua.set(dm.MaDanhMuc, dm);
-          break;
-        }
-      }
-    }
+    const khopTyLe = cacVe.some(ve => {
+      if (ve.length < 3 || !chuoiKd.includes(ve)) return false;
+      return Math.min(chuoiKd.length, ve.length) / Math.max(chuoiKd.length, ve.length) >= 0.7;
+    });
+    if (khopTyLe) ketQua.set(dm.MaDanhMuc, dm);
   }
 
   return Array.from(ketQua.values());
@@ -486,22 +472,30 @@ async function thucThiTimSach({ tu_khoa, the_loai, gia_toi_da }, tinNhanGoc = ''
     const ketQuaXacNhan = await xuLyXacNhanDaiTu(chuoiTim, sachHienTai, dieuKien);
     if (ketQuaXacNhan) return ketQuaXacNhan;
 
-    // 1. Luôn ưu tiên tìm kiếm theo tên sách hoặc tác giả trước
+    // 1. Khách hỏi theo thể loại: chỉ the_loai (tu_khoa trống), hoặc tu_khoa trùng nguyên tên danh mục / một vế
+    const tuKhoaTrong = !tu_khoa || !tu_khoa.trim();
     let danhSach = [];
-    if (tu_khoa && tu_khoa.trim()) {
+    const danhSachDM = tuKhoaTrong
+      ? await nhanDienDanhSachDanhMuc(the_loai)
+      : await nhanDienDanhSachDanhMuc(tu_khoa, { chiTrungNguyen: true });
+    if (danhSachDM.length > 0) {
+      danhSach = await timSachTheoTheLoai(danhSachDM.map(d => d.MaDanhMuc), dieuKien);
+    }
+
+    // 2. Còn lại tìm theo tên sách hoặc tác giả
+    if (danhSach.length === 0 && !tuKhoaTrong) {
       danhSach = await timSachTheoTenHoacTacGia(tu_khoa, dieuKien);
     }
 
-    // 2. Nếu tìm theo tên sách / tác giả không ra, mới nhận diện và tìm theo thể loại
+    // 3. Không ra thì thử thể loại theo the_loai hoặc tu_khoa (so khớp theo tỷ lệ độ dài)
     if (danhSach.length === 0) {
-      const danhSachDM = await nhanDienDanhSachDanhMuc(the_loai || tu_khoa);
-      const cacMaDM = danhSachDM.map(d => d.MaDanhMuc);
-      if (cacMaDM.length > 0) {
-        danhSach = await timSachTheoTheLoai(cacMaDM, dieuKien);
+      const danhSachDMGanDung = await nhanDienDanhSachDanhMuc(the_loai || tu_khoa);
+      if (danhSachDMGanDung.length > 0) {
+        danhSach = await timSachTheoTheLoai(danhSachDMGanDung.map(d => d.MaDanhMuc), dieuKien);
       }
     }
 
-    // 3. Nếu vẫn không thấy, tìm kiếm mờ theo điểm token trên tin nhắn gốc hoặc từ khóa
+    // 4. Nếu vẫn không thấy, tìm kiếm mờ theo điểm token trên tin nhắn gốc hoặc từ khóa
     if (danhSach.length === 0 && tinNhanGoc && tinNhanGoc.trim()) {
       danhSach = await timSachMoDiem(tinNhanGoc.trim(), { limit: 10, whereThem: dieuKien });
     }
@@ -1143,38 +1137,6 @@ function trichXuatToolCallTuNoiDung(noiDung) {
 }
 
 /**
- * Tự động bù đắp dữ liệu sách và làm sạch placeholder ba chấm (...) trong phản hồi của AI
- * Đảm bảo 100% người dùng luôn nhận được Tác giả và Giá thật cùng Thẻ sách bên dưới khung chat
- */
-async function tuDongBuDapDuLieuSach({ traLoi, noiDungTinNhan, sachHienTai, duLieuKemTheo }) {
-  let traLoiMoi = String(traLoi || '');
-
-  // Nếu chưa có sách kèm theo và chưa có hành động thêm giỏ / đơn hàng
-  if ((!duLieuKemTheo.danhSachSach || duLieuKemTheo.danhSachSach.length === 0) && !duLieuKemTheo.themVaoGioHang && !duLieuKemTheo.thongTinDonHang) {
-    const coDauHieuSach = /sách|cuốn|mua|bán|tìm|giá/i.test(noiDungTinNhan) ||
-                          /cuốn sách/i.test(traLoiMoi) ||
-                          traLoiMoi.includes('...') ||
-                          traLoiMoi.includes('(Tác giả:');
-
-    if (coDauHieuSach) {
-      // Ưu tiên trích xuất tên sách từ câu trả lời của AI nếu có ngoặc kép/đơn, hoặc lấy từ câu hỏi của khách
-      let tuKhoa = noiDungTinNhan;
-      const matchNgoac = traLoiMoi.match(/cuốn sách\s+['"“]([^'"”]+)['"”]/i) || traLoiMoi.match(/['"“]([^'"”]+)['"”]/);
-      if (matchNgoac && matchNgoac[1]) {
-        tuKhoa = matchNgoac[1];
-      }
-
-      const ketQuaTim = await thucThiTimSach({ tu_khoa: tuKhoa }, noiDungTinNhan, sachHienTai);
-      if (ketQuaTim?.timThay && ketQuaTim.danhSach?.length > 0) {
-        duLieuKemTheo.danhSachSach = ketQuaTim.danhSach;
-      }
-    }
-  }
-
-  return traLoiMoi;
-}
-
-/**
  * Tính tổng lượng token AI Chatbot đã tiêu thụ trong ngày hôm nay
  */
 async function tinhTongTokenHomNay() {
@@ -1400,7 +1362,6 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, noiDungTin
     // Nếu AI không gọi tool -> Hoàn tất phản hồi
     if (!aiMessage.tool_calls || aiMessage.tool_calls.length === 0) {
       let traLoi = chuanHoaNoiDungAI(aiMessage.content);
-      traLoi = await tuDongBuDapDuLieuSach({ traLoi, noiDungTinNhan, sachHienTai, duLieuKemTheo });
       traLoi = traLoi || taoTraLoiMacDinhKhiRong(duLieuKemTheo);
 
       await ghiNhatKyChatbot({ maKhachHang, khoaPhien, soToken: tongTokensTieuThu, tenCongCu: danhSachToolDaGoi.join(',') || null, ketQua: 'THANH_CONG', nhaCungCap: nhaCungCapSuDung });
@@ -1425,7 +1386,6 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, noiDungTin
   if (ketQuaCuoi?.usage?.total_tokens) tongTokensTieuThu += ketQuaCuoi.usage.total_tokens;
 
   let traLoiCuoi = chuanHoaNoiDungAI(ketQuaCuoi.message?.content);
-  traLoiCuoi = await tuDongBuDapDuLieuSach({ traLoi: traLoiCuoi, noiDungTinNhan, sachHienTai, duLieuKemTheo });
   traLoiCuoi = traLoiCuoi || taoTraLoiMacDinhKhiRong(duLieuKemTheo, 'Dạ, bạn có cần BookNest tư vấn thêm thông tin nào nữa không ạ?');
 
   await ghiNhatKyChatbot({ maKhachHang, khoaPhien, soToken: tongTokensTieuThu, tenCongCu: danhSachToolDaGoi.join(',') || null, ketQua: 'THANH_CONG', nhaCungCap: nhaCungCapSuDung });
@@ -1445,7 +1405,6 @@ module.exports = {
   trichXuatToolCallTuNoiDung,
   trichXuatSachGanNhatTuLichSu,
   laCauXacNhan,
-  tuDongBuDapDuLieuSach,
   tinhTongTokenHomNay,
   ghiNhatKyChatbot,
   layThongKeChatbotHomNay,

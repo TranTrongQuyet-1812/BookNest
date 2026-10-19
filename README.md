@@ -116,15 +116,15 @@ Có thể đặt storefront, Back-Office, backend và SQL Server trên cùng m�
 
 ---
 
-## 5. Danh Sách Tài Khoản Demo Hệ Thống
-Tất cả các tài khoản demo đều dùng chung mật khẩu: **`12345678`**:
+## 5. Vai Trò Trong Hệ Thống
+Thông tin đăng nhập (email, mật khẩu) của các tài khoản dùng thử **không công bố trong README**. Chủ dự án cấp riêng khi cần demo.
 
-| Vai trò | Email đăng nhập | Quyền hạn trong hệ thống |
-| :--- | :--- | :--- |
-| **Quản trị viên** (`quan_tri`) | `admin@booknest.vn` | Toàn quyền: Thống kê doanh thu, Quản lý sách & kho, Xử lý đơn, Quản lý tài khoản nhân sự |
-| **Thủ thư** (`thu_thu`) | `thuthu@booknest.vn`, `nhanvien@booknest.vn` | Phụ trách bán hàng: Xem đơn toàn hệ thống, Luân chuyển trạng thái đơn (Duyệt -> Giao -> Hoàn tất), Hủy đơn hoàn kho |
-| **Thủ kho** (`thu_kho`) | `thukho@booknest.vn` | Phụ trách hàng hóa: Quản lý danh mục và sách, Lập phiếu nhập kho, Cảnh báo sách sắp hết |
-| **Khách hàng** | `khach1@gmail.com` | Tìm kiếm sách, Thêm giỏ hàng, Đặt mua hàng COD, Quản lý đơn cá nhân, Viết đánh giá sản phẩm |
+| Vai trò | Quyền hạn trong hệ thống |
+| :--- | :--- |
+| **Quản trị viên** (`quan_tri`) | Toàn quyền: Thống kê doanh thu, Quản lý sách & kho, Xử lý đơn, Quản lý tài khoản nhân sự |
+| **Thủ thư** (`thu_thu`) | Phụ trách bán hàng: Xem đơn toàn hệ thống, Luân chuyển trạng thái đơn (Duyệt -> Giao -> Hoàn tất), Hủy đơn hoàn kho |
+| **Thủ kho** (`thu_kho`) | Phụ trách hàng hóa: Quản lý danh mục và sách, Lập phiếu nhập kho, Cảnh báo sách sắp hết |
+| **Khách hàng** | Tìm kiếm sách, Thêm giỏ hàng, Đặt mua hàng COD, Quản lý đơn cá nhân, Viết đánh giá sản phẩm |
 
 Nhân viên đăng nhập ở **`/admin/login`**, khách hàng đăng nhập ở **`/login`** (hai cổng riêng, hai bảng tài khoản riêng).
 

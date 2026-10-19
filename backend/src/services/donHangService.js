@@ -388,7 +388,7 @@ async function layChiTietDonHang(maDonHang) {
       {
         model: ChiTietDonHang,
         as: 'chiTietDonHang',
-        include: [{ model: Sach, as: 'sach', attributes: ['MaSach', 'TenSach', 'AnhBia'] }]
+        include: [{ model: Sach, as: 'sach', attributes: ['MaSach', 'TenSach', 'AnhBia', 'TacGia'] }]
       },
       {
         model: LichSuTrangThaiDonHang,
@@ -436,7 +436,7 @@ async function layDanhSachDonKhach(maKhachHang, { page = 1, limit = 10, status }
       {
         model: ChiTietDonHang,
         as: 'chiTietDonHang',
-        include: [{ model: Sach, as: 'sach', attributes: ['MaSach', 'TenSach', 'AnhBia'] }]
+        include: [{ model: Sach, as: 'sach', attributes: ['MaSach', 'TenSach', 'AnhBia', 'TacGia'] }]
       },
       {
         model: ThanhToan,
