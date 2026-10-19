@@ -12,9 +12,6 @@
  */
 const cauHinh = require('../config/cauHinh');
 
-// Biến lưu mock handler khi chạy unit test
-let hamGiaLapAI = null;
-
 // Trạng thái khóa trong RAM cho từng nhà cung cấp
 const trangThaiNhaCungCap = {
   gemini: {
@@ -36,13 +33,6 @@ const trangThaiNhaCungCap = {
     lyDo: ''
   }
 };
-
-/**
- * Thiết lập hàm giả lập phản hồi của AI (dành cho Unit Test)
- */
-function datHamGiaLapAI(hamMock) {
-  hamGiaLapAI = hamMock;
-}
 
 /**
  * Lấy bản sao trạng thái khóa RAM (dành cho Unit Test hoặc kiểm tra)
@@ -280,15 +270,6 @@ function layDanhSachNhaCungCap() {
  * @returns {Promise<{ message: Object, usage: Object, nhaCungCap: string }>}
  */
 async function goiNhaCungCapAI({ messages, tools, maxTokens = 600, temperature = 0.3 }) {
-  // 0. Ưu tiên mock handler khi chạy unit test
-  if (hamGiaLapAI) {
-    const ketQuaMock = await hamGiaLapAI({ messages, tools, maxTokens, temperature });
-    if (!ketQuaMock.nhaCungCap) {
-      ketQuaMock.nhaCungCap = 'mock';
-    }
-    return ketQuaMock;
-  }
-
   const danhSachNcc = layDanhSachNhaCungCap();
   if (danhSachNcc.length === 0) {
     throw new Error('Dịch vụ AI chưa được cấu hình khóa API hợp lệ (thiếu GEMINI_API_KEY hoặc AI_API_KEY)');
@@ -395,7 +376,6 @@ async function goiNhaCungCapAI({ messages, tools, maxTokens = 600, temperature =
 
 module.exports = {
   goiNhaCungCapAI,
-  datHamGiaLapAI,
   layTrangThaiNhaCungCap,
   datTrangThaiNhaCungCap,
   resetTrangThaiNhaCungCap,

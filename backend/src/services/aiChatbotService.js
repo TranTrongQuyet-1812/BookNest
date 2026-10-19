@@ -6,7 +6,7 @@
 const { Op } = require('sequelize');
 const { sequelize, Sach, DanhMuc, DonHang, ChiTietDonHang, LichSuTrangThaiDonHang, ThanhToan, NhatKyChatbot } = require('../models');
 const { chuaTuKhoa, chuaTuKhoaLinhHoat, locTuKhoaThucSu, tinhDiemTrungKhop, boDauTiengViet } = require('../utils/timKiem');
-const { goiNhaCungCapAI } = require('./trinhCungCapAI');
+const trinhCungCapAI = require('./trinhCungCapAI');
 const { layNguCanhChinhSachChoAI } = require('./chinhSachService');
 const cauHinhHeThongService = require('./cauHinhHeThongService');
 const giamGiaService = require('./giamGiaService');
@@ -259,6 +259,66 @@ async function timSachMoDiem(chuoiTimKiem, { limit = 5, whereThem = {}, includeD
     .map(item => item.sach);
 }
 
+// Cache danh mục trong RAM 5 phút để so khớp tức thì
+let cacheDanhMuc = null;
+let thoiDiemCacheDanhMuc = 0;
+
+async function layDanhSachDanhMucCache() {
+  const bayGio = Date.now();
+  if (!cacheDanhMuc || bayGio - thoiDiemCacheDanhMuc > 5 * 60 * 1000) {
+    cacheDanhMuc = await DanhMuc.findAll({
+      attributes: ['MaDanhMuc', 'TenDanhMuc'],
+      raw: true
+    });
+    thoiDiemCacheDanhMuc = bayGio;
+  }
+  return cacheDanhMuc || [];
+}
+
+/**
+ * So khớp chuỗi tìm kiếm với bảng DanhMuc trong CSDL thật.
+ * Hỗ trợ tìm kiếm theo nhiều danh mục cùng liên quan (vd "văn học" -> [MaDanhMuc: 1, 10]).
+ * Tuyệt đối không dùng bảng từ khóa cứng.
+ */
+async function timCacDanhMucPhuHop(chuoi) {
+  if (!chuoi || typeof chuoi !== 'string') return [];
+  const chuoiKhongDau = boDauTiengViet(chuoi).toLowerCase().trim();
+  if (!chuoiKhongDau || chuoiKhongDau.length < 2) return [];
+
+  const danhSachDanhMuc = await layDanhSachDanhMucCache();
+  const ketQua = new Map();
+
+  for (const dm of danhSachDanhMuc) {
+    const dmKhongDau = boDauTiengViet(dm.TenDanhMuc).toLowerCase().trim();
+    // 1. Khớp hoàn toàn
+    if (dmKhongDau === chuoiKhongDau) {
+      ketQua.set(dm.MaDanhMuc, dm);
+      continue;
+    }
+    // 2. Khớp từng vế nối bởi &, -, /, dấu phẩy
+    const cacVe = dmKhongDau.split(/[&\-\/,]+/).map(v => v.trim()).filter(Boolean);
+    for (const ve of cacVe) {
+      if (ve === chuoiKhongDau || (chuoiKhongDau.length >= 4 && (chuoiKhongDau.includes(ve) || ve.includes(chuoiKhongDau)))) {
+        ketQua.set(dm.MaDanhMuc, dm);
+        break;
+      }
+    }
+    // 3. Khớp chuỗi con nếu từ khóa đủ dài (>= 5 ký tự)
+    if (!ketQua.has(dm.MaDanhMuc)) {
+      if (dmKhongDau.includes(chuoiKhongDau) || (chuoiKhongDau.length >= 5 && chuoiKhongDau.includes(dmKhongDau))) {
+        ketQua.set(dm.MaDanhMuc, dm);
+      }
+    }
+  }
+
+  return Array.from(ketQua.values());
+}
+
+async function timDanhMucPhuHop(chuoi) {
+  const dms = await timCacDanhMucPhuHop(chuoi);
+  return dms.length > 0 ? dms[0] : null;
+}
+
 /**
  * Thực thi công cụ tìm sách trong CSDL
  */
@@ -307,45 +367,108 @@ async function thucThiTimSach({ tu_khoa, the_loai, gia_toi_da }, tinNhanGoc = ''
       return { timThay: false, thongDiep: 'Vui lòng cung cấp tên cuốn sách hoặc tác giả bạn muốn tìm nhé.' };
     }
 
+    // Nhận diện danh mục thể loại từ the_loai, tu_khoa hoặc tinNhanGoc từ bảng DanhMuc
+    let danhSachDanhMucKhop = [];
+    if (the_loai && the_loai.trim()) {
+      danhSachDanhMucKhop = await timCacDanhMucPhuHop(the_loai.trim());
+    }
+    if (danhSachDanhMucKhop.length === 0 && tu_khoa && tu_khoa.trim()) {
+      danhSachDanhMucKhop = await timCacDanhMucPhuHop(tu_khoa.trim());
+    }
+    if (danhSachDanhMucKhop.length === 0 && tinNhanGoc && tinNhanGoc.trim()) {
+      const matchTheLoai = tinNhanGoc.match(/(?:thể loại|sách|gợi ý sách)\s+([^0-9,.]+)/i);
+      if (matchTheLoai && matchTheLoai[1]) {
+        danhSachDanhMucKhop = await timCacDanhMucPhuHop(matchTheLoai[1].trim());
+      }
+    }
+
     const includeOptions = [{
       model: DanhMuc,
       as: 'danhMuc',
       attributes: ['MaDanhMuc', 'TenDanhMuc']
     }];
 
-    if (the_loai && the_loai.trim()) {
+    const cacMaDanhMucKhop = danhSachDanhMucKhop.map(d => d.MaDanhMuc);
+    if (cacMaDanhMucKhop.length > 0) {
+      includeOptions[0].where = { MaDanhMuc: { [Op.in]: cacMaDanhMucKhop } };
+    } else if (the_loai && the_loai.trim()) {
       includeOptions[0].where = chuaTuKhoa('[danhMuc].[TenDanhMuc]', the_loai.trim());
+    }
+
+    // Kiểm tra xem khách có đang hỏi theo thể loại không
+    // (khi tu_khoa trùng hoặc gần trùng tên một danh mục thì không ép tìm theo tên sách)
+    let laHoiTheoTheLoai = false;
+    if (cacMaDanhMucKhop.length > 0) {
+      const tuKhoaKiemTra = (tu_khoa && tu_khoa.trim()) ? tu_khoa.trim() : (tinNhanGoc || '').trim();
+      const tuKhoaKd = boDauTiengViet(tuKhoaKiemTra).toLowerCase();
+      for (const dm of danhSachDanhMucKhop) {
+        const dmKd = boDauTiengViet(dm.TenDanhMuc).toLowerCase();
+        const cacVe = dmKd.split(/[&\-\/,]+/).map(v => v.trim()).filter(Boolean);
+        if (dmKd === tuKhoaKd || cacVe.some(v => v === tuKhoaKd || (tuKhoaKd.length >= 4 && (tuKhoaKd.includes(v) || v.includes(tuKhoaKd))))) {
+          laHoiTheoTheLoai = true;
+          break;
+        }
+      }
     }
 
     let danhSach = [];
 
-    // 1. Tìm chính xác qua Tokenized AND với tu_khoa (nếu AI truyền đúng)
-    // Tăng limit lên 10 để sau khi lọc theo giá sau giảm vẫn đảm bảo số lượng kết quả (GGC)
-    if (tu_khoa && tu_khoa.trim()) {
+    // Nếu khách hỏi theo thể loại: Lọc thẳng theo danh mục trong CSDL
+    if (laHoiTheoTheLoai) {
       danhSach = await Sach.findAll({
         where: {
           ...dieuKien,
-          [Op.or]: [
-            chuaTuKhoaLinhHoat('[Sach].[TenSach]', tu_khoa.trim()),
-            chuaTuKhoaLinhHoat('[Sach].[TacGia]', tu_khoa.trim())
-          ]
+          MaDanhMuc: { [Op.in]: cacMaDanhMucKhop }
         },
         include: includeOptions,
-        limit: 10,
+        limit: 15,
         order: [['NgayTao', 'DESC']],
         attributes: ['MaSach', 'TenSach', 'TacGia', 'GiaBan', 'SoLuongTon', 'AnhBia', 'MoTa']
       });
-    }
+    } else {
+      // 1. Tìm chính xác qua Tokenized AND với tu_khoa (nếu AI truyền đúng)
+      // Ưu tiên tìm theo Tên sách hoặc Tác giả trước để đảm bảo đúng chủ đề
+      if (tu_khoa && tu_khoa.trim()) {
+        const danhSachTenHoacTacGia = await Sach.findAll({
+          where: {
+            ...dieuKien,
+            [Op.or]: [
+              chuaTuKhoaLinhHoat('[Sach].[TenSach]', tu_khoa.trim()),
+              chuaTuKhoaLinhHoat('[Sach].[TacGia]', tu_khoa.trim())
+            ]
+          },
+          include: includeOptions,
+          limit: 10,
+          order: [['NgayTao', 'DESC']],
+          attributes: ['MaSach', 'TenSach', 'TacGia', 'GiaBan', 'SoLuongTon', 'AnhBia', 'MoTa']
+        });
 
-    // 2. Nếu tu_khoa không khớp chính xác, ƯU TIÊN tìm mờ theo tinNhanGoc của người dùng
-    // (Bảo vệ chống hiện tượng LLM trích xuất méo ký tự tiếng Việt)
-    if (danhSach.length === 0 && tinNhanGoc && tinNhanGoc.trim()) {
-      danhSach = await timSachMoDiem(tinNhanGoc.trim(), { limit: 10 });
-    }
+        if (danhSachTenHoacTacGia.length > 0) {
+          danhSach = danhSachTenHoacTacGia;
+        } else {
+          // Nếu tên sách hoặc tác giả không có, tìm tiếp trong mô tả (ví dụ chủ đề nội dung sách)
+          danhSach = await Sach.findAll({
+            where: [
+              dieuKien,
+              chuaTuKhoaLinhHoat('[Sach].[MoTa]', tu_khoa.trim())
+            ],
+            include: includeOptions,
+            limit: 10,
+            order: [['NgayTao', 'DESC']],
+            attributes: ['MaSach', 'TenSach', 'TacGia', 'GiaBan', 'SoLuongTon', 'AnhBia', 'MoTa']
+          });
+        }
+      }
 
-    // 3. Nếu tinNhanGoc vẫn chưa ra, mới tìm mờ theo tu_khoa của AI
-    if (danhSach.length === 0 && tu_khoa && tu_khoa.trim()) {
-      danhSach = await timSachMoDiem(tu_khoa.trim(), { limit: 10 });
+      // 2. Tìm mờ theo tinNhanGoc của người dùng
+      if (danhSach.length === 0 && tinNhanGoc && tinNhanGoc.trim()) {
+        danhSach = await timSachMoDiem(tinNhanGoc.trim(), { limit: 10, includeOptions, whereThem: dieuKien });
+      }
+
+      // 3. Tìm mờ theo tu_khoa của AI
+      if (danhSach.length === 0 && tu_khoa && tu_khoa.trim()) {
+        danhSach = await timSachMoDiem(tu_khoa.trim(), { limit: 10, includeOptions, whereThem: dieuKien });
+      }
     }
 
     if (danhSach.length === 0) {
@@ -1076,7 +1199,9 @@ async function tuDongBuDapDuLieuSach({ traLoi, noiDungTinNhan, sachHienTai, duLi
         const giaFmt = new Intl.NumberFormat('vi-VN').format(s0.giaBan);
         const tacGiaFmt = s0.tacGia || 'Đang cập nhật';
 
-        // Tự động làm sạch placeholder ba chấm hoặc cập nhật tác giả/giá nếu dính định dạng cũ
+        // [Lý do giữ 2 đoạn regex này]: Dù Prompt T57 đã hướng dẫn AI trả lời thẳng không dùng placeholder,
+        // hai đoạn regex vá chuỗi (Tác giả:...) và dấu ... vẫn được giữ lại làm lớp phòng thủ chiều sâu (defense-in-depth)
+        // để phòng ngừa trường hợp mô hình LLM nhỏ tự ý sinh placeholder ba chấm khi phân vân hoặc trích dẫn chưa hoàn tất.
         if (traLoiMoi.includes('(Tác giả:')) {
           traLoiMoi = traLoiMoi.replace(/\(Tác giả:[^)]*?\)/gi, `(Tác giả: ${tacGiaFmt}, Giá: ${giaFmt}đ)`);
         }
@@ -1090,6 +1215,7 @@ async function tuDongBuDapDuLieuSach({ traLoi, noiDungTinNhan, sachHienTai, duLi
     const giaFmt = new Intl.NumberFormat('vi-VN').format(s0.giaBan);
     const tacGiaFmt = s0.tacGia || 'Đang cập nhật';
 
+    // Lớp phòng thủ chiều sâu (defense-in-depth) dọn sạch dấu ba chấm và định dạng lại tác giả/giá nếu LLM sinh lệch mẫu
     if (traLoiMoi.includes('(Tác giả:')) {
       traLoiMoi = traLoiMoi.replace(/\(Tác giả:[^)]*?\)/gi, `(Tác giả: ${tacGiaFmt}, Giá: ${giaFmt}đ)`);
     }
@@ -1138,9 +1264,7 @@ async function ghiNhatKyChatbot({ maKhachHang = null, khoaPhien = null, soToken 
       NhaCungCap: nhaCungCap ? String(nhaCungCap).substring(0, 30) : null
     });
   } catch (err) {
-    if (process.env.NODE_ENV !== 'test') {
-      console.error('[NhatKyChatbot] Không thể ghi nhật ký AI:', err.message);
-    }
+    console.error('[NhatKyChatbot] Không thể ghi nhật ký AI:', err.message);
   }
 }
 
@@ -1312,7 +1436,7 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
 
   // 3. Vòng lặp Function Calling (tối đa 2 vòng)
   for (let soVongLap = 0; soVongLap < 2; soVongLap++) {
-    const ketQuaAI = await goiNhaCungCapAI({ messages, tools: cacCongCuKhaDung, maxTokens: 600, temperature: 0.3 });
+    const ketQuaAI = await trinhCungCapAI.goiNhaCungCapAI({ messages, tools: cacCongCuKhaDung, maxTokens: 600, temperature: 0.3 });
     if (ketQuaAI?.nhaCungCap) nhaCungCapSuDung = ketQuaAI.nhaCungCap;
     if (ketQuaAI?.usage?.total_tokens) tongTokensTieuThu += ketQuaAI.usage.total_tokens;
     const aiMessage = ketQuaAI.message;
@@ -1349,7 +1473,7 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
   }
 
   // 4. Nếu hết vòng lặp mà chưa chốt -> Gọi 1 lần cuối không kèm tools
-  const ketQuaCuoi = await goiNhaCungCapAI({ messages, maxTokens: 500, temperature: 0.3 });
+  const ketQuaCuoi = await trinhCungCapAI.goiNhaCungCapAI({ messages, maxTokens: 500, temperature: 0.3 });
   if (ketQuaCuoi?.nhaCungCap) nhaCungCapSuDung = ketQuaCuoi.nhaCungCap;
   if (ketQuaCuoi?.usage?.total_tokens) tongTokensTieuThu += ketQuaCuoi.usage.total_tokens;
 
