@@ -23,14 +23,14 @@ function lamSachTuKhoa(tuKhoa) {
     .trim();
 }
 
-// Tách chuỗi tìm kiếm thành các token từ khóa độc lập (bỏ các ký tự phân cách như -, :, ,, ., v.v.)
+// Tách chuỗi tìm kiếm thành các token từ khóa độc lập (bỏ các ký tự phân cách như -, :, ,, ., en-dash, em-dash, v.v.)
 function tachTuKhoa(tuKhoa) {
   const chuoiChuan = lamSachTuKhoa(tuKhoa);
   if (!chuoiChuan) return [];
   return chuoiChuan
-    .split(/[\s\-_,:;.\/\\+&|()\[\]]+/i)
+    .split(/[\s\-_,:;.\/\\+&|()\[\]\u2013\u2014–—'"`“”‘’]+/i)
     .map(t => t.trim())
-    .filter(t => t.length > 0);
+    .filter(t => t.length > 0 && !/^[^a-zA-Z0-9\u00C0-\u1EF9]+$/.test(t));
 }
 
 /**
@@ -95,10 +95,11 @@ function boDauTiengViet(str) {
 function locTuKhoaThucSu(chuoi) {
   if (!chuoi || typeof chuoi !== 'string') return [];
   return chuoi
-    .split(/[\s\-_,:;.\/\\+&|()\[\]?!\'"]+/)
+    .split(/[\s\-_,:;.\/\\+&|()\[\]?!\'"`“”‘’\u2013\u2014–—]+/)
     .map(t => t.trim())
     .filter(t => {
       if (t.length < 2) return false;
+      if (/^[^a-zA-Z0-9\u00C0-\u1EF9]+$/.test(t)) return false;
       const khongDau = boDauTiengViet(t).toLowerCase();
       return !DANH_SACH_TU_DEM.has(khongDau);
     });

@@ -276,37 +276,46 @@ async function layDanhSachDanhMucCache() {
 }
 
 /**
- * So khớp chuỗi tìm kiếm với bảng DanhMuc trong CSDL thật.
- * Hỗ trợ tìm kiếm theo nhiều danh mục cùng liên quan (vd "văn học" -> [MaDanhMuc: 1, 10]).
- * Tuyệt đối không dùng bảng từ khóa cứng.
+ * Nhận diện danh mục thể loại từ chuỗi tìm kiếm hoặc the_loai.
+ * Chỉ coi là hỏi thể loại khi chuỗi khớp gần như nguyên vẹn tên danh mục hoặc 1 vế (tỷ lệ độ dài >= 70%).
+ * Bỏ chiều chuỗi dài chứa vế ngắn vô điều kiện và bỏ chuỗi con ngắn.
  */
-async function timCacDanhMucPhuHop(chuoi) {
+async function nhanDienDanhSachDanhMuc(chuoi) {
   if (!chuoi || typeof chuoi !== 'string') return [];
-  const chuoiKhongDau = boDauTiengViet(chuoi).toLowerCase().trim();
-  if (!chuoiKhongDau || chuoiKhongDau.length < 2) return [];
+  const chuoiKd = boDauTiengViet(chuoi).toLowerCase().trim();
+  if (chuoiKd.length < 2) return [];
+
+  let chuoiLamSach = chuoiKd;
+  let daThayDoi = true;
+  while (daThayDoi) {
+    const truoc = chuoiLamSach;
+    chuoiLamSach = chuoiLamSach.replace(/^(sach|cuon sach|cuon|goi y|the loai|chu de|tim|muon tim|cho toi|co|nhung|cac)\s+/i, '').trim();
+    daThayDoi = chuoiLamSach !== truoc;
+  }
+  if (chuoiLamSach.length < 2) return [];
 
   const danhSachDanhMuc = await layDanhSachDanhMucCache();
   const ketQua = new Map();
 
   for (const dm of danhSachDanhMuc) {
-    const dmKhongDau = boDauTiengViet(dm.TenDanhMuc).toLowerCase().trim();
-    // 1. Khớp hoàn toàn
-    if (dmKhongDau === chuoiKhongDau) {
+    const dmKd = boDauTiengViet(dm.TenDanhMuc).toLowerCase().trim();
+    const cacVe = dmKd.split(/[&\-\/,]+/).map(v => v.trim()).filter(Boolean);
+
+    // 1. Khớp hoàn toàn cả tên danh mục hoặc 1 vế
+    if (chuoiLamSach === dmKd || cacVe.includes(chuoiLamSach)) {
       ketQua.set(dm.MaDanhMuc, dm);
       continue;
     }
-    // 2. Khớp từng vế nối bởi &, -, /, dấu phẩy
-    const cacVe = dmKhongDau.split(/[&\-\/,]+/).map(v => v.trim()).filter(Boolean);
+
+    // 2. So khớp theo tỷ lệ độ dài (chuỗi khách gõ phải >= 70% độ dài vế danh mục, bỏ chuỗi con ngắn)
     for (const ve of cacVe) {
-      if (ve === chuoiKhongDau || (chuoiKhongDau.length >= 4 && (chuoiKhongDau.includes(ve) || ve.includes(chuoiKhongDau)))) {
-        ketQua.set(dm.MaDanhMuc, dm);
-        break;
-      }
-    }
-    // 3. Khớp chuỗi con nếu từ khóa đủ dài (>= 5 ký tự)
-    if (!ketQua.has(dm.MaDanhMuc)) {
-      if (dmKhongDau.includes(chuoiKhongDau) || (chuoiKhongDau.length >= 5 && chuoiKhongDau.includes(dmKhongDau))) {
-        ketQua.set(dm.MaDanhMuc, dm);
+      if (ve.length < 3) continue;
+      if (chuoiLamSach.includes(ve)) {
+        const tyLe = Math.min(chuoiLamSach.length, ve.length) / Math.max(chuoiLamSach.length, ve.length);
+        if (tyLe >= 0.7) {
+          ketQua.set(dm.MaDanhMuc, dm);
+          break;
+        }
       }
     }
   }
@@ -314,243 +323,206 @@ async function timCacDanhMucPhuHop(chuoi) {
   return Array.from(ketQua.values());
 }
 
-async function timDanhMucPhuHop(chuoi) {
-  const dms = await timCacDanhMucPhuHop(chuoi);
-  return dms.length > 0 ? dms[0] : null;
+/**
+ * Xử lý khi khách hàng dùng đại từ hoặc từ dừng ("nó", "đúng là nó", "mua nó")
+ */
+async function xuLyXacNhanDaiTu(chuoiTim, sachHienTai, dieuKien) {
+  const tokensTuKhoa = locTuKhoaThucSu(chuoiTim);
+  if (tokensTuKhoa.length > 0 || !sachHienTai) return null;
+
+  const sach = await Sach.findOne({
+    where: [dieuKien, chuaTuKhoaLinhHoat('[Sach].[TenSach]', sachHienTai)],
+    include: [{ model: DanhMuc, as: 'danhMuc', attributes: ['MaDanhMuc', 'TenDanhMuc'] }]
+  });
+  if (!sach) return null;
+
+  const pt = (await giamGiaService.layPhanTramDangApDung([sach]))[sach.MaSach] || 0;
+  const giaSau = tinhGiaSauGiam(sach.GiaBan, pt);
+  return {
+    timThay: true,
+    soLuong: 1,
+    khopChinhXac: true,
+    canXacNhan: false,
+    cuonGoiY: sach.TenSach,
+    thongDiep: `Khách hàng đang xác nhận cuốn sách "${sach.TenSach}".`,
+    danhSach: [{
+      maSach: sach.MaSach,
+      tenSach: sach.TenSach,
+      tacGia: sach.TacGia,
+      giaBan: giaSau,
+      giaNiemYet: sach.GiaBan,
+      phanTramGiam: pt > 0 ? pt : null,
+      conHang: sach.SoLuongTon > 0,
+      soLuongTon: sach.SoLuongTon,
+      theLoai: sach.danhMuc?.TenDanhMuc || 'Khác',
+      hinhAnh: sach.AnhBia,
+      moTaNgan: sach.MoTa ? sach.MoTa.substring(0, 100) + '...' : ''
+    }]
+  };
 }
 
 /**
- * Thực thi công cụ tìm sách trong CSDL
+ * Tìm kiếm sách ưu tiên theo Tên sách hoặc Tác giả trước, Mô tả sau
+ */
+async function timSachTheoTenHoacTacGia(tuKhoa, dieuKien) {
+  if (!tuKhoa || !tuKhoa.trim()) return [];
+  const tuKhoaTrim = tuKhoa.trim();
+  const includeDanhMuc = [{
+    model: DanhMuc,
+    as: 'danhMuc',
+    attributes: ['MaDanhMuc', 'TenDanhMuc']
+  }];
+
+  // Tìm ưu tiên trong Tên sách hoặc Tác giả
+  return Sach.findAll({
+    where: {
+      ...dieuKien,
+      [Op.or]: [
+        chuaTuKhoaLinhHoat('[Sach].[TenSach]', tuKhoaTrim),
+        chuaTuKhoaLinhHoat('[Sach].[TacGia]', tuKhoaTrim)
+      ]
+    },
+    include: includeDanhMuc,
+    limit: 10,
+    order: [['NgayTao', 'DESC']],
+    attributes: ['MaSach', 'TenSach', 'TacGia', 'GiaBan', 'SoLuongTon', 'AnhBia', 'MoTa']
+  });
+}
+
+/**
+ * Tìm sách theo danh mục thể loại
+ */
+async function timSachTheoTheLoai(cacMaDanhMuc, dieuKien) {
+  if (!cacMaDanhMuc || cacMaDanhMuc.length === 0) return [];
+  return Sach.findAll({
+    where: { ...dieuKien, MaDanhMuc: { [Op.in]: cacMaDanhMuc } },
+    include: [{
+      model: DanhMuc,
+      as: 'danhMuc',
+      attributes: ['MaDanhMuc', 'TenDanhMuc']
+    }],
+    limit: 15,
+    order: [['NgayTao', 'DESC']],
+    attributes: ['MaSach', 'TenSach', 'TacGia', 'GiaBan', 'SoLuongTon', 'AnhBia', 'MoTa']
+  });
+}
+
+/**
+ * Lọc danh sách sách theo giá tối đa sau giảm
+ */
+function locTheoGiaSauGiam(danhSach, banDoGiamGia, giaTran) {
+  return danhSach.filter(s => {
+    const pt = banDoGiamGia[s.MaSach] || 0;
+    const giaSau = tinhGiaSauGiam(s.GiaBan, pt);
+    return giaSau <= giaTran;
+  });
+}
+
+/**
+ * Định dạng câu thông điệp và danh sách sách trả về cho AI
+ */
+function dinhDangKetQuaTimKiem(danhSach, banDoGiamGia, tinNhanGoc, tuKhoa) {
+  const tenSachDauKhongDau = boDauTiengViet(danhSach[0].TenSach).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const cauKhachKhongDau = boDauTiengViet(tinNhanGoc || tuKhoa || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const khopChinhXac = cauKhachKhongDau.includes(tenSachDauKhongDau);
+  const sachDau = danhSach[0];
+  const ptDau = banDoGiamGia[sachDau.MaSach] || 0;
+  const giaSauDau = tinhGiaSauGiam(sachDau.GiaBan, ptDau);
+  const giaFmt = new Intl.NumberFormat('vi-VN').format(giaSauDau);
+  const giaGocFmt = new Intl.NumberFormat('vi-VN').format(sachDau.GiaBan);
+  const chuoiGiaDau = ptDau > 0 
+    ? `Giá ưu đãi: ${giaFmt}đ (đang giảm ${ptDau}% từ ${giaGocFmt}đ)`
+    : `Giá: ${giaFmt}đ`;
+  const tinhTrangKhoDau = sachDau.SoLuongTon > 0 ? `còn hàng (còn ${sachDau.SoLuongTon} cuốn)` : 'tạm hết hàng';
+
+  let thongDiep = '';
+  if (danhSach.length === 1) {
+    thongDiep = `Tìm thấy cuốn sách: "${sachDau.TenSach}" (Tác giả: ${sachDau.TacGia || 'Đang cập nhật'}, ${chuoiGiaDau}, Tình trạng: ${tinhTrangKhoDau}).\n- Nếu khách hỏi giá, hỏi tồn kho, hỏi tác giả hoặc tìm sách: Hãy trả lời thẳng thông tin trên kèm tình trạng còn/hết hàng.\n- CHỈ hỏi xác nhận "Dạ, có phải bạn đang muốn tìm cuốn sách '${sachDau.TenSach}' không ạ?" khi khách thể hiện ý định MUỐN MUA / THÊM GIỎ / LÊN ĐƠN mà tên sách chưa khớp chính xác 100%.`;
+  } else {
+    const tomTatDs = danhSach.map((s, idx) => {
+      const pt = banDoGiamGia[s.MaSach] || 0;
+      const gSau = tinhGiaSauGiam(s.GiaBan, pt).toLocaleString('vi-VN');
+      const ttKho = s.SoLuongTon > 0 ? 'còn hàng' : 'tạm hết hàng';
+      return `${idx + 1}. "${s.TenSach}" - Tác giả: ${s.TacGia || 'Đang cập nhật'} - Giá: ${gSau}đ (${ttKho})`;
+    }).join('\n');
+    thongDiep = `Tìm thấy ${danhSach.length} cuốn sách phù hợp:\n${tomTatDs}\nHãy liệt kê các tựa sách trên kèm giá bán cho khách hàng và mời khách xem các thẻ sách bên dưới khung chat. TUYỆT ĐỐI KHÔNG hỏi ngược "có phải bạn đang muốn tìm".`;
+  }
+
+  return {
+    timThay: true,
+    soLuong: danhSach.length,
+    khopChinhXac,
+    canXacNhan: !khopChinhXac,
+    cuonGoiY: sachDau.TenSach,
+    thongDiep,
+    danhSach: danhSach.map(s => {
+      const pt = banDoGiamGia[s.MaSach] || 0;
+      return {
+        maSach: s.MaSach,
+        tenSach: s.TenSach,
+        tacGia: s.TacGia,
+        giaBan: tinhGiaSauGiam(s.GiaBan, pt),
+        giaNiemYet: s.GiaBan,
+        phanTramGiam: pt > 0 ? pt : null,
+        conHang: s.SoLuongTon > 0,
+        soLuongTon: s.SoLuongTon,
+        theLoai: s.danhMuc?.TenDanhMuc || 'Khác',
+        hinhAnh: s.AnhBia,
+        moTaNgan: s.MoTa ? s.MoTa.substring(0, 100) + '...' : ''
+      };
+    })
+  };
+}
+
+/**
+ * Thực thi công cụ tìm sách trong CSDL (hàm điều phối chính)
  */
 async function thucThiTimSach({ tu_khoa, the_loai, gia_toi_da }, tinNhanGoc = '', sachHienTai = null) {
   try {
     const dieuKien = { DaAn: false };
     const chuoiTim = (tu_khoa && tu_khoa.trim()) ? tu_khoa.trim() : (tinNhanGoc || '').trim();
 
-    // Nếu chuỗi tìm kiếm chỉ toàn từ dừng / đại từ ("nó", "đúng rồi chính là nó", "mua nó")
-    const tokensTuKhoa = locTuKhoaThucSu(chuoiTim);
-    if (tokensTuKhoa.length === 0) {
-      if (sachHienTai) {
-        const sach = await Sach.findOne({
-          where: [
-            { DaAn: false },
-            chuaTuKhoaLinhHoat('[Sach].[TenSach]', sachHienTai)
-          ],
-          include: [{ model: DanhMuc, as: 'danhMuc', attributes: ['MaDanhMuc', 'TenDanhMuc'] }]
-        });
-        if (sach) {
-          const pt = (await giamGiaService.layPhanTramDangApDung([sach]))[sach.MaSach] || 0;
-          const giaSau = tinhGiaSauGiam(sach.GiaBan, pt);
-          return {
-            timThay: true,
-            soLuong: 1,
-            khopChinhXac: true,
-            canXacNhan: false,
-            cuonGoiY: sach.TenSach,
-            thongDiep: `Khách hàng đang xác nhận cuốn sách "${sach.TenSach}".`,
-            danhSach: [{
-              maSach: sach.MaSach,
-              tenSach: sach.TenSach,
-              tacGia: sach.TacGia,
-              giaBan: giaSau,
-              giaNiemYet: sach.GiaBan,
-              phanTramGiam: pt > 0 ? pt : null,
-              conHang: sach.SoLuongTon > 0,
-              soLuongTon: sach.SoLuongTon,
-              theLoai: sach.danhMuc?.TenDanhMuc || 'Khác',
-              hinhAnh: sach.AnhBia,
-              moTaNgan: sach.MoTa ? sach.MoTa.substring(0, 100) + '...' : ''
-            }]
-          };
-        }
-      }
-      return { timThay: false, thongDiep: 'Vui lòng cung cấp tên cuốn sách hoặc tác giả bạn muốn tìm nhé.' };
-    }
+    // 0. Xử lý trường hợp khách nói đại từ/từ dừng ("nó", "mua nó")
+    const ketQuaXacNhan = await xuLyXacNhanDaiTu(chuoiTim, sachHienTai, dieuKien);
+    if (ketQuaXacNhan) return ketQuaXacNhan;
 
-    // Nhận diện danh mục thể loại từ the_loai, tu_khoa hoặc tinNhanGoc từ bảng DanhMuc
-    let danhSachDanhMucKhop = [];
-    if (the_loai && the_loai.trim()) {
-      danhSachDanhMucKhop = await timCacDanhMucPhuHop(the_loai.trim());
-    }
-    if (danhSachDanhMucKhop.length === 0 && tu_khoa && tu_khoa.trim()) {
-      danhSachDanhMucKhop = await timCacDanhMucPhuHop(tu_khoa.trim());
-    }
-    if (danhSachDanhMucKhop.length === 0 && tinNhanGoc && tinNhanGoc.trim()) {
-      const matchTheLoai = tinNhanGoc.match(/(?:thể loại|sách|gợi ý sách)\s+([^0-9,.]+)/i);
-      if (matchTheLoai && matchTheLoai[1]) {
-        danhSachDanhMucKhop = await timCacDanhMucPhuHop(matchTheLoai[1].trim());
-      }
-    }
-
-    const includeOptions = [{
-      model: DanhMuc,
-      as: 'danhMuc',
-      attributes: ['MaDanhMuc', 'TenDanhMuc']
-    }];
-
-    const cacMaDanhMucKhop = danhSachDanhMucKhop.map(d => d.MaDanhMuc);
-    if (cacMaDanhMucKhop.length > 0) {
-      includeOptions[0].where = { MaDanhMuc: { [Op.in]: cacMaDanhMucKhop } };
-    } else if (the_loai && the_loai.trim()) {
-      includeOptions[0].where = chuaTuKhoa('[danhMuc].[TenDanhMuc]', the_loai.trim());
-    }
-
-    // Kiểm tra xem khách có đang hỏi theo thể loại không
-    // (khi tu_khoa trùng hoặc gần trùng tên một danh mục thì không ép tìm theo tên sách)
-    let laHoiTheoTheLoai = false;
-    if (cacMaDanhMucKhop.length > 0) {
-      const tuKhoaKiemTra = (tu_khoa && tu_khoa.trim()) ? tu_khoa.trim() : (tinNhanGoc || '').trim();
-      const tuKhoaKd = boDauTiengViet(tuKhoaKiemTra).toLowerCase();
-      for (const dm of danhSachDanhMucKhop) {
-        const dmKd = boDauTiengViet(dm.TenDanhMuc).toLowerCase();
-        const cacVe = dmKd.split(/[&\-\/,]+/).map(v => v.trim()).filter(Boolean);
-        if (dmKd === tuKhoaKd || cacVe.some(v => v === tuKhoaKd || (tuKhoaKd.length >= 4 && (tuKhoaKd.includes(v) || v.includes(tuKhoaKd))))) {
-          laHoiTheoTheLoai = true;
-          break;
-        }
-      }
-    }
-
+    // 1. Luôn ưu tiên tìm kiếm theo tên sách hoặc tác giả trước
     let danhSach = [];
+    if (tu_khoa && tu_khoa.trim()) {
+      danhSach = await timSachTheoTenHoacTacGia(tu_khoa, dieuKien);
+    }
 
-    // Nếu khách hỏi theo thể loại: Lọc thẳng theo danh mục trong CSDL
-    if (laHoiTheoTheLoai) {
-      danhSach = await Sach.findAll({
-        where: {
-          ...dieuKien,
-          MaDanhMuc: { [Op.in]: cacMaDanhMucKhop }
-        },
-        include: includeOptions,
-        limit: 15,
-        order: [['NgayTao', 'DESC']],
-        attributes: ['MaSach', 'TenSach', 'TacGia', 'GiaBan', 'SoLuongTon', 'AnhBia', 'MoTa']
-      });
-    } else {
-      // 1. Tìm chính xác qua Tokenized AND với tu_khoa (nếu AI truyền đúng)
-      // Ưu tiên tìm theo Tên sách hoặc Tác giả trước để đảm bảo đúng chủ đề
-      if (tu_khoa && tu_khoa.trim()) {
-        const danhSachTenHoacTacGia = await Sach.findAll({
-          where: {
-            ...dieuKien,
-            [Op.or]: [
-              chuaTuKhoaLinhHoat('[Sach].[TenSach]', tu_khoa.trim()),
-              chuaTuKhoaLinhHoat('[Sach].[TacGia]', tu_khoa.trim())
-            ]
-          },
-          include: includeOptions,
-          limit: 10,
-          order: [['NgayTao', 'DESC']],
-          attributes: ['MaSach', 'TenSach', 'TacGia', 'GiaBan', 'SoLuongTon', 'AnhBia', 'MoTa']
-        });
-
-        if (danhSachTenHoacTacGia.length > 0) {
-          danhSach = danhSachTenHoacTacGia;
-        } else {
-          // Nếu tên sách hoặc tác giả không có, tìm tiếp trong mô tả (ví dụ chủ đề nội dung sách)
-          danhSach = await Sach.findAll({
-            where: [
-              dieuKien,
-              chuaTuKhoaLinhHoat('[Sach].[MoTa]', tu_khoa.trim())
-            ],
-            include: includeOptions,
-            limit: 10,
-            order: [['NgayTao', 'DESC']],
-            attributes: ['MaSach', 'TenSach', 'TacGia', 'GiaBan', 'SoLuongTon', 'AnhBia', 'MoTa']
-          });
-        }
+    // 2. Nếu tìm theo tên sách / tác giả không ra, mới nhận diện và tìm theo thể loại
+    if (danhSach.length === 0) {
+      const danhSachDM = await nhanDienDanhSachDanhMuc(the_loai || tu_khoa);
+      const cacMaDM = danhSachDM.map(d => d.MaDanhMuc);
+      if (cacMaDM.length > 0) {
+        danhSach = await timSachTheoTheLoai(cacMaDM, dieuKien);
       }
+    }
 
-      // 2. Tìm mờ theo tinNhanGoc của người dùng
-      if (danhSach.length === 0 && tinNhanGoc && tinNhanGoc.trim()) {
-        danhSach = await timSachMoDiem(tinNhanGoc.trim(), { limit: 10, includeOptions, whereThem: dieuKien });
-      }
-
-      // 3. Tìm mờ theo tu_khoa của AI
-      if (danhSach.length === 0 && tu_khoa && tu_khoa.trim()) {
-        danhSach = await timSachMoDiem(tu_khoa.trim(), { limit: 10, includeOptions, whereThem: dieuKien });
-      }
+    // 3. Nếu vẫn không thấy, tìm kiếm mờ theo điểm token trên tin nhắn gốc hoặc từ khóa
+    if (danhSach.length === 0 && tinNhanGoc && tinNhanGoc.trim()) {
+      danhSach = await timSachMoDiem(tinNhanGoc.trim(), { limit: 10, whereThem: dieuKien });
+    }
+    if (danhSach.length === 0 && tu_khoa && tu_khoa.trim()) {
+      danhSach = await timSachMoDiem(tu_khoa.trim(), { limit: 10, whereThem: dieuKien });
     }
 
     if (danhSach.length === 0) {
       return { timThay: false, thongDiep: 'Không tìm thấy cuốn sách nào phù hợp với yêu cầu trong kho.' };
     }
 
-    // Lấy phần trăm giảm giá để tính giá thực tế sau giảm
+    // 4. Lọc ngân sách sau giảm (nếu có yêu cầu gia_toi_da)
     const banDoGiamGia = await giamGiaService.layPhanTramDangApDung(danhSach);
-
-    // GGC: Lọc gia_toi_da theo giá sau giảm (giaSau <= gia_toi_da), không lọc theo giá niêm yết
     if (gia_toi_da && Number(gia_toi_da) > 0) {
-      const giaTran = Number(gia_toi_da);
-      danhSach = danhSach.filter(s => {
-        const pt = banDoGiamGia[s.MaSach] || 0;
-        const giaSau = tinhGiaSauGiam(s.GiaBan, pt);
-        return giaSau <= giaTran;
-      });
-
+      danhSach = locTheoGiaSauGiam(danhSach, banDoGiamGia, Number(gia_toi_da));
       if (danhSach.length === 0) {
         return { timThay: false, thongDiep: 'Không tìm thấy cuốn sách nào có giá sau giảm phù hợp với mức ngân sách yêu cầu.' };
       }
     }
 
-    // Giữ tối đa 5 kết quả tốt nhất
-    danhSach = danhSach.slice(0, 5);
-
-    // Kiểm tra xem câu của khách có chứa trọn vẹn tên sách không (để phân biệt khớp chính xác vs khớp nghi ngờ)
-    const tenSachDauKhongDau = boDauTiengViet(danhSach[0].TenSach).toLowerCase().replace(/[^a-z0-9]/g, '');
-    const cauKhachKhongDau = boDauTiengViet(tinNhanGoc || tu_khoa || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const khopChinhXac = cauKhachKhongDau.includes(tenSachDauKhongDau);
-    const canXacNhan = !khopChinhXac;
-
-    const sachDau = danhSach[0];
-    const ptDau = banDoGiamGia[sachDau.MaSach] || 0;
-    const giaSauDau = tinhGiaSauGiam(sachDau.GiaBan, ptDau);
-    const giaFmt = new Intl.NumberFormat('vi-VN').format(giaSauDau);
-    const giaGocFmt = new Intl.NumberFormat('vi-VN').format(sachDau.GiaBan);
-    const chuoiGiaDau = ptDau > 0 
-      ? `Giá ưu đãi: ${giaFmt}đ (đang giảm ${ptDau}% từ ${giaGocFmt}đ)`
-      : `Giá: ${giaFmt}đ`;
-    const tacGiaFmt = sachDau.TacGia || 'Đang cập nhật';
-    const tinhTrangKhoDau = sachDau.SoLuongTon > 0 ? `còn hàng (còn ${sachDau.SoLuongTon} cuốn)` : 'tạm hết hàng';
-    let thongDiep = '';
-
-    if (danhSach.length === 1) {
-      thongDiep = `Tìm thấy cuốn sách: "${sachDau.TenSach}" (Tác giả: ${tacGiaFmt}, ${chuoiGiaDau}, Tình trạng: ${tinhTrangKhoDau}).\n- Nếu khách hỏi giá, hỏi tồn kho, hỏi tác giả hoặc tìm sách: Hãy trả lời thẳng thông tin trên kèm tình trạng còn/hết hàng.\n- CHỈ hỏi xác nhận "Dạ, có phải bạn đang muốn tìm cuốn sách '${sachDau.TenSach}' không ạ?" khi khách thể hiện ý định MUỐN MUA / THÊM GIỎ / LÊN ĐƠN mà tên sách chưa khớp chính xác 100%.`;
-    } else {
-      const tomTatDs = danhSach.map((s, idx) => {
-        const pt = banDoGiamGia[s.MaSach] || 0;
-        const gSau = tinhGiaSauGiam(s.GiaBan, pt);
-        const gFmt = gSau.toLocaleString('vi-VN');
-        const ttKho = s.SoLuongTon > 0 ? 'còn hàng' : 'tạm hết hàng';
-        return `${idx + 1}. "${s.TenSach}" - Tác giả: ${s.TacGia || 'Đang cập nhật'} - Giá: ${gFmt}đ (${ttKho})`;
-      }).join('\n');
-      thongDiep = `Tìm thấy ${danhSach.length} cuốn sách phù hợp:\n${tomTatDs}\nHãy liệt kê các tựa sách trên kèm giá bán cho khách hàng và mời khách xem các thẻ sách bên dưới khung chat. TUYỆT ĐỐI KHÔNG hỏi ngược "có phải bạn đang muốn tìm".`;
-    }
-
-    return {
-      timThay: true,
-      soLuong: danhSach.length,
-      khopChinhXac,
-      canXacNhan,
-      cuonGoiY: sachDau.TenSach,
-      thongDiep,
-      danhSach: danhSach.map(s => {
-        const pt = banDoGiamGia[s.MaSach] || 0;
-        const giaSau = tinhGiaSauGiam(s.GiaBan, pt);
-        return {
-          maSach: s.MaSach,
-          tenSach: s.TenSach,
-          tacGia: s.TacGia,
-          giaBan: giaSau,
-          giaNiemYet: s.GiaBan,
-          phanTramGiam: pt > 0 ? pt : null,
-          conHang: s.SoLuongTon > 0,
-          soLuongTon: s.SoLuongTon,
-          theLoai: s.danhMuc?.TenDanhMuc || 'Khác',
-          hinhAnh: s.AnhBia,
-          moTaNgan: s.MoTa ? s.MoTa.substring(0, 100) + '...' : ''
-        };
-      })
-    };
+    return dinhDangKetQuaTimKiem(danhSach.slice(0, 5), banDoGiamGia, tinNhanGoc, tu_khoa);
   } catch (err) {
     return { timThay: false, loi: 'Lỗi tra cứu dữ liệu sách: ' + err.message };
   }
@@ -1195,32 +1167,7 @@ async function tuDongBuDapDuLieuSach({ traLoi, noiDungTinNhan, sachHienTai, duLi
       const ketQuaTim = await thucThiTimSach({ tu_khoa: tuKhoa }, noiDungTinNhan, sachHienTai);
       if (ketQuaTim?.timThay && ketQuaTim.danhSach?.length > 0) {
         duLieuKemTheo.danhSachSach = ketQuaTim.danhSach;
-        const s0 = ketQuaTim.danhSach[0];
-        const giaFmt = new Intl.NumberFormat('vi-VN').format(s0.giaBan);
-        const tacGiaFmt = s0.tacGia || 'Đang cập nhật';
-
-        // [Lý do giữ 2 đoạn regex này]: Dù Prompt T57 đã hướng dẫn AI trả lời thẳng không dùng placeholder,
-        // hai đoạn regex vá chuỗi (Tác giả:...) và dấu ... vẫn được giữ lại làm lớp phòng thủ chiều sâu (defense-in-depth)
-        // để phòng ngừa trường hợp mô hình LLM nhỏ tự ý sinh placeholder ba chấm khi phân vân hoặc trích dẫn chưa hoàn tất.
-        if (traLoiMoi.includes('(Tác giả:')) {
-          traLoiMoi = traLoiMoi.replace(/\(Tác giả:[^)]*?\)/gi, `(Tác giả: ${tacGiaFmt}, Giá: ${giaFmt}đ)`);
-        }
-        if (traLoiMoi.includes('...')) {
-          traLoiMoi = traLoiMoi.replace(/\.\.\./g, '');
-        }
       }
-    }
-  } else if (duLieuKemTheo.danhSachSach && duLieuKemTheo.danhSachSach.length > 0) {
-    const s0 = duLieuKemTheo.danhSachSach[0];
-    const giaFmt = new Intl.NumberFormat('vi-VN').format(s0.giaBan);
-    const tacGiaFmt = s0.tacGia || 'Đang cập nhật';
-
-    // Lớp phòng thủ chiều sâu (defense-in-depth) dọn sạch dấu ba chấm và định dạng lại tác giả/giá nếu LLM sinh lệch mẫu
-    if (traLoiMoi.includes('(Tác giả:')) {
-      traLoiMoi = traLoiMoi.replace(/\(Tác giả:[^)]*?\)/gi, `(Tác giả: ${tacGiaFmt}, Giá: ${giaFmt}đ)`);
-    }
-    if (traLoiMoi.includes('...')) {
-      traLoiMoi = traLoiMoi.replace(/\.\.\./g, '');
     }
   }
 
@@ -1419,8 +1366,8 @@ async function dieuPhoiToolCall({ toolCall, noiDungTinNhan, sachHienTai, maKhach
 /**
  * Xử lý cuộc hội thoại với AI Chatbot (hỗ trợ vòng lặp Function Calling)
  */
-async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHang = null, daDangNhap = false, tenKhachHang = '', khoaPhien = null, ipClient = null }) {
-  const noiDungTinNhan = String(tinNhanMoi || tinNhan || '').trim();
+async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, noiDungTinNhan: ndParam, maKhachHang = null, daDangNhap = false, tenKhachHang = '', khoaPhien = null, ipClient = null }) {
+  const noiDungTinNhan = String(tinNhanMoi || tinNhan || ndParam || '').trim();
 
   // 1. Kiểm tra trần ngân sách token mỗi ngày
   const ketQuaKiemTra = await kiemTraTranNganSach(maKhachHang, khoaPhien);

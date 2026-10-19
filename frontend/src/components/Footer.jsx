@@ -3,29 +3,30 @@ import { Link } from 'react-router-dom';
 import LogoBookNest from './LogoBookNest';
 import api from '../services/api';
 
-// Danh sách danh mục chuẩn xác theo CSDL thật (dùng làm fallback an toàn)
-const DANH_MUC_CHUAN = [
-  { MaDanhMuc: 1, TenDanhMuc: 'Văn Học & Tiểu Thuyết' },
-  { MaDanhMuc: 2, TenDanhMuc: 'Trinh Thám & Kinh Dị' },
-  { MaDanhMuc: 7, TenDanhMuc: 'Kinh Tế & Kinh Doanh' },
-  { MaDanhMuc: 8, TenDanhMuc: 'Khoa Học & Tri Thức' }
-];
-
 export const Footer = () => {
-  const [danhMucList, setDanhMucList] = useState(DANH_MUC_CHUAN);
+  const [danhMucList, setDanhMucList] = useState([]);
+  const [loiDanhMuc, setLoiDanhMuc] = useState(false);
 
-  // Nạp danh mục động từ API thật
+  // Nạp danh mục động từ API thật (lấy 4 danh mục có nhiều sách nhất)
   useEffect(() => {
     let daHuy = false;
     const taiDanhMuc = async () => {
       try {
         const res = await api.get('/categories');
-        const ds = (res.data?.data || []).filter(dm => (dm.soLuongSach || 0) > 0 || [1, 2, 7, 8].includes(dm.MaDanhMuc));
-        if (!daHuy && ds.length > 0) {
-          setDanhMucList(ds.slice(0, 4));
+        const ds = (res.data?.data || [])
+          .filter(dm => (dm.soLuongSach || 0) > 0)
+          .sort((a, b) => (b.soLuongSach || 0) - (a.soLuongSach || 0))
+          .slice(0, 4);
+        if (!daHuy) {
+          setDanhMucList(ds);
+          setLoiDanhMuc(false);
         }
-      } catch {
-        // Giữ nguyên DANH_MUC_CHUAN nếu API lỗi
+      } catch (err) {
+        console.error('[Footer] Không thể tải danh mục sách:', err);
+        if (!daHuy) {
+          setLoiDanhMuc(true);
+          setDanhMucList([]);
+        }
       }
     };
     taiDanhMuc();
@@ -76,25 +77,31 @@ export const Footer = () => {
             }}>
               Tủ Sách Tuyển Chọn
             </h4>
-            <ul style={{ 
-              listStyle: 'none', 
-              fontSize: '0.875rem', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: '0.55rem' 
-            }}>
-              {danhMucList.map((dm) => (
-                <li key={dm.MaDanhMuc}>
-                  <Link
-                    to={`/?categoryId=${dm.MaDanhMuc}`}
-                    style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }}
-                    className="hover:underline"
-                  >
-                    {dm.TenDanhMuc}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            {loiDanhMuc ? (
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-sub)' }}>
+                Đang cập nhật tủ sách...
+              </p>
+            ) : danhMucList.length > 0 ? (
+              <ul style={{ 
+                listStyle: 'none', 
+                fontSize: '0.875rem', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '0.55rem' 
+              }}>
+                {danhMucList.map((dm) => (
+                  <li key={dm.MaDanhMuc}>
+                    <Link
+                      to={`/?categoryId=${dm.MaDanhMuc}`}
+                      style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }}
+                      className="hover:underline"
+                    >
+                      {dm.TenDanhMuc}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </div>
 
           {/* Cột 3: Cùng bạn đọc & Chính sách */}
