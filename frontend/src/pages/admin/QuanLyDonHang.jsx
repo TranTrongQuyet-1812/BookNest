@@ -606,12 +606,29 @@ export const QuanLyDonHang = () => {
                 {/* Khối Thông Tin Giao Hàng & Thanh Toán */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3" style={{ fontSize: '0.85rem' }}>
                   <div style={{ background: 'var(--adm-bg-surface, #F8FAFC)', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid var(--adm-border, #E2E8F0)' }}>
-                    <div style={{ fontWeight: 700, marginBottom: '0.4rem', color: 'var(--adm-text-main)' }}>
-                      📍 Người Nhận Hàng
-                    </div>
-                    <div><strong>Họ tên:</strong> {chiTietDon.TenNguoiNhan || '—'}</div>
-                    <div><strong>Số điện thoại:</strong> {chiTietDon.SoDienThoaiNhan || '—'}</div>
-                    <div><strong>Địa chỉ:</strong> {chiTietDon.DiaChiGiaoHang || '—'}</div>
+                    {chiTietDon.KenhBan === 'TAI_QUAY' ? (
+                      <>
+                        <div style={{ fontWeight: 700, marginBottom: '0.4rem', color: 'var(--adm-text-main)' }}>
+                          Khách tại quầy
+                        </div>
+                        <div><strong>Họ tên:</strong> {chiTietDon.TenNguoiNhan || chiTietDon.khachHang?.HoTen || 'Khách lẻ'}</div>
+                        {chiTietDon.SoDienThoaiNhan && (
+                          <div><strong>Số điện thoại:</strong> {chiTietDon.SoDienThoaiNhan}</div>
+                        )}
+                        {chiTietDon.nhanVienLap?.HoTen && (
+                          <div><strong>Nhân viên lập:</strong> {chiTietDon.nhanVienLap.HoTen}</div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ fontWeight: 700, marginBottom: '0.4rem', color: 'var(--adm-text-main)' }}>
+                          📍 Người Nhận Hàng
+                        </div>
+                        <div><strong>Họ tên:</strong> {chiTietDon.TenNguoiNhan || '—'}</div>
+                        <div><strong>Số điện thoại:</strong> {chiTietDon.SoDienThoaiNhan || '—'}</div>
+                        <div><strong>Địa chỉ:</strong> {chiTietDon.DiaChiGiaoHang || '—'}</div>
+                      </>
+                    )}
                     {chiTietDon.GhiChu && (
                       <div style={{ marginTop: '0.35rem', fontStyle: 'italic', color: 'var(--adm-text-muted)' }}>
                         <strong>Ghi chú:</strong> {chiTietDon.GhiChu}
@@ -625,7 +642,11 @@ export const QuanLyDonHang = () => {
                     </div>
                     <div>
                       <strong>Hình thức:</strong>{' '}
-                      {chiTietDon.thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' ? 'Chuyển khoản VietQR' : 'Tiền mặt (COD)'}
+                      {chiTietDon.thanhToan?.PhuongThuc === 'TIEN_MAT'
+                        ? 'Tiền mặt'
+                        : chiTietDon.thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR'
+                          ? 'Chuyển khoản VietQR'
+                          : 'Thanh toán khi nhận hàng'}
                     </div>
                     <div>
                       <strong>Trạng thái tiền:</strong>{' '}
