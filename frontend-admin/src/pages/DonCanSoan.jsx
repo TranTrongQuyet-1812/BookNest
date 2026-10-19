@@ -75,7 +75,7 @@ export default function DonCanSoan() {
             Đơn Cần Soạn (Pick List)
           </h1>
           <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
-            Danh sách gom ấn phẩm từ kho theo các đơn hàng đã xác nhận để chuẩn bị đóng gói
+            Danh sách gom ấn phẩm từ kho theo các đơn hàng đã duyệt để chuẩn bị đóng gói
           </p>
         </div>
 
@@ -188,7 +188,7 @@ export default function DonCanSoan() {
             Không có đơn hàng nào cần soạn
           </h3>
           <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem', marginTop: '0.3rem' }}>
-            Tất cả các đơn đã xác nhận đều đã được chuyển sang khâu đóng gói hoặc giao hàng.
+            Tất cả các đơn đã duyệt đều đã được chuyển sang khâu đóng gói hoặc giao hàng.
           </p>
         </div>
       ) : cheDoXem === 'gom_sach' ? (
@@ -303,7 +303,7 @@ export default function DonCanSoan() {
                     {don.MaTraCuu}
                   </span>
                   <span className="badge badge-processing" style={{ fontSize: '0.72rem' }}>
-                    Đã xác nhận
+                    Đã duyệt
                   </span>
                 </div>
 

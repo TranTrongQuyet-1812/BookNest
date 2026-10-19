@@ -323,10 +323,10 @@ export const QuanLyNhanSu = () => {
     switch (tt) {
       case 'CHO_DUYET':
         return <span className="badge badge-pending">Chờ duyệt</span>;
-      case 'DA_XAC_NHAN':
-        return <span className="badge badge-processing">Đã xác nhận</span>;
-      case 'DANG_GIAO':
-        return <span className="badge badge-shipping">Đang giao</span>;
+      case 'DA_DUYET':
+        return <span className="badge badge-processing">Đã duyệt</span>;
+      case 'DA_LAY_HANG':
+        return <span className="badge badge-shipping">Đã lấy hàng</span>;
       case 'DA_GIAO':
         return <span className="badge badge-delivered">Đã giao</span>;
       case 'DA_HUY':

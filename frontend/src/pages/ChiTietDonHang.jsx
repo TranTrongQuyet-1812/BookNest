@@ -171,8 +171,8 @@ export const ChiTietDonHang = () => {
   // Danh sách các nấc tiến độ
   const cacBuoc = [
     { key: 'CHO_DUYET', label: 'Chờ duyệt', icon: Clock },
-    { key: 'DA_XAC_NHAN', label: 'Đã xác nhận', icon: CheckCircle2 },
-    { key: 'DANG_GIAO', label: 'Đang giao', icon: Truck },
+    { key: 'DA_DUYET', label: 'Đã duyệt', icon: CheckCircle2 },
+    { key: 'DA_LAY_HANG', label: 'Đã lấy hàng', icon: Truck },
     { key: 'DA_GIAO', label: 'Đã giao', icon: PackageCheck }
   ];
 

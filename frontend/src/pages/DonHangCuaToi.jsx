@@ -107,10 +107,10 @@ export const DonHangCuaToi = () => {
     switch (trangThai) {
       case 'CHO_DUYET':
         return <span className="badge badge-pending"><Clock size={13} /> Chờ duyệt</span>;
-      case 'DA_XAC_NHAN':
-        return <span className="badge badge-confirmed"><CheckCircle size={13} /> Đã xác nhận</span>;
-      case 'DANG_GIAO':
-        return <span className="badge badge-shipping"><Truck size={13} /> Đang giao hàng</span>;
+      case 'DA_DUYET':
+        return <span className="badge badge-confirmed"><CheckCircle size={13} /> Đã duyệt</span>;
+      case 'DA_LAY_HANG':
+        return <span className="badge badge-shipping"><Truck size={13} /> Đã lấy hàng</span>;
       case 'DA_GIAO':
         return <span className="badge badge-delivered"><CheckCircle size={13} /> Đã giao thành công</span>;
       case 'DA_HUY':
@@ -143,8 +143,8 @@ export const DonHangCuaToi = () => {
           >
             <option value="">Tất cả trạng thái</option>
             <option value="CHO_DUYET">Chờ duyệt</option>
-            <option value="DA_XAC_NHAN">Đã xác nhận</option>
-            <option value="DANG_GIAO">Đang giao</option>
+            <option value="DA_DUYET">Đã duyệt</option>
+            <option value="DA_LAY_HANG">Đã lấy hàng</option>
             <option value="DA_GIAO">Đã giao thành công</option>
             <option value="DA_HUY">Đã hủy</option>
           </select>

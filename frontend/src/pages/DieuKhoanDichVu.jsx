@@ -172,7 +172,7 @@ export const DieuKhoanDichVu = () => {
           <ul style={{ listStyle: 'disc', paddingLeft: '1.5rem', color: 'var(--text-muted)' }} className="space-y-2">
             <li>Đơn hàng sẽ được ghi nhận vào hệ thống với mã tra cứu ngẫu nhiên (ví dụ: <code style={{ backgroundColor: 'var(--bg-surface)', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>BN-XXXXXX</code>) và chuyển sang trạng thái <strong>Chờ duyệt</strong>.</li>
             <li><strong>Quyền tự hủy đơn:</strong> Khi đơn hàng còn ở trạng thái <em>Chờ duyệt</em>, bạn hoàn toàn có thể tự bấm nút hủy đơn trực tiếp trong trang chi tiết đơn hàng mà không cần chờ duyệt.</li>
-            <li>Khi đơn hàng đã chuyển sang trạng thái <em>Đang đóng gói</em> hoặc <em>Đang giao</em>, nếu có nhu cầu thay đổi, bạn vui lòng liên hệ trực tiếp với tiệm để được hỗ trợ điều phối.</li>
+            <li>Khi đơn hàng đã chuyển sang trạng thái <em>Đã duyệt</em> hoặc <em>Đã lấy hàng</em>, nếu có nhu cầu thay đổi, bạn vui lòng liên hệ trực tiếp với tiệm để được hỗ trợ điều phối.</li>
           </ul>
         </section>
 

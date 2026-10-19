@@ -24,8 +24,8 @@ import {
 
 const NHAN_TRANG_THAI_DON_HANG = {
   CHO_DUYET: 'Chờ duyệt',
-  DA_XAC_NHAN: 'Đã xác nhận',
-  DANG_GIAO: 'Đang giao hàng',
+  DA_DUYET: 'Đã duyệt',
+  DA_LAY_HANG: 'Đã lấy hàng',
   DA_GIAO: 'Đã giao hàng',
   DA_HUY: 'Đã hủy',
 };
@@ -248,10 +248,10 @@ export const QuanLyDonHang = () => {
     switch (trangThai) {
       case 'CHO_DUYET':
         return <span className="badge badge-pending"><Clock size={13} /> Chờ duyệt</span>;
-      case 'DA_XAC_NHAN':
-        return <span className="badge badge-confirmed"><CheckCircle size={13} /> Đã xác nhận</span>;
-      case 'DANG_GIAO':
-        return <span className="badge badge-shipping"><Truck size={13} /> Đang giao</span>;
+      case 'DA_DUYET':
+        return <span className="badge badge-confirmed"><CheckCircle size={13} /> Đã duyệt</span>;
+      case 'DA_LAY_HANG':
+        return <span className="badge badge-shipping"><Truck size={13} /> Đã lấy hàng</span>;
       case 'DA_GIAO':
         return <span className="badge badge-delivered"><PackageCheck size={13} /> Đã giao</span>;
       case 'DA_HUY':
@@ -290,8 +290,8 @@ export const QuanLyDonHang = () => {
             >
               <option value="">Tất cả trạng thái</option>
               <option value="CHO_DUYET">Chờ duyệt</option>
-              <option value="DA_XAC_NHAN">Đã xác nhận</option>
-              <option value="DANG_GIAO">Đang giao</option>
+              <option value="DA_DUYET">Đã duyệt</option>
+              <option value="DA_LAY_HANG">Đã lấy hàng</option>
               <option value="DA_GIAO">Đã giao</option>
               <option value="DA_HUY">Đã hủy</option>
             </select>
@@ -418,7 +418,15 @@ export const QuanLyDonHang = () => {
                       {dinhDangTien(tongTien)}
                     </td>
                     <td>
-                      <div>{layBadgeTrangThai(trangThai)}</div>
+                      <div>
+                        {trangThai === 'CHO_DUYET' && don.thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && don.thanhToan?.TrangThai === 'DA_THANH_TOAN' ? (
+                          <span className="badge" style={{ backgroundColor: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0', fontWeight: 700 }}>
+                            <CheckCircle size={13} /> Đã thanh toán, chờ duyệt
+                          </span>
+                        ) : (
+                          layBadgeTrangThai(trangThai)
+                        )}
+                      </div>
                       {don.thanhToan && (
                         <div style={{ marginTop: '4px', fontSize: '0.72rem' }}>
                           {don.thanhToan.PhuongThuc === 'CHUYEN_KHOAN_QR' ? (
@@ -471,7 +479,7 @@ export const QuanLyDonHang = () => {
                             </span>
                           ) : (
                             <button
-                              onClick={() => handleChuyenTrangThai(maDon, 'DA_XAC_NHAN', 'Xác nhận đơn')}
+                              onClick={() => handleChuyenTrangThai(maDon, 'DA_DUYET', 'Duyệt đơn')}
                               className="btn btn-primary btn-sm"
                             >
                               Duyệt Đơn
@@ -479,27 +487,27 @@ export const QuanLyDonHang = () => {
                           )
                         )}
 
-                        {trangThai === 'DA_XAC_NHAN' && (
+                        {trangThai === 'DA_DUYET' && (
                           <button
-                            onClick={() => handleChuyenTrangThai(maDon, 'DANG_GIAO', 'Giao hàng')}
+                            onClick={() => handleChuyenTrangThai(maDon, 'DA_LAY_HANG', 'Xác nhận đã lấy hàng')}
                             className="btn btn-primary btn-sm"
                           >
-                            Giao Hàng
+                            Xác nhận đã lấy hàng
                           </button>
                         )}
 
-                        {trangThai === 'DANG_GIAO' && (
+                        {trangThai === 'DA_LAY_HANG' && (
                           <button
                             onClick={() => handleChuyenTrangThai(maDon, 'DA_GIAO', 'Hoàn tất giao')}
                             className="btn btn-sm"
                             style={{ backgroundColor: 'var(--adm-success)', color: '#FFF' }}
                           >
-                            Hoàn Tất
+                            Hoàn Tất Giao
                           </button>
                         )}
 
-                        {/* Nút hủy đơn (Áp dụng cho CHO_DUYET, DA_XAC_NHAN, DANG_GIAO) */}
-                        {!['DA_GIAO', 'DA_HUY'].includes(trangThai) && (
+                        {/* Nút hủy đơn (Chỉ áp dụng cho CHO_DUYET và DA_DUYET) */}
+                        {['CHO_DUYET', 'DA_DUYET'].includes(trangThai) && (
                           <button
                             onClick={() => handleHuyDon(maDon)}
                             className="btn btn-outline btn-sm"

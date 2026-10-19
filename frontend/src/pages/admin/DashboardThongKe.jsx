@@ -407,8 +407,8 @@ export const DashboardThongKe = () => {
                   let mauSac = 'var(--adm-text-muted)';
                   let tenTiengViet = tl.trangThai;
                   if (tl.trangThai === 'CHO_DUYET') { mauSac = 'var(--adm-warning)'; tenTiengViet = 'Chờ duyệt'; }
-                  if (tl.trangThai === 'DA_XAC_NHAN') { mauSac = 'var(--adm-info)'; tenTiengViet = 'Đã xác nhận'; }
-                  if (tl.trangThai === 'DANG_GIAO') { mauSac = '#7C3AED'; tenTiengViet = 'Đang giao'; }
+                  if (tl.trangThai === 'DA_DUYET') { mauSac = 'var(--adm-info)'; tenTiengViet = 'Đã duyệt'; }
+                  if (tl.trangThai === 'DA_LAY_HANG') { mauSac = '#7C3AED'; tenTiengViet = 'Đã lấy hàng'; }
                   if (tl.trangThai === 'DA_GIAO') { mauSac = 'var(--adm-success)'; tenTiengViet = 'Đã giao'; }
                   if (tl.trangThai === 'DA_HUY') { mauSac = 'var(--adm-danger)'; tenTiengViet = 'Đã hủy'; }
 
