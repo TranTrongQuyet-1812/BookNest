@@ -101,6 +101,10 @@ const luatTaoDonQuay = Joi.object({
     maSach: Joi.number().integer().positive().required(),
     soLuong: Joi.number().integer().min(1).required()
   })).required(),
+  phuongThucThanhToan: Joi.string().valid('TIEN_MAT', 'CHUYEN_KHOAN_QR').required().messages({
+    'any.only': 'Phương thức thanh toán phải là TIEN_MAT hoặc CHUYEN_KHOAN_QR',
+    'any.required': 'Phương thức thanh toán là bắt buộc'
+  }),
   maKhachHang: Joi.number().integer().positive().allow(null),
   tenKhach: Joi.string().trim().max(100).allow('', null),
   soDienThoaiKhach: Joi.string().trim().max(15).allow('', null)
@@ -250,6 +254,71 @@ router.get(
   xacThucToken,
   phanQuyen('quan_tri', 'thu_thu'),
   batLoiAsync(donHangController.xuLyLayChiTietDonQuay)
+);
+
+/**
+ * @swagger
+ * /api/admin/counter-orders/{id}/cancel:
+ *   put:
+ *     summary: Hủy đơn hàng bán tại quầy đang chờ thanh toán QR (Quản trị viên, Thủ thư)
+ *     tags: [Bán tại quầy]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               lyDo:
+ *                 type: string
+ *                 example: Khách đổi ý không mua nữa
+ *     responses:
+ *       200:
+ *         description: Đã hủy đơn quầy và hoàn tồn kho thành công
+ *       400:
+ *         description: Trạng thái đơn không hợp lệ để hủy
+ *       404:
+ *         description: Không tìm thấy đơn hàng quầy
+ */
+router.put(
+  '/counter-orders/:id/cancel',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_thu'),
+  batLoiAsync(donHangController.xuLyHuyDonQuay)
+);
+
+/**
+ * @swagger
+ * /api/admin/counter-orders/{id}/pay-cash:
+ *   put:
+ *     summary: Chuyển sang thu tiền mặt cho đơn quầy đang chờ thanh toán QR (Quản trị viên, Thủ thư)
+ *     tags: [Bán tại quầy]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Đã chuyển sang tiền mặt và hoàn tất đơn hàng (DA_GIAO)
+ *       409:
+ *         description: Khoản thanh toán không còn ở trạng thái chờ
+ */
+router.put(
+  '/counter-orders/:id/pay-cash',
+  xacThucToken,
+  phanQuyen('quan_tri', 'thu_thu'),
+  batLoiAsync(donHangController.xuLyChuyenThuTienMatQuay)
 );
 
 /**

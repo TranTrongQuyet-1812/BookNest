@@ -334,13 +334,28 @@ async function datHangKhachVangLai(thongTinDatHang) {
   }
 }
 
-// Lập đơn tại quầy; tồn kho, đơn, chi tiết và lịch sử cùng commit hoặc rollback.
+// Lập đơn tại quầy (tiền mặt hoặc chuyển khoản QR); tồn kho, đơn, chi tiết và lịch sử cùng commit hoặc rollback.
 async function taoDonQuay(duLieu, maNhanVien) {
   const cacMon = duLieu.cacMon || [];
   if (!cacMon.length) throw LoiNghiepVu.yeuCauKhongHopLe('Vui lòng chọn ít nhất một cuốn sách');
   const maSachDaChon = cacMon.map(mon => Number(mon.maSach));
   if (new Set(maSachDaChon).size !== maSachDaChon.length) {
     throw LoiNghiepVu.yeuCauKhongHopLe('Mỗi cuốn sách chỉ được xuất hiện một lần trong đơn');
+  }
+
+  const phuongThuc = duLieu.phuongThucThanhToan;
+  if (!phuongThuc || !['TIEN_MAT', 'CHUYEN_KHOAN_QR'].includes(phuongThuc)) {
+    throw LoiNghiepVu.yeuCauKhongHopLe('Phương thức thanh toán phải là TIEN_MAT hoặc CHUYEN_KHOAN_QR');
+  }
+
+  const { kiemTraCongTacQRDangBat, taoThanhToanQR } = require('./payosService');
+
+  // Nếu chọn QR, kiểm tra trước xem công tắc QR có đang mở không
+  if (phuongThuc === 'CHUYEN_KHOAN_QR') {
+    const daBat = await kiemTraCongTacQRDangBat();
+    if (!daBat) {
+      throw LoiNghiepVu.camTruyCap('Chức năng thanh toán QR đang tạm dừng hoạt động');
+    }
   }
 
   const t = await sequelize.transaction();
@@ -356,6 +371,13 @@ async function taoDonQuay(duLieu, maNhanVien) {
     }
 
     const { tongTien, danhSachChiTiet } = await truTonKhoVaChotChiTiet(cacMon, t);
+
+    // Tiền mặt: hoàn tất đơn luôn (DA_GIAO). QR: giữ kho và chờ thanh toán (CHO_DUYET)
+    const trangThaiDon = phuongThuc === 'TIEN_MAT' ? 'DA_GIAO' : 'CHO_DUYET';
+    const ghiChuLichSu = phuongThuc === 'TIEN_MAT'
+      ? 'Bán hàng tại quầy (tiền mặt)'
+      : 'Bán hàng tại quầy (chờ thanh toán QR)';
+
     const donHang = await taoDonHangCoMa({
       MaKhachHang: maKhachHang,
       KenhBan: 'TAI_QUAY',
@@ -366,23 +388,53 @@ async function taoDonQuay(duLieu, maNhanVien) {
       DiaChiGiaoHang: null,
       GhiChu: null,
       TongTien: tongTien,
-      TrangThai: 'DA_GIAO'
+      TrangThai: trangThaiDon
     }, { transaction: t });
 
     await ChiTietDonHang.bulkCreate(danhSachChiTiet.map(chiTiet => ({
       ...chiTiet,
       MaDonHang: donHang.MaDonHang
     })), { transaction: t });
+
     await LichSuTrangThaiDonHang.create({
       MaDonHang: donHang.MaDonHang,
       TrangThaiCu: null,
-      TrangThaiMoi: 'DA_GIAO',
+      TrangThaiMoi: trangThaiDon,
       MaNhanVienThucHien: maNhanVien,
-      GhiChu: 'Bán hàng tại quầy'
+      GhiChu: ghiChuLichSu
     }, { transaction: t });
 
+    let thongTinQR = null;
+
+    if (phuongThuc === 'TIEN_MAT') {
+      await ThanhToan.create({
+        MaDonHang: donHang.MaDonHang,
+        PhuongThuc: 'TIEN_MAT',
+        TrangThai: 'DA_THANH_TOAN',
+        SoTien: tongTien,
+        NgayThanhToan: new Date()
+      }, { transaction: t });
+    } else {
+      // CHUYEN_KHOAN_QR: tạo bản ghi chờ thanh toán với hạn 5 phút và tạo link payOS
+      thongTinQR = await taoThanhToanQR(donHang, cacMon, { transaction: t });
+    }
+
     await t.commit();
-    return layChiTietDonHang(donHang.MaDonHang);
+
+    baoNhanVienRealtime('donHang:donMoi', {
+      maDonHang: donHang.MaDonHang,
+      maTraCuu: donHang.MaTraCuu,
+      tongTien: donHang.TongTien,
+      nguoiNhan: donHang.TenNguoiNhan,
+      thoiGian: donHang.NgayDat
+    });
+
+    const chiTietDon = await layChiTietDonHang(donHang.MaDonHang);
+    const ketQua = chiTietDon.toJSON ? chiTietDon.toJSON() : chiTietDon;
+    if (thongTinQR) {
+      ketQua.thongTinQR = thongTinQR;
+    }
+    return ketQua;
   } catch (loi) {
     await t.rollback();
     throw loi;
@@ -667,11 +719,179 @@ async function layChiTietDonQuay(maDonHang, maNhanVien, vaiTro) {
   return donHang;
 }
 
+// Hủy đơn bán tại quầy đang chờ thanh toán QR (Quản trị viên hoặc Thủ thư lập đơn)
+async function huyDonQuayChoQR(maDonHang, maNhanVien, vaiTro, lyDo) {
+  const donHang = await DonHang.findByPk(maDonHang, {
+    include: [{ model: ChiTietDonHang, as: 'chiTietDonHang' }]
+  });
+
+  if (!donHang || donHang.KenhBan !== 'TAI_QUAY') {
+    throw LoiNghiepVu.khongTimThay('Không tìm thấy đơn hàng bán tại quầy');
+  }
+
+  if (vaiTro !== 'quan_tri' && donHang.MaNhanVienLap !== maNhanVien) {
+    throw LoiNghiepVu.camTruyCap('Bạn chỉ có thể hủy đơn quầy do chính mình lập');
+  }
+
+  if (donHang.TrangThai !== 'CHO_DUYET') {
+    throw LoiNghiepVu.xungDot('Chỉ có thể hủy đơn quầy khi đang chờ thanh toán QR');
+  }
+
+  const t = await sequelize.transaction();
+  try {
+    // Optimistic check: Bản ghi thanh toán phải đang CHO_THANH_TOAN
+    const [soDongThanhToan] = await ThanhToan.update(
+      { TrangThai: 'DA_HUY' },
+      { where: { MaDonHang: maDonHang, TrangThai: 'CHO_THANH_TOAN' }, transaction: t }
+    );
+
+    if (soDongThanhToan === 0) {
+      throw LoiNghiepVu.xungDot('Thanh toán của đơn hàng đã thay đổi hoặc đã hoàn tất, không thể hủy');
+    }
+
+    const [soDongDon] = await DonHang.update(
+      { TrangThai: 'DA_HUY' },
+      { where: { MaDonHang: maDonHang, TrangThai: 'CHO_DUYET' }, transaction: t }
+    );
+
+    if (soDongDon === 0) {
+      throw LoiNghiepVu.xungDot('Đơn hàng đã bị thay đổi trạng thái trước đó');
+    }
+
+    // Hoàn tồn kho sách
+    await hoanTonKho(donHang.chiTietDonHang, t);
+
+    // Ghi nhận lịch sử hủy đơn
+    await LichSuTrangThaiDonHang.create({
+      MaDonHang: maDonHang,
+      TrangThaiCu: 'CHO_DUYET',
+      TrangThaiMoi: 'DA_HUY',
+      MaNhanVienThucHien: maNhanVien,
+      GhiChu: lyDo || 'Hủy đơn quầy chờ thanh toán QR'
+    }, { transaction: t });
+
+    await t.commit();
+
+    const thanhToan = await ThanhToan.findOne({ where: { MaDonHang: maDonHang } });
+    if (thanhToan?.MaGiaoDichPayos) {
+      try {
+        const { huyLinkPayOS } = require('./payosService');
+        huyLinkPayOS(thanhToan.MaGiaoDichPayos, lyDo || 'Hủy đơn quầy chờ thanh toán QR');
+      } catch (errHuy) {}
+    }
+
+    baoNhanVienRealtime('donHang:capNhatTrangThai', {
+      maDonHang,
+      maTraCuu: donHang.MaTraCuu,
+      trangThaiCu: 'CHO_DUYET',
+      trangThaiMoi: 'DA_HUY',
+      trangThaiThanhToan: 'DA_HUY',
+      lyDo: lyDo || 'Hủy đơn quầy chờ thanh toán QR',
+      thoiGian: new Date().toISOString()
+    });
+
+    return layChiTietDonHang(maDonHang);
+  } catch (loi) {
+    await t.rollback();
+    throw loi;
+  }
+}
+
+// Khách không quét được QR, chuyển sang thu tiền mặt tại quầy và hoàn tất đơn hàng
+async function chuyenThuTienMatDonQuay(maDonHang, maNhanVien, vaiTro) {
+  const donHang = await DonHang.findByPk(maDonHang);
+
+  if (!donHang || donHang.KenhBan !== 'TAI_QUAY') {
+    throw LoiNghiepVu.khongTimThay('Không tìm thấy đơn hàng bán tại quầy');
+  }
+
+  if (vaiTro !== 'quan_tri' && donHang.MaNhanVienLap !== maNhanVien) {
+    throw LoiNghiepVu.camTruyCap('Bạn chỉ có thể xử lý đơn quầy do chính mình lập');
+  }
+
+  if (donHang.TrangThai !== 'CHO_DUYET') {
+    throw LoiNghiepVu.xungDot('Chỉ có thể chuyển sang tiền mặt khi đơn quầy đang ở trạng thái chờ thanh toán QR');
+  }
+
+  const t = await sequelize.transaction();
+  try {
+    // Đua trạng thái: UPDATE có điều kiện TrangThai = 'CHO_THANH_TOAN'
+    // Nếu webhook vừa cập nhật trước sang DA_THANH_TOAN, câu lệnh trả về 0 dòng và rollback ngay
+    const [soDongThanhToan] = await ThanhToan.update(
+      {
+        PhuongThuc: 'TIEN_MAT',
+        TrangThai: 'DA_THANH_TOAN',
+        NgayThanhToan: new Date()
+      },
+      {
+        where: {
+          MaDonHang: maDonHang,
+          TrangThai: 'CHO_THANH_TOAN'
+        },
+        transaction: t
+      }
+    );
+
+    if (soDongThanhToan === 0) {
+      throw LoiNghiepVu.xungDot('Khách đã thanh toán QR thành công hoặc đơn không còn ở trạng thái chờ thanh toán');
+    }
+
+    const [soDongDon] = await DonHang.update(
+      { TrangThai: 'DA_GIAO' },
+      { where: { MaDonHang: maDonHang, TrangThai: 'CHO_DUYET' }, transaction: t }
+    );
+
+    if (soDongDon === 0) {
+      throw LoiNghiepVu.xungDot('Đơn hàng đã bị thay đổi trạng thái trước đó');
+    }
+
+    await LichSuTrangThaiDonHang.create({
+      MaDonHang: maDonHang,
+      TrangThaiCu: 'CHO_DUYET',
+      TrangThaiMoi: 'DA_GIAO',
+      MaNhanVienThucHien: maNhanVien,
+      GhiChu: 'Khách không quét được QR, chuyển thu tiền mặt tại quầy'
+    }, { transaction: t });
+
+    await t.commit();
+
+    const thanhToan = await ThanhToan.findOne({ where: { MaDonHang: maDonHang } });
+    if (thanhToan?.MaGiaoDichPayos) {
+      try {
+        const { huyLinkPayOS } = require('./payosService');
+        huyLinkPayOS(thanhToan.MaGiaoDichPayos, 'Khách chuyển sang thanh toán tiền mặt');
+      } catch (errHuy) {}
+    }
+
+    const chiTietDon = await layChiTietDonHang(maDonHang);
+
+    baoNhanVienRealtime('donHang:capNhatTrangThai', {
+      maDonHang,
+      maTraCuu: chiTietDon.MaTraCuu,
+      trangThaiCu: 'CHO_DUYET',
+      trangThaiMoi: 'DA_GIAO',
+      trangThaiThanhToan: 'DA_THANH_TOAN',
+      phuongThucThanhToan: 'TIEN_MAT',
+      thoiGian: new Date().toISOString()
+    });
+
+    return chiTietDon;
+  } catch (loi) {
+    await t.rollback();
+    throw loi;
+  }
+}
+
 // 6. Back-Office: Chuyển trạng thái đơn hàng (Optimistic Lock)
 async function adminCapNhatTrangThai(maDonHang, trangThaiMoi, ghiChu, maNhanVien) {
   const donHang = await DonHang.findByPk(maDonHang);
   if (!donHang) {
     throw LoiNghiepVu.khongTimThay('Không tìm thấy đơn hàng yêu cầu');
+  }
+
+  // T55: Tuyệt đối không cho phép đổi trạng thái thủ công đối với đơn bán tại quầy
+  if (donHang.KenhBan === 'TAI_QUAY') {
+    throw LoiNghiepVu.yeuCauKhongHopLe('Không thể cập nhật trạng thái thủ công cho đơn hàng tại quầy');
   }
 
   const trangThaiCu = donHang.TrangThai;
@@ -744,6 +964,11 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
 
   if (!donHang) {
     throw LoiNghiepVu.khongTimThay('Không tìm thấy đơn hàng yêu cầu');
+  }
+
+  // T55: Không cho phép hủy đơn tại quầy bằng chức năng này
+  if (donHang.KenhBan === 'TAI_QUAY') {
+    throw LoiNghiepVu.yeuCauKhongHopLe('Không thể hủy đơn hàng tại quầy bằng chức năng này');
   }
 
   const trangThaiCu = donHang.TrangThai;
@@ -901,6 +1126,8 @@ module.exports = {
   layChiTietDonHang,
   layDanhSachDonQuay,
   layChiTietDonQuay,
+  huyDonQuayChoQR,
+  chuyenThuTienMatDonQuay,
   layDanhSachDonKhach,
   layDanhSachDonCanSoan,
   khachHuyDon,

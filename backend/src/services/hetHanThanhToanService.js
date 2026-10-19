@@ -80,13 +80,15 @@ async function huyDonQrHetHan(thanhToan) {
   return daHuyDon;
 }
 
-// Sau khi hủy: gửi email cho khách và báo realtime cho trang đang mở và nhân viên
+// Sau khi hủy: gửi email cho khách (trực tuyến) và báo realtime cho trang đang mở và nhân viên
 async function baoDonBiHuy(maDonHang) {
   const chiTietDon = await donHangService.layChiTietDonHang(maDonHang);
-  emailService.guiEmailCapNhatTrangThai(chiTietDon, 'DA_HUY', 'Quá hạn thanh toán chuyển khoản QR')
-    .catch((loi) => console.error('[Lỗi Gửi Email Hủy Đơn]', loi.message));
+  if (chiTietDon && chiTietDon.KenhBan !== 'TAI_QUAY') {
+    emailService.guiEmailCapNhatTrangThai(chiTietDon, 'DA_HUY', 'Quá hạn thanh toán chuyển khoản QR')
+      .catch((loi) => console.error('[Lỗi Gửi Email Hủy Đơn]', loi.message));
+  }
   try {
-    phatDonHetHan({ maDonHang, maTraCuu: chiTietDon.MaTraCuu });
+    phatDonHetHan({ maDonHang, maTraCuu: chiTietDon?.MaTraCuu });
   } catch (loi) {
     console.warn('[Socket.IO] Không thể phát sự kiện hết hạn:', loi.message);
   }

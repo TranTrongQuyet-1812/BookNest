@@ -123,6 +123,9 @@ async function layTyLeDonHang({ kenhBan } = {}) {
   if (kenhBan) {
     dieuKienKenh = ' WHERE KenhBan = :kenhBan';
     replacements.kenhBan = kenhBan;
+  } else {
+    // T55: Khi xem Tất cả, loại trừ đơn quầy đang tạm giữ chờ QR khỏi tỷ lệ đơn hàng chung
+    dieuKienKenh = " WHERE NOT (KenhBan = 'TAI_QUAY' AND TrangThai = 'CHO_DUYET')";
   }
 
   const cauTruyVan = `

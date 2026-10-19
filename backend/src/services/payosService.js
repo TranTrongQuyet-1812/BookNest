@@ -3,7 +3,7 @@
  * Tuân thủ nghiêm ngặt nguyên tắc bảo mật và quy trình trong docs/KE_HOACH_THANH_TOAN_QR_PAYOS.md.
  */
 const { maRutGonChoChuyenKhoan } = require('../utils/maTraCuu');
-const { tinhNgayHetHan, sinhMaGiaoDich } = require('../utils/thanhToanQr');
+const { tinhNgayHetHan, tinhNgayHetHanQuay, sinhMaGiaoDich } = require('../utils/thanhToanQr');
 const cauHinh = require('../config/cauHinh');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 const payOSClient = require('./payosClient');
@@ -16,7 +16,8 @@ const {
   sequelize,
   DonHang,
   ThanhToan,
-  NhatKyWebhookPayos
+  NhatKyWebhookPayos,
+  LichSuTrangThaiDonHang
 } = require('../models');
 const { phatThanhToanThanhCong } = require('../realtime/socket');
 
@@ -52,7 +53,8 @@ function trichXuatThongTinTuQr(qr) {
 /**
  * Tạo link và mã QR thanh toán payOS cho đơn hàng
  */
-async function taoThanhToanQR(donHang, danhSachMon = []) {
+async function taoThanhToanQR(donHang, danhSachMon = [], options = {}) {
+  const transaction = options.transaction || null;
   const daBat = await kiemTraCongTacQRDangBat();
   if (!daBat) {
     throw LoiNghiepVu.camTruyCap(THONG_DIEP_QR_DANG_TAT);
@@ -63,7 +65,8 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
 
   // Kiểm tra xem đơn đã có bản ghi thanh toán chưa
   let banGhiThanhToan = await ThanhToan.findOne({
-    where: { MaDonHang: maDonHang }
+    where: { MaDonHang: maDonHang },
+    transaction
   });
 
   if (banGhiThanhToan && banGhiThanhToan.TrangThai === 'DA_THANH_TOAN') {
@@ -131,7 +134,8 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
 
   const paymentLinkRes = await payOSClient.paymentRequests.create(duLieuPayos);
 
-  const ngayHetHan = tinhNgayHetHan();
+  // Đơn quầy hết hạn sau 5 phút, đơn trực tuyến sau 15 phút
+  const ngayHetHan = donHang.KenhBan === 'TAI_QUAY' ? tinhNgayHetHanQuay() : tinhNgayHetHan();
 
   if (banGhiThanhToan) {
     await banGhiThanhToan.update({
@@ -143,7 +147,7 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
       DuongDanThanhToan: paymentLinkRes.checkoutUrl,
       QrCode: paymentLinkRes.qrCode,
       NgayHetHan: ngayHetHan
-    });
+    }, { transaction });
   } else {
     banGhiThanhToan = await ThanhToan.create({
       MaDonHang: maDonHang,
@@ -155,7 +159,7 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
       DuongDanThanhToan: paymentLinkRes.checkoutUrl,
       QrCode: paymentLinkRes.qrCode,
       NgayHetHan: ngayHetHan
-    });
+    }, { transaction });
   }
 
   return {
@@ -325,8 +329,23 @@ async function xuLyWebhookPayOS(webhookBody) {
       return xuLyKhongDoiDuocTrangThai(thanhToan, orderCode, noiDungTho);
     }
 
-    // T59 / DT: Webhook payOS không tự duyệt đơn nữa. Đơn giữ nguyên trạng thái (CHO_DUYET), chỉ khoản thanh toán thành DA_THANH_TOAN.
+    // T59 / DT: Webhook payOS không tự duyệt đơn trực tuyến. Đơn trực tuyến giữ nguyên trạng thái (CHO_DUYET), chỉ khoản thanh toán thành DA_THANH_TOAN.
+    // T55: Đơn bán tại quầy (KenhBan = TAI_QUAY) đang CHO_DUYET -> Chuyển thẳng sang DA_GIAO
     const donHang = await DonHang.findByPk(thanhToan.MaDonHang, { transaction: t });
+    let trangThaiDonMoi = donHang?.TrangThai || 'CHO_DUYET';
+
+    if (donHang && donHang.KenhBan === 'TAI_QUAY' && donHang.TrangThai === 'CHO_DUYET') {
+      await donHang.update({ TrangThai: 'DA_GIAO' }, { transaction: t });
+      trangThaiDonMoi = 'DA_GIAO';
+
+      await LichSuTrangThaiDonHang.create({
+        MaDonHang: donHang.MaDonHang,
+        TrangThaiCu: 'CHO_DUYET',
+        TrangThaiMoi: 'DA_GIAO',
+        MaNhanVienThucHien: donHang.MaNhanVienLap || null,
+        GhiChu: 'Thanh toán QR tại quầy'
+      }, { transaction: t });
+    }
 
     await NhatKyWebhookPayos.create({
       MaGiaoDichPayos: orderCode,
@@ -337,19 +356,21 @@ async function xuLyWebhookPayOS(webhookBody) {
 
     await t.commit();
 
-    // Tiền đã về thì mới gửi hóa đơn (đơn QR không gửi lúc đặt, xem donHangService.guiHoaDonKhiDatDon)
-    donHangService.layChiTietDonHang(thanhToan.MaDonHang)
-      .then((chiTiet) => emailService.guiEmailHoaDonDonHang(chiTiet, emailService.HINH_THUC_DA_THANH_TOAN_QR))
-      .catch((errMail) => console.error('[Lỗi Gửi Email Hóa Đơn]', errMail.message));
+    // Tiền đã về thì mới gửi hóa đơn cho đơn trực tuyến (đơn quầy không gửi email hóa đơn)
+    if (donHang && donHang.KenhBan !== 'TAI_QUAY') {
+      donHangService.layChiTietDonHang(thanhToan.MaDonHang)
+        .then((chiTiet) => emailService.guiEmailHoaDonDonHang(chiTiet, emailService.HINH_THUC_DA_THANH_TOAN_QR))
+        .catch((errMail) => console.error('[Lỗi Gửi Email Hóa Đơn]', errMail.message));
+    }
 
-    // Phát sự kiện thời gian thực Socket.IO tới phòng đơn hàng và quản trị viên (T43)
+    // Phát sự kiện thời gian thực Socket.IO tới phòng đơn hàng và quản trị viên (T43) kèm trạng thái đơn thật
     try {
       phatThanhToanThanhCong({
         maDonHang: thanhToan.MaDonHang,
         maTraCuu: donHang?.MaTraCuu,
         soTien: thanhToan.SoTien,
         maGiaoDichPayos: orderCode,
-        trangThaiDonHang: donHang?.TrangThai
+        trangThaiDonHang: trangThaiDonMoi
       });
     } catch (errSocket) {
       console.warn('[Socket.IO] Không thể phát sự kiện thanh toán:', errSocket.message);
@@ -424,7 +445,21 @@ async function layThongTinThanhToanTheoDon(donHangInput) {
           );
           soDongCapNhat = soDong;
 
-          // T59 / DT: Đối soát tự động cũng không tự duyệt đơn, đơn giữ nguyên trạng thái (CHO_DUYET)
+          // T59 / DT: Đối soát tự động cũng không tự duyệt đơn trực tuyến (CHO_DUYET)
+          // T55: Đơn quầy chuyển thẳng DA_GIAO
+          let trangThaiDonMoi = donHangTraCuu?.TrangThai || 'CHO_DUYET';
+          if (donHangTraCuu && donHangTraCuu.KenhBan === 'TAI_QUAY' && donHangTraCuu.TrangThai === 'CHO_DUYET') {
+            await DonHang.update({ TrangThai: 'DA_GIAO' }, { where: { MaDonHang: maDonHang, TrangThai: 'CHO_DUYET' }, transaction: tDongBo });
+            await LichSuTrangThaiDonHang.create({
+              MaDonHang: maDonHang,
+              TrangThaiCu: 'CHO_DUYET',
+              TrangThaiMoi: 'DA_GIAO',
+              MaNhanVienThucHien: donHangTraCuu.MaNhanVienLap || null,
+              GhiChu: 'Thanh toán QR tại quầy'
+            }, { transaction: tDongBo });
+            trangThaiDonMoi = 'DA_GIAO';
+          }
+
           await tDongBo.commit();
         } catch (errDb) {
           await tDongBo.rollback();
@@ -435,20 +470,21 @@ async function layThongTinThanhToanTheoDon(donHangInput) {
         if (soDongCapNhat > 0) {
           await thanhToan.reload();
 
-          // Webhook chưa tới nên hóa đơn cũng chưa được gửi: gửi ở đây (webhook tới sau sẽ bị bỏ qua vì đã DA_THANH_TOAN)
-          donHangService.layChiTietDonHang(maDonHang)
-            .then((chiTiet) => emailService.guiEmailHoaDonDonHang(chiTiet, emailService.HINH_THUC_DA_THANH_TOAN_QR))
-            .catch((errMail) => console.error('[Lỗi Gửi Email Hóa Đơn]', errMail.message));
+          // Webhook chưa tới nên hóa đơn cũng chưa được gửi: đơn trực tuyến gửi email hóa đơn, đơn quầy không gửi
+          if (donHangTraCuu && donHangTraCuu.KenhBan !== 'TAI_QUAY') {
+            donHangService.layChiTietDonHang(maDonHang)
+              .then((chiTiet) => emailService.guiEmailHoaDonDonHang(chiTiet, emailService.HINH_THUC_DA_THANH_TOAN_QR))
+              .catch((errMail) => console.error('[Lỗi Gửi Email Hóa Đơn]', errMail.message));
+          }
 
           // Phát sự kiện realtime đầy đủ cho cả nhân viên và phòng của khách
           try {
-            const trangThaiHienTai = donHangTraCuu?.TrangThai || 'CHO_DUYET';
             phatThanhToanThanhCong({
               maDonHang: thanhToan.MaDonHang,
               maTraCuu: donHangTraCuu?.MaTraCuu,
               soTien: thanhToan.SoTien,
               maGiaoDichPayos: thanhToan.MaGiaoDichPayos,
-              trangThaiDonHang: trangThaiHienTai
+              trangThaiDonHang: trangThaiDonMoi
             });
 
             if (donHangTraCuu?.MaTraCuu) {

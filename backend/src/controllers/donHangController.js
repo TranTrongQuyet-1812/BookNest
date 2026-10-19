@@ -82,6 +82,30 @@ async function xuLyLayChiTietDonQuay(req, res) {
   return phanHoiThanhCong(res, { duLieu: donHang, thongDiep: 'Lấy chi tiết đơn quầy thành công' });
 }
 
+// Hủy đơn bán tại quầy đang chờ thanh toán QR
+async function xuLyHuyDonQuay(req, res) {
+  const donHang = await donHangService.huyDonQuayChoQR(
+    req.params.id,
+    req.user.id,
+    req.user.role,
+    req.body?.lyDo
+  );
+  return phanHoiThanhCong(res, { duLieu: donHang, thongDiep: 'Hủy đơn bán tại quầy thành công' });
+}
+
+// Khách không quét được QR, chuyển sang thu tiền mặt và hoàn tất đơn hàng
+async function xuLyChuyenThuTienMatQuay(req, res) {
+  const donHang = await donHangService.chuyenThuTienMatDonQuay(
+    req.params.id,
+    req.user.id,
+    req.user.role
+  );
+  return phanHoiThanhCong(res, {
+    duLieu: donHang,
+    thongDiep: 'Chuyển sang thu tiền mặt và hoàn tất đơn hàng thành công'
+  });
+}
+
 // Back-Office: Nhân viên/Admin xem chi tiết một đơn hàng
 async function xuLyAdminLayChiTietDon(req, res) {
   const donHang = await donHangService.layChiTietDonHang(req.params.id);
@@ -138,6 +162,8 @@ module.exports = {
   xuLyTaoDonQuay,
   xuLyLayDanhSachDonQuay,
   xuLyLayChiTietDonQuay,
+  xuLyHuyDonQuay,
+  xuLyChuyenThuTienMatQuay,
   xuLyAdminLayChiTietDon,
   xuLyAdminCapNhatTrangThai,
   xuLyAdminHuyDon,

@@ -5,9 +5,14 @@ const crypto = require('crypto');
 
 // Thời gian giữ đơn chờ chuyển khoản; quá hạn mà chưa trả tiền thì đơn bị hủy (xem hetHanThanhToanService)
 const HAN_THANH_TOAN_QR_PHUT = 15;
+const HAN_THANH_TOAN_QUAY_PHUT = 5;
 
-function tinhNgayHetHan() {
-  return new Date(Date.now() + HAN_THANH_TOAN_QR_PHUT * 60 * 1000);
+function tinhNgayHetHan(soPhut = HAN_THANH_TOAN_QR_PHUT) {
+  return new Date(Date.now() + soPhut * 60 * 1000);
+}
+
+function tinhNgayHetHanQuay() {
+  return tinhNgayHetHan(HAN_THANH_TOAN_QUAY_PHUT);
 }
 
 /**
@@ -19,4 +24,10 @@ function sinhMaGiaoDich() {
   return Date.now() * 1000 + crypto.randomInt(1000);
 }
 
-module.exports = { HAN_THANH_TOAN_QR_PHUT, tinhNgayHetHan, sinhMaGiaoDich };
+module.exports = {
+  HAN_THANH_TOAN_QR_PHUT,
+  HAN_THANH_TOAN_QUAY_PHUT,
+  tinhNgayHetHan,
+  tinhNgayHetHanQuay,
+  sinhMaGiaoDich
+};
