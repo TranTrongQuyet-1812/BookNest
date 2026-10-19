@@ -16,8 +16,7 @@ const {
   sequelize,
   DonHang,
   ThanhToan,
-  NhatKyWebhookPayos,
-  LichSuTrangThaiDonHang
+  NhatKyWebhookPayos
 } = require('../models');
 const { phatThanhToanThanhCong } = require('../realtime/socket');
 
@@ -348,7 +347,8 @@ async function xuLyWebhookPayOS(webhookBody) {
         maDonHang: thanhToan.MaDonHang,
         maTraCuu: donHang?.MaTraCuu,
         soTien: thanhToan.SoTien,
-        maGiaoDichPayos: orderCode
+        maGiaoDichPayos: orderCode,
+        trangThaiDonHang: donHang?.TrangThai
       });
     } catch (errSocket) {
       console.warn('[Socket.IO] Không thể phát sự kiện thanh toán:', errSocket.message);
@@ -407,7 +407,6 @@ async function layThongTinThanhToanTheoDon(donHangInput) {
         // Tuân thủ "lỗi thì báo lỗi": Lỗi CSDL sẽ được ném ra ngoài minh bạch, không nuốt âm thầm
         const tDongBo = await sequelize.transaction();
         let soDongCapNhat = 0;
-        let daCapNhatDon = false;
         try {
           const [soDong] = await ThanhToan.update(
             {

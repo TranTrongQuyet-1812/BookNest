@@ -658,7 +658,7 @@ async function adminCapNhatTrangThai(maDonHang, trangThaiMoi, ghiChu, maNhanVien
   const trangThaiCu = donHang.TrangThai;
   if (!kiemTraChuyenTrangThai(trangThaiCu, trangThaiMoi)) {
     throw LoiNghiepVu.xungDot(
-      `Không thể chuyển trạng thái từ ${trangThaiCu} sang ${trangThaiMoi}. Vui lòng tuân thủ quy trình CHO_DUYET -> DA_DUYET -> DA_LAY_HANG -> DA_GIAO.`
+      'Không thể chuyển trạng thái không hợp lệ. Vui lòng đi theo thứ tự: Chờ duyệt, Đã duyệt, Đã lấy hàng, Đã giao hàng.'
     );
   }
 
