@@ -421,14 +421,6 @@ async function taoDonQuay(duLieu, maNhanVien) {
 
     await t.commit();
 
-    baoNhanVienRealtime('donHang:donMoi', {
-      maDonHang: donHang.MaDonHang,
-      maTraCuu: donHang.MaTraCuu,
-      tongTien: donHang.TongTien,
-      nguoiNhan: donHang.TenNguoiNhan,
-      thoiGian: donHang.NgayDat
-    });
-
     const chiTietDon = await layChiTietDonHang(donHang.MaDonHang);
     const ketQua = chiTietDon.toJSON ? chiTietDon.toJSON() : chiTietDon;
     if (thongTinQR) {
@@ -774,10 +766,8 @@ async function huyDonQuayChoQR(maDonHang, maNhanVien, vaiTro, lyDo) {
 
     const thanhToan = await ThanhToan.findOne({ where: { MaDonHang: maDonHang } });
     if (thanhToan?.MaGiaoDichPayos) {
-      try {
-        const { huyLinkPayOS } = require('./payosService');
-        huyLinkPayOS(thanhToan.MaGiaoDichPayos, lyDo || 'Hủy đơn quầy chờ thanh toán QR');
-      } catch (errHuy) {}
+      const { huyLinkPayOS } = require('./payosService');
+      huyLinkPayOS(thanhToan.MaGiaoDichPayos, lyDo || 'Hủy đơn quầy chờ thanh toán QR');
     }
 
     baoNhanVienRealtime('donHang:capNhatTrangThai', {
@@ -857,10 +847,8 @@ async function chuyenThuTienMatDonQuay(maDonHang, maNhanVien, vaiTro) {
 
     const thanhToan = await ThanhToan.findOne({ where: { MaDonHang: maDonHang } });
     if (thanhToan?.MaGiaoDichPayos) {
-      try {
-        const { huyLinkPayOS } = require('./payosService');
-        huyLinkPayOS(thanhToan.MaGiaoDichPayos, 'Khách chuyển sang thanh toán tiền mặt');
-      } catch (errHuy) {}
+      const { huyLinkPayOS } = require('./payosService');
+      huyLinkPayOS(thanhToan.MaGiaoDichPayos, 'Khách chuyển sang thanh toán tiền mặt');
     }
 
     const chiTietDon = await layChiTietDonHang(maDonHang);
