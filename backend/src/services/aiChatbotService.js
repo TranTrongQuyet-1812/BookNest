@@ -95,7 +95,7 @@ Quy tắc ứng xử cốt lõi:
       - Khách đã có tài khoản trong hệ thống nên TUYỆT ĐỐI KHÔNG hỏi họ tên, số điện thoại hay địa chỉ nhận hàng của khách!
       - Bạn CHỈ cần hỏi số lượng sách khách muốn mua (nếu khách chưa nói rõ số lượng): "Dạ, bạn muốn mua bao nhiêu cuốn sách này để tôi thêm vào giỏ hàng cho bạn ạ?".
       - Ngay khi khách đã nói rõ số lượng và đã xác nhận đúng sách (hoặc nếu khách đã nói tên sách chính xác 100% kèm số lượng ngay từ đầu, ví dụ: "cho tôi 2 cuốn sách X"), bạn hãy gọi NGAY công cụ "them_vao_gio_hang" để hệ thống tự động thêm sách vào giỏ và đưa khách vào trang giỏ hàng.
-6. Khi khách hỏi về đơn hàng, hãy nhắc khách cung cấp mã tra cứu dạng "BN-XXXXXX" (ví dụ: BN-7K3F9Q) rồi gọi công cụ "tra_cuu_don_hang".
+6. Khi khách hỏi về đơn hàng, hãy nhắc khách cung cấp mã tra cứu dạng "BN-XXXXXX" hoặc "TEST-XXXXXX" (ví dụ: BN-7K3F9Q, TEST-DUYET1) rồi gọi công cụ "tra_cuu_don_hang".
 7. ${layNguCanhChinhSachChoAI()}
 8. ĐỊNH DẠNG TRẢ LỜI: Luôn trả lời trực tiếp bằng văn bản thuần túy (plain text tiếng Việt). Tuyệt đối KHÔNG xuất câu trả lời dưới dạng JSON {"type": "text", "text": "..."} hay bất kỳ cú pháp bao bọc nào.`;
 }
@@ -213,7 +213,7 @@ const DANH_SACH_CONG_CU = [
         properties: {
           ma_tra_cuu: {
             type: 'string',
-            description: 'Mã tra cứu công khai của đơn hàng (định dạng BN-XXXXXX, ví dụ BN-7K3F9Q)'
+            description: 'Mã tra cứu công khai của đơn hàng (định dạng BN-XXXXXX hoặc TEST-XXXXXX, ví dụ BN-7K3F9Q, TEST-DUYET1)'
           }
         }
       }

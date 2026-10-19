@@ -13,7 +13,7 @@ const TIEN_TO = 'BN-';
 const BANG_CHU = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const SO_KY_TU = 6;
 
-const MAU_MA_TRA_CUU = /^BN-[A-HJ-NP-Z2-9]{6}$/;
+const MAU_MA_TRA_CUU = /^(BN-[A-HJ-NP-Z2-9]{6}|TEST-[A-Z0-9-]{1,7})$/;
 
 // crypto.randomInt cho số ngẫu nhiên mạnh, khó đoán hơn Math.random
 function sinhMaTraCuu() {
