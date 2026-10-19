@@ -46,6 +46,10 @@ const NhatKyChatbot = sequelize.define('NhatKyChatbot', {
     type: DataTypes.DATE,
     allowNull: false,
     defaultValue: DataTypes.NOW
+  },
+  NhaCungCap: {
+    type: DataTypes.STRING(30),
+    allowNull: true
   }
 }, {
   tableName: 'NhatKyChatbot',

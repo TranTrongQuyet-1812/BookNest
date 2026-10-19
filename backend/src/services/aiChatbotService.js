@@ -1118,7 +1118,7 @@ async function tinhTongTokenHomNay() {
  * Ghi nhận một dòng nhật ký kỹ thuật vào bảng NhatKyChatbot
  * TUYỆT ĐỐI KHÔNG lưu nội dung hội thoại chat nhạy cảm
  */
-async function ghiNhatKyChatbot({ maKhachHang = null, khoaPhien = null, soToken = 0, tenCongCu = null, ketQua = 'THANH_CONG', ghiChu = null }) {
+async function ghiNhatKyChatbot({ maKhachHang = null, khoaPhien = null, soToken = 0, tenCongCu = null, ketQua = 'THANH_CONG', ghiChu = null, nhaCungCap = null }) {
   try {
     if (!NhatKyChatbot) return;
     await NhatKyChatbot.create({
@@ -1127,7 +1127,8 @@ async function ghiNhatKyChatbot({ maKhachHang = null, khoaPhien = null, soToken 
       SoToken: Math.max(0, parseInt(soToken, 10) || 0),
       TenCongCu: tenCongCu ? String(tenCongCu).substring(0, 50) : null,
       KetQua: ketQua,
-      GhiChu: ghiChu ? String(ghiChu).substring(0, 255) : null
+      GhiChu: ghiChu ? String(ghiChu).substring(0, 255) : null,
+      NhaCungCap: nhaCungCap ? String(nhaCungCap).substring(0, 30) : null
     });
   } catch (err) {
     if (process.env.NODE_ENV !== 'test') {
@@ -1169,11 +1170,6 @@ async function layThongKeChatbotHomNay() {
 async function kiemTraTranNganSach(maKhachHang, khoaPhien) {
   const tranNgay = await cauHinhHeThongService.docGiaTriSo(cauHinhHeThongService.KHOA_AI_TRAN_NGAY, 50000);
   const { tongToken: tongTokenHomNay } = await tinhTongTokenHomNay();
-
-  // Khi chạy test tự động (NODE_ENV === 'test'), nếu không phải test case chủ động mock trần thì bỏ qua tích lũy token từ DB thật
-  if (process.env.NODE_ENV === 'test' && tranNgay === 100000) {
-    return { vuotTran: false };
-  }
 
   if (tranNgay > 0 && tongTokenHomNay >= tranNgay) {
     const traLoi = 'Trợ lý AI đã đạt hạn mức phục vụ trong ngày nhằm bảo vệ ngân sách hệ thống. Quý khách vui lòng quay lại vào ngày mai hoặc liên hệ trực tiếp nhân viên BookNest nhé!';
@@ -1299,10 +1295,12 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
   const duLieuKemTheo = { danhSachSach: [], thongTinThanhToan: null, thongTinDonHang: null, themVaoGioHang: null };
   const danhSachToolDaGoi = [];
   let tongTokensTieuThu = 0;
+  let nhaCungCapSuDung = 'gemini';
 
   // 3. Vòng lặp Function Calling (tối đa 2 vòng)
   for (let soVongLap = 0; soVongLap < 2; soVongLap++) {
     const ketQuaAI = await goiNhaCungCapAI({ messages, tools: cacCongCuKhaDung, maxTokens: 600, temperature: 0.3 });
+    if (ketQuaAI?.nhaCungCap) nhaCungCapSuDung = ketQuaAI.nhaCungCap;
     if (ketQuaAI?.usage?.total_tokens) tongTokensTieuThu += ketQuaAI.usage.total_tokens;
     const aiMessage = ketQuaAI.message;
 
@@ -1321,7 +1319,7 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
       traLoi = await tuDongBuDapDuLieuSach({ traLoi, noiDungTinNhan, sachHienTai, duLieuKemTheo });
       traLoi = traLoi || taoTraLoiMacDinhKhiRong(duLieuKemTheo);
 
-      await ghiNhatKyChatbot({ maKhachHang, khoaPhien, soToken: tongTokensTieuThu, tenCongCu: danhSachToolDaGoi.join(',') || null, ketQua: 'THANH_CONG' });
+      await ghiNhatKyChatbot({ maKhachHang, khoaPhien, soToken: tongTokensTieuThu, tenCongCu: danhSachToolDaGoi.join(',') || null, ketQua: 'THANH_CONG', nhaCungCap: nhaCungCapSuDung });
       return { traLoi, duLieuKemTheo };
     }
 
@@ -1330,7 +1328,7 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
     for (const toolCall of aiMessage.tool_calls) {
       const phanHoiTool = await dieuPhoiToolCall({ toolCall, noiDungTinNhan, sachHienTai, maKhachHang, khoaPhien, duLieuKemTheo, danhSachToolDaGoi, ipClient });
       if (phanHoiTool.traVeNgay) {
-        await ghiNhatKyChatbot({ maKhachHang, khoaPhien, soToken: tongTokensTieuThu, tenCongCu: phanHoiTool.toolGhiNhan || danhSachToolDaGoi.join(','), ketQua: 'THANH_CONG' });
+        await ghiNhatKyChatbot({ maKhachHang, khoaPhien, soToken: tongTokensTieuThu, tenCongCu: phanHoiTool.toolGhiNhan || danhSachToolDaGoi.join(','), ketQua: 'THANH_CONG', nhaCungCap: nhaCungCapSuDung });
         return { traLoi: phanHoiTool.traLoi, duLieuKemTheo };
       }
       messages.push({ role: 'tool', tool_call_id: toolCall.id, content: JSON.stringify(phanHoiTool.ketQuaTool) });
@@ -1339,13 +1337,14 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, maKhachHan
 
   // 4. Nếu hết vòng lặp mà chưa chốt -> Gọi 1 lần cuối không kèm tools
   const ketQuaCuoi = await goiNhaCungCapAI({ messages, maxTokens: 500, temperature: 0.3 });
+  if (ketQuaCuoi?.nhaCungCap) nhaCungCapSuDung = ketQuaCuoi.nhaCungCap;
   if (ketQuaCuoi?.usage?.total_tokens) tongTokensTieuThu += ketQuaCuoi.usage.total_tokens;
 
   let traLoiCuoi = chuanHoaNoiDungAI(ketQuaCuoi.message?.content);
   traLoiCuoi = await tuDongBuDapDuLieuSach({ traLoi: traLoiCuoi, noiDungTinNhan, sachHienTai, duLieuKemTheo });
   traLoiCuoi = traLoiCuoi || taoTraLoiMacDinhKhiRong(duLieuKemTheo, 'Dạ, bạn có cần BookNest tư vấn thêm thông tin nào nữa không ạ?');
 
-  await ghiNhatKyChatbot({ maKhachHang, khoaPhien, soToken: tongTokensTieuThu, tenCongCu: danhSachToolDaGoi.join(',') || null, ketQua: 'THANH_CONG' });
+  await ghiNhatKyChatbot({ maKhachHang, khoaPhien, soToken: tongTokensTieuThu, tenCongCu: danhSachToolDaGoi.join(',') || null, ketQua: 'THANH_CONG', nhaCungCap: nhaCungCapSuDung });
   return { traLoi: traLoiCuoi, duLieuKemTheo };
 }
 

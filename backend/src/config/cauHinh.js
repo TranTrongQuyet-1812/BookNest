@@ -51,16 +51,41 @@ const cauHinh = {
       process.env.PAYOS_CHECKSUM_KEY
     )
   },
-  // AI Chatbot Tư Vấn (NVIDIA NIM)
+  // AI Chatbot Tư Vấn (Xoay tua: Gemini chính -> Gemini phụ -> NVIDIA NIM dự phòng - T54)
   ai: {
-    nhaCungCap: process.env.AI_PROVIDER || 'nvidia',
-    khoaApi: process.env.AI_API_KEY || '',
-    moHinh: process.env.AI_MODEL || 'meta/llama-3.2-11b-vision-instruct',
-    diaChiGoc: process.env.AI_BASE_URL || 'https://integrate.api.nvidia.com/v1',
+    // Nhà cung cấp Gemini chính & phụ
+    gemini: {
+      khoaApi: (process.env.GEMINI_API_KEY || '').trim(),
+      moHinhChinh: (process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite').trim(),
+      moHinhPhu: (process.env.GEMINI_MODEL_PHU || '').trim(),
+      gioResetUtc: parseInt(process.env.GEMINI_GIO_RESET_UTC, 10) || 0,
+      diaChiGoc: 'https://generativelanguage.googleapis.com/v1beta/openai',
+      daCauHinh: Boolean(
+        process.env.GEMINI_API_KEY &&
+        process.env.GEMINI_API_KEY.trim() !== '' &&
+        process.env.GEMINI_API_KEY.trim() !== 'your_gemini_api_key_here'
+      )
+    },
+    // Nhà cung cấp NVIDIA NIM dự phòng
+    nvidia: {
+      khoaApi: (process.env.AI_API_KEY || '').trim(),
+      moHinh: (process.env.AI_MODEL || 'meta/llama-3.2-11b-vision-instruct').trim(),
+      diaChiGoc: (process.env.AI_BASE_URL || 'https://integrate.api.nvidia.com/v1').trim(),
+      daCauHinh: Boolean(
+        process.env.AI_API_KEY &&
+        process.env.AI_API_KEY.trim() !== '' &&
+        process.env.AI_API_KEY.trim() !== 'your_nvidia_nim_api_key_here'
+      )
+    },
+    // Giữ tương thích ngược với các đoạn mã cũ
+    nhaCungCap: process.env.AI_PROVIDER || 'gemini',
+    khoaApi: (process.env.AI_API_KEY || '').trim(),
+    moHinh: (process.env.AI_MODEL || 'meta/llama-3.2-11b-vision-instruct').trim(),
+    diaChiGoc: (process.env.AI_BASE_URL || 'https://integrate.api.nvidia.com/v1').trim(),
     daBat: process.env.AI_CHATBOT_BAT !== 'false',
     daCauHinh: Boolean(
-      process.env.AI_API_KEY &&
-      process.env.AI_API_KEY !== 'your_nvidia_nim_api_key_here'
+      (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '' && process.env.GEMINI_API_KEY.trim() !== 'your_gemini_api_key_here') ||
+      (process.env.AI_API_KEY && process.env.AI_API_KEY.trim() !== '' && process.env.AI_API_KEY.trim() !== 'your_nvidia_nim_api_key_here')
     )
   },
   // Dịch vụ gửi Email (SMTP / Nodemailer)
