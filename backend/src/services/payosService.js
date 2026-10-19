@@ -429,6 +429,7 @@ async function layThongTinThanhToanTheoDon(donHangInput) {
         // Tuân thủ "lỗi thì báo lỗi": Lỗi CSDL sẽ được ném ra ngoài minh bạch, không nuốt âm thầm
         const tDongBo = await sequelize.transaction();
         let soDongCapNhat = 0;
+        let trangThaiDonMoi = donHangTraCuu?.TrangThai || 'CHO_DUYET';
         try {
           const [soDong] = await ThanhToan.update(
             {
@@ -447,7 +448,6 @@ async function layThongTinThanhToanTheoDon(donHangInput) {
 
           // T59 / DT: Đối soát tự động cũng không tự duyệt đơn trực tuyến (CHO_DUYET)
           // T55: Đơn quầy chuyển thẳng DA_GIAO
-          let trangThaiDonMoi = donHangTraCuu?.TrangThai || 'CHO_DUYET';
           if (donHangTraCuu && donHangTraCuu.KenhBan === 'TAI_QUAY' && donHangTraCuu.TrangThai === 'CHO_DUYET') {
             await DonHang.update({ TrangThai: 'DA_GIAO' }, { where: { MaDonHang: maDonHang, TrangThai: 'CHO_DUYET' }, transaction: tDongBo });
             await LichSuTrangThaiDonHang.create({
@@ -492,7 +492,7 @@ async function layThongTinThanhToanTheoDon(donHangInput) {
               const thongTinCapNhat = {
                 maDonHang: thanhToan.MaDonHang,
                 maTraCuu: donHangTraCuu.MaTraCuu,
-                trangThaiDonHang: trangThaiHienTai,
+                trangThaiDonHang: trangThaiDonMoi,
                 trangThaiThanhToan: 'DA_THANH_TOAN',
                 thoiGian: new Date().toISOString()
               };
