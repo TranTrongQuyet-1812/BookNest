@@ -205,6 +205,17 @@ export default function QuanLyThanhToan() {
     }
   };
 
+  const layTenTrangThaiDonHang = (tt) => {
+    switch (tt) {
+      case 'CHO_DUYET': return 'Chờ duyệt';
+      case 'DA_DUYET': return 'Đã duyệt';
+      case 'DA_LAY_HANG': return 'Đã lấy hàng';
+      case 'DA_GIAO': return 'Đã giao';
+      case 'DA_HUY': return 'Đã hủy';
+      default: return tt || 'N/A';
+    }
+  };
+
   const tabs = [
     { key: '', label: 'Tất Cả', count: thongKe?.tongTatCa },
     { key: 'CAN_HOAN_TIEN', label: 'Cần Hoàn Tiền', count: thongKe?.soLuongCanHoanTien, danger: true },
@@ -427,7 +438,7 @@ export default function QuanLyThanhToan() {
                           {don?.MaTraCuu || `Đơn #${item.MaDonHang}`}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)' }}>
-                          Mã TT: #{item.MaThanhToan} • Đơn: {don?.TrangThai || 'N/A'}
+                          Mã TT: #{item.MaThanhToan} • Đơn: {layTenTrangThaiDonHang(don?.TrangThai)}
                         </div>
                       </td>
 
