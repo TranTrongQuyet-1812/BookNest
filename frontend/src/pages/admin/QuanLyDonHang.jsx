@@ -435,7 +435,7 @@ export const QuanLyDonHang = () => {
                           layBadgeTrangThai(trangThai)
                         )}
                       </div>
-                      {don.thanhToan && (
+                      {don.thanhToan ? (
                         <div style={{ marginTop: '4px', fontSize: '0.72rem' }}>
                           {don.thanhToan.PhuongThuc === 'CHUYEN_KHOAN_QR' ? (
                             don.thanhToan.TrangThai === 'DA_THANH_TOAN' ? (
@@ -451,11 +451,17 @@ export const QuanLyDonHang = () => {
                             ) : (
                               <span style={{ color: 'var(--adm-text-muted)' }}>VietQR: {don.thanhToan.TrangThai === 'THAT_BAI' ? 'Thất bại' : don.thanhToan.TrangThai === 'HET_HAN' ? 'Hết hạn' : don.thanhToan.TrangThai}</span>
                             )
+                          ) : don.thanhToan.PhuongThuc === 'TIEN_MAT' ? (
+                            <span style={{ color: 'var(--adm-text-muted)' }}>Tiền mặt</span>
                           ) : (
                             <span style={{ color: 'var(--adm-text-muted)' }}>COD (Tiền mặt)</span>
                           )}
                         </div>
-                      )}
+                      ) : don.KenhBan === 'TAI_QUAY' ? (
+                        <div style={{ marginTop: '4px', fontSize: '0.72rem' }}>
+                          <span style={{ color: 'var(--adm-text-muted)' }}>Tiền mặt</span>
+                        </div>
+                      ) : null}
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div className="inline-flex items-center gap-1.5">
@@ -470,64 +476,83 @@ export const QuanLyDonHang = () => {
                           <Eye size={13} /> Chi tiết
                         </button>
 
-                        {/* Nút chuyển tiến theo State Machine */}
-                        {trangThai === 'CHO_DUYET' && (
-                          don.thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && don.thanhToan?.TrangThai === 'CHO_THANH_TOAN' ? (
-                            <span
-                              title="Khách chưa hoàn tất thanh toán QR, không thể duyệt đơn!"
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                padding: '4px 8px',
-                                fontSize: '0.75rem',
-                                color: '#D97706',
-                                backgroundColor: '#FFFBEB',
-                                border: '1px solid #FDE68A',
-                                borderRadius: '4px',
-                                fontWeight: 600
-                              }}
-                            >
-                              Chờ Quét QR
-                            </span>
-                          ) : (
-                            <button
-                              onClick={() => handleChuyenTrangThai(maDon, 'DA_DUYET', 'Duyệt đơn')}
-                              className="btn btn-primary btn-sm"
-                            >
-                              Duyệt Đơn
-                            </button>
-                          )
-                        )}
-
-                        {trangThai === 'DA_DUYET' && (
-                          <button
-                            onClick={() => handleChuyenTrangThai(maDon, 'DA_LAY_HANG', 'Xác nhận đã lấy hàng')}
-                            className="btn btn-primary btn-sm"
+                        {/* T55: Đơn tại quầy không có các nút duyệt, lấy hàng, giao hoặc hủy thủ công */}
+                        {don.KenhBan === 'TAI_QUAY' ? (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              padding: '3px 8px',
+                              fontSize: '0.75rem',
+                              color: 'var(--adm-text-muted)',
+                              backgroundColor: '#F3F4F6',
+                              borderRadius: '4px',
+                              fontWeight: 500
+                            }}
                           >
-                            Xác nhận đã lấy hàng
-                          </button>
-                        )}
+                            Bán tại quầy
+                          </span>
+                        ) : (
+                          <>
+                            {trangThai === 'CHO_DUYET' && (
+                              don.thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && don.thanhToan?.TrangThai === 'CHO_THANH_TOAN' ? (
+                                <span
+                                  title="Khách chưa hoàn tất thanh toán QR, không thể duyệt đơn!"
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    padding: '4px 8px',
+                                    fontSize: '0.75rem',
+                                    color: '#D97706',
+                                    backgroundColor: '#FFFBEB',
+                                    border: '1px solid #FDE68A',
+                                    borderRadius: '4px',
+                                    fontWeight: 600
+                                  }}
+                                >
+                                  Chờ Quét QR
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => handleChuyenTrangThai(maDon, 'DA_DUYET', 'Duyệt đơn')}
+                                  className="btn btn-primary btn-sm"
+                                >
+                                  Duyệt Đơn
+                                </button>
+                              )
+                            )}
 
-                        {trangThai === 'DA_LAY_HANG' && (
-                          <button
-                            onClick={() => handleChuyenTrangThai(maDon, 'DA_GIAO', 'Hoàn tất giao')}
-                            className="btn btn-sm"
-                            style={{ backgroundColor: 'var(--adm-success)', color: '#FFF' }}
-                          >
-                            Hoàn Tất Giao
-                          </button>
-                        )}
+                            {trangThai === 'DA_DUYET' && (
+                              <button
+                                onClick={() => handleChuyenTrangThai(maDon, 'DA_LAY_HANG', 'Xác nhận đã lấy hàng')}
+                                className="btn btn-primary btn-sm"
+                              >
+                                Xác nhận đã lấy hàng
+                              </button>
+                            )}
 
-                        {/* Nút hủy đơn (Chỉ áp dụng cho CHO_DUYET và DA_DUYET) */}
-                        {['CHO_DUYET', 'DA_DUYET'].includes(trangThai) && (
-                          <button
-                            onClick={() => handleHuyDon(maDon, don)}
-                            className="btn btn-outline btn-sm"
-                            style={{ color: 'var(--adm-danger)', borderColor: '#FECACA' }}
-                            title="Hủy đơn hàng và hoàn kho"
-                          >
-                            <Ban size={13} /> Hủy
-                          </button>
+                            {trangThai === 'DA_LAY_HANG' && (
+                              <button
+                                onClick={() => handleChuyenTrangThai(maDon, 'DA_GIAO', 'Hoàn tất giao')}
+                                className="btn btn-sm"
+                                style={{ backgroundColor: 'var(--adm-success)', color: '#FFF' }}
+                              >
+                                Hoàn Tất Giao
+                              </button>
+                            )}
+
+                            {/* Nút hủy đơn (Chỉ áp dụng cho CHO_DUYET và DA_DUYET) */}
+                            {['CHO_DUYET', 'DA_DUYET'].includes(trangThai) && (
+                              <button
+                                onClick={() => handleHuyDon(maDon, don)}
+                                className="btn btn-outline btn-sm"
+                                style={{ color: 'var(--adm-danger)', borderColor: '#FECACA' }}
+                                title="Hủy đơn hàng và hoàn kho"
+                              >
+                                <Ban size={13} /> Hủy
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </td>
