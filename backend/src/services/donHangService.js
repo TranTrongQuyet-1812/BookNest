@@ -70,6 +70,15 @@ async function taoDonHangCoMa(thongTinDon, tuyChon) {
   }
 }
 
+// Bảng ánh xạ nhãn hiển thị tiếng Việt của trạng thái đơn hàng (T59)
+const BANG_NHAN_TRANG_THAI = {
+  CHO_DUYET: 'Chờ duyệt',
+  DA_DUYET: 'Đã duyệt',
+  DA_LAY_HANG: 'Đã lấy hàng',
+  DA_GIAO: 'Đã giao hàng',
+  DA_HUY: 'Đã hủy'
+};
+
 // Hàm thuần kiểm tra tính hợp lệ của việc chuyển đổi trạng thái đơn hàng (State Machine)
 function kiemTraChuyenTrangThai(trangThaiCu, trangThaiMoi) {
   const maTranChuyen = {
@@ -486,7 +495,7 @@ async function khachHuyDon(maDonHang, maKhachHang, lyDo) {
   }
 
   if (donHang.TrangThai !== 'CHO_DUYET') {
-    throw LoiNghiepVu.xungDot('Chỉ có thể hủy đơn hàng khi đang ở trạng thái chờ duyệt (CHO_DUYET)');
+    throw LoiNghiepVu.xungDot('Chỉ có thể hủy đơn hàng khi đang ở trạng thái chờ duyệt');
   }
 
   const t = await sequelize.transaction();
@@ -739,7 +748,8 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
 
   const trangThaiCu = donHang.TrangThai;
   if (!['CHO_DUYET', 'DA_DUYET'].includes(trangThaiCu)) {
-    throw LoiNghiepVu.xungDot(`Không thể hủy đơn hàng đang ở trạng thái ${trangThaiCu}.`);
+    const nhanTrangThai = BANG_NHAN_TRANG_THAI[trangThaiCu] || trangThaiCu;
+    throw LoiNghiepVu.xungDot(`Đơn đang ở trạng thái ${nhanTrangThai} nên không thể hủy.`);
   }
 
   const t = await sequelize.transaction();

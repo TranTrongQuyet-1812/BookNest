@@ -250,7 +250,7 @@ async function xacNhanHoanTienAdmin(req, res) {
   }
 
   if (thanhToan.TrangThai !== 'CAN_HOAN_TIEN') {
-    throw LoiNghiepVu.xungDot(`Chỉ có thể hoàn tiền cho khoản thanh toán ở trạng thái Cần hoàn tiền (CAN_HOAN_TIEN). Trạng thái hiện tại: ${thanhToan.TrangThai}`);
+    throw LoiNghiepVu.xungDot('Chỉ có thể hoàn tiền cho khoản thanh toán ở trạng thái Cần hoàn tiền');
   }
 
   const trangThaiCu = thanhToan.TrangThai;

@@ -80,7 +80,8 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
     throw LoiNghiepVu.xungDot('Đơn hàng đã bị hủy nên không thể thanh toán');
   }
   if (['DA_GIAO', 'DA_LAY_HANG'].includes(donHang.TrangThai)) {
-    throw LoiNghiepVu.xungDot(`Đơn hàng đang ở trạng thái ${donHang.TrangThai}, không thể tạo mã thanh toán QR`);
+    const nhanTrangThai = donHang.TrangThai === 'DA_GIAO' ? 'Đã giao hàng' : 'Đã lấy hàng';
+    throw LoiNghiepVu.xungDot(`Đơn hàng đang ở trạng thái ${nhanTrangThai}, không thể tạo mã thanh toán QR`);
   }
   if (banGhiThanhToan?.TrangThai === 'HET_HAN' || hetHanThanhToanService.laQrHetHan(banGhiThanhToan)) {
     await hetHanThanhToanService.huyDonQrHetHan(banGhiThanhToan);
