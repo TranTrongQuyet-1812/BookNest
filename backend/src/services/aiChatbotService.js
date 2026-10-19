@@ -1106,12 +1106,13 @@ function loaiBoDinhDangMarkdown(vanBan) {
     .replace(/```[a-zA-Z0-9_-]*\n?([\s\S]*?)```/g, '$1')
     // Gỡ inline code `code`
     .replace(/`([^`\n]+)`/g, '$1')
-    // Gỡ in đậm **chữ** hoặc __chữ__
+    // Gỡ in đậm **chữ**
     .replace(/\*\*([^*\n]+?)\*\*/g, '$1')
-    .replace(/__([^_\n]+?)__/g, '$1')
-    // Gỡ in nghiêng *chữ* hoặc _chữ_ (chỉ gỡ khi bao quanh chữ, không gỡ dấu * có khoảng cách như 2 * 3)
-    .replace(/(?<!\*)\*(?!\s)([^*\n]+?)(?<!\s)\*(?!\*)/g, '$1')
-    .replace(/(?<!_)_(?!\s)([^_\n]+?)(?<!\s)_(?!_)/g, '$1')
+    // Các dấu _ và * còn lại chỉ gỡ khi đứng sát ranh giới từ (không dính chữ hay số ở phía ngoài).
+    // Nhờ vậy giữ nguyên email, link, tên có gạch dưới (cskh_booknest@...) và phép tính 5*3.
+    .replace(/(?<![\p{L}\p{N}_])__([^_\n]+?)__(?![\p{L}\p{N}_])/gu, '$1')
+    .replace(/(?<![\p{L}\p{N}*])\*(?!\s)([^*\n]+?)(?<!\s)\*(?![\p{L}\p{N}*])/gu, '$1')
+    .replace(/(?<![\p{L}\p{N}_])_(?!\s)([^_\n]+?)(?<!\s)_(?![\p{L}\p{N}_])/gu, '$1')
     // Gỡ tiêu đề markdown (# H1, ## H2, ### H3, ...) ở đầu dòng
     .replace(/^[ \t]*#{1,6}[ \t]+/gm, '')
     // Gỡ trích dẫn blockquote (> nội dung) ở đầu dòng
@@ -1215,8 +1216,8 @@ async function ghiNhatKyChatbot({ maKhachHang = null, khoaPhien = null, soToken 
  */
 async function layThongKeChatbotHomNay() {
   const tranNgay = await cauHinhHeThongService.docGiaTriSo(cauHinhHeThongService.KHOA_AI_TRAN_NGAY, 50000);
-  const hamLayToken = module.exports?.tinhTongTokenHomNay || tinhTongTokenHomNay;
-  const { tongToken, soLuot } = await hamLayToken();
+  // Gọi qua module.exports để test mock được (spyOn không chặn được lời gọi trực tiếp trong cùng file)
+  const { tongToken, soLuot } = await module.exports.tinhTongTokenHomNay();
   const conLai = Math.max(0, tranNgay - tongToken);
   const phanTramTieuThu = tranNgay > 0 ? Math.min(100, Math.round((tongToken / tranNgay) * 100)) : 0;
   return {
@@ -1243,8 +1244,7 @@ async function layThongKeChatbotHomNay() {
  */
 async function kiemTraTranNganSach(maKhachHang, khoaPhien) {
   const tranNgay = await cauHinhHeThongService.docGiaTriSo(cauHinhHeThongService.KHOA_AI_TRAN_NGAY, 50000);
-  const hamLayToken = module.exports?.tinhTongTokenHomNay || tinhTongTokenHomNay;
-  const { tongToken: tongTokenHomNay } = await hamLayToken();
+  const { tongToken: tongTokenHomNay } = await module.exports.tinhTongTokenHomNay();
 
   if (tranNgay > 0 && tongTokenHomNay >= tranNgay) {
     const traLoi = 'Trợ lý AI đã đạt hạn mức phục vụ trong ngày nhằm bảo vệ ngân sách hệ thống. Quý khách vui lòng quay lại vào ngày mai hoặc liên hệ trực tiếp nhân viên BookNest nhé!';
