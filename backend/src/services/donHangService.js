@@ -416,7 +416,7 @@ async function taoDonQuay(duLieu, maNhanVien) {
       }, { transaction: t });
     } else {
       // CHUYEN_KHOAN_QR: tạo bản ghi chờ thanh toán với hạn 5 phút và tạo link payOS
-      thongTinQR = await taoThanhToanQR(donHang, cacMon, { transaction: t });
+      thongTinQR = await taoThanhToanQR(donHang, danhSachChiTiet, { transaction: t });
     }
 
     await t.commit();
