@@ -1,6 +1,6 @@
 /**
  * Model Sequelize ánh xạ bảng ThanhToan trong cơ sở dữ liệu BookNestDB.
- * Quản lý phương thức và vòng đời thanh toán của đơn hàng (COD / Chuyển khoản VietQR payOS).
+ * Quản lý phương thức và vòng đời thanh toán của đơn hàng (COD / Chuyển khoản VietQR payOS / Tiền mặt tại quầy).
  */
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/ketNoiDb');
