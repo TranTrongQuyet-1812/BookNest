@@ -1,8 +1,37 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import LogoBookNest from './LogoBookNest';
+import api from '../services/api';
+
+// Danh sách danh mục chuẩn xác theo CSDL thật (dùng làm fallback an toàn)
+const DANH_MUC_CHUAN = [
+  { MaDanhMuc: 1, TenDanhMuc: 'Văn Học & Tiểu Thuyết' },
+  { MaDanhMuc: 2, TenDanhMuc: 'Trinh Thám & Kinh Dị' },
+  { MaDanhMuc: 7, TenDanhMuc: 'Kinh Tế & Kinh Doanh' },
+  { MaDanhMuc: 8, TenDanhMuc: 'Khoa Học & Tri Thức' }
+];
 
 export const Footer = () => {
+  const [danhMucList, setDanhMucList] = useState(DANH_MUC_CHUAN);
+
+  // Nạp danh mục động từ API thật
+  useEffect(() => {
+    let daHuy = false;
+    const taiDanhMuc = async () => {
+      try {
+        const res = await api.get('/categories');
+        const ds = (res.data?.data || []).filter(dm => (dm.soLuongSach || 0) > 0 || [1, 2, 7, 8].includes(dm.MaDanhMuc));
+        if (!daHuy && ds.length > 0) {
+          setDanhMucList(ds.slice(0, 4));
+        }
+      } catch {
+        // Giữ nguyên DANH_MUC_CHUAN nếu API lỗi
+      }
+    };
+    taiDanhMuc();
+    return () => { daHuy = true; };
+  }, []);
+
   return (
     <footer style={{
       backgroundColor: 'transparent',
@@ -54,26 +83,17 @@ export const Footer = () => {
               flexDirection: 'column', 
               gap: '0.55rem' 
             }}>
-              <li>
-                <Link to="/?categoryId=1" style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }} className="hover:underline">
-                  Văn Học & Tản Văn
-                </Link>
-              </li>
-              <li>
-                <Link to="/?categoryId=7" style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }} className="hover:underline">
-                  Kinh Tế & Kinh Doanh
-                </Link>
-              </li>
-              <li>
-                <Link to="/?categoryId=4" style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }} className="hover:underline">
-                  Thiếu Nhi & Tranh Truyện
-                </Link>
-              </li>
-              <li>
-                <Link to="/?categoryId=8" style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }} className="hover:underline">
-                  Khoa Học & Tri Thức
-                </Link>
-              </li>
+              {danhMucList.map((dm) => (
+                <li key={dm.MaDanhMuc}>
+                  <Link
+                    to={`/?categoryId=${dm.MaDanhMuc}`}
+                    style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }}
+                    className="hover:underline"
+                  >
+                    {dm.TenDanhMuc}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 

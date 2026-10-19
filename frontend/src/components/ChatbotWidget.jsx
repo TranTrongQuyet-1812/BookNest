@@ -851,9 +851,11 @@ export const ChatbotWidget = () => {
                   </div>
                 )}
 
-                <span style={{ fontSize: '0.68rem', color: 'var(--text-sub)', marginTop: '4px', padding: '0 4px' }}>
-                  {msg.thoiGian}
-                </span>
+                {msg.thoiGian ? (
+                  <span style={{ fontSize: '0.68rem', color: 'var(--text-sub)', marginTop: '4px', padding: '0 4px' }}>
+                    {msg.thoiGian}
+                  </span>
+                ) : null}
               </div>
             ))}
 
