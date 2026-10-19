@@ -632,7 +632,8 @@ export const QuanLyDonHang = () => {
                     </thead>
                     <tbody>
                       {(chiTietDon.chiTietDonHang || []).map((ct, idx) => {
-                        const thanhTien = (ct.SoLuong || 0) * (ct.GiaBanLucMua || 0);
+                        const donGia = Number(ct.DonGia ?? ct.GiaBanLucMua ?? 0);
+                        const thanhTien = (ct.SoLuong || 0) * donGia;
                         return (
                           <tr key={idx}>
                             <td>
@@ -644,7 +645,7 @@ export const QuanLyDonHang = () => {
                               </span>
                             </td>
                             <td style={{ textAlign: 'right' }} className="tabular-nums">
-                              {dinhDangTien(ct.GiaBanLucMua)}
+                              {dinhDangTien(donGia)}
                             </td>
                             <td style={{ textAlign: 'center', fontWeight: 600 }} className="tabular-nums">
                               {ct.SoLuong}
