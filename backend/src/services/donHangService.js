@@ -407,6 +407,11 @@ async function layChiTietDonHang(maDonHang) {
         model: NhanVien,
         as: 'nhanVienLap',
         attributes: ['MaNhanVien', 'HoTen', 'VaiTro']
+      },
+      {
+        model: ThanhToan,
+        as: 'thanhToan',
+        attributes: ['MaThanhToan', 'PhuongThuc', 'TrangThai', 'SoTien', 'NgayThanhToan']
       }
     ]
   });
@@ -507,9 +512,11 @@ async function khachHuyDon(maDonHang, maKhachHang, lyDo) {
     if (thanhToan) {
       if (thanhToan.TrangThai === 'CHO_THANH_TOAN') {
         await thanhToan.update({ TrangThai: 'DA_HUY' }, { transaction: t });
+        thanhToan.TrangThai = 'DA_HUY';
         canHuyLink = true;
       } else if (thanhToan.TrangThai === 'DA_THANH_TOAN') {
         await thanhToan.update({ TrangThai: 'CAN_HOAN_TIEN' }, { transaction: t });
+        thanhToan.TrangThai = 'CAN_HOAN_TIEN';
         canBaoHoanTien = true;
       }
     }
@@ -534,6 +541,9 @@ async function khachHuyDon(maDonHang, maKhachHang, lyDo) {
       } catch (errHuy) {}
     }
     const chiTietDon = await layChiTietDonHang(maDonHang);
+    if (thanhToan) {
+      chiTietDon.thanhToan = thanhToan;
+    }
     emailService.guiEmailCapNhatTrangThai(chiTietDon, 'DA_HUY', lyDo || 'Khách hàng tự hủy đơn').catch(err => console.error('[Lỗi Gửi Email Hủy Đơn]', err.message));
     baoNhanVienRealtime('donHang:capNhatTrangThai', {
       maDonHang: chiTietDon.MaDonHang,
@@ -658,7 +668,7 @@ async function adminCapNhatTrangThai(maDonHang, trangThaiMoi, ghiChu, maNhanVien
   const trangThaiCu = donHang.TrangThai;
   if (!kiemTraChuyenTrangThai(trangThaiCu, trangThaiMoi)) {
     throw LoiNghiepVu.xungDot(
-      'Không thể chuyển trạng thái không hợp lệ. Vui lòng đi theo thứ tự: Chờ duyệt, Đã duyệt, Đã lấy hàng, Đã giao hàng.'
+      'Không thể chuyển đơn sang trạng thái này. Vui lòng đi theo thứ tự: Chờ duyệt, Đã duyệt, Đã lấy hàng, Đã giao hàng.'
     );
   }
 
@@ -757,9 +767,11 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
     if (thanhToan) {
       if (thanhToan.TrangThai === 'CHO_THANH_TOAN') {
         await thanhToan.update({ TrangThai: 'DA_HUY' }, { transaction: t });
+        thanhToan.TrangThai = 'DA_HUY';
         canHuyLink = true;
       } else if (thanhToan.TrangThai === 'DA_THANH_TOAN') {
         await thanhToan.update({ TrangThai: 'CAN_HOAN_TIEN' }, { transaction: t });
+        thanhToan.TrangThai = 'CAN_HOAN_TIEN';
         canBaoHoanTien = true;
       }
     }
@@ -783,6 +795,9 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
       } catch (errHuy) {}
     }
     const chiTietDon = await layChiTietDonHang(maDonHang);
+    if (thanhToan) {
+      chiTietDon.thanhToan = thanhToan;
+    }
     emailService.guiEmailCapNhatTrangThai(chiTietDon, 'DA_HUY', lyDo).catch(err => console.error('[Lỗi Gửi Email Hủy Đơn]', err.message));
     baoNhanVienRealtime('donHang:capNhatTrangThai', {
       maDonHang,

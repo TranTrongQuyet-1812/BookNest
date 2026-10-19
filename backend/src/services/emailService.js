@@ -225,7 +225,7 @@ async function guiEmailCapNhatTrangThai(donHang, trangThaiMoi, ghiChuLyDo = '') 
 
   const bangTrangThai = {
     'CHO_DUYET': { ten: 'Chờ duyệt', mau: '#F59E0B', moTa: 'Đơn hàng đang chờ nhân viên tiếp nhận và duyệt.' },
-    'DA_DUYET': { ten: 'Đã duyệt', mau: '#3B82F6', moTa: 'Đơn hàng đã được duyệt và đang chuẩn bị.' },
+    'DA_DUYET': { ten: 'Đã duyệt', mau: '#3B82F6', moTa: 'Đơn hàng đã được duyệt và đang chuẩn bị.' }, // không gửi email ở bước này (T59)
     'DA_LAY_HANG': { ten: 'Đã lấy hàng', mau: '#8B5CF6', moTa: 'Kiện sách đã được đơn vị vận chuyển lấy khỏi kho và đang trên đường đến bạn.' },
     'DA_GIAO': { ten: 'Đã giao hàng', mau: '#10B981', moTa: 'Đơn hàng đã được giao trọn vẹn. Chúc bạn có những giờ phút đọc sách tuyệt vời!' },
     'DA_HUY': { ten: 'Đã hủy đơn hàng', mau: '#EF4444', moTa: 'Đơn hàng này đã bị hủy.' }
@@ -233,6 +233,21 @@ async function guiEmailCapNhatTrangThai(donHang, trangThaiMoi, ghiChuLyDo = '') 
 
   const thongTinTrangThai = bangTrangThai[trangThaiMoi] || { ten: trangThaiMoi, mau: '#64748B', moTa: '' };
   const tieuDe = `[BookNest] Cập nhật đơn hàng #${maHienThi}: ${thongTinTrangThai.ten}`;
+
+  // Kiểm tra nếu đơn hàng bị hủy là đơn thanh toán QR đã thanh toán / cần hoàn tiền
+  const thongTinThanhToan = donHang.thanhToan || donHang.ThanhToan;
+  const daThanhToanQr = trangThaiMoi === 'DA_HUY' &&
+    thongTinThanhToan &&
+    thongTinThanhToan.PhuongThuc === 'CHUYEN_KHOAN_QR' &&
+    ['DA_THANH_TOAN', 'CAN_HOAN_TIEN'].includes(thongTinThanhToan.TrangThai);
+
+  const thongBaoHoanTienHtml = daThanhToanQr
+    ? `<div style="margin-top: 10px; font-size: 13px; color: #047857; background-color: #ECFDF5; padding: 10px 14px; border-radius: 6px; border: 1px solid #A7F3D0;">💳 <strong>Lưu ý hoàn tiền:</strong> Khoản thanh toán của bạn sẽ được cửa hàng hoàn lại.</div>`
+    : '';
+
+  const thongBaoHoanTienText = daThanhToanQr
+    ? ' Khoản thanh toán của bạn sẽ được cửa hàng hoàn lại.'
+    : '';
 
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
@@ -252,6 +267,7 @@ async function guiEmailCapNhatTrangThai(donHang, trangThaiMoi, ghiChuLyDo = '') 
           <div style="font-size: 20px; font-weight: 800; color: ${thongTinTrangThai.mau}; margin: 4px 0;">${thongTinTrangThai.ten}</div>
           <div style="font-size: 13px; color: #475569; line-height: 1.5;">${thongTinTrangThai.moTa}</div>
           ${ghiChuLyDo ? `<div style="margin-top: 10px; font-size: 13px; color: #64748B;"><strong>Lý do / Ghi chú:</strong> ${ghiChuLyDo}</div>` : ''}
+          ${thongBaoHoanTienHtml}
         </div>
 
         <div style="font-size: 13px; color: #64748B; line-height: 1.6; border-top: 1px solid #F1F5F9; padding-top: 16px;">
@@ -271,7 +287,7 @@ async function guiEmailCapNhatTrangThai(donHang, trangThaiMoi, ghiChuLyDo = '') 
     nguoiNhan: emailNhan,
     tieuDe,
     html,
-    text: `Đơn hàng #${maHienThi} cập nhật trạng thái: ${thongTinTrangThai.ten}. ${ghiChuLyDo ? 'Lý do: ' + ghiChuLyDo : ''}`
+    text: `Đơn hàng #${maHienThi} cập nhật trạng thái: ${thongTinTrangThai.ten}. ${ghiChuLyDo ? 'Lý do: ' + ghiChuLyDo : ''}${thongBaoHoanTienText}`.trim()
   });
 }
 
