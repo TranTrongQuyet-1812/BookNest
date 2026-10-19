@@ -1090,6 +1090,36 @@ function chuanHoaNoiDungAI(noiDung) {
 }
 
 /**
+ * Loại bỏ các ký hiệu định dạng Markdown (**, *, __, backtick, # đầu dòng)
+ * khỏi câu trả lời của AI Chatbot trước khi gửi về cho khách hàng.
+ * Đảm bảo hiển thị văn bản thuần túy, lịch thiệp, không để lộ dấu sao hay ký tự thô.
+ * Giữ nguyên nội dung chữ, xuống dòng và không làm hỏng dấu * trong phép toán (ví dụ: 2 * 3) hay tên sách.
+ *
+ * @param {string} vanBan - Câu trả lời từ AI
+ * @returns {string} - Văn bản thuần túy đã gỡ markdown
+ */
+function loaiBoDinhDangMarkdown(vanBan) {
+  if (!vanBan || typeof vanBan !== 'string') return '';
+
+  return vanBan
+    // Gỡ các khối code block ```code```
+    .replace(/```[a-zA-Z0-9_-]*\n?([\s\S]*?)```/g, '$1')
+    // Gỡ inline code `code`
+    .replace(/`([^`\n]+)`/g, '$1')
+    // Gỡ in đậm **chữ** hoặc __chữ__
+    .replace(/\*\*([^*\n]+?)\*\*/g, '$1')
+    .replace(/__([^_\n]+?)__/g, '$1')
+    // Gỡ in nghiêng *chữ* hoặc _chữ_ (chỉ gỡ khi bao quanh chữ, không gỡ dấu * có khoảng cách như 2 * 3)
+    .replace(/(?<!\*)\*(?!\s)([^*\n]+?)(?<!\s)\*(?!\*)/g, '$1')
+    .replace(/(?<!_)_(?!\s)([^_\n]+?)(?<!\s)_(?!_)/g, '$1')
+    // Gỡ tiêu đề markdown (# H1, ## H2, ### H3, ...) ở đầu dòng
+    .replace(/^[ \t]*#{1,6}[ \t]+/gm, '')
+    // Gỡ trích dẫn blockquote (> nội dung) ở đầu dòng
+    .replace(/^[ \t]*>[ \t]+/gm, '')
+    .trim();
+}
+
+/**
  * Bóc tách Tool Call nếu LLM xuất chuỗi JSON vào message.content thay vì trường tool_calls
  * @param {string} noiDung
  * @returns {Array|null}
@@ -1185,7 +1215,8 @@ async function ghiNhatKyChatbot({ maKhachHang = null, khoaPhien = null, soToken 
  */
 async function layThongKeChatbotHomNay() {
   const tranNgay = await cauHinhHeThongService.docGiaTriSo(cauHinhHeThongService.KHOA_AI_TRAN_NGAY, 50000);
-  const { tongToken, soLuot } = await tinhTongTokenHomNay();
+  const hamLayToken = module.exports?.tinhTongTokenHomNay || tinhTongTokenHomNay;
+  const { tongToken, soLuot } = await hamLayToken();
   const conLai = Math.max(0, tranNgay - tongToken);
   const phanTramTieuThu = tranNgay > 0 ? Math.min(100, Math.round((tongToken / tranNgay) * 100)) : 0;
   return {
@@ -1212,7 +1243,8 @@ async function layThongKeChatbotHomNay() {
  */
 async function kiemTraTranNganSach(maKhachHang, khoaPhien) {
   const tranNgay = await cauHinhHeThongService.docGiaTriSo(cauHinhHeThongService.KHOA_AI_TRAN_NGAY, 50000);
-  const { tongToken: tongTokenHomNay } = await tinhTongTokenHomNay();
+  const hamLayToken = module.exports?.tinhTongTokenHomNay || tinhTongTokenHomNay;
+  const { tongToken: tongTokenHomNay } = await hamLayToken();
 
   if (tranNgay > 0 && tongTokenHomNay >= tranNgay) {
     const traLoi = 'Trợ lý AI đã đạt hạn mức phục vụ trong ngày nhằm bảo vệ ngân sách hệ thống. Quý khách vui lòng quay lại vào ngày mai hoặc liên hệ trực tiếp nhân viên BookNest nhé!';
@@ -1368,7 +1400,7 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, noiDungTin
       traLoi = traLoi || taoTraLoiMacDinhKhiRong(duLieuKemTheo);
 
       await ghiNhatKyChatbot({ maKhachHang, khoaPhien, soToken: tongTokensTieuThu, tenCongCu: danhSachToolDaGoi.join(',') || null, ketQua: 'THANH_CONG', nhaCungCap: nhaCungCapSuDung });
-      return { traLoi, duLieuKemTheo };
+      return { traLoi: loaiBoDinhDangMarkdown(traLoi), duLieuKemTheo };
     }
 
     // Thực thi các tool được yêu cầu
@@ -1377,7 +1409,7 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, noiDungTin
       const phanHoiTool = await dieuPhoiToolCall({ toolCall, noiDungTinNhan, sachHienTai, maKhachHang, khoaPhien, duLieuKemTheo, danhSachToolDaGoi, ipClient });
       if (phanHoiTool.traVeNgay) {
         await ghiNhatKyChatbot({ maKhachHang, khoaPhien, soToken: tongTokensTieuThu, tenCongCu: phanHoiTool.toolGhiNhan || danhSachToolDaGoi.join(','), ketQua: 'THANH_CONG', nhaCungCap: nhaCungCapSuDung });
-        return { traLoi: phanHoiTool.traLoi, duLieuKemTheo };
+        return { traLoi: loaiBoDinhDangMarkdown(phanHoiTool.traLoi), duLieuKemTheo };
       }
       messages.push({ role: 'tool', tool_call_id: toolCall.id, content: JSON.stringify(phanHoiTool.ketQuaTool) });
     }
@@ -1392,7 +1424,7 @@ async function xuLyHoiThoaiAI({ lichSuChat = [], tinNhanMoi, tinNhan, noiDungTin
   traLoiCuoi = traLoiCuoi || taoTraLoiMacDinhKhiRong(duLieuKemTheo, 'Dạ, bạn có cần BookNest tư vấn thêm thông tin nào nữa không ạ?');
 
   await ghiNhatKyChatbot({ maKhachHang, khoaPhien, soToken: tongTokensTieuThu, tenCongCu: danhSachToolDaGoi.join(',') || null, ketQua: 'THANH_CONG', nhaCungCap: nhaCungCapSuDung });
-  return { traLoi: traLoiCuoi, duLieuKemTheo };
+  return { traLoi: loaiBoDinhDangMarkdown(traLoiCuoi), duLieuKemTheo };
 }
 
 module.exports = {
@@ -1400,6 +1432,7 @@ module.exports = {
   taoLoiNhacHeThong,
   DANH_SACH_CONG_CU,
   chuanHoaNoiDungAI,
+  loaiBoDinhDangMarkdown,
   thucThiTimSach,
   thucThiKiemTraTonKho,
   thucThiSoanThanhToan,

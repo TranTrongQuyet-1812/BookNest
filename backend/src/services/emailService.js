@@ -266,7 +266,7 @@ async function guiEmailCapNhatTrangThai(donHang, trangThaiMoi, ghiChuLyDo = '') 
           <div style="font-size: 12px; font-weight: 600; color: #64748B; text-transform: uppercase;">Trạng thái hiện tại</div>
           <div style="font-size: 20px; font-weight: 800; color: ${thongTinTrangThai.mau}; margin: 4px 0;">${thongTinTrangThai.ten}</div>
           <div style="font-size: 13px; color: #475569; line-height: 1.5;">${thongTinTrangThai.moTa}</div>
-          ${ghiChuLyDo ? `<div style="margin-top: 10px; font-size: 13px; color: #64748B;"><strong>Lý do / Ghi chú:</strong> ${ghiChuLyDo}</div>` : ''}
+          ${ghiChuLyDo ? `<div style="margin-top: 10px; font-size: 13px; color: #64748B;"><strong>Lý do / Ghi chú:</strong> ${ghiChuLyDo.trim()}${/[.!?]$/.test(ghiChuLyDo.trim()) ? '' : '.'}</div>` : ''}
           ${thongBaoHoanTienHtml}
         </div>
 
@@ -283,11 +283,18 @@ async function guiEmailCapNhatTrangThai(donHang, trangThaiMoi, ghiChuLyDo = '') 
     </div>
   `;
 
+  let phanGhiChuText = '';
+  if (ghiChuLyDo && ghiChuLyDo.trim()) {
+    const lyDoChuan = ghiChuLyDo.trim();
+    const chamCau = /[.!?]$/.test(lyDoChuan) ? '' : '.';
+    phanGhiChuText = ` Lý do: ${lyDoChuan}${chamCau}`;
+  }
+
   return guiMail({
     nguoiNhan: emailNhan,
     tieuDe,
     html,
-    text: `Đơn hàng #${maHienThi} cập nhật trạng thái: ${thongTinTrangThai.ten}. ${ghiChuLyDo ? 'Lý do: ' + ghiChuLyDo : ''}${thongBaoHoanTienText}`.trim()
+    text: `Đơn hàng #${maHienThi} cập nhật trạng thái: ${thongTinTrangThai.ten}.${phanGhiChuText}${thongBaoHoanTienText}`.trim()
   });
 }
 
