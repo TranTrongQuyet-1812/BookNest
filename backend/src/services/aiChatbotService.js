@@ -73,15 +73,13 @@ Quy tắc ứng xử cốt lõi:
 1. Luôn giao tiếp bằng tiếng Việt tự nhiên, thân thiện, lễ phép và lịch sự.
 2. Khi khách hàng chỉ chào hỏi xã giao (ví dụ: "chào bạn", "hello", "hi", "bạn là ai", "chào shop"...), hãy chào lại niềm nở và hỏi khách cần tìm sách hay kiểm tra đơn hàng gì, TUYỆT ĐỐI KHÔNG gọi bất kỳ công cụ tìm kiếm nào.
 3. Bạn CHỈ tư vấn về sách, đơn hàng, hướng dẫn mua sắm và chính sách của nhà sách BookNest. Với các chủ đề ngoài luồng (lập trình, giải toán, chính trị, tâm sự đời sống...), hãy từ chối lịch sự và hướng khách hàng về việc đọc sách.
-4. QUY TẮC BẮT BUỘC KHI TÌM KIẾM & MUA SÁCH (KỂ CẢ KHI NGHI NGỜ / SAI CHÍNH TẢ / KHÔNG DẤU / GÕ MỘT NỬA TÊN):
-   - BẮT BUỘC GỌI CÔNG CỤ: Khi khách hàng nhắc đến tên sách, tác giả, hoặc muốn mua bất kỳ cuốn sách nào, BẠN BẮT BUỘC PHẢI GỌI CÔNG CỤ "tim_sach" TRƯỚC TIÊN. TUYỆT ĐỐI KHÔNG tự ý trả lời trực tiếp hoặc tự bịa ra thông tin sách khi chưa gọi công cụ tim_sach.
-   - KHI CÔNG CỤ tim_sach TRẢ VỀ KẾT QUẢ GỢI Ý (khi canXacNhan = true, hoặc tên sách không khớp 100% từng chữ với câu của khách):
-     + BẠN PHẢI DÙNG CHÍNH XÁC TÊN SÁCH, TÁC GIẢ VÀ GIÁ BÁN TỪ KẾT QUẢ CÔNG CỤ ĐỂ HỎI XÁC NHẬN VỚI KHÁCH:
-       "Dạ, có phải bạn đang muốn tìm cuốn sách '[Tên sách từ công cụ]' của tác giả [Tác giả từ công cụ], giá [Giá bán từ công cụ]đ không ạ?"
-       (Ví dụ cụ thể: "Dạ, có phải bạn đang muốn tìm cuốn sách 'Vòng quanh thế giới - Israel' của tác giả Nguyễn Hào Tuấn Huỳnh, giá 12.000đ không ạ?")
-     + TUYỆT ĐỐI KHÔNG in dấu ba chấm (...), không in "Tác giả: ...", "Giá: ...đ" hay "Đang cập nhật" nếu công cụ đã trả về thông tin thật!
-     + TUYỆT ĐỐI KHÔNG tự tiện thêm sách vào giỏ hàng ngay lúc này khi khách chưa xác nhận!
-     + TUYỆT ĐỐI KHÔNG bảo là "không tìm thấy" khi kho đã tìm ra cuốn sách gợi ý phù hợp nhất!
+4. QUY TẮC TRẢ LỜI THẲNG KHI TÌM KIẾM, HỎI GIÁ, GỢI Ý & TỒN KHO:
+   - BẮT BUỘC GỌI CÔNG CỤ: Khi khách hàng nhắc đến tên sách, tác giả, thể loại, khoảng giá, hoặc muốn tìm kiếm hay mua sách, BẠN BẮT BUỘC PHẢI GỌI CÔNG CỤ "tim_sach" hoặc "kiem_tra_ton_kho" TRƯỚC TIÊN. TUYỆT ĐỐI KHÔNG tự bịa ra thông tin sách khi chưa gọi công cụ.
+   - TRẢ LỜI THẲNG THEO Ý ĐỊNH CỦA KHÁCH HÀNG:
+     a) Khi khách HỎI GIÁ: Nêu thẳng giá bán của sách (nếu đang giảm giá thì nêu rõ giá sau giảm và mức giảm, ví dụ: "Dạ cuốn sách 'X' hiện có giá ưu đãi là 50.000đ (đang giảm 20% từ giá niêm yết 62.500đ) ạ"), đồng thời nêu rõ tình trạng còn hay hết hàng. TUYỆT ĐỐI KHÔNG hỏi ngược "có phải bạn đang muốn tìm...".
+     b) Khi khách XIN GỢI Ý hoặc HỎI THEO TÁC GIẢ, THỂ LOẠI, KHOẢNG GIÁ: Liệt kê rõ ràng 3–5 cuốn sách phù hợp kèm giá bán từng cuốn, mời khách xem các thẻ sách bên dưới khung chat để biết thêm chi tiết. TUYỆT ĐỐI KHÔNG hỏi ngược "có phải bạn đang muốn tìm...".
+     c) Khi khách HỎI CÒN HÀNG KHÔNG / TỒN KHO: Trả lời thẳng sách còn hay hết hàng, kèm số lượng tồn kho nếu có (ví dụ: "Dạ cuốn 'X' hiện vẫn còn hàng trong kho (còn 15 cuốn) với giá 50.000đ bạn nhé!"). TUYỆT ĐỐI KHÔNG hỏi ngược "có phải bạn đang muốn tìm...".
+     d) CHỈ HỎI XÁC NHẬN "Dạ, có phải bạn đang muốn tìm cuốn sách '[Tên sách]'..." KHI VÀ CHỈ KHI: khách hàng có ý định MUỐN MUA / THÊM GIỎ / LÊN ĐƠN mà tên sách khách gõ chưa khớp chính xác 100% với tên sách trong kho.
    - CHỈ KHI khách hàng đã xác nhận đúng cuốn sách (ví dụ: "đúng rồi", "chuẩn rồi", "lấy tôi cuốn đó", hoặc khách trả lời số lượng sau câu hỏi xác nhận), bạn mới gọi công cụ them_vao_gio_hang (nếu là User) hoặc in mẫu thông tin nhận hàng (nếu là Guest).
 5. QUY TẮC MUA SÁCH (CHỐT ĐƠN / THÊM GIỎ HÀNG) - PHÂN BIỆT THEO ĐỐI TƯỢNG KHÁCH:
    a) ĐỐI VỚI KHÁCH VÃNG LAI (GUEST - CHƯA ĐĂNG NHẬP):
@@ -389,9 +387,21 @@ async function thucThiTimSach({ tu_khoa, the_loai, gia_toi_da }, tinNhanGoc = ''
       ? `Giá ưu đãi: ${giaFmt}đ (đang giảm ${ptDau}% từ ${giaGocFmt}đ)`
       : `Giá: ${giaFmt}đ`;
     const tacGiaFmt = sachDau.TacGia || 'Đang cập nhật';
-    const thongDiep = canXacNhan
-      ? `GỢI Ý TÌM KIẾM GẦN ĐÚNG: Tìm thấy cuốn sách phù hợp nhất là "${sachDau.TenSach}" (Tác giả: ${tacGiaFmt}, ${chuoiGiaDau}). Vì khách hàng gõ sai chính tả, không dấu hoặc chỉ gõ một phần tên, BẠN PHẢI HỎI XÁC NHẬN VỚI KHÁCH BẰNG CÂU: "Dạ, có phải bạn đang muốn tìm cuốn sách '${sachDau.TenSach}' (Tác giả: ${tacGiaFmt}, ${chuoiGiaDau}) không ạ?" trước khi thêm vào giỏ hoặc lên đơn.`
-      : `Đã tìm thấy chính xác cuốn sách: "${sachDau.TenSach}" (Tác giả: ${tacGiaFmt}, ${chuoiGiaDau}).`;
+    const tinhTrangKhoDau = sachDau.SoLuongTon > 0 ? `còn hàng (còn ${sachDau.SoLuongTon} cuốn)` : 'tạm hết hàng';
+    let thongDiep = '';
+
+    if (danhSach.length === 1) {
+      thongDiep = `Tìm thấy cuốn sách: "${sachDau.TenSach}" (Tác giả: ${tacGiaFmt}, ${chuoiGiaDau}, Tình trạng: ${tinhTrangKhoDau}).\n- Nếu khách hỏi giá, hỏi tồn kho, hỏi tác giả hoặc tìm sách: Hãy trả lời thẳng thông tin trên kèm tình trạng còn/hết hàng.\n- CHỈ hỏi xác nhận "Dạ, có phải bạn đang muốn tìm cuốn sách '${sachDau.TenSach}' không ạ?" khi khách thể hiện ý định MUỐN MUA / THÊM GIỎ / LÊN ĐƠN mà tên sách chưa khớp chính xác 100%.`;
+    } else {
+      const tomTatDs = danhSach.map((s, idx) => {
+        const pt = banDoGiamGia[s.MaSach] || 0;
+        const gSau = tinhGiaSauGiam(s.GiaBan, pt);
+        const gFmt = gSau.toLocaleString('vi-VN');
+        const ttKho = s.SoLuongTon > 0 ? 'còn hàng' : 'tạm hết hàng';
+        return `${idx + 1}. "${s.TenSach}" - Tác giả: ${s.TacGia || 'Đang cập nhật'} - Giá: ${gFmt}đ (${ttKho})`;
+      }).join('\n');
+      thongDiep = `Tìm thấy ${danhSach.length} cuốn sách phù hợp:\n${tomTatDs}\nHãy liệt kê các tựa sách trên kèm giá bán cho khách hàng và mời khách xem các thẻ sách bên dưới khung chat. TUYỆT ĐỐI KHÔNG hỏi ngược "có phải bạn đang muốn tìm".`;
+    }
 
     return {
       timThay: true,
@@ -1066,19 +1076,16 @@ async function tuDongBuDapDuLieuSach({ traLoi, noiDungTinNhan, sachHienTai, duLi
         const giaFmt = new Intl.NumberFormat('vi-VN').format(s0.giaBan);
         const tacGiaFmt = s0.tacGia || 'Đang cập nhật';
 
-        // Tự động thay thế nếu câu trả lời bị dính placeholder ba chấm rác hoặc thiếu tác giả/giá
-        if (traLoiMoi.includes('...') || traLoiMoi.includes('(Tác giả:') || !traLoiMoi.includes(tacGiaFmt)) {
-          if (traLoiMoi.includes('(Tác giả:')) {
-            traLoiMoi = traLoiMoi.replace(/\(Tác giả:[^)]*?\)/gi, `(Tác giả: ${tacGiaFmt}, Giá: ${giaFmt}đ)`);
-          }
-          if (traLoiMoi.includes('...') || !traLoiMoi.includes(tacGiaFmt)) {
-            traLoiMoi = `Dạ, có phải bạn đang muốn tìm cuốn sách "${s0.tenSach}" (Tác giả: ${tacGiaFmt}, Giá: ${giaFmt}đ) không ạ?`;
-          }
+        // Tự động làm sạch placeholder ba chấm hoặc cập nhật tác giả/giá nếu dính định dạng cũ
+        if (traLoiMoi.includes('(Tác giả:')) {
+          traLoiMoi = traLoiMoi.replace(/\(Tác giả:[^)]*?\)/gi, `(Tác giả: ${tacGiaFmt}, Giá: ${giaFmt}đ)`);
+        }
+        if (traLoiMoi.includes('...')) {
+          traLoiMoi = traLoiMoi.replace(/\.\.\./g, '');
         }
       }
     }
   } else if (duLieuKemTheo.danhSachSach && duLieuKemTheo.danhSachSach.length > 0) {
-    // Nếu đã có danhSachSach từ tool tim_sach nhưng câu trả lời của AI vẫn bị dính placeholder (...)
     const s0 = duLieuKemTheo.danhSachSach[0];
     const giaFmt = new Intl.NumberFormat('vi-VN').format(s0.giaBan);
     const tacGiaFmt = s0.tacGia || 'Đang cập nhật';
@@ -1086,8 +1093,8 @@ async function tuDongBuDapDuLieuSach({ traLoi, noiDungTinNhan, sachHienTai, duLi
     if (traLoiMoi.includes('(Tác giả:')) {
       traLoiMoi = traLoiMoi.replace(/\(Tác giả:[^)]*?\)/gi, `(Tác giả: ${tacGiaFmt}, Giá: ${giaFmt}đ)`);
     }
-    if (traLoiMoi.includes('...') && traLoiMoi.includes('cuốn sách')) {
-      traLoiMoi = `Dạ, có phải bạn đang muốn tìm cuốn sách "${s0.tenSach}" (Tác giả: ${tacGiaFmt}, Giá: ${giaFmt}đ) không ạ?`;
+    if (traLoiMoi.includes('...')) {
+      traLoiMoi = traLoiMoi.replace(/\.\.\./g, '');
     }
   }
 
@@ -1221,7 +1228,13 @@ function taoTraLoiMacDinhKhiRong(duLieuKemTheo, macDinhCuoi = 'Dạ, tôi có th
     return 'Dạ, tôi đã chuẩn bị xong thông tin thanh toán cho bạn rồi ạ. Bạn có thể nhấn vào nút "Mở trang thanh toán" bên dưới để hoàn tất đơn hàng nhé!';
   }
   if (duLieuKemTheo.danhSachSach && duLieuKemTheo.danhSachSach.length > 0) {
-    return `Dạ, có phải bạn đang muốn tìm cuốn sách "${duLieuKemTheo.danhSachSach[0].tenSach}" không ạ?`;
+    const s0 = duLieuKemTheo.danhSachSach[0];
+    const giaFmt = Number(s0.giaBan).toLocaleString('vi-VN');
+    const ttKho = s0.conHang ? 'đang còn hàng' : 'tạm hết hàng';
+    if (duLieuKemTheo.danhSachSach.length === 1) {
+      return `Dạ, cuốn sách "${s0.tenSach}" (Tác giả: ${s0.tacGia || 'Đang cập nhật'}) hiện có giá ${giaFmt}đ và ${ttKho} tại BookNest. Bạn có thể xem chi tiết ở thẻ sách bên dưới nhé!`;
+    }
+    return `Dạ, tôi tìm thấy một số cuốn sách phù hợp với yêu cầu của bạn. Bạn vui lòng xem chi tiết từng cuốn ở các thẻ sách bên dưới nhé!`;
   }
   return macDinhCuoi;
 }
