@@ -10,7 +10,12 @@ const xacThucToken = require('../middlewares/xacThucToken');
 const phanQuyen = require('../middlewares/phanQuyen');
 const kiemTraDuLieu = require('../middlewares/kiemTraDuLieu');
 
+const taoKiemTraMaSo = require('../middlewares/kiemTraMaSo');
+
 const router = express.Router();
+
+// Mã trên đường dẫn phải là số nguyên dương hợp lệ, sai thì 400 thay vì 500
+router.param('bookId', taoKiemTraMaSo('sách'));
 
 // Tất cả các route giỏ hàng đều yêu cầu đăng nhập với vai trò khach_hang
 router.use(xacThucToken, phanQuyen('khach_hang'));

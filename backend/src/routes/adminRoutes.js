@@ -17,7 +17,12 @@ const aiChatbotController = require('../controllers/aiChatbotController');
 const danhGiaController = require('../controllers/danhGiaController');
 const thanhToanController = require('../controllers/thanhToanController');
 
+const taoKiemTraMaSo = require('../middlewares/kiemTraMaSo');
+
 const router = express.Router();
+
+// Mã trên đường dẫn phải là số nguyên dương hợp lệ, sai thì 400 thay vì 500
+router.param('id', taoKiemTraMaSo(''));
 
 // ==========================================
 // 1. Quản lý sách phía Back-Office (T10)

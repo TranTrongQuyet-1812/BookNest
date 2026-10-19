@@ -9,7 +9,12 @@ const xacThucToken = require('../middlewares/xacThucToken');
 const phanQuyen = require('../middlewares/phanQuyen');
 const kiemTraDuLieu = require('../middlewares/kiemTraDuLieu');
 
+const taoKiemTraMaSo = require('../middlewares/kiemTraMaSo');
+
 const router = express.Router();
+
+// Mã trên đường dẫn phải là số nguyên dương hợp lệ, sai thì 400 thay vì 500
+router.param('id', taoKiemTraMaSo('danh mục'));
 
 // Schema kiểm tra tạo danh mục
 const luatDanhMuc = Joi.object({
