@@ -444,8 +444,12 @@ export const QuanLyDonHang = () => {
                               <span style={{ color: '#DC2626', fontWeight: 700 }}>⚠️ VietQR: Cần hoàn tiền</span>
                             ) : don.thanhToan.TrangThai === 'CHO_THANH_TOAN' ? (
                               <span style={{ color: '#D97706', fontWeight: 600 }}>⏳ VietQR: Chờ thanh toán</span>
+                            ) : don.thanhToan.TrangThai === 'DA_HOAN_TIEN' ? (
+                              <span style={{ color: '#059669', fontWeight: 600 }}>✓ VietQR: Đã hoàn tiền</span>
+                            ) : don.thanhToan.TrangThai === 'DA_HUY' ? (
+                              <span style={{ color: 'var(--adm-text-muted)' }}>✕ VietQR: Đã hủy</span>
                             ) : (
-                              <span style={{ color: 'var(--adm-text-muted)' }}>VietQR: {don.thanhToan.TrangThai}</span>
+                              <span style={{ color: 'var(--adm-text-muted)' }}>VietQR: {don.thanhToan.TrangThai === 'THAT_BAI' ? 'Thất bại' : don.thanhToan.TrangThai === 'HET_HAN' ? 'Hết hạn' : don.thanhToan.TrangThai}</span>
                             )
                           ) : (
                             <span style={{ color: 'var(--adm-text-muted)' }}>COD (Tiền mặt)</span>
