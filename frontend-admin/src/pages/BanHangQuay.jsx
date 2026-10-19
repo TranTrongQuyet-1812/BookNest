@@ -30,7 +30,7 @@ const THONG_TIN_CUA_HANG = {
   khauHieu: 'Từng trang sách, một thế giới',
   diaChi: 'Số 123 Đường Sách, Phường Bến Nghé, Quận 1, TP. HCM',
   hotline: '1900 6868 - 028 3822 9999',
-  website: 'www.booknest.vn'
+  website: 'booknest.lhutech.click'
 };
 
 const dinhDangTien = (gia) => new Intl.NumberFormat('vi-VN', { 
@@ -172,6 +172,7 @@ export default function BanHangQuay() {
           tb.thanhCong('Khách hàng đã thanh toán QR thành công!');
           api.get(`/admin/counter-orders/${donDangChoQR.id}`)
             .then(res => {
+              setThongTinTienMatVuaBan(null);
               setDonVuaBan(res.data.data);
               setDonDangChoQR(null);
             })
@@ -197,6 +198,7 @@ export default function BanHangQuay() {
         const res = await api.get(`/admin/counter-orders/${donDangChoQR.id}`);
         if (res.data?.data?.TrangThai === 'DA_GIAO') {
           tb.thanhCong('Khách hàng đã thanh toán QR thành công!');
+          setThongTinTienMatVuaBan(null);
           setDonVuaBan(res.data.data);
           setDonDangChoQR(null);
         } else if (res.data?.data?.TrangThai === 'DA_HUY') {
@@ -271,6 +273,8 @@ export default function BanHangQuay() {
         setDonVuaBan(donTao);
         tb.thanhCong('Bán hàng tại quầy thành công!');
       } else {
+        setThongTinTienMatVuaBan(null);
+        setTienKhachDua('');
         setDonDangChoQR({
           id: donTao.MaDonHang,
           maTraCuu: donTao.MaTraCuu,
@@ -806,7 +810,7 @@ export default function BanHangQuay() {
 
       {/* Modal Hóa Đơn Bán Lẻ POS 80mm */}
       {donVuaBan && (
-        <div className="bo-modal-backdrop" role="presentation" onClick={() => setDonVuaBan(null)}>
+        <div className="bo-modal-backdrop" role="presentation" onClick={() => { setDonVuaBan(null); setThongTinTienMatVuaBan(null); }}>
           <section 
             className="bo-receipt-80mm" 
             role="dialog" 
@@ -816,7 +820,7 @@ export default function BanHangQuay() {
           >
             {/* Thanh nút bấm no-print */}
             <div className="receipt-actions no-print" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.45rem', marginBottom: '0.75rem' }}>
-              <button className="bo-quiet-button" onClick={() => setDonVuaBan(null)}>Đóng</button>
+              <button className="bo-quiet-button" onClick={() => { setDonVuaBan(null); setThongTinTienMatVuaBan(null); }}>Đóng</button>
               <button className="bo-primary-button" onClick={() => window.print()}>
                 <Printer size={16}/> In hóa đơn
               </button>
@@ -889,7 +893,7 @@ export default function BanHangQuay() {
               </div>
 
               {/* Tiền khách đưa & tiền thừa (chỉ hiển thị khi vừa bán tiền mặt xong) */}
-              {thongTinTienMatVuaBan && (
+              {donVuaBan.thanhToan?.PhuongThuc === 'TIEN_MAT' && thongTinTienMatVuaBan && (
                 <>
                   <div className="receipt-total-row">
                     <span>Tiền khách đưa:</span>
