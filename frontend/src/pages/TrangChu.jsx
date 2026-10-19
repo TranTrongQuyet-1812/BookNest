@@ -47,7 +47,7 @@ const DANH_NGON_SACH = [
 ];
 
 // Whitelist các kiểu sắp xếp hợp lệ được hỗ trợ bởi hệ thống
-const CAC_KIEU_SAP_XEP_HOP_LE = ['newest', 'price_asc', 'price_desc', 'random'];
+const CAC_KIEU_SAP_XEP_HOP_LE = ['newest', 'price_asc', 'price_desc', 'random', 'discount_desc'];
 
 export const TrangChu = () => {
   const { themVaoGio } = useCartStore();
@@ -229,7 +229,7 @@ export const TrangChu = () => {
 
         const [resManga, resDeal, resTacGia, resVanHoc, resRandom] = await Promise.all([
           catManga ? api.get('/books', { params: { limit: 12, categoryId: catManga.MaDanhMuc } }) : Promise.resolve({ data: { data: { danhSach: [] } } }),
-          api.get('/books', { params: { limit: 12, sort: 'price_asc' } }),
+          api.get('/books', { params: { limit: 12, sort: 'discount_desc' } }),
           tacGiaTieuDiem ? api.get('/books', { params: { limit: 12, search: tacGiaTieuDiem } }) : api.get('/books', { params: { limit: 12, sort: 'newest' } }),
           catVanHoc ? api.get('/books', { params: { limit: 12, categoryId: catVanHoc.MaDanhMuc } }) : Promise.resolve({ data: { data: { danhSach: [] } } }),
           api.get('/books', { params: { limit: 12, page: randomPage } })
@@ -293,7 +293,7 @@ export const TrangChu = () => {
       // Nếu có kiểu sắp xếp trên URL nhưng không thuộc whitelist hợp lệ -> báo lỗi minh bạch, không fallback ngầm
       if (kieuSapXepRaw && !kieuSapXepHopLe) {
         setDangTaiLoc(false);
-        setLoiLoc(`Kiểu sắp xếp "${kieuSapXepRaw}" không hợp lệ. Vui lòng chọn một trong các kiểu: Mới nhất, Giá tăng dần, Giá giảm dần hoặc Gợi ý ngẫu nhiên.`);
+        setLoiLoc(`Kiểu sắp xếp "${kieuSapXepRaw}" không hợp lệ. Vui lòng chọn một trong các kiểu: Mới nhất, Giảm giá nhiều nhất, Giá tăng dần, Giá giảm dần hoặc Gợi ý ngẫu nhiên.`);
         return;
       }
 
@@ -581,13 +581,15 @@ export const TrangChu = () => {
                 onThemVaoGio={handleThemVaoGio}
               />
 
-              {/* Kệ 3: Góc Săn Deal - Giá Tốt Mỗi Ngày */}
-              <KeSachCuonNgang
-                tieuDe="Góc Săn Deal - Giá Tốt Mỗi Ngày"
-                linkXemThem="/?sort=price_asc"
-                danhSachSach={sachDeal}
-                onThemVaoGio={handleThemVaoGio}
-              />
+              {/* Kệ 3: Góc Săn Deal - Giảm Giá Cực Sốc (Chỉ hiển thị khi có sách giảm giá thật) */}
+              {sachDeal && sachDeal.length > 0 && (
+                <KeSachCuonNgang
+                  tieuDe="Góc Săn Deal - Giảm Giá Cực Sốc"
+                  linkXemThem="/?sort=discount_desc"
+                  danhSachSach={sachDeal}
+                  onThemVaoGio={handleThemVaoGio}
+                />
+              )}
 
               {/* Kệ 4: Tác Giả Tiêu Điểm */}
               <KeSachCuonNgang
@@ -654,6 +656,7 @@ export const TrangChu = () => {
               {tuKhoaTimKiem ? `Tìm kiếm: "${tuKhoaTimKiem}"` : (
                 danhMucId ? (tenDanhMucHienTai || 'Danh Mục Sách') : (
                   kieuSapXep === 'newest' ? 'Sách Mới Phát Hành' :
+                  kieuSapXep === 'discount_desc' ? 'Góc Săn Deal - Giảm Giá Cực Sốc' :
                   kieuSapXep === 'price_asc' ? 'Ưu Đãi Giá Tốt Nhất' :
                   kieuSapXep === 'price_desc' ? 'Tác Phẩm Đặc Tuyển' :
                   kieuSapXep === 'random' ? 'Gợi Ý Đọc Sách Hôm Nay' :

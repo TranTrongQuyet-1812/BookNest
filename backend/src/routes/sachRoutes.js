@@ -21,7 +21,7 @@ const luatTruyVanSach = Joi.object({
   categoryId: Joi.number().integer().positive(),
   minPrice: Joi.number().min(0),
   maxPrice: Joi.number().min(0),
-  sort: Joi.string().valid('price_asc', 'price_desc', 'newest').default('newest')
+  sort: Joi.string().valid('price_asc', 'price_desc', 'newest', 'discount_desc').default('newest')
 }).custom((value, helpers) => {
   if (value.minPrice !== undefined && value.maxPrice !== undefined && value.minPrice > value.maxPrice) {
     return helpers.message('Giá tối thiểu (minPrice) không được lớn hơn giá tối đa (maxPrice)');
@@ -155,7 +155,7 @@ const luatDieuChinhKho = Joi.object({
  *         name: sort
  *         schema:
  *           type: string
- *           enum: [price_asc, price_desc, newest]
+ *           enum: [price_asc, price_desc, newest, discount_desc]
  *           default: newest
  *         description: Tiêu chí sắp xếp
  *     responses:

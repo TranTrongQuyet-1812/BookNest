@@ -73,6 +73,14 @@ async function layDanhSachSach({
   let sapXep = [['NgayTao', 'DESC']];
   if (sort === 'price_asc') sapXep = [[sequelize.literal(bieuThucGiaSauGiam), 'ASC']];
   if (sort === 'price_desc') sapXep = [[sequelize.literal(bieuThucGiaSauGiam), 'DESC']];
+  if (sort === 'discount_desc') {
+    const dieuKienGiam = sequelize.literal(`${bieuThucPhanTramGiam} > 0`);
+    dieuKien[Op.and] = dieuKien[Op.and] ? [...dieuKien[Op.and], dieuKienGiam] : [dieuKienGiam];
+    sapXep = [
+      [sequelize.literal(bieuThucPhanTramGiam), 'DESC'],
+      [sequelize.literal(bieuThucGiaSauGiam), 'ASC']
+    ];
+  }
 
   const { rows, count } = await Sach.findAndCountAll({
     where: dieuKien,

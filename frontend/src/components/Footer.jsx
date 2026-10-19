@@ -60,8 +60,8 @@ export const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/?categoryId=2" style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }} className="hover:underline">
-                  Kinh Tế & Kỹ Năng
+                <Link to="/?categoryId=7" style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }} className="hover:underline">
+                  Kinh Tế & Kinh Doanh
                 </Link>
               </li>
               <li>

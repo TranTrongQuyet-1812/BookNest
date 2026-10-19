@@ -72,6 +72,10 @@ const chuanHoaNoiDungAI = (noiDung) => {
   return trimmed;
 };
 
+let demIdTinNhan = 0;
+const taoIdTinNhan = (tienTo = 'msg') => `${tienTo}_${Date.now()}_${++demIdTinNhan}`;
+const layGioHienTai = () => new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
 export const ChatbotWidget = () => {
   const navigate = useNavigate();
   const { themVaoGio } = useCartStore();
@@ -97,7 +101,7 @@ export const ChatbotWidget = () => {
         id: 'msg_chao',
         role: 'assistant',
         content: 'Xin chào bạn đọc! Tôi là BookNest AI 📚\nTôi có thể giúp bạn tìm sách theo thể loại, kiểm tra tồn kho thật, hỗ trợ soạn đơn hoặc tra cứu mã đơn hàng BN-XXXXXX.\n\nHôm nay bạn muốn tìm cuốn sách nào?',
-        thoiGian: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        thoiGian: '',
         duLieuKemTheo: null
       }
     ];
@@ -133,10 +137,10 @@ export const ChatbotWidget = () => {
   const handleLamMoi = () => {
     const tinMoi = [
       {
-        id: 'msg_' + Date.now(),
+        id: taoIdTinNhan('msg'),
         role: 'assistant',
         content: 'Tôi đã làm mới cuộc trò chuyện. Bạn muốn tìm sách hoặc kiểm tra thông tin gì cùng BookNest AI?',
-        thoiGian: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        thoiGian: layGioHienTai(),
         duLieuKemTheo: null
       }
     ];
@@ -164,10 +168,10 @@ export const ChatbotWidget = () => {
     setTrangThaiDangXuLy(thongBao);
 
     const tinNhanUser = {
-      id: 'msg_user_' + Date.now(),
+      id: taoIdTinNhan('msg_user'),
       role: 'user',
       content: textCanGui,
-      thoiGian: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+      thoiGian: layGioHienTai()
     };
 
     const lichSuCapNhat = [...danhSachTinNhan, tinNhanUser];
@@ -190,10 +194,10 @@ export const ChatbotWidget = () => {
 
       const duLieuPhanHoi = res.data?.data;
       const tinNhanAI = {
-        id: 'msg_ai_' + Date.now(),
+        id: taoIdTinNhan('msg_ai'),
         role: 'assistant',
         content: chuanHoaNoiDungAI(duLieuPhanHoi?.traLoi) || 'Dạ, tôi đã nhận được thông tin từ bạn!',
-        thoiGian: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        thoiGian: layGioHienTai(),
         duLieuKemTheo: duLieuPhanHoi?.duLieuKemTheo || null
       };
 
@@ -221,10 +225,10 @@ export const ChatbotWidget = () => {
     } catch (err) {
       console.error('Lỗi gửi tin nhắn AI:', err);
       const tinNhanLoi = {
-        id: 'msg_err_' + Date.now(),
+        id: taoIdTinNhan('msg_err'),
         role: 'assistant',
         content: loiTuApi(err, 'Kết nối đến BookNest AI tạm thời bị gián đoạn. Bạn vui lòng thử lại sau ít phút nhé.'),
-        thoiGian: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        thoiGian: layGioHienTai(),
         laLoi: true
       };
       setDanhSachTinNhan([...lichSuCapNhat, tinNhanLoi]);

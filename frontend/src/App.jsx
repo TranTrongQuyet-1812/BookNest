@@ -28,6 +28,7 @@ const KhongCoQuyen = React.lazy(() => import('./pages/KhongCoQuyen'));
 const QuenMatKhau = React.lazy(() => import('./pages/QuenMatKhau'));
 const DieuKhoanDichVu = React.lazy(() => import('./pages/DieuKhoanDichVu'));
 const ChinhSachBaoMat = React.lazy(() => import('./pages/ChinhSachBaoMat'));
+const TrangKhongTimThay = React.lazy(() => import('./pages/TrangKhongTimThay'));
 
 // Layout chung cho Storefront (có Navbar & Footer luôn hiển thị, Suspense chỉ bọc nội dung động)
 const StorefrontLayout = ({ children }) => {
@@ -133,8 +134,9 @@ const AppContent = () => {
         {/* Back-Office được phục vụ từ frontend riêng, không dùng chung router Storefront. */}
         <Route path="/admin/*" element={<ChuyenSangBackOffice />} />
 
-        {/* Bắt các đường dẫn không tồn tại */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Trang thông báo lỗi 404 không tìm thấy trang */}
+        <Route path="/404" element={<StorefrontLayout><TrangKhongTimThay /></StorefrontLayout>} />
+        <Route path="*" element={<StorefrontLayout><TrangKhongTimThay /></StorefrontLayout>} />
       </Routes>
 
       {/* Trợ lý AI Chatbot nổi toàn Storefront (không hiển thị trong khu BackOffice) */}
