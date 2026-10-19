@@ -225,9 +225,9 @@ async function guiEmailCapNhatTrangThai(donHang, trangThaiMoi, ghiChuLyDo = '') 
 
   const bangTrangThai = {
     'CHO_DUYET': { ten: 'Chờ duyệt', mau: '#F59E0B', moTa: 'Đơn hàng đang chờ nhân viên tiếp nhận và duyệt.' },
-    'DA_XAC_NHAN': { ten: 'Đã xác nhận & Đang đóng gói', mau: '#3B82F6', moTa: 'Sách đang được nhân viên cẩn trọng kiểm tra và bọc gói.' },
-    'DANG_GIAO': { ten: 'Đang giao hàng', mau: '#8B5CF6', moTa: 'Kiện sách đã được bàn giao cho đối tác vận chuyển để đến tay bạn.' },
-    'DA_GIAO': { ten: 'Giao hàng thành công', mau: '#10B981', moTa: 'Đơn hàng đã được giao trọn vẹn. Chúc bạn có những giờ phút đọc sách tuyệt vời!' },
+    'DA_DUYET': { ten: 'Đã duyệt', mau: '#3B82F6', moTa: 'Đơn hàng đã được duyệt và đang chuẩn bị.' },
+    'DA_LAY_HANG': { ten: 'Đã lấy hàng', mau: '#8B5CF6', moTa: 'Kiện sách đã được đơn vị vận chuyển lấy khỏi kho và đang trên đường đến bạn.' },
+    'DA_GIAO': { ten: 'Đã giao hàng', mau: '#10B981', moTa: 'Đơn hàng đã được giao trọn vẹn. Chúc bạn có những giờ phút đọc sách tuyệt vời!' },
     'DA_HUY': { ten: 'Đã hủy đơn hàng', mau: '#EF4444', moTa: 'Đơn hàng này đã bị hủy.' }
   };
 

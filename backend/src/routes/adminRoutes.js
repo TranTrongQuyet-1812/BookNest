@@ -90,7 +90,7 @@ router.get(
 const luatTruyVanAdminDonHang = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(50).default(10),
-  status: Joi.string().valid('CHO_DUYET', 'DA_XAC_NHAN', 'DANG_GIAO', 'DA_GIAO', 'DA_HUY'),
+  status: Joi.string().valid('CHO_DUYET', 'DA_DUYET', 'DA_LAY_HANG', 'DA_GIAO', 'DA_HUY'),
   tuNgay: Joi.date().iso(),
   denNgay: Joi.date().iso(),
   kenhBan: Joi.string().valid('TRUC_TUYEN', 'TAI_QUAY')
@@ -120,7 +120,7 @@ const luatDonDepLichSu = Joi.object({
 });
 
 const luatCapNhatTrangThai = Joi.object({
-  trangThaiMoi: Joi.string().valid('DA_XAC_NHAN', 'DANG_GIAO', 'DA_GIAO').required().messages({
+  trangThaiMoi: Joi.string().valid('DA_DUYET', 'DA_LAY_HANG', 'DA_GIAO').required().messages({
     'any.only': 'Trạng thái mới không hợp lệ',
     'any.required': 'Trạng thái mới là bắt buộc'
   }),
@@ -158,7 +158,7 @@ const luatAdminHuyDon = Joi.object({
  *         name: status
  *         schema:
  *           type: string
- *           enum: [CHO_DUYET, DA_XAC_NHAN, DANG_GIAO, DA_GIAO, DA_HUY]
+ *           enum: [CHO_DUYET, DA_DUYET, DA_LAY_HANG, DA_GIAO, DA_HUY]
  *       - in: query
  *         name: tuNgay
  *         schema:
@@ -288,7 +288,7 @@ router.get(
  * @swagger
  * /api/admin/orders/{id}/status:
  *   put:
- *     summary: Chuyển trạng thái đơn hàng theo State Machine (CHO_DUYET -> DA_XAC_NHAN -> DANG_GIAO -> DA_GIAO)
+ *     summary: Chuyển trạng thái đơn hàng theo State Machine (CHO_DUYET -> DA_DUYET -> DA_LAY_HANG -> DA_GIAO)
  *     tags: [Quản trị đơn hàng (Admin Orders)]
  *     security:
  *       - bearerAuth: []
@@ -309,8 +309,8 @@ router.get(
  *             properties:
  *               trangThaiMoi:
  *                 type: string
- *                 enum: [DA_XAC_NHAN, DANG_GIAO, DA_GIAO]
- *                 example: DA_XAC_NHAN
+ *                 enum: [DA_DUYET, DA_LAY_HANG, DA_GIAO]
+ *                 example: DA_DUYET
  *               ghiChu:
  *                 type: string
  *                 example: Đã xác nhận đơn hàng với khách
@@ -338,7 +338,7 @@ router.put(
  * @swagger
  * /api/admin/orders/{id}/cancel:
  *   put:
- *     summary: Hủy đơn hàng và tự động hoàn lại tồn kho (Quản trị viên, Thủ thư - khi đơn CHO_DUYET hoặc DA_XAC_NHAN)
+ *     summary: Hủy đơn hàng và tự động hoàn lại tồn kho (Quản trị viên, Thủ thư - khi đơn CHO_DUYET hoặc DA_DUYET)
  *     tags: [Quản trị đơn hàng (Admin Orders)]
  *     security:
  *       - bearerAuth: []
@@ -370,7 +370,7 @@ router.put(
  *       400:
  *         description: Lý do hủy không hợp lệ
  *       409:
- *         description: Đơn hàng không ở trạng thái CHO_DUYET hoặc DA_XAC_NHAN
+ *         description: Đơn hàng không ở trạng thái CHO_DUYET hoặc DA_DUYET
  */
 router.put(
   '/orders/:id/cancel',

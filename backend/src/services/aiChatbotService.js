@@ -863,12 +863,15 @@ async function thucThiThemVaoGioHang({ ma_sach, ten_sach, so_luong = 1 }, tinNha
 /**
  * Ánh xạ trạng thái đơn hàng sang tiếng Việt thân thiện
  */
-function dichTrangThaiDonHang(trangThai) {
+function dichTrangThaiDonHang(trangThai, trangThaiThanhToan = null) {
+  if (trangThai === 'CHO_DUYET' && trangThaiThanhToan === 'DA_THANH_TOAN') {
+    return 'Đã nhận thanh toán, đơn đang chờ duyệt';
+  }
   const bangDich = {
     CHO_DUYET: 'Đang chờ cửa hàng duyệt',
-    DA_XAC_NHAN: 'Đã xác nhận - Đang đóng gói',
-    DANG_GIAO: 'Đang trên đường giao đến bạn',
-    DA_GIAO: 'Đã giao hàng thành công',
+    DA_DUYET: 'Đã duyệt - Đang chuẩn bị hàng',
+    DA_LAY_HANG: 'Đã lấy hàng - Đang trên đường giao đến bạn',
+    DA_GIAO: 'Đã giao hàng',
     DA_HUY: 'Đã hủy'
   };
   return bangDich[trangThai] || trangThai;
@@ -985,7 +988,7 @@ async function thucThiTraCuuDonHang({ ma_tra_cuu }, maKhachHangContext, dinhDanh
         timThay: true,
         donHang: {
           maTraCuu: donHang.MaTraCuu,
-          trangThai: dichTrangThaiDonHang(donHang.TrangThai),
+          trangThai: dichTrangThaiDonHang(donHang.TrangThai, trangThaiTT),
           ngayDat: donHang.NgayDat,
           tongTien: donHang.TongTien,
           phuongThucThanhToan: phuongThuc === 'CHUYEN_KHOAN_QR' ? 'Chuyển khoản VietQR' : 'Thanh toán tiền mặt khi nhận (COD)',
@@ -1022,7 +1025,7 @@ async function thucThiTraCuuDonHang({ ma_tra_cuu }, maKhachHangContext, dinhDanh
         laDanhSachCuaKhach: true,
         danhSachDon: cacDon.map(d => ({
           maTraCuu: d.MaTraCuu,
-          trangThai: dichTrangThaiDonHang(d.TrangThai),
+          trangThai: dichTrangThaiDonHang(d.TrangThai, d.thanhToan?.TrangThai),
           tongTien: d.TongTien,
           ngayDat: d.NgayDat,
           phuongThucThanhToan: d.thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' ? 'Chuyển khoản VietQR' : 'Thanh toán khi nhận hàng (COD)',

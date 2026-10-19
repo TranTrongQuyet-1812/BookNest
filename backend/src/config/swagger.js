@@ -87,7 +87,7 @@ const swaggerDefinition = {
           TongTien: { type: 'number', example: 250000 },
           TrangThai: {
             type: 'string',
-            enum: ['CHO_DUYET', 'DA_XAC_NHAN', 'DANG_GIAO', 'DA_GIAO', 'DA_HUY'],
+            enum: ['CHO_DUYET', 'DA_DUYET', 'DA_LAY_HANG', 'DA_GIAO', 'DA_HUY'],
             example: 'CHO_DUYET'
           }
         }

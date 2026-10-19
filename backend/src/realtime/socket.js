@@ -161,7 +161,7 @@ function phatSuKien(tenSuKien, duLieu = {}, phong = null) {
  * Phòng của khách chỉ nhận mã tra cứu (không có MaDonHang tăng dần); phòng nhân viên nhận cả hai để cập nhật danh sách.
  */
 function phatThanhToanThanhCong(duLieu) {
-  const { maDonHang, maTraCuu, soTien, maGiaoDichPayos } = duLieu;
+  const { maDonHang, maTraCuu, soTien, maGiaoDichPayos, trangThaiDonHang = 'CHO_DUYET' } = duLieu;
   if (maTraCuu) {
     phatSuKien(
       'thanhToan:daThanhToan',
@@ -176,11 +176,11 @@ function phatThanhToanThanhCong(duLieu) {
     );
   }
 
-  // Đồng thời báo cho phòng nhân viên để cập nhật danh sách đơn
+  // Đồng thời báo cho phòng nhân viên để cập nhật danh sách đơn (lấy đúng trạng thái thật của đơn)
   phatSuKien('donHang:capNhatTrangThai', {
     maDonHang,
     maTraCuu,
-    trangThaiDonHang: 'DA_XAC_NHAN',
+    trangThaiDonHang,
     trangThaiThanhToan: 'DA_THANH_TOAN'
   }, 'nhan_vien');
 }

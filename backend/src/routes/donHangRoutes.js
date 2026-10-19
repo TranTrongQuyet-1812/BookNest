@@ -142,7 +142,7 @@ const luatDatHang = Joi.object({
 const luatTruyVanDonKhach = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(50).default(10),
-  status: Joi.string().valid('CHO_DUYET', 'DA_XAC_NHAN', 'DANG_GIAO', 'DA_GIAO', 'DA_HUY')
+  status: Joi.string().valid('CHO_DUYET', 'DA_DUYET', 'DA_LAY_HANG', 'DA_GIAO', 'DA_HUY')
 });
 
 // Schema hủy đơn của khách
@@ -223,7 +223,7 @@ router.post('/', kiemTraDuLieu(luatDatHang), chanKhiChonQR, batLoiAsync(donHangC
  *         name: status
  *         schema:
  *           type: string
- *           enum: [CHO_DUYET, DA_XAC_NHAN, DANG_GIAO, DA_GIAO, DA_HUY]
+ *           enum: [CHO_DUYET, DA_DUYET, DA_LAY_HANG, DA_GIAO, DA_HUY]
  *         description: Lọc theo trạng thái đơn
  *     responses:
  *       200:

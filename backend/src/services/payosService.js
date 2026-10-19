@@ -80,7 +80,7 @@ async function taoThanhToanQR(donHang, danhSachMon = []) {
   if (donHang.TrangThai === 'DA_HUY') {
     throw LoiNghiepVu.xungDot('Đơn hàng đã bị hủy nên không thể thanh toán');
   }
-  if (['DA_GIAO', 'DANG_GIAO'].includes(donHang.TrangThai)) {
+  if (['DA_GIAO', 'DA_LAY_HANG'].includes(donHang.TrangThai)) {
     throw LoiNghiepVu.xungDot(`Đơn hàng đang ở trạng thái ${donHang.TrangThai}, không thể tạo mã thanh toán QR`);
   }
   if (banGhiThanhToan?.TrangThai === 'HET_HAN' || hetHanThanhToanService.laQrHetHan(banGhiThanhToan)) {
@@ -325,20 +325,8 @@ async function xuLyWebhookPayOS(webhookBody) {
       return xuLyKhongDoiDuocTrangThai(thanhToan, orderCode, noiDungTho);
     }
 
-    // Tự động chuyển đơn hàng sang DA_XAC_NHAN nếu đang ở CHO_DUYET
+    // T59 / DT: Webhook payOS không tự duyệt đơn nữa. Đơn giữ nguyên trạng thái (CHO_DUYET), chỉ khoản thanh toán thành DA_THANH_TOAN.
     const donHang = await DonHang.findByPk(thanhToan.MaDonHang, { transaction: t });
-    if (donHang && donHang.TrangThai === 'CHO_DUYET') {
-      await donHang.update({
-        TrangThai: 'DA_XAC_NHAN'
-      }, { transaction: t });
-
-      await LichSuTrangThaiDonHang.create({
-        MaDonHang: donHang.MaDonHang,
-        TrangThaiCu: 'CHO_DUYET',
-        TrangThaiMoi: 'DA_XAC_NHAN',
-        GhiChu: `Khách đã thanh toán chuyển khoản VietQR qua payOS (Mã GD: ${orderCode}, Tham chiếu: ${reference || 'N/A'})`
-      }, { transaction: t });
-    }
 
     await NhatKyWebhookPayos.create({
       MaGiaoDichPayos: orderCode,
@@ -436,20 +424,7 @@ async function layThongTinThanhToanTheoDon(donHangInput) {
           );
           soDongCapNhat = soDong;
 
-          if (soDongCapNhat > 0) {
-            const donHangLock = await DonHang.findByPk(maDonHang, { transaction: tDongBo });
-            if (donHangLock && donHangLock.TrangThai === 'CHO_DUYET') {
-              await donHangLock.update({ TrangThai: 'DA_XAC_NHAN' }, { transaction: tDongBo });
-              await LichSuTrangThaiDonHang.create({
-                MaDonHang: maDonHang,
-                TrangThaiCu: 'CHO_DUYET',
-                TrangThaiMoi: 'DA_XAC_NHAN',
-                GhiChu: 'Thanh toán VietQR payOS xác nhận thành công qua đồng bộ API'
-              }, { transaction: tDongBo });
-              daCapNhatDon = true;
-            }
-          }
-
+          // T59 / DT: Đối soát tự động cũng không tự duyệt đơn, đơn giữ nguyên trạng thái (CHO_DUYET)
           await tDongBo.commit();
         } catch (errDb) {
           await tDongBo.rollback();
@@ -467,19 +442,21 @@ async function layThongTinThanhToanTheoDon(donHangInput) {
 
           // Phát sự kiện realtime đầy đủ cho cả nhân viên và phòng của khách
           try {
+            const trangThaiHienTai = donHangTraCuu?.TrangThai || 'CHO_DUYET';
             phatThanhToanThanhCong({
               maDonHang: thanhToan.MaDonHang,
               maTraCuu: donHangTraCuu?.MaTraCuu,
               soTien: thanhToan.SoTien,
-              maGiaoDichPayos: thanhToan.MaGiaoDichPayos
+              maGiaoDichPayos: thanhToan.MaGiaoDichPayos,
+              trangThaiDonHang: trangThaiHienTai
             });
 
-            if (daCapNhatDon && donHangTraCuu?.MaTraCuu) {
+            if (donHangTraCuu?.MaTraCuu) {
               const { phatSuKien } = require('../realtime/socket');
               const thongTinCapNhat = {
                 maDonHang: thanhToan.MaDonHang,
                 maTraCuu: donHangTraCuu.MaTraCuu,
-                trangThaiDonHang: 'DA_XAC_NHAN',
+                trangThaiDonHang: trangThaiHienTai,
                 trangThaiThanhToan: 'DA_THANH_TOAN',
                 thoiGian: new Date().toISOString()
               };

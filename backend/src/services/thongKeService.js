@@ -272,7 +272,7 @@ async function layTongHopCongViecTheoVaiTro(maNhanVien, vaiTro) {
 
   if (vaiTro === 'thu_kho') {
     const [donCanSoan, sachSapHet, sachHetHang] = await Promise.all([
-      DonHang.count({ where: { TrangThai: 'DA_XAC_NHAN' } }),
+      DonHang.count({ where: { TrangThai: 'DA_DUYET' } }),
       Sach.count({ where: { SoLuongTon: { [Op.lte]: 10, [Op.gt]: 0 }, DaAn: false } }),
       Sach.count({ where: { SoLuongTon: 0, DaAn: false } })
     ]);
@@ -303,7 +303,7 @@ async function layTongHopCongViecTheoVaiTro(maNhanVien, vaiTro) {
         }
       }),
       DonHang.count({ where: { TrangThai: 'CHO_DUYET', KenhBan: 'TRUC_TUYEN' } }),
-      DonHang.count({ where: { TrangThai: 'DANG_GIAO' } })
+      DonHang.count({ where: { TrangThai: 'DA_LAY_HANG' } })
     ]);
 
     return {
@@ -317,7 +317,7 @@ async function layTongHopCongViecTheoVaiTro(maNhanVien, vaiTro) {
       dieuHuongNhanh: [
         { tieuDe: 'Đơn quầy lập hôm nay', soLuong: donQuayCuaToiHomNay, duongDan: '/admin/counter-sales', mauSac: 'success' },
         { tieuDe: 'Đơn trực tuyến chờ duyệt', soLuong: donChoDuyet, duongDan: '/admin/orders?status=CHO_DUYET', mauSac: 'warning' },
-        { tieuDe: 'Đơn hàng đang giao', soLuong: donDangGiao, duongDan: '/admin/orders?status=DANG_GIAO', mauSac: 'info' }
+        { tieuDe: 'Đơn hàng đã lấy hàng', soLuong: donDangGiao, duongDan: '/admin/orders?status=DA_LAY_HANG', mauSac: 'info' }
       ]
     };
   }
@@ -332,7 +332,7 @@ async function layTongHopCongViecTheoVaiTro(maNhanVien, vaiTro) {
     khachMoiHomNay
   ] = await Promise.all([
     DonHang.count({ where: { TrangThai: 'CHO_DUYET', KenhBan: 'TRUC_TUYEN' } }),
-    DonHang.count({ where: { TrangThai: 'DA_XAC_NHAN' } }),
+    DonHang.count({ where: { TrangThai: 'DA_DUYET' } }),
     Sach.count({ where: { SoLuongTon: { [Op.lte]: 10 }, DaAn: false } }),
     DanhGia.count({ where: { NgayTao: { [Op.gte]: bayNgayTruoc } } }),
     sequelize.query(`

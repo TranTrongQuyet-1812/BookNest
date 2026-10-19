@@ -73,9 +73,9 @@ async function taoDonHangCoMa(thongTinDon, tuyChon) {
 // Hàm thuần kiểm tra tính hợp lệ của việc chuyển đổi trạng thái đơn hàng (State Machine)
 function kiemTraChuyenTrangThai(trangThaiCu, trangThaiMoi) {
   const maTranChuyen = {
-    CHO_DUYET: ['DA_XAC_NHAN'],
-    DA_XAC_NHAN: ['DANG_GIAO'],
-    DANG_GIAO: ['DA_GIAO']
+    CHO_DUYET: ['DA_DUYET'],
+    DA_DUYET: ['DA_LAY_HANG'],
+    DA_LAY_HANG: ['DA_GIAO']
   };
   return Boolean(maTranChuyen[trangThaiCu] && maTranChuyen[trangThaiCu].includes(trangThaiMoi));
 }
@@ -500,10 +500,18 @@ async function khachHuyDon(maDonHang, maKhachHang, lyDo) {
     // Hoàn lại số lượng tồn kho cho từng cuốn sách trong đơn (sắp xếp MaSach ASC và dùng Sach.increment)
     await hoanTonKho(donHang.chiTietDonHang, t);
 
-    // Xử lý khoản thanh toán: hủy khoản thanh toán đang chờ để webhook không thể ghi đè DA_THANH_TOAN
+    // Xử lý bản ghi thanh toán: nếu đang chờ thì hủy; nếu đã thanh toán thì chuyển CAN_HOAN_TIEN
     const thanhToan = await ThanhToan.findOne({ where: { MaDonHang: maDonHang }, transaction: t });
-    if (thanhToan && thanhToan.TrangThai === 'CHO_THANH_TOAN') {
-      await thanhToan.update({ TrangThai: 'DA_HUY' }, { transaction: t });
+    let canHuyLink = false;
+    let canBaoHoanTien = false;
+    if (thanhToan) {
+      if (thanhToan.TrangThai === 'CHO_THANH_TOAN') {
+        await thanhToan.update({ TrangThai: 'DA_HUY' }, { transaction: t });
+        canHuyLink = true;
+      } else if (thanhToan.TrangThai === 'DA_THANH_TOAN') {
+        await thanhToan.update({ TrangThai: 'CAN_HOAN_TIEN' }, { transaction: t });
+        canBaoHoanTien = true;
+      }
     }
 
     // Ghi nhận dòng lịch sử hủy đơn của khách
@@ -519,7 +527,7 @@ async function khachHuyDon(maDonHang, maKhachHang, lyDo) {
     );
 
     await t.commit();
-    if (thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && thanhToan?.DuongDanThanhToan && thanhToan?.MaGiaoDichPayos) {
+    if (canHuyLink && thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && thanhToan?.DuongDanThanhToan && thanhToan?.MaGiaoDichPayos) {
       try {
         const { huyLinkPayOS } = require('./payosService');
         huyLinkPayOS(thanhToan.MaGiaoDichPayos, lyDo || 'Khách hàng tự hủy đơn');
@@ -536,6 +544,15 @@ async function khachHuyDon(maDonHang, maKhachHang, lyDo) {
       trangThaiThanhToan: thanhToan?.TrangThai,
       lyDo: lyDo || 'Khách hàng tự hủy đơn'
     });
+    if (canBaoHoanTien) {
+      baoNhanVienRealtime('thanhToan:canHoanTien', {
+        maDonHang: chiTietDon.MaDonHang,
+        maTraCuu: chiTietDon.MaTraCuu,
+        maKhachHang: chiTietDon.MaKhachHang,
+        soTien: thanhToan.SoTien,
+        lyDo: lyDo || 'Khách hàng tự hủy đơn'
+      });
+    }
     return chiTietDon;
   } catch (loi) {
     await t.rollback();
@@ -641,12 +658,12 @@ async function adminCapNhatTrangThai(maDonHang, trangThaiMoi, ghiChu, maNhanVien
   const trangThaiCu = donHang.TrangThai;
   if (!kiemTraChuyenTrangThai(trangThaiCu, trangThaiMoi)) {
     throw LoiNghiepVu.xungDot(
-      `Không thể chuyển trạng thái từ ${trangThaiCu} sang ${trangThaiMoi}. Vui lòng tuân thủ quy trình CHO_DUYET -> DA_XAC_NHAN -> DANG_GIAO -> DA_GIAO.`
+      `Không thể chuyển trạng thái từ ${trangThaiCu} sang ${trangThaiMoi}. Vui lòng tuân thủ quy trình CHO_DUYET -> DA_DUYET -> DA_LAY_HANG -> DA_GIAO.`
     );
   }
 
   // Chặn nhân viên xác nhận hoặc giao hàng cho đơn QR chưa nhận được tiền
-  if (['DA_XAC_NHAN', 'DANG_GIAO'].includes(trangThaiMoi)) {
+  if (['DA_DUYET', 'DA_LAY_HANG'].includes(trangThaiMoi)) {
     const thanhToan = await ThanhToan.findOne({ where: { MaDonHang: maDonHang } });
     if (thanhToan && thanhToan.PhuongThuc === 'CHUYEN_KHOAN_QR' && thanhToan.TrangThai === 'CHO_THANH_TOAN') {
       throw LoiNghiepVu.xungDot('Khách hàng chưa hoàn tất thanh toán chuyển khoản VietQR. Vui lòng không xác nhận hoặc giao hàng khi tiền chưa về!');
@@ -680,7 +697,10 @@ async function adminCapNhatTrangThai(maDonHang, trangThaiMoi, ghiChu, maNhanVien
 
     await t.commit();
     const chiTietDon = await layChiTietDonHang(maDonHang);
-    emailService.guiEmailCapNhatTrangThai(chiTietDon, trangThaiMoi, ghiChu).catch(err => console.error('[Lỗi Gửi Email Cập Nhật]', err.message));
+    // DT05: Email trạng thái chỉ gửi khi sang DA_LAY_HANG và DA_GIAO (chuyển sang DA_DUYET không gửi)
+    if (['DA_LAY_HANG', 'DA_GIAO'].includes(trangThaiMoi)) {
+      emailService.guiEmailCapNhatTrangThai(chiTietDon, trangThaiMoi, ghiChu).catch(err => console.error('[Lỗi Gửi Email Cập Nhật]', err.message));
+    }
     baoNhanVienRealtime('donHang:capNhatTrangThai', {
       maDonHang,
       maTraCuu: chiTietDon.MaTraCuu,
@@ -697,7 +717,7 @@ async function adminCapNhatTrangThai(maDonHang, trangThaiMoi, ghiChu, maNhanVien
   }
 }
 
-// 7. Back-Office: Nhân viên hủy đơn (bắt buộc có lý do, hoàn kho nếu CHO_DUYET hoặc DA_XAC_NHAN)
+// 7. Back-Office: Nhân viên hủy đơn (bắt buộc có lý do, hoàn kho nếu CHO_DUYET hoặc DA_DUYET)
 async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
   const donHang = await DonHang.findByPk(maDonHang, {
     include: [{ model: ChiTietDonHang, as: 'chiTietDonHang' }]
@@ -708,7 +728,7 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
   }
 
   const trangThaiCu = donHang.TrangThai;
-  if (!['CHO_DUYET', 'DA_XAC_NHAN'].includes(trangThaiCu)) {
+  if (!['CHO_DUYET', 'DA_DUYET'].includes(trangThaiCu)) {
     throw LoiNghiepVu.xungDot(`Không thể hủy đơn hàng đang ở trạng thái ${trangThaiCu}.`);
   }
 
@@ -718,7 +738,7 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
     const [soDongCapNhat] = await DonHang.update(
       { TrangThai: 'DA_HUY' },
       {
-        where: { MaDonHang: maDonHang, TrangThai: { [Op.in]: ['CHO_DUYET', 'DA_XAC_NHAN'] } },
+        where: { MaDonHang: maDonHang, TrangThai: { [Op.in]: ['CHO_DUYET', 'DA_DUYET'] } },
         transaction: t
       }
     );
@@ -791,10 +811,10 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
 }
 
 // Back-Office: Danh sách đơn hàng cần soạn (Pick list) cho thủ kho (T33)
-// Đơn ở trạng thái DA_XAC_NHAN, CHỈ trả thông tin sách và số lượng, TUYỆT ĐỐI không trả thông tin cá nhân khách
+// Đơn ở trạng thái DA_DUYET, CHỈ trả thông tin sách và số lượng, TUYỆT ĐỐI không trả thông tin cá nhân khách
 async function layDanhSachDonCanSoan() {
   const cacDonHang = await DonHang.findAll({
-    where: { TrangThai: 'DA_XAC_NHAN' },
+    where: { TrangThai: 'DA_DUYET' },
     attributes: ['MaDonHang', 'MaTraCuu', 'NgayDat', 'TrangThai', 'KenhBan', 'GhiChu'],
     include: [
       {
