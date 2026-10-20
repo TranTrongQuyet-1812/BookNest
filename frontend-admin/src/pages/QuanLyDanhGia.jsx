@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { BangXuong } from '../../../frontend/src/pages/admin/KhungXuong.jsx';
 import {
   Star,
   Trash2,
@@ -213,12 +214,18 @@ export default function QuanLyDanhGia() {
         <div className="bo-panel-title">
           <div>
             <h2>Danh sách nhận xét</h2>
-            <p>Tổng cộng {phanTrang.tongSoBanGhi} đánh giá · Trang {page}/{phanTrang.tongSoTrang || 1}</p>
+            <p>{dangTai ? "Đang tải…" : `Tổng cộng ${phanTrang.tongSoBanGhi} đánh giá · Trang ${page}/${phanTrang.tongSoTrang || 1}`}</p>
           </div>
         </div>
 
         {dangTai ? (
-          <div className="bo-empty">Đang tải danh sách đánh giá...</div>
+          <BangXuong
+            lopBang="bo-table"
+            lopBoc="bo-table-wrap"
+            tieuDe={['Sách', 'Khách hàng', 'Nhận xét & đánh giá', 'Trạng thái', 'Thao tác']}
+            canPhai={[4]}
+            nhan="Đang tải danh sách đánh giá"
+          />
         ) : (
           <div className="bo-table-wrap">
             <table className="bo-table">

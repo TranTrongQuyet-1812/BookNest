@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { BangXuong } from './KhungXuong.jsx';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { laySocket, thamGiaNhanVien, roiNhanVien } from '../../services/socket';
@@ -346,9 +347,11 @@ export const QuanLyDonHang = () => {
 
       {/* Bảng Danh Sách Đơn Hàng */}
       {dangTai ? (
-        <div className="flex justify-center py-12">
-          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.875rem' }}>Đang nạp dữ liệu đơn hàng...</p>
-        </div>
+        <BangXuong
+          tieuDe={['Mã đơn', 'Thời gian', 'Khách hàng & liên hệ', 'Tổng tiền', 'Trạng thái', 'Thao tác']}
+          canPhai={[5]}
+          nhan="Đang tải đơn hàng"
+        />
       ) : donHangList.length === 0 ? (
         <div className="card text-center py-12">
           <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--adm-text-main)' }}>Không tìm thấy đơn hàng nào</h3>

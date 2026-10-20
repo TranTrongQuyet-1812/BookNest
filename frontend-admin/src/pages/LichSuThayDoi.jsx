@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { BangXuong } from '../../../frontend/src/pages/admin/KhungXuong.jsx';
 import api from '@booknest/shared/api';
 import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
@@ -180,7 +181,7 @@ export default function LichSuThayDoi() {
         <div className="bo-panel-title">
           <div>
             <h2>Gần đây</h2>
-            <p>{phanTrang?.tongSoBanGhi ? `Hiển thị ${(page - 1) * 30 + 1}–${Math.min(page * 30, phanTrang.tongSoBanGhi)} / ${phanTrang.tongSoBanGhi} mục` : `${danhSach.length} mục ở trang ${page}/${tongSoTrang}`}</p>
+            <p>{dangTai ? "Đang tải…" : phanTrang?.tongSoBanGhi ? `Hiển thị ${(page - 1) * 30 + 1}–${Math.min(page * 30, phanTrang.tongSoBanGhi)} / ${phanTrang.tongSoBanGhi} mục` : `${danhSach.length} mục ở trang ${page}/${tongSoTrang}`}</p>
           </div>
           <div className="history-filter-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <label htmlFor="bo-filter-loai-doi-tuong" style={{ fontSize: '0.85rem', color: 'var(--bo-text-muted)' }}>
@@ -214,7 +215,7 @@ export default function LichSuThayDoi() {
             </select>
           </div>
         </div>
-        {dangTai ? <div className="bo-empty">Đang tải lịch sử…</div> : <div className="bo-table-wrap"><table className="bo-table history-table"><thead><tr><th>Thời điểm</th><th>Đối tượng</th><th>Trường</th><th>Thay đổi</th><th>Nhân viên</th></tr></thead><tbody>
+        {dangTai ? <BangXuong lopBang="bo-table history-table" lopBoc="bo-table-wrap" tieuDe={['Thời điểm', 'Đối tượng', 'Trường', 'Thay đổi', 'Nhân viên']} nhan="Đang tải lịch sử thay đổi" /> : <div className="bo-table-wrap"><table className="bo-table history-table"><thead><tr><th>Thời điểm</th><th>Đối tượng</th><th>Trường</th><th>Thay đổi</th><th>Nhân viên</th></tr></thead><tbody>
           {danhSach.map(item => <tr key={item.MaLichSuThayDoi}><td>{new Date(item.NgayThayDoi).toLocaleString('vi-VN')}</td><td>{tenDoiTuong[item.LoaiDoiTuong] || item.LoaiDoiTuong} {item.LoaiDoiTuong !== 'CAU_HINH' && <small>#{item.MaDoiTuong}</small>}</td><td>{nguoiDungTruong[item.TruongDuLieu] || item.TruongDuLieu}</td><td><span className="history-old">{hienGiaTri(item, item.GiaTriCu)}</span><span className="history-arrow">→</span><strong>{hienGiaTri(item, item.GiaTriMoi)}</strong></td><td>{item.nhanVienThayDoi?.HoTen || 'Nhân viên không còn hoạt động'}</td></tr>)}
           {!danhSach.length && <tr><td colSpan="5" className="bo-empty">Chưa có thay đổi nào được ghi nhận.</td></tr>}
         </tbody></table></div>}

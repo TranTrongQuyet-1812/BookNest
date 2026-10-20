@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { HangBangXuong } from './KhungXuong.jsx';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -497,11 +498,7 @@ export const QuanLyGiamGia = () => {
             </thead>
             <tbody>
               {dangTai ? (
-                <tr>
-                  <td colSpan={6} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--adm-text-sub)', fontSize: '0.9rem' }}>
-                    Đang nạp dữ liệu chương trình giảm giá...
-                  </td>
-                </tr>
+                <HangBangXuong soCot={6} soHang={5} canPhai={[5]} kieuO={{ padding: '0.9rem 1rem' }} />
               ) : danhSach.length === 0 ? (
                 <tr>
                   <td colSpan={6} style={{ padding: '3rem 1rem', textAlign: 'center' }}>

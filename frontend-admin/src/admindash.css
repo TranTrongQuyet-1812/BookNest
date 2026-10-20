@@ -915,6 +915,24 @@ button.admindash-strip-item:hover .admindash-strip-go {
   animation: adm-pulse 1.4s ease-in-out infinite;
 }
 
+.admindash-skeleton-line {
+  height: 13px;
+  border-radius: 4px;
+}
+
+/* Chữ chỉ dành cho trình đọc màn hình (ví dụ "Đang tải" đi kèm khung xương) */
+.admindash-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ---------- Nhãn trạng thái ---------- */
 .admindash-shell .badge {
   display: inline-flex;

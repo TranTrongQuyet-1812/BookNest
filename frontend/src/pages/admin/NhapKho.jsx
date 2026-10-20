@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BangXuong, DaiChiSoXuong } from './KhungXuong.jsx';
 import api from '../../services/api';
 import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 import KhoiViecCanLam from './KhoiViecCanLam.jsx';
@@ -145,6 +146,8 @@ export const NhapKho = () => {
           {loi}
         </ThongBaoTaiCho>
       )}
+
+      {!baoCaoKho && dangTai && <DaiChiSoXuong soO={6} lopDai="cols-3" />}
 
       {baoCaoKho && (
         <section className="admindash-panel" style={{ marginBottom: '1rem' }} aria-label="Báo cáo tồn kho">
@@ -308,7 +311,10 @@ export const NhapKho = () => {
           </div>
 
           {dangTai ? (
-            <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem' }}>Đang tải lịch sử...</p>
+            <BangXuong
+              tieuDe={['Mã phiếu', 'Thời gian', 'Tác phẩm', 'SL nhập', 'Người thực hiện']}
+              nhan="Đang tải lịch sử nhập kho"
+            />
           ) : lichSuNhap.length === 0 ? (
             <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem', fontStyle: 'italic' }}>
               Chưa có phiếu nhập kho nào được tạo trong hệ thống.

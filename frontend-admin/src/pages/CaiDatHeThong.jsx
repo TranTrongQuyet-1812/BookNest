@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { KhoiXuong } from '../../../frontend/src/pages/admin/KhungXuong.jsx';
 import api from '@booknest/shared/api';
 import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
@@ -69,7 +70,11 @@ export default function CaiDatHeThong() {
 
       {loi && <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>{loi}</ThongBaoTaiCho>}
 
-      {dangTai ? <div className="bo-empty">Đang tải cài đặt…</div> : danhSach.map((congTac) => (
+      {dangTai ? [0, 1].map((i) => (
+        <section key={i} className="bo-panel" style={{ padding: '1.25rem 1.35rem', marginBottom: '1rem' }}>
+          <KhoiXuong cao={72} nhan={i === 0 ? 'Đang tải cài đặt' : undefined} />
+        </section>
+      )) : danhSach.map((congTac) => (
         <section key={congTac.khoa} className="bo-panel cai-dat-the">
           <div className="cai-dat-chinh">
             <div>

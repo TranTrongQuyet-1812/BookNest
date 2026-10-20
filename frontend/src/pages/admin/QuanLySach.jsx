@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BangXuong } from './KhungXuong.jsx';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -485,9 +486,11 @@ export const QuanLySach = () => {
 
       {/* Bảng Danh Sách Sách */}
       {dangTai ? (
-        <div className="flex justify-center py-12">
-          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.875rem' }}>Đang nạp dữ liệu sách...</p>
-        </div>
+        <BangXuong
+          tieuDe={['Mã', 'Tác phẩm & tác giả', 'Thể loại', 'Giá bán', 'Tồn kho', 'Trạng thái', 'Thao tác']}
+          canPhai={[6]}
+          nhan="Đang tải danh sách sách"
+        />
       ) : (
         <div className="admindash-table-wrap">
           <table className="admindash-table">

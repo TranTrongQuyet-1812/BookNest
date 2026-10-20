@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { HangBangXuong } from '../../../frontend/src/pages/admin/KhungXuong.jsx';
 import {
   Search,
   RefreshCw
@@ -396,12 +397,7 @@ export default function QuanLyThanhToan() {
             </thead>
             <tbody>
               {dangTai ? (
-                <tr>
-                  <td colSpan={8} style={{ padding: '3rem', textAlign: 'center', color: 'var(--adm-text-muted)' }}>
-                    <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 0.5rem' }} />
-                    <div>Đang nạp dữ liệu thanh toán...</div>
-                  </td>
-                </tr>
+                <HangBangXuong soCot={8} soHang={6} canPhai={[7]} kieuO={{ padding: '0.85rem 1rem' }} />
               ) : danhSach.length === 0 ? (
                 <tr>
                   <td colSpan={8} style={{ padding: '3rem', textAlign: 'center', color: 'var(--adm-text-muted)' }}>

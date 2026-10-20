@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BangXuong } from './KhungXuong.jsx';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -404,9 +405,11 @@ export const QuanLyNhanSu = () => {
 
       {/* Bảng Danh Sách Người Dùng */}
       {dangTai ? (
-        <div className="flex justify-center py-12">
-          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.9rem' }}>Đang nạp danh sách tài khoản...</p>
-        </div>
+        <BangXuong
+          tieuDe={['Mã', 'Họ tên & email', laKhach ? 'Địa chỉ mặc định' : 'Vai trò', 'Số điện thoại', 'Trạng thái', 'Thao tác']}
+          canPhai={[5]}
+          nhan="Đang tải danh sách tài khoản"
+        />
       ) : (
         <div className="admindash-table-wrap">
           <table className="admindash-table">

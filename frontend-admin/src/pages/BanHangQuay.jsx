@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { BangXuong, ThongBaoDangTai } from '../../../frontend/src/pages/admin/KhungXuong.jsx';
 import {
   Search,
   Plus,
@@ -404,7 +405,19 @@ export default function BanHangQuay() {
             </label>
             <div className="counter-results">
               {dangTim ? (
-                <div className="bo-empty">Đang tìm sách…</div>
+                <div aria-busy="true">
+                  <ThongBaoDangTai nhan="Đang tìm sách" />
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <div key={i} className="counter-book" aria-hidden="true">
+                      <div className="admindash-skeleton" style={{ width: '48px', height: '66px', flexShrink: 0 }} />
+                      <div className="counter-book-info">
+                        <div className="admindash-skeleton admindash-skeleton-line" style={{ width: `${72 - i * 6}%` }} />
+                        <div className="admindash-skeleton admindash-skeleton-line" style={{ width: '38%' }} />
+                        <div className="admindash-skeleton admindash-skeleton-line" style={{ width: '24%' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : sachTimDuoc.length === 0 ? (
                 <div className="bo-empty">Không tìm thấy sách còn bán.</div>
               ) : sachTimDuoc.map(sach => {
@@ -637,7 +650,12 @@ export default function BanHangQuay() {
             </button>
           </div>
           {dangTaiLichSu ? (
-            <div className="bo-empty">Đang tải lịch sử…</div>
+            <BangXuong
+              lopBang="bo-table"
+              lopBoc="bo-table-wrap"
+              tieuDe={['Mã đơn', 'Thời gian', 'Khách', 'Phương thức', 'Số đầu sách', 'Tổng tiền', 'Trạng thái', '']}
+              nhan="Đang tải lịch sử bán"
+            />
           ) : (
             <>
             <div className="bo-table-wrap">

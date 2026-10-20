@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BangXuong } from '../../../frontend/src/pages/admin/KhungXuong.jsx';
 import {
   RefreshCw,
   CheckSquare,
@@ -111,19 +112,19 @@ export default function DonCanSoan() {
           <div className="admindash-strip-item">
             <span className="admindash-strip-label">Đơn hàng chờ soạn</span>
             <span className="admindash-strip-value">
-              <span>{duLieu.tongSoDonCanSoan} <span className="admindash-strip-unit">đơn</span></span>
+              {dangTai ? <span className="admindash-skeleton admindash-skeleton-line" style={{ display: "inline-block", width: "64px", height: "22px", verticalAlign: "middle" }} /> : <span>{duLieu.tongSoDonCanSoan} <span className="admindash-strip-unit">đơn</span></span>}
             </span>
           </div>
           <div className="admindash-strip-item">
             <span className="admindash-strip-label">Tổng số cuốn cần nhặt</span>
             <span className="admindash-strip-value">
-              <span>{duLieu.tongSoCuonSachCanSoan} <span className="admindash-strip-unit">cuốn</span></span>
+              {dangTai ? <span className="admindash-skeleton admindash-skeleton-line" style={{ display: "inline-block", width: "64px", height: "22px", verticalAlign: "middle" }} /> : <span>{duLieu.tongSoCuonSachCanSoan} <span className="admindash-strip-unit">cuốn</span></span>}
             </span>
           </div>
           <div className="admindash-strip-item">
             <span className="admindash-strip-label">Tiến độ nhặt hàng</span>
             <span className="admindash-strip-value">
-              <span>{soSachDaNhat} / {tongSoDauSach} <span className="admindash-strip-unit">đầu sách</span></span>
+              {dangTai ? <span className="admindash-skeleton admindash-skeleton-line" style={{ display: "inline-block", width: "64px", height: "22px", verticalAlign: "middle" }} /> : <span>{soSachDaNhat} / {tongSoDauSach} <span className="admindash-strip-unit">đầu sách</span></span>}
             </span>
           </div>
         </div>
@@ -172,9 +173,10 @@ export default function DonCanSoan() {
 
       {/* Nội Dung Bảng */}
       {dangTai ? (
-        <div className="flex justify-center py-12">
-          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.9rem' }}>Đang nạp danh sách soạn hàng...</p>
-        </div>
+        <BangXuong
+          tieuDe={['Xong', 'Mã', 'Ấn phẩm cần nhặt', 'Số lượng cần', 'Phân bổ vào các đơn']}
+          nhan="Đang tải danh sách soạn hàng"
+        />
       ) : duLieu.tongSoDonCanSoan === 0 ? (
         <div className="card" style={{ padding: '3rem 1.5rem', textAlign: 'center' }}>
           <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--adm-text-main)' }}>
