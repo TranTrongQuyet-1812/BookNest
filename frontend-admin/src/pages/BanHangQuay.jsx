@@ -205,7 +205,9 @@ export default function BanHangQuay() {
           setDonDangChoQR(null);
           setLoi('Đơn hàng đã hết hạn hoặc bị hủy');
         }
-      } catch {}
+      } catch (errPolling) {
+        console.warn('[Polling Đơn Quầy] Lỗi kiểm tra trạng thái đơn:', errPolling?.message);
+      }
     }, 3000);
 
     return () => {
@@ -308,7 +310,13 @@ export default function BanHangQuay() {
   // Hủy đơn quầy đang chờ QR
   const handleHuyDonChoQR = async () => {
     if (!donDangChoQR) return;
-    if (!window.confirm('Bạn có chắc chắn muốn hủy đơn hàng đang chờ thanh toán QR này không?')) return;
+    const dongY = await xacNhan({
+      tieuDe: 'Hủy đơn hàng chờ thanh toán QR',
+      noiDung: 'Bạn có chắc chắn muốn hủy đơn hàng đang chờ thanh toán QR này không? Sách sẽ được hoàn lại kho.',
+      nhanXacNhan: 'Xác nhận hủy',
+      nguyHiem: true
+    });
+    if (!dongY) return;
     setDangHuyDonQR(true);
     try {
       await api.put(`/admin/counter-orders/${donDangChoQR.id}/cancel`, { lyDo: 'Khách hủy đơn tại quầy' });

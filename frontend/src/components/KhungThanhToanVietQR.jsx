@@ -58,7 +58,7 @@ export const KhungThanhToanVietQR = ({
       const tenMuc = loai === 'TIEN' ? 'số tiền' : loai === 'STK' ? 'số tài khoản' : 'nội dung chuyển khoản';
       tb.thanhCong(`Đã sao chép ${tenMuc} vào bộ nhớ tạm`);
       setTimeout(() => setDaSaoChep(''), 2000);
-    } catch (_err) {
+    } catch {
       tb.canhBao('Không thể tự động sao chép. Vui lòng sao chép thủ công.');
     }
   };

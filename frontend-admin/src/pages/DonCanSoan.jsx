@@ -13,10 +13,9 @@ import {
   FileText
 } from 'lucide-react';
 import api from '@booknest/shared/api';
-import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
+import { ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
 export default function DonCanSoan() {
-  const { thongBao: tb } = useThongBao();
 
   const [dangTai, setDangTai] = useState(true);
   const [duLieu, setDuLieu] = useState({

@@ -38,6 +38,13 @@ const laVuaTuThaoTac = (donDaThaoTac, maDonHang) => {
   return Boolean(luc) && Date.now() - luc < 5000;
 };
 
+// Ghi nhận mốc thời gian nhân viên vừa tự thao tác trên đơn
+const ghiNhanTuThaoTac = (donDaThaoTac, maDonHang) => {
+  if (donDaThaoTac) {
+    donDaThaoTac.set(String(maDonHang), Date.now());
+  }
+};
+
 export const QuanLyDonHang = () => {
   const { thongBao: tb, xacNhan, nhapLyDo } = useThongBao();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -207,7 +214,7 @@ export const QuanLyDonHang = () => {
     });
     if (!dongY) return;
 
-    donVuaTuThaoTac.current.set(String(maDonHang), Date.now());
+    ghiNhanTuThaoTac(donVuaTuThaoTac.current, maDonHang);
     try {
       await api.put(`/admin/orders/${maDonHang}/status`, { trangThaiMoi });
       tb.thanhCong(`Đã chuyển đơn hàng #${maDonHang} sang trạng thái: ${layTenTrangThai(trangThaiMoi)}`);
@@ -235,7 +242,7 @@ export const QuanLyDonHang = () => {
     });
     if (lyDo === null) return;
 
-    donVuaTuThaoTac.current.set(String(maDonHang), Date.now());
+    ghiNhanTuThaoTac(donVuaTuThaoTac.current, maDonHang);
     try {
       await api.put(`/admin/orders/${maDonHang}/cancel`, { lyDo });
       const thongBaoThanhCong = laQkDaTraTien

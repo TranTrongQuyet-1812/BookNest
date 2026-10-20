@@ -5,7 +5,7 @@ import { useAuth } from '@booknest/shared/auth';
 import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
 export default function HoSoNhanVien() {
-  const { user, capNhatThongTinNguoiDung } = useAuth();
+  const { capNhatThongTinNguoiDung } = useAuth();
   const { thongBao: tb } = useThongBao();
 
   const [dangTai, setDangTai] = useState(true);

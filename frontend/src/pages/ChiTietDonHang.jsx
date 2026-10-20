@@ -59,7 +59,7 @@ export const ChiTietDonHang = () => {
           setDonHang(resDon.data.data);
         }
       }
-    } catch (_err) {
+    } catch {
       console.warn('Đơn hàng chưa có thông tin thanh toán QR hoặc dùng COD');
     }
   };

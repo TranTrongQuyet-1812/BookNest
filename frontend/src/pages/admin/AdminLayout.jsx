@@ -34,8 +34,8 @@ export const AdminLayout = () => {
         if (saved !== null) return saved === 'true';
         return window.innerWidth < 1180;
       }
-    } catch (_e) {
-      // Phòng vệ khi trình duyệt bật chế độ chặn storage nghiêm ngặt
+    } catch {
+      // Bỏ qua lỗi truy cập storage khi trình duyệt chặn quyền nghiêm ngặt
     }
     return false;
   });
@@ -43,7 +43,11 @@ export const AdminLayout = () => {
   const toggleThuGon = () => {
     setThuGonSidebar(prev => {
       const next = !prev;
-      try { localStorage.setItem('admindash_sidebar_collapsed', String(next)); } catch (e) {}
+      try {
+        localStorage.setItem('admindash_sidebar_collapsed', String(next));
+      } catch {
+        // Bỏ qua lỗi ghi storage khi bị chặn quyền
+      }
       return next;
     });
   };
@@ -51,7 +55,9 @@ export const AdminLayout = () => {
   const handleDangXuat = () => {
     try {
       localStorage.removeItem('booknest_last_admin_path');
-    } catch (e) {}
+    } catch {
+      // Bỏ qua lỗi xóa storage khi bị chặn quyền
+    }
     dangXuat();
     navigate('/admin/login');
   };
@@ -66,7 +72,9 @@ export const AdminLayout = () => {
     ) {
       try {
         localStorage.setItem('booknest_last_admin_path', location.pathname + location.search);
-      } catch (e) {}
+      } catch {
+        // Bỏ qua lỗi ghi storage khi bị chặn quyền
+      }
     }
   }, [location.pathname, location.search]);
 
