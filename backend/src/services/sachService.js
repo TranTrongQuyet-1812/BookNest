@@ -4,7 +4,13 @@
 const { Op, TableHints } = require('sequelize');
 const { sequelize, Sach, DanhMuc, LichSuNhapKho, LichSuDieuChinhKho, NhanVien } = require('../models');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
-const { chuaTuKhoa, chuaTuKhoaBoKhoangTrang, chuaTuKhoaLinhHoat } = require('../utils/timKiem');
+const {
+  chuaTuKhoa,
+  chuaTuKhoaBoKhoangTrang,
+  chuaTuKhoaLinhHoat,
+  locTuKhoaThucSu,
+  chamDiemTimGanDung
+} = require('../utils/timKiem');
 const { ghiNhanThayDoi } = require('./lichSuThayDoiService');
 const anhBiaService = require('./anhBiaService');
 const { tinhGiaSauGiam } = require('../utils/giaBan');
@@ -90,7 +96,7 @@ async function layDanhSachSach({
     ];
   }
 
-  const { rows, count } = await Sach.findAndCountAll({
+  const tuyChonTimSach = {
     where: dieuKien,
     order: sapXep,
     limit: gioiHan,
@@ -114,7 +120,44 @@ async function layDanhSachSach({
         [sequelize.literal(bieuThucGiaSauGiam), 'GiaSauGiam']
       ]
     }
-  });
+  };
+  let { rows, count } = await Sach.findAndCountAll(tuyChonTimSach);
+  let timGanDung = false;
+
+  const tuKhoaGanDung = search?.trim().replace(/([a-z])([A-Z])/g, '$1 $2') || '';
+  if (count === 0 && locTuKhoaThucSu(tuKhoaGanDung).length > 0) {
+    const dieuKienKhongTuKhoa = { ...dieuKien };
+    delete dieuKienKhongTuKhoa[Op.or];
+
+    const sachUngVien = await Sach.findAll({
+      where: dieuKienKhongTuKhoa,
+      order: sapXep,
+      attributes: ['MaSach', 'TenSach', 'TacGia']
+    });
+    let sachGanDung = sachUngVien
+      .map(sach => ({ maSach: sach.MaSach, ...chamDiemTimGanDung(search, sach.TenSach, sach.TacGia) }))
+      .filter(ketQua => ketQua.diem > 0);
+
+    if (!['price_asc', 'price_desc', 'discount_desc'].includes(sort)) {
+      sachGanDung = sachGanDung.sort((a, b) => b.diem - a.diem);
+    }
+
+    count = sachGanDung.length;
+    timGanDung = count > 0;
+    const maSachTrang = sachGanDung.slice(viTri, viTri + gioiHan).map(ketQua => ketQua.maSach);
+    if (maSachTrang.length > 0) {
+      const sachTrang = await Sach.findAll({
+        where: { ...dieuKienKhongTuKhoa, MaSach: { [Op.in]: maSachTrang } },
+        order: sapXep,
+        include: tuyChonTimSach.include,
+        attributes: tuyChonTimSach.attributes
+      });
+      const thuTuMaSach = new Map(maSachTrang.map((maSach, viTriSach) => [maSach, viTriSach]));
+      rows = sachTrang.sort((a, b) => thuTuMaSach.get(a.MaSach) - thuTuMaSach.get(b.MaSach));
+    } else {
+      rows = [];
+    }
+  }
 
   // Gán chuẩn hóa PhanTramGiam và GiaSauGiam cho từng cuốn sách
   for (const sach of rows) {
@@ -138,7 +181,8 @@ async function layDanhSachSach({
       tongSoBanGhi: count,
       tongSoTrang: Math.ceil(count / gioiHan),
       trangHienTai: trang,
-      soBanGhiMoiTrang: gioiHan
+      soBanGhiMoiTrang: gioiHan,
+      timGanDung
     }
   };
 }

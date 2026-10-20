@@ -131,6 +131,68 @@ function tinhDiemTrungKhop(chuoiMucTieu, danhSachToken) {
   return diem;
 }
 
+function tachTokenTimGanDung(chuoi) {
+  const tachCamelCase = String(chuoi || '').replace(/([a-z])([A-Z])/g, '$1 $2');
+  const chuanHoa = boDauTiengViet(tachCamelCase)
+    .toLowerCase()
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+  return chuanHoa ? chuanHoa.split(/\s+/) : [];
+}
+
+function tinhKhoangCachLevenshtein(chuoiA, chuoiB) {
+  const bang = Array.from({ length: chuoiA.length + 1 }, () => []);
+  for (let i = 0; i <= chuoiA.length; i++) bang[i][0] = i;
+  for (let j = 0; j <= chuoiB.length; j++) bang[0][j] = j;
+
+  for (let i = 1; i <= chuoiA.length; i++) {
+    for (let j = 1; j <= chuoiB.length; j++) {
+      const chiPhi = chuoiA[i - 1] === chuoiB[j - 1] ? 0 : 1;
+      bang[i][j] = Math.min(bang[i - 1][j] + 1, bang[i][j - 1] + 1, bang[i - 1][j - 1] + chiPhi);
+      if (i > 1 && j > 1 && chuoiA[i - 1] === chuoiB[j - 2] && chuoiA[i - 2] === chuoiB[j - 1]) {
+        bang[i][j] = Math.min(bang[i][j], bang[i - 2][j - 2] + 1);
+      }
+    }
+  }
+
+  return bang[chuoiA.length][chuoiB.length];
+}
+
+function tinhDiemTokenGanDung(tokenTim, tokenSach) {
+  if (tokenTim === tokenSach) return 1;
+  if (tokenTim.length >= 3 && (tokenSach.includes(tokenTim) || tokenTim.includes(tokenSach))) return 0.82;
+
+  const soKyTuSaiToiDa = tokenTim.length >= 8 && tokenSach.length >= 8 ? 2 : tokenTim.length >= 4 && tokenSach.length >= 4 ? 1 : 0;
+  if (tokenTim.length > 64 || Math.abs(tokenTim.length - tokenSach.length) > soKyTuSaiToiDa) return 0;
+  const khoangCach = tinhKhoangCachLevenshtein(tokenTim, tokenSach);
+  if (khoangCach > soKyTuSaiToiDa) return 0;
+  return khoangCach === 1 ? 0.72 : 0.62;
+}
+
+function chamDiemTimGanDung(tuKhoa, tenSach, tacGia) {
+  const tuKhoaCamelCase = String(tuKhoa || '').replace(/([a-z])([A-Z])/g, '$1 $2');
+  const tokenTim = locTuKhoaThucSu(tuKhoaCamelCase).map(t => boDauTiengViet(t).toLowerCase());
+  const tokenTenSach = tachTokenTimGanDung(tenSach);
+  const tokenTacGia = tachTokenTimGanDung(tacGia);
+  const tongTokenSach = [...tokenTenSach, ...tokenTacGia];
+  if (!tokenTim.length || !tongTokenSach.length) return { diem: 0, soTuKhop: 0 };
+
+  const diemTungTu = tokenTim.map(token => Math.max(
+    ...tokenTenSach.map(t => tinhDiemTokenGanDung(token, t)),
+    ...tokenTacGia.map(t => tinhDiemTokenGanDung(token, t) * 0.92),
+    0
+  ));
+  const soTuKhop = diemTungTu.filter(diem => diem > 0).length;
+  const soTuKhopToiThieu = tokenTim.length >= 4 ? tokenTim.length - 1 : tokenTim.length;
+  const diem = soTuKhop >= soTuKhopToiThieu
+    ? diemTungTu.reduce((tong, diemTu) => tong + diemTu, 0) / tokenTim.length
+    : 0;
+
+  return { diem, soTuKhop };
+}
+
 module.exports = {
   chuaTuKhoa,
   chuaTuKhoaBoKhoangTrang,
@@ -140,6 +202,7 @@ module.exports = {
   tachTuKhoa,
   locTuKhoaThucSu,
   tinhDiemTrungKhop,
+  chamDiemTimGanDung,
   boDauTiengViet,
   BANG_MA_TIM_KIEM
 };
