@@ -13,8 +13,11 @@ const nguoiDungTruong = {
   AnhBia: 'Ảnh bìa',
   MaDanhMuc: 'Danh mục',
   DaAn: 'Trạng thái',
+  DaXoa: 'Xóa vĩnh viễn',
   TenDanhMuc: 'Tên danh mục',
   THANH_TOAN_QR_BAT: 'Thanh toán QR',
+  AI_CHATBOT_BAT: 'AI Chatbot',
+  AI_CHATBOT_TRAN_NGAY: 'Trần token AI hàng ngày',
   Tap: 'Số tập',
   TenBo: 'Tên bộ',
   TenChuongTrinh: 'Tên chương trình',
@@ -22,13 +25,18 @@ const nguoiDungTruong = {
   NgayBatDau: 'Bắt đầu',
   NgayKetThuc: 'Kết thúc',
   DangHoatDong: 'Trạng thái',
+  TrangThai: 'Trạng thái',
+  MaThamChieuHoanTien: 'Mã tham chiếu hoàn tiền',
+  GhiChuHoanTien: 'Ghi chú hoàn tiền',
+  PhuongThuc: 'Phương thức thanh toán',
   DoiTuong: 'Đối tượng áp dụng',
   SoLuongDoiTuong: 'Số đối tượng áp dụng',
   HoTen: 'Họ và tên',
   Email: 'Email',
   SoDienThoai: 'Số điện thoại',
   VaiTro: 'Vai trò',
-  DiaChiMacDinh: 'Địa chỉ mặc định'
+  DiaChiMacDinh: 'Địa chỉ mặc định',
+  MatKhau: 'Mật khẩu'
 };
 
 const tenDoiTuong = {
@@ -36,6 +44,9 @@ const tenDoiTuong = {
   DANH_MUC: 'Danh mục',
   CAU_HINH: 'Cài đặt hệ thống',
   GIAM_GIA: 'Chương trình giảm giá',
+  THANH_TOAN: 'Thanh toán',
+  DANH_GIA: 'Đánh giá',
+  DanhGia: 'Đánh giá',
   NHAN_VIEN: 'Nhân viên',
   KHACH_HANG: 'Khách hàng'
 };
@@ -68,6 +79,29 @@ const hienGiaTri = (item, giaTri) => {
   if (item.TruongDuLieu === 'PhanTramGiam') {
     return `${giaTri}%`;
   }
+  if ((item.LoaiDoiTuong === 'DANH_GIA' || item.LoaiDoiTuong === 'DanhGia') && item.TruongDuLieu === 'DaAn') {
+    if (typeof giaTri === 'string' && giaTri.startsWith('1')) {
+      const lyDo = giaTri.slice(1).trim();
+      return lyDo ? `Đã ẩn ${lyDo}` : 'Đã ẩn';
+    }
+    if (giaTri === '0' || giaTri === 0 || giaTri === false) return 'Hiển thị';
+    if (giaTri === '1' || giaTri === 1 || giaTri === true) return 'Đã ẩn';
+  }
+  if (item.TruongDuLieu === 'DaXoa') {
+    if (giaTri === 'DA_XOA_VINH_VIEN') return 'Đã xóa vĩnh viễn';
+  }
+  if (item.LoaiDoiTuong === 'THANH_TOAN' && item.TruongDuLieu === 'TrangThai') {
+    const ttMap = {
+      CAN_HOAN_TIEN: 'Cần hoàn tiền',
+      DA_HOAN_TIEN: 'Đã hoàn tiền',
+      DA_THANH_TOAN: 'Đã thanh toán',
+      CHO_THANH_TOAN: 'Chờ thanh toán',
+      HET_HAN: 'Hết hạn',
+      DA_HUY: 'Đã hủy',
+      THAT_BAI: 'Thất bại'
+    };
+    return ttMap[giaTri] || giaTri;
+  }
   return nhan(giaTri);
 };
 
@@ -76,6 +110,7 @@ export default function LichSuThayDoi() {
   const [danhSach, setDanhSach] = useState([]);
   const [page, setPage] = useState(1);
   const [tongSoTrang, setTongSoTrang] = useState(1);
+  const [loaiDoiTuong, setLoaiDoiTuong] = useState('');
   const [dangTai, setDangTai] = useState(true);
   const [loi, setLoi] = useState('');
   const [truocNgay, setTruocNgay] = useState('');
@@ -85,15 +120,17 @@ export default function LichSuThayDoi() {
   const taiLichSu = async () => {
     setDangTai(true);
     try {
-      const res = await api.get('/admin/change-history', { params: { page, limit: 30 } });
-      setDanhSach(res.data.data.danhSach);
-      setTongSoTrang(res.data.data.phanTrang.tongSoTrang || 1);
+      const params = { page, limit: 30 };
+      if (loaiDoiTuong) params.loaiDoiTuong = loaiDoiTuong;
+      const res = await api.get('/admin/change-history', { params });
+      setDanhSach(res.data.data.danhSach || []);
+      setTongSoTrang(res.data.data.phanTrang?.tongSoTrang || 1);
       setLoi('');
     } catch (err) { setLoi(loiTuApi(err, 'Không tải được lịch sử.')); }
     finally { setDangTai(false); }
   };
 
-  useEffect(() => { taiLichSu(); }, [page]);
+  useEffect(() => { taiLichSu(); }, [page, loaiDoiTuong]);
 
   const kiemTraDonDep = async () => {
     if (!truocNgay) return setLoi('Chọn mốc thời gian trước khi dọn lịch sử.');
@@ -139,7 +176,43 @@ export default function LichSuThayDoi() {
         {xemTruoc && <div className="history-preview"><div><strong>Sẽ xóa vĩnh viễn {xemTruoc.soDongDuKien.toLocaleString('vi-VN')} dòng:</strong><small>Thay đổi: {xemTruoc.theoBang.LichSuThayDoi.toLocaleString('vi-VN')} · Nhập kho: {xemTruoc.theoBang.LichSuNhapKho.toLocaleString('vi-VN')} · Điều chỉnh kho: {xemTruoc.theoBang.LichSuDieuChinhKho.toLocaleString('vi-VN')} · Trạng thái đơn: {xemTruoc.theoBang.LichSuTrangThaiDonHang.toLocaleString('vi-VN')}</small></div><span>Giữ lại <strong>{xemTruoc.soDongDaGiaoGiuLai.toLocaleString('vi-VN')}</strong> dòng giao thành công.</span><button className="bo-danger-button" disabled={dangDon || !xemTruoc.soDongDuKien} onClick={xacNhanDonDep}>{dangDon ? 'Đang xóa…' : 'Xác nhận xóa vĩnh viễn'}</button></div>}
       </section>
       <section className="bo-panel history-table-panel">
-        <div className="bo-panel-title"><div><h2><History size={18}/> Gần đây</h2><p>{danhSach.length} mục ở trang {page}/{tongSoTrang}</p></div></div>
+        <div className="bo-panel-title">
+          <div>
+            <h2><History size={18}/> Gần đây</h2>
+            <p>{danhSach.length} mục ở trang {page}/{tongSoTrang}</p>
+          </div>
+          <div className="history-filter-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <label htmlFor="bo-filter-loai-doi-tuong" style={{ fontSize: '0.85rem', color: 'var(--bo-text-muted)' }}>
+              Lọc đối tượng:
+            </label>
+            <select
+              id="bo-filter-loai-doi-tuong"
+              value={loaiDoiTuong}
+              onChange={e => {
+                setLoaiDoiTuong(e.target.value);
+                setPage(1);
+              }}
+              style={{
+                padding: '0.4rem 0.75rem',
+                borderRadius: '6px',
+                border: '1px solid var(--bo-border, #E5E7EB)',
+                backgroundColor: 'var(--bo-surface, #FFFFFF)',
+                fontSize: '0.85rem',
+                color: 'var(--bo-text, #1F2937)'
+              }}
+            >
+              <option value="">Tất cả đối tượng</option>
+              <option value="SACH">Sách</option>
+              <option value="DANH_MUC">Danh mục</option>
+              <option value="CAU_HINH">Cài đặt hệ thống</option>
+              <option value="GIAM_GIA">Chương trình giảm giá</option>
+              <option value="THANH_TOAN">Thanh toán</option>
+              <option value="DANH_GIA">Đánh giá</option>
+              <option value="NHAN_VIEN">Nhân viên</option>
+              <option value="KHACH_HANG">Khách hàng</option>
+            </select>
+          </div>
+        </div>
         {dangTai ? <div className="bo-empty">Đang tải lịch sử…</div> : <div className="bo-table-wrap"><table className="bo-table history-table"><thead><tr><th>Thời điểm</th><th>Đối tượng</th><th>Trường</th><th>Thay đổi</th><th>Nhân viên</th></tr></thead><tbody>
           {danhSach.map(item => <tr key={item.MaLichSuThayDoi}><td>{new Date(item.NgayThayDoi).toLocaleString('vi-VN')}</td><td>{tenDoiTuong[item.LoaiDoiTuong] || item.LoaiDoiTuong} {item.LoaiDoiTuong !== 'CAU_HINH' && <small>#{item.MaDoiTuong}</small>}</td><td>{nguoiDungTruong[item.TruongDuLieu] || item.TruongDuLieu}</td><td><span className="history-old">{hienGiaTri(item, item.GiaTriCu)}</span><span className="history-arrow">→</span><strong>{hienGiaTri(item, item.GiaTriMoi)}</strong></td><td>{item.nhanVienThayDoi?.HoTen || 'Nhân viên không còn hoạt động'}</td></tr>)}
           {!danhSach.length && <tr><td colSpan="5" className="bo-empty">Chưa có thay đổi nào được ghi nhận.</td></tr>}
