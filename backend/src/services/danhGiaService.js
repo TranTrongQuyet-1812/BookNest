@@ -225,7 +225,7 @@ async function anHienDanhGia(maDanhGia, daAn, maNhanVien, lyDo = '') {
     // Ghi nhật ký kiểm toán Back-Office
     if (maNhanVien) {
       await LichSuThayDoi.create({
-        LoaiDoiTuong: 'DanhGia',
+        LoaiDoiTuong: 'DANH_GIA',
         MaDoiTuong: maDanhGia,
         TruongDuLieu: 'DaAn',
         GiaTriCu: giaTriCu,
@@ -256,7 +256,7 @@ async function xoaDanhGia(maDanhGia, maNhanVien) {
     // Ghi nhật ký kiểm toán trước khi xóa
     if (maNhanVien) {
       await LichSuThayDoi.create({
-        LoaiDoiTuong: 'DanhGia',
+        LoaiDoiTuong: 'DANH_GIA',
         MaDoiTuong: maDanhGia,
         TruongDuLieu: 'DaXoa',
         GiaTriCu: JSON.stringify({ SoSao: danhGia.SoSao, NoiDung: danhGia.NoiDung }),

@@ -113,7 +113,7 @@ const luatTaoDonQuay = Joi.object({
 const luatTruyVanLichSu = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(30),
-  loaiDoiTuong: Joi.string().valid('SACH', 'DANH_MUC', 'CAU_HINH'),
+  loaiDoiTuong: Joi.string().valid('SACH', 'DANH_MUC', 'CAU_HINH', 'GIAM_GIA', 'THANH_TOAN', 'DANH_GIA', 'NHAN_VIEN', 'KHACH_HANG'),
   truongDuLieu: Joi.string().max(50),
   tuNgay: Joi.date().iso(),
   denNgay: Joi.date().iso()
