@@ -83,3 +83,24 @@
   .counter-results { max-height: 520px; }
   .counter-lines { max-height: 380px; }
 }
+
+/* T56 responsive */
+@media (min-width: 901px) and (max-height: 800px) {
+  .counter-page .counter-tasks { display: none; }
+  .counter-page .bo-page-heading { margin-bottom: 0.65rem; }
+  .counter-page .bo-page-heading p { display: none; }
+  .counter-page .counter-grid { gap: 0.65rem; }
+  .counter-page .counter-checkout .counter-lines { min-height: 56px; max-height: 84px; padding: 0 0.8rem; }
+  .counter-page .counter-checkout .counter-empty { min-height: 56px; gap: 0.3rem; padding: 0.3rem; }
+  .counter-page .counter-customer-title { margin: 0.45rem 0.8rem 0.3rem; }
+  .counter-page .counter-customer-fields { gap: 0.35rem; padding: 0 0.8rem; }
+  .counter-page .counter-customer-fields input { padding: 0.4rem 0.55rem; }
+  .counter-page .counter-payment-select { gap: 0.35rem; padding: 0 0.8rem; }
+  .counter-page .counter-payment-opt { padding: 0.45rem 0.5rem; }
+  .counter-page .counter-cash-given { margin: 0.45rem 0.8rem 0; padding: 0.5rem; }
+  .counter-page .counter-quick-cash { margin-top: 0.35rem; }
+  .counter-page .counter-change-row { margin-top: 0.3rem; padding-top: 0.3rem; }
+  .counter-page .counter-total { margin: 0.5rem 0.8rem 0; padding-top: 0.5rem; }
+  .counter-page .counter-submit { width: calc(100% - 1.6rem); min-height: 40px; margin: 0.45rem 0.8rem 0.2rem; }
+  .counter-page .counter-footnote { margin: 0 0.8rem 0.5rem; }
+}

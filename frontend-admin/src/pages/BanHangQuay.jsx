@@ -391,7 +391,7 @@ export default function BanHangQuay() {
       </div>
 
       {loi && <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>{loi}</ThongBaoTaiCho>}
-      <KhoiViecCanLam />
+      <KhoiViecCanLam className="counter-tasks" />
 
       {tab === 'ban' && (
         <div className="counter-grid">
@@ -655,6 +655,7 @@ export default function BanHangQuay() {
           {dangTaiLichSu ? (
             <div className="bo-empty">Đang tải lịch sử…</div>
           ) : (
+            <>
             <div className="bo-table-wrap">
               <table className="bo-table">
                 <thead>
@@ -792,6 +793,7 @@ export default function BanHangQuay() {
                 </div>
               </div>
             )}
+            </>
           )}
         </section>
       )}
