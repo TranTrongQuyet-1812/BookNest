@@ -291,7 +291,7 @@ async function nhanDienDanhSachDanhMuc(chuoi, { chiTrungNguyen = false } = {}) {
 
   for (const dm of danhSachDanhMuc) {
     const dmKd = boDauTiengViet(dm.TenDanhMuc).toLowerCase().trim();
-    const cacVe = dmKd.split(/[&\-\/,]+/).map(v => v.trim()).filter(Boolean);
+    const cacVe = dmKd.split(/[&\-/,]+/).map(v => v.trim()).filter(Boolean);
 
     if (chuoiKd === dmKd || cacVe.includes(chuoiKd)) {
       ketQua.set(dm.MaDanhMuc, dm);
@@ -586,6 +586,7 @@ async function thucThiSoanThanhToan({ danh_sach_sach, ten_nguoi_nhan, so_dien_th
       try {
         danhSach = JSON.parse(danhSach);
       } catch (e) {
+        console.warn('[Chatbot] Lỗi parse JSON danh sách sách:', e.message);
         danhSach = [];
       }
     }
@@ -1082,7 +1083,7 @@ function chuanHoaNoiDungAI(noiDung) {
         if (parsed.name || parsed.parameters) return '';
       }
     } catch (e) {
-      // Giữ nguyên chuỗi nếu không parse được JSON
+      console.warn('[Chatbot] Bỏ qua lỗi parse JSON chuỗi phản hồi AI:', e.message);
     }
   }
 
@@ -1136,7 +1137,7 @@ function trichXuatToolCallTuNoiDung(noiDung) {
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.name) {
       let argsObj = parsed.parameters ?? parsed.arguments ?? {};
       if (typeof argsObj === 'string') {
-        try { argsObj = JSON.parse(argsObj); } catch (e) {}
+        try { argsObj = JSON.parse(argsObj); } catch (e) { console.warn('[Chatbot] Bỏ qua lỗi parse argsObj:', e.message); }
       }
       return [{
         id: 'call_' + Date.now(),
@@ -1152,7 +1153,7 @@ function trichXuatToolCallTuNoiDung(noiDung) {
       return parsed.map((item, idx) => {
         let argsObj = item.parameters ?? item.arguments ?? {};
         if (typeof argsObj === 'string') {
-          try { argsObj = JSON.parse(argsObj); } catch (e) {}
+          try { argsObj = JSON.parse(argsObj); } catch (e) { console.warn('[Chatbot] Bỏ qua lỗi parse argsObj:', e.message); }
         }
         return {
           id: 'call_' + Date.now() + '_' + idx,
@@ -1165,7 +1166,7 @@ function trichXuatToolCallTuNoiDung(noiDung) {
       });
     }
   } catch (e) {
-    // Không phải JSON hợp lệ
+    console.warn('[Chatbot] Nội dung không phải JSON tool call:', e.message);
   }
   return null;
 }
@@ -1185,6 +1186,7 @@ async function tinhTongTokenHomNay() {
       soLuot: ketQua ? parseInt(ketQua.soLuot, 10) : 0
     };
   } catch (err) {
+    console.warn('[Chatbot] Lỗi đếm tổng token hôm nay:', err.message);
     // Nếu bảng chưa tạo hoặc lỗi, trả về 0 để không làm nghẽn luồng
     return { tongToken: 0, soLuot: 0 };
   }
@@ -1315,7 +1317,7 @@ async function dieuPhoiToolCall({ toolCall, noiDungTinNhan, sachHienTai, maKhach
   if (tenHam && !danhSachToolDaGoi.includes(tenHam)) danhSachToolDaGoi.push(tenHam);
 
   let thamSo = {};
-  try { thamSo = JSON.parse(toolCall.function?.arguments || '{}'); } catch (e) { thamSo = {}; }
+  try { thamSo = JSON.parse(toolCall.function?.arguments || '{}'); } catch (e) { console.warn('[Chatbot] Lỗi parse tham số toolCall:', e.message); thamSo = {}; }
 
   if (tenHam === 'tim_sach') {
     const ketQua = await thucThiTimSach(thamSo, noiDungTinNhan, sachHienTai);

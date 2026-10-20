@@ -259,7 +259,8 @@ async function xuLyWebhookPayOS(webhookBody) {
 
   try {
     duLieuXacThuc = await payOSClient.webhooks.verify(webhookBody);
-  } catch (_err) {
+  } catch (errXacThuc) {
+    console.warn('[PayOS Webhook] Lỗi xác thực chữ ký webhook:', errXacThuc.message);
     await NhatKyWebhookPayos.create({
       NoiDungTho: noiDungTho,
       ChuKyHopLe: false,

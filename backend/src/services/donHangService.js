@@ -588,10 +588,8 @@ async function khachHuyDon(maDonHang, maKhachHang, lyDo) {
 
     await t.commit();
     if (canHuyLink && thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && thanhToan?.DuongDanThanhToan && thanhToan?.MaGiaoDichPayos) {
-      try {
-        const { huyLinkPayOS } = require('./payosService');
-        huyLinkPayOS(thanhToan.MaGiaoDichPayos, lyDo || 'Khách hàng tự hủy đơn');
-      } catch (errHuy) {}
+      const { huyLinkPayOS } = require('./payosService');
+      huyLinkPayOS(thanhToan.MaGiaoDichPayos, lyDo || 'Khách hàng tự hủy đơn');
     }
     const chiTietDon = await layChiTietDonHang(maDonHang);
     if (thanhToan) {
@@ -1012,10 +1010,8 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
 
     await t.commit();
     if (canHuyLink && thanhToan?.DuongDanThanhToan && thanhToan?.MaGiaoDichPayos) {
-      try {
-        const { huyLinkPayOS } = require('./payosService');
-        huyLinkPayOS(thanhToan.MaGiaoDichPayos, lyDo || 'Nhân viên hủy đơn');
-      } catch (errHuy) {}
+      const { huyLinkPayOS } = require('./payosService');
+      huyLinkPayOS(thanhToan.MaGiaoDichPayos, lyDo || 'Nhân viên hủy đơn');
     }
     const chiTietDon = await layChiTietDonHang(maDonHang);
     if (thanhToan) {

@@ -41,7 +41,7 @@ const nenAnhSangWebP = async (buffer) => {
 
     return anhWebp;
   } catch (err) {
-    // Sharp ném lỗi khi file rác hoặc cấu trúc ảnh bị hỏng
+    console.warn('[AnhBia] Lỗi xử lý ảnh qua Sharp:', err.message);
     throw LoiNghiepVu.yeuCauKhongHopLe('File không phải ảnh hợp lệ');
   }
 };

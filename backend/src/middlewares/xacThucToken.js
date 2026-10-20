@@ -83,6 +83,7 @@ async function xacThucTuyChon(req, res, next) {
     try {
       duLieuGiaiMa = jwt.verify(token, cauHinh.jwt.biMat);
     } catch (loiJwt) {
+      console.warn('[JWT Tùy Chọn] Bỏ qua lỗi giải mã token:', loiJwt.message);
       return next();
     }
 
@@ -100,6 +101,7 @@ async function xacThucTuyChon(req, res, next) {
 
     return next();
   } catch (loi) {
+    console.warn('[Xác Thực Tùy Chọn] Lỗi kiểm tra tài khoản tùy chọn:', loi.message);
     return next();
   }
 }

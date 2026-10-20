@@ -70,7 +70,9 @@ function khoiTaoSocket(httpServer) {
         if (giaiMa.aud === 'khach_hang' && giaiMa.id) {
           socket.join(`khach_hang:${giaiMa.id}`);
         }
-      } catch (err) {}
+      } catch (err) {
+        console.warn('[Socket] Bỏ qua lỗi token phòng khách:', err.message);
+      }
     });
 
     socket.on('roi_khach_hang', (duLieuXacThuc) => {
@@ -80,7 +82,9 @@ function khoiTaoSocket(httpServer) {
         const biMat = cauHinh.jwt?.biMat || cauHinh.jwtBiMat;
         const giaiMa = jwt.verify(token, biMat);
         if (giaiMa.id) socket.leave(`khach_hang:${giaiMa.id}`);
-      } catch (err) {}
+      } catch (err) {
+        console.warn('[Socket] Bỏ qua lỗi token rời phòng khách:', err.message);
+      }
     });
 
     // Nhân viên tham gia phòng quản trị (Bắt buộc xác thực JWT Token: aud === 'nhan_vien')
@@ -115,6 +119,7 @@ function khoiTaoSocket(httpServer) {
           socket.emit('loi_auth_socket', { thongDiep: 'Quyền truy cập phòng quản trị bị từ chối' });
         }
       } catch (err) {
+        console.warn('[Socket] Lỗi xác thực token nhân viên:', err.message);
         socket.emit('loi_xac_thuc', { thongDiep: 'Mã xác thực nhân viên không hợp lệ hoặc đã hết hạn' });
         socket.emit('loi_auth_socket', { thongDiep: 'Mã xác thực nhân viên không hợp lệ hoặc đã hết hạn' });
       }

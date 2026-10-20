@@ -28,7 +28,7 @@ function tachTuKhoa(tuKhoa) {
   const chuoiChuan = lamSachTuKhoa(tuKhoa);
   if (!chuoiChuan) return [];
   return chuoiChuan
-    .split(/[\s\-_,:;.\/\\+&|()\[\]\u2013\u2014–—'"`“”‘’]+/i)
+    .split(/[\s\-_,:;./\\+&|()[\]\u2013\u2014–—'"`“”‘’]+/i)
     .map(t => t.trim())
     .filter(t => t.length > 0 && !/^[^a-zA-Z0-9\u00C0-\u1EF9]+$/.test(t));
 }
@@ -95,7 +95,7 @@ function boDauTiengViet(str) {
 function locTuKhoaThucSu(chuoi) {
   if (!chuoi || typeof chuoi !== 'string') return [];
   return chuoi
-    .split(/[\s\-_,:;.\/\\+&|()\[\]?!\'"`“”‘’\u2013\u2014–—]+/)
+    .split(/[\s\-_,:;./\\+&|()[\]?!'"`“”‘’\u2013\u2014–—]+/)
     .map(t => t.trim())
     .filter(t => {
       if (t.length < 2) return false;

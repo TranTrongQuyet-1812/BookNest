@@ -23,7 +23,7 @@ function xacThucTuyChon(req, res, next) {
       const duLieu = jwt.verify(token, cauHinh.jwt.biMat);
       req.user = duLieu;
     } catch (e) {
-      // Bỏ qua lỗi token nếu là tùy chọn
+      console.warn('[Xác Thực Tùy Chọn] Bỏ qua token không hợp lệ:', e.message);
     }
   }
   next();

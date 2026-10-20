@@ -327,7 +327,9 @@ async function xacNhanHoanTienAdmin(req, res) {
     if (thanhToan.donHang?.MaKhachHang) {
       phatSuKien('thanhToan:daHoanTien', duLieuSocket, `khach_hang:${thanhToan.donHang.MaKhachHang}`);
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('[ThanhToan] Lỗi phát socket hoàn tiền:', e.message);
+  }
 
   return phanHoiThanhCong(res, {
     duLieu: thanhToan,

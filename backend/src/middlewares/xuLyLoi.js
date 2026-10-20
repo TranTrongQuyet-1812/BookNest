@@ -5,7 +5,7 @@
 const { phanHoiLoi } = require('./phanHoi');
 const LoiNghiepVu = require('./loiNghiepVu');
 
-function xuLyLoi(loi, req, res, next) {
+function xuLyLoi(loi, req, res, _next) {
   // 1. Lỗi nghiệp vụ do ứng dụng chủ động ném ra
   if (loi instanceof LoiNghiepVu) {
     return phanHoiLoi(res, {

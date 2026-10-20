@@ -30,7 +30,7 @@ function xacThucTuyChon(req, res, next) {
         };
       }
     } catch (e) {
-      // Token lỗi hoặc hết hạn thì xem như khách vãng lai bình thường
+      console.warn('[Chatbot Auth] Bỏ qua token không hợp lệ của khách:', e.message);
     }
   }
   next();
