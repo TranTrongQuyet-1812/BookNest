@@ -385,12 +385,8 @@ export const ChiTietSach = () => {
         </button>
       </div>
 
-      {/* KHỐI NỘI DUNG CHÍNH (2 CỘT TỶ LỆ VÀNG 4.5 : 7.5 TRONG CARD SANG TRỌNG) */}
+      {/* KHỐI NỘI DUNG CHÍNH (CARD SANG TRỌNG TỶ LỆ VÀNG) */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-        gap: '3.5rem',
-        alignItems: 'start',
         backgroundColor: 'var(--bg-card)',
         borderRadius: '20px',
         border: '1px solid var(--border)',
@@ -398,6 +394,13 @@ export const ChiTietSach = () => {
         padding: '2.5rem',
         marginBottom: '2.5rem'
       }}>
+        {/* Phần 1: Bìa sách & Thông tin mua hàng (2 Cột cân xứng) */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '3.5rem',
+          alignItems: 'start'
+        }}>
         {/* CỘT TRÁI: Bìa Sách Trưng Bày Tinh Tế */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{
@@ -816,29 +819,38 @@ export const ChiTietSach = () => {
             </div>
           </div>
 
-          {/* Khối Giới Thiệu / Tóm Tắt Tác Phẩm */}
-          <div>
-            <h3 style={{
-              fontSize: '1rem',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              color: 'var(--text-muted)',
-              marginBottom: '0.75rem'
-            }}>
-              Giới thiệu tác phẩm
-            </h3>
-            <div style={{
-              fontSize: '0.96rem',
-              color: 'var(--text-main)',
-              lineHeight: 1.85,
-              whiteSpace: 'pre-line'
-            }}>
-              {moTaSachSachSe || 'Tác phẩm hiện đang được cập nhật phần tóm tắt chi tiết.'}
-            </div>
-          </div>
         </div>
       </div>
+
+      {/* Đường phân cách thanh mảnh giữa khu vực mua hàng và phần giới thiệu */}
+      <div style={{
+        height: '1px',
+        backgroundColor: 'var(--border)',
+        margin: '2.5rem 0'
+      }} />
+
+      {/* Phần 2: Giới Thiệu Tác Phẩm (DÀN ĐỀU 100% BỀ NGANG) */}
+      <div>
+        <h2 style={{
+          fontSize: '1rem',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          color: 'var(--text-muted)',
+          marginBottom: '1rem'
+        }}>
+          Giới thiệu tác phẩm
+        </h2>
+        <div style={{
+          fontSize: '0.98rem',
+          color: 'var(--text-main)',
+          lineHeight: 1.85,
+          whiteSpace: 'pre-line'
+        }}>
+          {moTaSachSachSe || 'Tác phẩm hiện đang được cập nhật phần tóm tắt chi tiết.'}
+        </div>
+      </div>
+    </div>
 
       {/* KHU VỰC ĐÁNH GIÁ & NHẬN XÉT CỦA BẠN ĐỌC (TRONG CARD GỌN GÀNG) */}
       <div style={{
