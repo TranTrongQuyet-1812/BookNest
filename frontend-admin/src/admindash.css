@@ -1,0 +1,1050 @@
+/* ==========================================================================
+   GIAO DIỆN KHU QUẢN TRỊ (admindash)
+   Hệ thiết kế riêng cho Back-Office, tách khỏi index.css của Storefront để hai bên
+   không ảnh hưởng nhau. Nạp sau index.css và trước backoffice.css (xem main.jsx).
+
+   Định hướng (chế độ "Operate": người dùng đang làm việc, giao diện phải lặn vào tác vụ):
+   - Nền giấy ấm cùng họ màu nâu cà phê của Storefront, để hai khu nhìn là cùng một thương hiệu.
+   - Nút chính màu mực đậm. Màu hổ phách chỉ dùng làm dấu nhấn (biểu đồ, mục đang chọn, vòng focus).
+   - Màu đỏ/cam/xanh lá chỉ xuất hiện khi mang nghĩa trạng thái.
+   - Khung chỉ dùng viền mảnh, không đổ bóng; bóng chỉ cho thứ nổi lên trên nội dung (hộp thoại, tooltip).
+   - Chuyển động ngắn (140–220 ms), chỉ để báo trạng thái; tắt hẳn khi người dùng chọn giảm chuyển động.
+   ========================================================================== */
+
+.admindash-shell {
+  /* Nền và bề mặt */
+  --adm-bg: #F6F3EE;
+  --adm-surface: #FFFFFF;
+  --adm-surface-2: #FAF8F4;
+  --adm-border: #E6E0D6;
+  --adm-border-strong: #D3CBBE;
+
+  /* Chữ (độ tương phản trên nền trắng: chính 15:1, phụ 5.9:1, mờ 4.6:1) */
+  --adm-text-main: #2A2420;
+  --adm-text-muted: #6A6159;
+  --adm-text-sub: #7E756C;
+
+  /* Nút chính màu mực; dấu nhấn hổ phách (trắng trên #B45309 đạt 5:1) */
+  --adm-primary: #2A2420;
+  --adm-primary-hover: #433A33;
+  --adm-primary-subtle: #F1ECE4;
+  --adm-primary-text: #FFFFFF;
+  --adm-accent: #B45309;
+  --adm-accent-hover: #92400E;
+  --adm-accent-subtle: #FBF0E2;
+  --adm-focus: #B45309;
+  --adm-chart: #C2792B;
+  --adm-chart-hover: #9A5A14;
+
+  /* Màu trạng thái */
+  --adm-success: #3F7D4E;
+  --adm-success-subtle: #E8F1EA;
+  --adm-warning: #A15C07;
+  --adm-warning-subtle: #FBF1DC;
+  --adm-danger: #B3261E;
+  --adm-danger-subtle: #FBE9E7;
+  --adm-info: #2F5F8A;
+  --adm-info-subtle: #E7EEF5;
+  --adm-shipping: #5B4B8A;
+  --adm-shipping-subtle: #EEEAF5;
+
+  /* Thanh bên: nâu cà phê đậm, cùng họ với Storefront */
+  --adm-sidebar: #26211E;
+  --adm-sidebar-text: #F1ECE4;
+  --adm-sidebar-muted: #A39A8F;
+  --adm-sidebar-hover: #322C28;
+  --adm-sidebar-active-bg: #3B342F;
+  --adm-sidebar-border: #38322D;
+
+  /* Tên cũ mà một số trang còn đọc, trỏ về bộ mới để không trang nào mất màu */
+  --adm-card: var(--adm-surface);
+  --adm-card-bg: var(--adm-surface);
+  --adm-card-hover: var(--adm-surface-2);
+  --adm-card-border: var(--adm-border);
+  --adm-bg-surface: var(--adm-surface-2);
+  --adm-table-header-bg: var(--adm-surface-2);
+  --adm-border-focus: var(--adm-focus);
+  --adm-text-title: var(--adm-text-main);
+  --adm-text-body: var(--adm-text-main);
+  --adm-info-text: var(--adm-info);
+
+  /* Chuyển động */
+  --adm-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --adm-t-fast: 140ms;
+  --adm-t: 200ms;
+
+  /* Ánh xạ cho các thành phần dùng chung với Storefront (phân trang, hộp thoại, thông báo) */
+  --bg-app: var(--adm-bg);
+  --bg-card: var(--adm-surface);
+  --bg-surface: var(--adm-surface-2);
+  --bg-hover: var(--adm-primary-subtle);
+  --border: var(--adm-border);
+  --border-focus: var(--adm-focus);
+  --text-main: var(--adm-text-main);
+  --text-muted: var(--adm-text-muted);
+  --text-sub: var(--adm-text-sub);
+  --primary: var(--adm-primary);
+  --primary-hover: var(--adm-primary-hover);
+  --primary-light: var(--adm-primary-subtle);
+  --primary-text: var(--adm-primary-text);
+  --accent: var(--adm-success);
+  --danger: var(--adm-danger);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --shadow-sm: none;
+  --shadow-md: 0 8px 24px rgba(42, 36, 32, 0.12), 0 2px 6px rgba(42, 36, 32, 0.06);
+  --shadow-lg: 0 8px 24px rgba(42, 36, 32, 0.12), 0 2px 6px rgba(42, 36, 32, 0.06);
+
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  background-color: var(--adm-bg) !important;
+  color: var(--adm-text-main) !important;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv11', 'ss01';
+}
+
+.admindash-shell * {
+  font-family: inherit;
+}
+
+/* Phần trình duyệt tự vẽ cũng phải theo bảng màu: bôi đen chữ, con trỏ, thanh cuộn, vòng focus */
+.admindash-shell ::selection {
+  background: var(--adm-accent-subtle);
+  color: var(--adm-text-main);
+}
+
+.admindash-shell {
+  caret-color: var(--adm-accent);
+  scrollbar-color: var(--adm-border-strong) transparent;
+}
+
+.admindash-shell *::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.admindash-shell *::-webkit-scrollbar-thumb {
+  background: var(--adm-border-strong);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Thanh trượt, ô chọn, nút radio dùng màu nhấn thay màu xanh mặc định của trình duyệt */
+.admindash-shell input[type="range"],
+.admindash-shell input[type="checkbox"],
+.admindash-shell input[type="radio"] {
+  accent-color: var(--adm-accent);
+}
+
+.admindash-shell :focus-visible {
+  outline: 2px solid var(--adm-focus);
+  outline-offset: 2px;
+}
+
+.admindash-shell h1,
+.admindash-shell h2,
+.admindash-shell h3 {
+  letter-spacing: -0.01em;
+}
+
+.tabular-nums,
+.admindash-shell .tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Thanh bên ---------- */
+.admindash-sidebar {
+  width: 248px;
+  background-color: var(--adm-sidebar);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  padding: 1.1rem 0.85rem;
+  flex-shrink: 0;
+  z-index: 30;
+  color: var(--adm-sidebar-text);
+  overflow-y: auto;
+  transition: width var(--adm-t) var(--adm-ease), padding var(--adm-t) var(--adm-ease);
+}
+
+.admindash-sidebar.collapsed {
+  width: 64px;
+  padding: 1.1rem 0.5rem;
+}
+
+.admindash-sidebar.collapsed .admindash-hide-collapsed {
+  display: none !important;
+}
+
+.admindash-sidebar.collapsed .admindash-nav-link {
+  justify-content: center;
+  padding: 0.6rem 0;
+}
+
+.admindash-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.2rem 0.4rem 1rem;
+  border-bottom: 1px solid var(--adm-sidebar-border);
+}
+
+.admindash-sidebar.collapsed .admindash-brand {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.admindash-brand-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #FFFFFF;
+}
+
+.admindash-brand-sub {
+  font-size: 0.72rem;
+  color: var(--adm-sidebar-muted);
+}
+
+.admindash-user {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 0.6rem;
+  margin: 0.9rem 0 1rem;
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: background-color var(--adm-t-fast) var(--adm-ease);
+}
+
+.admindash-user:hover,
+.admindash-user.active {
+  background-color: var(--adm-sidebar-hover);
+}
+
+.admindash-sidebar.collapsed .admindash-user {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.admindash-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--adm-accent);
+  color: #FFFFFF;
+  display: grid;
+  place-items: center;
+  font-size: 0.74rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.admindash-user-name {
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: #FFFFFF;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admindash-user-role {
+  font-size: 0.72rem;
+  color: var(--adm-sidebar-muted);
+}
+
+.admindash-nav-group {
+  margin-bottom: 1.1rem;
+}
+
+.admindash-group-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--adm-sidebar-muted);
+  padding: 0 0.7rem 0.35rem;
+}
+
+.admindash-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-size: 0.84rem;
+  font-weight: 450;
+  color: var(--adm-sidebar-muted);
+  text-decoration: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color var(--adm-t-fast) var(--adm-ease), color var(--adm-t-fast) var(--adm-ease);
+}
+
+.admindash-nav-link svg {
+  stroke-width: 1.75;
+  flex-shrink: 0;
+}
+
+.admindash-nav-link:hover {
+  background-color: var(--adm-sidebar-hover);
+  color: var(--adm-sidebar-text);
+}
+
+.admindash-nav-link.active {
+  background-color: var(--adm-sidebar-active-bg);
+  color: #FFFFFF;
+  font-weight: 550;
+}
+
+.admindash-nav-link.danger {
+  color: #E8A29B;
+}
+
+.admindash-nav-link.danger:hover {
+  color: #FFFFFF;
+  background-color: rgba(179, 38, 30, 0.35);
+}
+
+.admindash-sidebar-foot {
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--adm-sidebar-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+/* ---------- Thanh trên ---------- */
+.admindash-topbar {
+  height: 52px;
+  border-bottom: 1px solid var(--adm-border);
+  background-color: var(--adm-surface);
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.admindash-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--adm-text-muted);
+  cursor: pointer;
+  transition: background-color var(--adm-t-fast) var(--adm-ease), color var(--adm-t-fast) var(--adm-ease);
+}
+
+.admindash-icon-btn:hover {
+  background-color: var(--adm-primary-subtle);
+  color: var(--adm-text-main);
+}
+
+.admindash-crumb {
+  margin-left: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 550;
+  color: var(--adm-text-main);
+}
+
+.admindash-main {
+  animation: adm-fade-in var(--adm-t) var(--adm-ease) both;
+}
+
+/* ---------- Khung nội dung ---------- */
+.admindash-shell .card {
+  background-color: var(--adm-surface);
+  border: 1px solid var(--adm-border);
+  border-radius: 12px;
+  padding: 1.15rem 1.25rem;
+  box-shadow: none;
+  transition: none;
+}
+
+.admindash-shell .card:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+.admindash-page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.admindash-page-title {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--adm-text-main);
+}
+
+.admindash-page-desc {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--adm-text-muted);
+}
+
+.admindash-panel {
+  background-color: var(--adm-surface);
+  border: 1px solid var(--adm-border);
+  border-radius: 12px;
+}
+
+.admindash-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.95rem 1.25rem 0;
+}
+
+.admindash-panel-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--adm-text-main);
+}
+
+.admindash-panel-note {
+  font-size: 0.8rem;
+  color: var(--adm-text-muted);
+}
+
+.admindash-panel-body {
+  padding: 0.85rem 1.25rem 1.1rem;
+}
+
+.admindash-grid {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.admindash-grid.cols-7-5 { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+.admindash-grid.cols-1-1 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+
+@media (max-width: 1100px) {
+  .admindash-grid.cols-7-5,
+  .admindash-grid.cols-1-1 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---------- Thanh công cụ lọc ---------- */
+.admindash-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.admindash-toolbar-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admindash-field {
+  height: 34px;
+  padding: 0 0.65rem;
+  border: 1px solid var(--adm-border-strong);
+  border-radius: 8px;
+  background-color: var(--adm-surface);
+  color: var(--adm-text-main);
+  font-size: 0.84rem;
+  transition: border-color var(--adm-t-fast) var(--adm-ease), box-shadow var(--adm-t-fast) var(--adm-ease);
+}
+
+.admindash-field:hover {
+  border-color: var(--adm-text-sub);
+}
+
+.admindash-field:focus-visible {
+  outline: none;
+  border-color: var(--adm-focus);
+  box-shadow: 0 0 0 3px var(--adm-accent-subtle);
+}
+
+.admindash-range-sep {
+  color: var(--adm-text-sub);
+}
+
+/* ---------- Thanh chọn kiểu phân đoạn, thanh trượt mượt ---------- */
+.admindash-segmented {
+  --n: 2;
+  --idx: 0;
+  position: relative;
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  padding: 3px;
+  background-color: var(--adm-primary-subtle);
+  border-radius: 9px;
+  isolation: isolate;
+}
+
+.admindash-segmented::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / var(--n));
+  background-color: var(--adm-surface);
+  border-radius: 7px;
+  box-shadow: 0 1px 2px rgba(42, 36, 32, 0.12);
+  transform: translateX(calc(var(--idx) * 100%));
+  opacity: var(--has-active, 1);
+  transition: transform var(--adm-t) var(--adm-ease);
+}
+
+.admindash-segmented-btn {
+  min-height: 28px;
+  padding: 0 0.85rem;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  color: var(--adm-text-muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--adm-t-fast) var(--adm-ease);
+}
+
+.admindash-segmented-btn:hover {
+  color: var(--adm-text-main);
+}
+
+.admindash-segmented-btn.active {
+  color: var(--adm-text-main);
+  font-weight: 600;
+}
+
+/* ---------- Hàng việc cần xử lý và chỉ số tổng ---------- */
+.admindash-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.admindash-strip-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.85rem 1.25rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  position: relative;
+}
+
+.admindash-strip-item + .admindash-strip-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.85rem;
+  bottom: 0.85rem;
+  width: 1px;
+  background-color: var(--adm-border);
+}
+
+/* Dải nhiều chỉ số: luôn 3 cột; xuống hàng thì kẻ ngang, không kẻ dọc ở ô đầu hàng */
+.admindash-strip.cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admindash-strip.cols-3 .admindash-strip-item:nth-child(3n + 1)::before {
+  display: none;
+}
+
+.admindash-strip.cols-3 .admindash-strip-item:nth-child(n + 4) {
+  border-top: 1px solid var(--adm-border);
+}
+
+.admindash-strip.cols-3 .admindash-strip-item:nth-child(n + 4)::before {
+  top: 0.85rem;
+}
+
+@media (max-width: 760px) {
+  .admindash-strip.cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+button.admindash-strip-item {
+  cursor: pointer;
+  transition: background-color var(--adm-t-fast) var(--adm-ease);
+}
+
+button.admindash-strip-item:hover {
+  background-color: var(--adm-surface-2);
+}
+
+.admindash-strip-label {
+  font-size: 0.8rem;
+  color: var(--adm-text-muted);
+}
+
+.admindash-strip-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--adm-text-main);
+}
+
+.admindash-strip-value.is-zero {
+  color: var(--adm-text-sub);
+}
+
+.admindash-strip-value.is-danger {
+  color: var(--adm-danger);
+}
+
+.admindash-strip-unit {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--adm-text-muted);
+  letter-spacing: 0;
+}
+
+.admindash-strip-hint {
+  font-size: 0.78rem;
+  color: var(--adm-text-sub);
+}
+
+.admindash-strip-go {
+  color: var(--adm-text-sub);
+  transition: transform var(--adm-t-fast) var(--adm-ease), color var(--adm-t-fast) var(--adm-ease);
+}
+
+button.admindash-strip-item:hover .admindash-strip-go {
+  color: var(--adm-text-main);
+  transform: translateX(2px);
+}
+
+/* ---------- Biểu đồ ---------- */
+.admindash-chart {
+  position: relative;
+  width: 100%;
+}
+
+.admindash-chart svg {
+  display: block;
+  overflow: visible;
+}
+
+.admindash-bar {
+  fill: var(--adm-chart);
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: adm-bar-rise 420ms var(--adm-ease) both;
+  animation-delay: calc(var(--i, 0) * 22ms);
+  transition: fill var(--adm-t-fast) var(--adm-ease);
+}
+
+.admindash-bar.is-hover {
+  fill: var(--adm-chart-hover);
+}
+
+.admindash-chart-tooltip {
+  position: absolute;
+  z-index: 5;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  background: var(--adm-text-main);
+  color: #FFFFFF;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(42, 36, 32, 0.22), 0 2px 6px rgba(42, 36, 32, 0.1);
+  transform: translate(-50%, -100%);
+  animation: adm-fade-in var(--adm-t-fast) var(--adm-ease) both;
+}
+
+.admindash-chart-tooltip strong {
+  font-weight: 600;
+}
+
+.admindash-chart-tooltip span {
+  color: #D9D0C4;
+}
+
+/* ---------- Danh sách có thanh tỷ lệ (thể loại, trạng thái đơn) ---------- */
+.admindash-bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admindash-bar-row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.84rem;
+  margin-bottom: 0.35rem;
+}
+
+.admindash-bar-row-name {
+  color: var(--adm-text-main);
+  font-weight: 500;
+}
+
+.admindash-bar-row-value {
+  color: var(--adm-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.admindash-bar-row-value strong {
+  color: var(--adm-text-main);
+  font-weight: 600;
+}
+
+.admindash-progress-track {
+  height: 6px;
+  background-color: var(--adm-primary-subtle);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.admindash-progress-bar {
+  height: 100%;
+  width: 100%;
+  border-radius: 999px;
+  background-color: var(--adm-chart);
+  transform-origin: left;
+  animation: adm-grow-x 520ms var(--adm-ease) both;
+}
+
+.admindash-stack {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  margin-bottom: 1.1rem;
+}
+
+.admindash-stack > div {
+  height: 100%;
+  min-width: 3px;
+  border-radius: 3px;
+  transform-origin: left;
+  animation: adm-grow-x 520ms var(--adm-ease) both;
+}
+
+.admindash-legend {
+  display: flex;
+  flex-direction: column;
+}
+
+.admindash-legend-row {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--adm-border);
+  font-size: 0.84rem;
+}
+
+.admindash-legend-row:last-child {
+  border-bottom: none;
+}
+
+.admindash-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.admindash-legend-count {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.admindash-legend-pct {
+  min-width: 3.2rem;
+  text-align: right;
+  color: var(--adm-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Bảng dữ liệu ---------- */
+.admindash-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--adm-border);
+  border-radius: 12px;
+  background-color: var(--adm-surface);
+}
+
+.admindash-panel .admindash-table-wrap {
+  border: none;
+  border-radius: 0;
+}
+
+.admindash-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.admindash-table.is-compact {
+  min-width: 0;
+}
+
+.admindash-table th {
+  background-color: var(--adm-surface-2);
+  color: var(--adm-text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--adm-border);
+  white-space: nowrap;
+}
+
+.admindash-table td {
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--adm-border);
+  font-size: 0.86rem;
+  color: var(--adm-text-main);
+  vertical-align: middle;
+}
+
+.admindash-table tbody tr {
+  transition: background-color var(--adm-t-fast) var(--adm-ease);
+}
+
+.admindash-table tbody tr:hover td {
+  background-color: var(--adm-surface-2);
+}
+
+.admindash-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admindash-table .is-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.admindash-table .is-rank {
+  width: 2rem;
+  color: var(--adm-text-sub);
+  font-variant-numeric: tabular-nums;
+}
+
+.admindash-book-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.admindash-book-title {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.admindash-book-meta {
+  font-size: 0.78rem;
+  color: var(--adm-text-muted);
+}
+
+.admindash-book-thumb {
+  width: 34px;
+  height: 46px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: var(--adm-primary-subtle);
+  box-shadow: 0 0 0 1px var(--adm-border);
+  flex-shrink: 0;
+}
+
+.admindash-empty {
+  padding: 2.25rem 1rem;
+  text-align: center;
+  color: var(--adm-text-muted);
+  font-size: 0.86rem;
+}
+
+/* ---------- Khung chờ tải ---------- */
+.admindash-skeleton {
+  background-color: var(--adm-primary-subtle);
+  border-radius: 6px;
+  animation: adm-pulse 1.4s ease-in-out infinite;
+}
+
+/* ---------- Nhãn trạng thái ---------- */
+.admindash-shell .badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 500;
+  border: none;
+}
+
+.admindash-shell .badge-role { background-color: var(--adm-primary-subtle); color: var(--adm-text-main); }
+.admindash-shell .badge-pending { background-color: var(--adm-warning-subtle); color: var(--adm-warning); }
+.admindash-shell .badge-confirmed { background-color: var(--adm-info-subtle); color: var(--adm-info); }
+.admindash-shell .badge-processing { background-color: var(--adm-info-subtle); color: var(--adm-info); }
+.admindash-shell .badge-shipping { background-color: var(--adm-shipping-subtle); color: var(--adm-shipping); }
+.admindash-shell .badge-delivered { background-color: var(--adm-success-subtle); color: var(--adm-success); }
+.admindash-shell .badge-cancelled { background-color: var(--adm-danger-subtle); color: var(--adm-danger); }
+
+/* ---------- Nút ---------- */
+.admindash-shell .btn {
+  font-size: 0.84rem;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  transition: background-color var(--adm-t-fast) var(--adm-ease), border-color var(--adm-t-fast) var(--adm-ease), color var(--adm-t-fast) var(--adm-ease), opacity var(--adm-t-fast) var(--adm-ease);
+}
+
+.admindash-shell .btn-primary {
+  background-color: var(--adm-primary);
+  color: var(--adm-primary-text);
+  border: 1px solid transparent;
+}
+
+.admindash-shell .btn-primary:hover:not(:disabled) {
+  background-color: var(--adm-primary-hover);
+}
+
+.admindash-shell .btn-outline {
+  background-color: var(--adm-surface);
+  border-color: var(--adm-border-strong);
+  color: var(--adm-text-main);
+}
+
+.admindash-shell .btn-outline:hover:not(:disabled) {
+  background-color: var(--adm-surface-2);
+  border-color: var(--adm-text-sub);
+}
+
+.admindash-shell .btn-danger {
+  background-color: var(--adm-danger);
+  color: #FFFFFF;
+}
+
+.admindash-shell .btn-danger:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.admindash-shell .btn:disabled {
+  opacity: 0.5;
+}
+
+/* ---------- Ô nhập ---------- */
+.admindash-shell .form-input {
+  background-color: var(--adm-surface);
+  border: 1px solid var(--adm-border-strong);
+  border-radius: 8px;
+  color: var(--adm-text-main);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.86rem;
+  outline: none;
+  transition: border-color var(--adm-t-fast) var(--adm-ease), box-shadow var(--adm-t-fast) var(--adm-ease);
+}
+
+.admindash-shell .form-input:hover {
+  border-color: var(--adm-text-sub);
+}
+
+.admindash-shell .form-input:focus {
+  border-color: var(--adm-focus);
+  box-shadow: 0 0 0 3px var(--adm-accent-subtle);
+}
+
+.admindash-shell .form-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--adm-text-muted);
+}
+
+/* ---------- Hộp thoại ---------- */
+.admindash-shell .modal-overlay {
+  background-color: rgba(38, 33, 30, 0.5);
+}
+
+.admindash-shell .modal-content {
+  background-color: var(--adm-surface);
+  border: 1px solid var(--adm-border);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(42, 36, 32, 0.16), 0 2px 6px rgba(42, 36, 32, 0.08);
+  color: var(--adm-text-main);
+}
+
+/* ---------- Chuyển động ---------- */
+@keyframes adm-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes adm-bar-rise {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes adm-grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes adm-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Người dùng chọn giảm chuyển động thì bỏ hết hiệu ứng, giữ nguyên nội dung */
+@media (prefers-reduced-motion: reduce) {
+  .admindash-shell *,
+  .admindash-shell *::before,
+  .admindash-shell *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+  }
+}
