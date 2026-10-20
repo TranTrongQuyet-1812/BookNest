@@ -1017,6 +1017,98 @@ button.admindash-strip-item:hover .admindash-strip-go {
   color: var(--adm-text-main);
 }
 
+/* ---------- Cổng đăng nhập (trang riêng, chưa vào khung quản trị) ---------- */
+/* Khung neo ở phần trên của màn hình để không nhảy vị trí khi hiện thông báo lỗi */
+.admindash-gate {
+  display: grid;
+  place-items: start center;
+  padding: 14vh 1.5rem 1.5rem;
+}
+
+.admindash-gate-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 2rem 2rem 1.5rem;
+  background-color: var(--adm-surface);
+  border: 1px solid var(--adm-border);
+  border-radius: 14px;
+  animation: adm-fade-in 260ms var(--adm-ease) both;
+}
+
+.admindash-gate-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1.75rem;
+}
+
+.admindash-gate-brand .admindash-brand-name { color: var(--adm-text-main); }
+.admindash-gate-brand .admindash-brand-sub { color: var(--adm-text-muted); }
+
+.admindash-gate-title {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.admindash-gate-desc {
+  margin: 0.3rem 0 1.5rem;
+  font-size: 0.86rem;
+  color: var(--adm-text-muted);
+}
+
+.admindash-gate-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.admindash-gate-password {
+  position: relative;
+}
+
+.admindash-gate-password .form-input {
+  padding-right: 3.6rem;
+}
+
+.admindash-gate-toggle {
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.3rem 0.5rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--adm-text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--adm-t-fast) var(--adm-ease), color var(--adm-t-fast) var(--adm-ease);
+}
+
+.admindash-gate-toggle:hover {
+  background-color: var(--adm-primary-subtle);
+  color: var(--adm-text-main);
+}
+
+.admindash-shell .btn.admindash-gate-submit {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.9rem;
+}
+
+.admindash-gate-note {
+  margin: 1.25rem 0 0;
+  font-size: 0.78rem;
+  color: var(--adm-text-muted);
+  text-align: center;
+}
+
 /* ---------- Chuyển động ---------- */
 @keyframes adm-fade-in {
   from { opacity: 0; transform: translateY(4px); }

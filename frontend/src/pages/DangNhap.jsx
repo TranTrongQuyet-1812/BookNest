@@ -9,9 +9,9 @@ import {
 } from 'lucide-react';
 import { ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
-// choNhanVien = true: cổng đăng nhập của nhân viên (/admin/login), còn lại là cổng khách hàng (/login)
-export const DangNhap = ({ choNhanVien = false }) => {
-  const { dangNhap, dangNhapNhanVien } = useAuth();
+// Cổng đăng nhập của khách hàng (/login). Nhân viên có cổng riêng ở khu quản trị (frontend-admin) trên tên miền riêng.
+export const DangNhap = () => {
+  const { dangNhap } = useAuth();
   const { dongBoGioHangGuestLenServer } = useCartStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,29 +30,17 @@ export const DangNhap = ({ choNhanVien = false }) => {
     const laDuongDanNoiBoHopLe = (p) => typeof p === 'string' && p.startsWith('/') && !p.startsWith('//');
 
     try {
-      if (choNhanVien) {
-        await dangNhapNhanVien(email, matKhau);
-        const fromState = location.state?.from;
-        let duongDanAdminCu = '/admin';
-        if (typeof fromState === 'string' && laDuongDanNoiBoHopLe(fromState)) {
-          duongDanAdminCu = fromState;
-        } else if (fromState?.pathname && laDuongDanNoiBoHopLe(fromState.pathname)) {
-          duongDanAdminCu = fromState.pathname + (fromState.search || '') + (fromState.hash || '');
-        }
-        navigate(duongDanAdminCu);
-      } else {
-        await dangNhap(email, matKhau);
-        // Tự động đồng bộ giỏ hàng khách vãng lai lên server nếu có
-        await dongBoGioHangGuestLenServer();
-        const fromState = location.state?.from;
-        let duongDanCu = '/';
-        if (typeof fromState === 'string' && laDuongDanNoiBoHopLe(fromState)) {
-          duongDanCu = fromState;
-        } else if (fromState?.pathname && laDuongDanNoiBoHopLe(fromState.pathname)) {
-          duongDanCu = fromState.pathname + (fromState.search || '') + (fromState.hash || '');
-        }
-        navigate(duongDanCu);
+      await dangNhap(email, matKhau);
+      // Tự động đồng bộ giỏ hàng khách vãng lai lên server nếu có
+      await dongBoGioHangGuestLenServer();
+      const fromState = location.state?.from;
+      let duongDanCu = '/';
+      if (typeof fromState === 'string' && laDuongDanNoiBoHopLe(fromState)) {
+        duongDanCu = fromState;
+      } else if (fromState?.pathname && laDuongDanNoiBoHopLe(fromState.pathname)) {
+        duongDanCu = fromState.pathname + (fromState.search || '') + (fromState.hash || '');
       }
+      navigate(duongDanCu);
     } catch (err) {
       setLoi(loiTuApi(err, 'Đăng nhập không thành công. Vui lòng kiểm tra lại'));
     } finally {
@@ -153,10 +141,10 @@ export const DangNhap = ({ choNhanVien = false }) => {
         }}>
           <div style={{ marginBottom: '1.75rem' }}>
             <h2 className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-main)' }}>
-              {choNhanVien ? 'Đăng Nhập Nhân Viên' : 'Đăng Nhập'}
+              Đăng Nhập
             </h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.35rem' }}>
-              {choNhanVien ? 'Dành cho thủ thư, thủ kho và quản trị viên của BookNest' : 'Nhập email và mật khẩu để tiếp tục hành trình đọc sách'}
+              Nhập email và mật khẩu để tiếp tục hành trình đọc sách
             </p>
           </div>
 
@@ -216,16 +204,14 @@ export const DangNhap = ({ choNhanVien = false }) => {
                 </button>
               </div>
 
-              {!choNhanVien && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                  <Link
-                    to="/forgot-password"
-                    className="link-quen-mat-khau"
-                  >
-                    Quên mật khẩu?
-                  </Link>
-                </div>
-              )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                <Link
+                  to="/forgot-password"
+                  className="link-quen-mat-khau"
+                >
+                  Quên mật khẩu?
+                </Link>
+              </div>
             </div>
 
             {/* Nút bấm Submit */}
@@ -253,25 +239,14 @@ export const DangNhap = ({ choNhanVien = false }) => {
             fontSize: '0.875rem',
             color: 'var(--text-muted)'
           }}>
-            {choNhanVien ? 'Bạn là khách hàng?' : 'Bạn chưa có tài khoản?'}{' '}
+            Bạn chưa có tài khoản?{' '}
             <Link 
-              to={choNhanVien ? `${import.meta.env.VITE_STOREFRONT_URL || 'http://localhost:3000'}/login` : '/register'}
-              state={choNhanVien ? undefined : location.state}
+              to="/register"
+              state={location.state}
               className="link-accent"
             >
-              {choNhanVien ? 'Đăng nhập khách hàng' : 'Đăng ký tài khoản mới'}
+              Đăng ký tài khoản mới
             </Link>
-            {!choNhanVien && (
-              <div style={{ marginTop: '0.5rem' }}>
-                Bạn là nhân viên?{' '}
-                <a 
-                  href={`${import.meta.env.VITE_BACKOFFICE_URL || 'http://localhost:5174'}/admin/login`} 
-                  className="link-accent"
-                >
-                  Đăng nhập nhân viên
-                </a>
-              </div>
-            )}
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from '@booknest/shared/auth';
-import DangNhap from '../../frontend/src/pages/DangNhap.jsx';
+import DangNhapQuanTri from './pages/DangNhapQuanTri.jsx';
 import AdminLayout from '../../frontend/src/pages/admin/AdminLayout.jsx';
 import DashboardThongKe from '../../frontend/src/pages/admin/DashboardThongKe.jsx';
 import QuanLySach from '../../frontend/src/pages/admin/QuanLySach.jsx';
@@ -22,8 +22,8 @@ function BaoVeNhanVien({ children, vaiTro }) {
   const location = useLocation();
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'sans-serif', color: '#64748B' }}>
-        Đang nạp dữ liệu nhân viên BookNest...
+      <div className="admindash-shell admindash-gate" style={{ color: 'var(--adm-text-muted)' }}>
+        Đang xác thực phiên đăng nhập…
       </div>
     );
   }
@@ -46,7 +46,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/admin/login" element={<DangNhap choNhanVien />} />
+        <Route path="/admin/login" element={<DangNhapQuanTri />} />
         <Route path="/admin" element={
           <BaoVeNhanVien vaiTro={['quan_tri', 'thu_kho', 'thu_thu']}><AdminLayout /></BaoVeNhanVien>
         }>
