@@ -4,7 +4,7 @@
 const { Op, TableHints } = require('sequelize');
 const { sequelize, Sach, DanhMuc, LichSuNhapKho, LichSuDieuChinhKho, NhanVien } = require('../models');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
-const { chuaTuKhoa } = require('../utils/timKiem');
+const { chuaTuKhoa, chuaTuKhoaBoKhoangTrang, chuaTuKhoaLinhHoat } = require('../utils/timKiem');
 const { ghiNhanThayDoi } = require('./lichSuThayDoiService');
 const anhBiaService = require('./anhBiaService');
 const { tinhGiaSauGiam } = require('../utils/giaBan');
@@ -49,9 +49,17 @@ async function layDanhSachSach({
 
   if (search && search.trim().length > 0) {
     const tuKhoa = search.trim();
+    const tuKhoaTachCamelCase = tuKhoa.replace(/([a-z])([A-Z])/g, '$1 $2');
+    const cotGhepTenVaTacGia = "COALESCE([Sach].[TenSach], N'') + N' ' + COALESCE([Sach].[TacGia], N'')";
+
     dieuKien[Op.or] = [
       chuaTuKhoa('[Sach].[TenSach]', tuKhoa),
-      chuaTuKhoa('[Sach].[TacGia]', tuKhoa)
+      chuaTuKhoa('[Sach].[TacGia]', tuKhoa),
+      chuaTuKhoaLinhHoat('[Sach].[TenSach]', tuKhoaTachCamelCase),
+      chuaTuKhoaLinhHoat('[Sach].[TacGia]', tuKhoaTachCamelCase),
+      chuaTuKhoaLinhHoat(cotGhepTenVaTacGia, tuKhoaTachCamelCase),
+      chuaTuKhoaBoKhoangTrang('[Sach].[TenSach]', tuKhoa),
+      chuaTuKhoaBoKhoangTrang('[Sach].[TacGia]', tuKhoa)
     ];
   }
 

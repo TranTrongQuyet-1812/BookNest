@@ -43,6 +43,18 @@ function chuaTuKhoa(tenCot, tuKhoa) {
   });
 }
 
+/** So khớp khi người dùng vô tình bỏ khoảng trắng hoặc dấu phân cách trong tên. */
+function chuaTuKhoaBoKhoangTrang(tenCot, tuKhoa) {
+  const bieuThuc = `REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(${tenCot}, N' ', N''), N'-', N''), N'_', N''), N'.', N''), N',', N'')`;
+  const tuKhoaGon = String(tuKhoa || '').replace(/[\s\-_. ,]+/g, '');
+
+  if (!tuKhoaGon) return chuaTuKhoa(tenCot, tuKhoa);
+
+  return where(literal(`${bieuThuc} COLLATE ${BANG_MA_TIM_KIEM}`), {
+    [Op.like]: `%${thoatKyTuLike(tuKhoaGon)}%`
+  });
+}
+
 /**
  * Điều kiện "cột chứa từ khóa linh hoạt" (Tokenized Multi-word Matching):
  * - Bỏ từ đệm tiếng Việt (sách, cuốn, truyện...)
@@ -121,6 +133,7 @@ function tinhDiemTrungKhop(chuoiMucTieu, danhSachToken) {
 
 module.exports = {
   chuaTuKhoa,
+  chuaTuKhoaBoKhoangTrang,
   chuaTuKhoaLinhHoat,
   thoatKyTuLike,
   lamSachTuKhoa,
