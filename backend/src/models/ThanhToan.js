@@ -14,7 +14,8 @@ const ThanhToan = sequelize.define('ThanhToan', {
   },
   MaDonHang: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: false,
+    unique: true
   },
   PhuongThuc: {
     type: DataTypes.STRING(20),
@@ -32,8 +33,7 @@ const ThanhToan = sequelize.define('ThanhToan', {
   },
   MaGiaoDichPayos: {
     type: DataTypes.BIGINT,
-    allowNull: true,
-    unique: true
+    allowNull: true
   },
   MaLienKetPayos: {
     type: DataTypes.STRING(64),

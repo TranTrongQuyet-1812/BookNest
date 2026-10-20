@@ -3,7 +3,7 @@
  * Tuân thủ nghiêm ngặt nguyên tắc bảo mật và quy trình trong docs/KE_HOACH_THANH_TOAN_QR_PAYOS.md.
  */
 const { maRutGonChoChuyenKhoan } = require('../utils/maTraCuu');
-const { tinhNgayHetHan, tinhNgayHetHanQuay, sinhMaGiaoDich } = require('../utils/thanhToanQr');
+const { tinhNgayHetHan, sinhMaGiaoDich } = require('../utils/thanhToanQr');
 const cauHinh = require('../config/cauHinh');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 const payOSClient = require('./payosClient');
@@ -11,7 +11,7 @@ const cauHinhHeThongService = require('./cauHinhHeThongService');
 const hetHanThanhToanService = require('./hetHanThanhToanService');
 const donHangService = require('./donHangService');
 const emailService = require('./emailService');
-const { Op } = require('sequelize');
+const { Op, TableHints } = require('sequelize');
 const {
   sequelize,
   DonHang,
@@ -54,7 +54,27 @@ function trichXuatThongTinTuQr(qr) {
  * Tạo link và mã QR thanh toán payOS cho đơn hàng
  */
 async function taoThanhToanQR(donHang, danhSachMon = [], options = {}) {
-  const transaction = options.transaction || null;
+  const transactionNgoai = options.transaction || null;
+  const transaction = transactionNgoai || await sequelize.transaction();
+
+  try {
+    // Khóa dòng đơn để hai yêu cầu QR cùng lúc không cùng thấy trạng thái "chưa có thanh toán".
+    const donHangKhoa = await DonHang.findByPk(donHang.MaDonHang, {
+      transaction,
+      tableHint: TableHints.UPDLOCK
+    });
+    if (!donHangKhoa) throw LoiNghiepVu.khongTimThay('Không tìm thấy đơn hàng cần tạo thanh toán');
+
+    const ketQua = await taoThanhToanQRTrongGiaoDich(donHangKhoa, danhSachMon, transaction);
+    if (!transactionNgoai) await transaction.commit();
+    return ketQua;
+  } catch (loi) {
+    if (!transactionNgoai && !transaction.finished) await transaction.rollback();
+    throw loi;
+  }
+}
+
+async function taoThanhToanQRTrongGiaoDich(donHang, danhSachMon, transaction) {
   const daBat = await kiemTraCongTacQRDangBat();
   if (!daBat) {
     throw LoiNghiepVu.camTruyCap(THONG_DIEP_QR_DANG_TAT);
@@ -134,8 +154,8 @@ async function taoThanhToanQR(donHang, danhSachMon = [], options = {}) {
 
   const paymentLinkRes = await payOSClient.paymentRequests.create(duLieuPayos);
 
-  // Đơn quầy hết hạn sau 5 phút, đơn trực tuyến sau 15 phút
-  const ngayHetHan = donHang.KenhBan === 'TAI_QUAY' ? tinhNgayHetHanQuay() : tinhNgayHetHan();
+  // Mọi đơn QR dùng chung hạn cố định 15 phút theo quyết định nghiệp vụ.
+  const ngayHetHan = tinhNgayHetHan();
 
   if (banGhiThanhToan) {
     await banGhiThanhToan.update({

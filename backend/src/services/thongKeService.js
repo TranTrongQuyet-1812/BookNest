@@ -276,7 +276,7 @@ async function layTongHopCongViecTheoVaiTro(maNhanVien, vaiTro) {
   if (vaiTro === 'thu_kho') {
     const [donCanSoan, sachSapHet, sachHetHang] = await Promise.all([
       DonHang.count({ where: { TrangThai: 'DA_DUYET' } }),
-      Sach.count({ where: { SoLuongTon: { [Op.lte]: 10, [Op.gt]: 0 }, DaAn: false } }),
+      Sach.count({ where: { SoLuongTon: { [Op.lte]: sequelize.col('NguongCanhBao') }, DaAn: false } }),
       Sach.count({ where: { SoLuongTon: 0, DaAn: false } })
     ]);
 
@@ -290,7 +290,7 @@ async function layTongHopCongViecTheoVaiTro(maNhanVien, vaiTro) {
       },
       dieuHuongNhanh: [
         { tieuDe: 'Đơn cần soạn hàng', soLuong: donCanSoan, duongDan: '/admin/pick-list', mauSac: 'primary' },
-        { tieuDe: 'Sách sắp hết hàng (<= 10)', soLuong: sachSapHet, duongDan: '/admin/inventory', mauSac: 'warning' },
+        { tieuDe: 'Sách sắp hết theo ngưỡng cảnh báo', soLuong: sachSapHet, duongDan: '/admin/inventory', mauSac: 'warning' },
         { tieuDe: 'Sách đã hết hàng (0)', soLuong: sachHetHang, duongDan: '/admin/inventory', mauSac: 'danger' }
       ]
     };
@@ -336,7 +336,7 @@ async function layTongHopCongViecTheoVaiTro(maNhanVien, vaiTro) {
   ] = await Promise.all([
     DonHang.count({ where: { TrangThai: 'CHO_DUYET', KenhBan: 'TRUC_TUYEN' } }),
     DonHang.count({ where: { TrangThai: 'DA_DUYET' } }),
-    Sach.count({ where: { SoLuongTon: { [Op.lte]: 10 }, DaAn: false } }),
+    Sach.count({ where: { SoLuongTon: { [Op.lte]: sequelize.col('NguongCanhBao') }, DaAn: false } }),
     DanhGia.count({ where: { NgayTao: { [Op.gte]: bayNgayTruoc } } }),
     sequelize.query(`
       SELECT COUNT(DISTINCT ls.MaDonHang) AS soDonHoanTat

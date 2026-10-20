@@ -102,7 +102,7 @@ NhanVien.hasMany(LichSuDieuChinhKho, { foreignKey: 'MaNhanVienDieuChinh', as: 'l
 LichSuDieuChinhKho.belongsTo(NhanVien, { foreignKey: 'MaNhanVienDieuChinh', as: 'nhanVienDieuChinh' });
 
 // ==========================================
-// 9. Quan hệ DonHang ↔ ThanhToan (1 - 1 hoặc 1 - n)
+// 9. Quan hệ DonHang ↔ ThanhToan (1 - 1; một đơn có tối đa một khoản)
 // ==========================================
 DonHang.hasOne(ThanhToan, { foreignKey: 'MaDonHang', as: 'thanhToan' });
 ThanhToan.belongsTo(DonHang, { foreignKey: 'MaDonHang', as: 'donHang' });
