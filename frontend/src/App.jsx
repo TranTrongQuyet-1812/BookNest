@@ -78,12 +78,20 @@ function taiTruocTatCaTrang() {
   TrangKhongTimThay.taiTruoc().catch(() => {});
 }
 
+// Trang "cảnh" luôn có rèm khi bước vào: Trang chủ, Đăng nhập, Đăng ký, Chi tiết sách.
+// Trang chức năng (giỏ hàng, thanh toán, đơn hàng, hồ sơ, điều khoản) đổi tức thì để luồng mua hàng không bị chậm.
+const coRemKhiVao = (duongDan) => {
+  const thuc = phanDuongDan(duongDan);
+  return laTrangChu(thuc) || ['/login', '/register'].includes(thuc) || Boolean(matchPath('/books/:id', thuc));
+};
+
 // Có cần chạy rèm khi chuyển trang không:
-// - vào Trang chủ từ trang khác: có (cảnh vào cửa tiệm, hero và sinh vật chờ rèm mở);
-// - lọc/tìm trong Trang chủ: không;
-// - trang khác: chỉ khi mã trang chưa tải xong. Trang đã sẵn sàng thì đổi tức thì, kèm hiệu ứng mờ nhẹ.
+// - lọc/tìm ngay trong Trang chủ: không (vẫn là cùng một trang);
+// - vào trang "cảnh": có (Trang chủ còn vì hero và sinh vật chờ rèm mở);
+// - trang chức năng: chỉ khi mã trang chưa tải xong (rèm giữ tới khi tải xong), còn lại đổi tức thì kèm mờ nhẹ.
 const canChayRem = (duongDanDich, duongDanNguon) => {
-  if (laTrangChu(duongDanDich)) return !laTrangChu(duongDanNguon);
+  if (laTrangChu(duongDanDich) && laTrangChu(duongDanNguon)) return false;
+  if (coRemKhiVao(duongDanDich)) return true;
   return !trangCuaDuongDan(duongDanDich).daTai();
 };
 
