@@ -95,7 +95,7 @@ const cauHinh = {
     baoMat: process.env.EMAIL_SECURE === 'true',
     nguoiDung: (process.env.EMAIL_USER || '').trim(),
     matKhau: (process.env.EMAIL_PASS || '').replace(/\s+/g, ''),
-    nguoiGui: process.env.EMAIL_FROM || 'BookNest Bookstore <noreply@booknest.vn>',
+    nguoiGui: process.env.EMAIL_FROM || 'BookNest Bookstore <noreply@booknest.lhutech.click>',
     giaLap: process.env.EMAIL_MOCK === 'true',
     daCauHinh: Boolean(
       process.env.EMAIL_USER &&

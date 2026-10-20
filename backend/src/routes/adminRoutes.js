@@ -654,7 +654,7 @@ router.get(
  *             properties:
  *               email:
  *                 type: string
- *                 example: nhanvien.moi@booknest.vn
+ *                 example: nhanvien.moi@booknest.lhutech.click
  *               matKhau:
  *                 type: string
  *                 example: MatKhau123
