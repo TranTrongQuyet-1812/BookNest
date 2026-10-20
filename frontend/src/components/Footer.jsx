@@ -160,7 +160,7 @@ export const Footer = () => {
               Nơi góc phố dịu mát, dành cho những buổi chiều thư thả bên tách cà phê và trang sách mở.
             </p>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: '1.6' }}>
-              <div>Thư gửi: <span style={{ color: 'var(--text-muted)' }}>tiemsach@booknest.vn</span></div>
+              <div>Thư gửi: <span style={{ color: 'var(--text-muted)' }}>tiemsach@booknest.lhutech.click</span></div>
               <div>Phụ trách: <span style={{ color: 'var(--text-muted)' }}>Trần Trọng Quyết</span></div>
             </div>
           </div>

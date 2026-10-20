@@ -604,7 +604,7 @@ export const QuanLyNhanSu = () => {
                 <input
                   type="email"
                   required
-                  placeholder="nhanvien.moi@booknest.vn"
+                  placeholder="nhanvien.moi@booknest.lhutech.click"
                   className="form-input w-full"
                   value={formNhanSu.email}
                   onChange={(e) => setFormNhanSu({ ...formNhanSu, email: e.target.value })}

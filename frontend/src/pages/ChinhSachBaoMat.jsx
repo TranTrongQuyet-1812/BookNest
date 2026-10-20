@@ -217,7 +217,7 @@ export const ChinhSachBaoMat = () => {
           </p>
           <div style={{ fontSize: '0.875rem', color: 'var(--text-main)' }} className="space-y-1">
             <div><strong>Phụ trách đề tài:</strong> Trần Trọng Quyết (Sinh viên Trường Đại Học Lạc Hồng)</div>
-            <div><strong>Hòm thư tiếp nhận:</strong> <span style={{ color: 'var(--price)', fontWeight: 600 }}>tiemsach@booknest.vn</span></div>
+            <div><strong>Hòm thư tiếp nhận:</strong> <span style={{ color: 'var(--price)', fontWeight: 600 }}>tiemsach@booknest.lhutech.click</span></div>
             <div><strong>Cam kết:</strong> Tiếp nhận và phản hồi xử lý trong vòng 24–48 giờ làm việc.</div>
           </div>
         </section>

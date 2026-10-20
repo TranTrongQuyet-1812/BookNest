@@ -252,7 +252,7 @@ export const DieuKhoanDichVu = () => {
           </p>
           <div style={{ fontSize: '0.875rem', color: 'var(--text-main)' }} className="space-y-1">
             <div><strong>Tác giả đề tài:</strong> Trần Trọng Quyết (Sinh viên Trường Đại Học Lạc Hồng)</div>
-            <div><strong>Email tiếp nhận:</strong> <span style={{ color: 'var(--price)', fontWeight: 600 }}>tiemsach@booknest.vn</span></div>
+            <div><strong>Email tiếp nhận:</strong> <span style={{ color: 'var(--price)', fontWeight: 600 }}>tiemsach@booknest.lhutech.click</span></div>
             <div><strong>Phạm vi:</strong> Đồ án tốt nghiệp / Môn học Công nghệ phần mềm</div>
           </div>
         </section>
