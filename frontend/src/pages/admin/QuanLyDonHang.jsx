@@ -671,7 +671,8 @@ export const QuanLyDonHang = () => {
                   <div style={{ background: 'var(--adm-bg-surface, #F8FAFC)', padding: '0.6rem 0.85rem', fontWeight: 700, fontSize: '0.85rem', color: 'var(--adm-text-main)' }} className="flex items-center gap-1.5">
                     <ShoppingBag size={15} /> Danh Sách Sách Trong Đơn ({chiTietDon.chiTietDonHang?.length || 0} mục)
                   </div>
-                  <table className="admindash-table" style={{ margin: 0, fontSize: '0.825rem' }}>
+                  {/* minWidth 0: bảng dùng chung có min-width 820px, rộng hơn hộp chi tiết nên cột Thành Tiền bị cắt */}
+                  <table className="admindash-table" style={{ margin: 0, fontSize: '0.825rem', minWidth: 0 }}>
                     <thead>
                       <tr>
                         <th>Tên Sách</th>
