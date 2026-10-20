@@ -14,9 +14,7 @@ import {
   Banknote,
   Copy,
   Clock,
-  X,
-  CheckCircle2,
-  AlertCircle
+  X
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { io } from 'socket.io-client';
