@@ -666,7 +666,9 @@ export const TrangChu = () => {
             </h2>
             {phanTrangLoc && (
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.35rem', margin: 0 }}>
-                Tìm thấy {phanTrangLoc.tongSoBanGhi} cuốn sách phù hợp
+                {phanTrangLoc.timGanDung
+                  ? `Không có kết quả khớp hoàn toàn; đây là ${phanTrangLoc.tongSoBanGhi} gợi ý gần đúng`
+                  : `Tìm thấy ${phanTrangLoc.tongSoBanGhi} cuốn sách phù hợp`}
               </p>
             )}
 
