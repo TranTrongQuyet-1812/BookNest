@@ -1,4 +1,4 @@
-.bo-page{--bo-ink:#263244;--bo-muted:#7c8797;--bo-line:#e7e6e2;--bo-paper:#fff;--bo-canvas:#f7f8fa;--bo-accent:#a54569;--bo-accent-dark:#873751;color:var(--bo-ink);min-height:100%;font-family:Inter,"Segoe UI",sans-serif}
+.bo-page{--bo-ink:var(--adm-text-main);--bo-muted:var(--adm-text-muted);--bo-line:var(--adm-border);--bo-paper:var(--adm-surface);--bo-canvas:var(--adm-bg);--bo-accent:var(--adm-accent);--bo-accent-dark:var(--adm-accent-hover);color:var(--bo-ink);min-height:100%;font-family:Inter,"Segoe UI",sans-serif}
 .dark .bo-page{--bo-ink:#f0e9e7;--bo-muted:#b4a9ad;--bo-line:#4a4047;--bo-paper:#302a30;--bo-canvas:#201c21;--bo-accent:#d980a0;--bo-accent-dark:#bb5e81}
 .bo-page-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;margin-bottom:1.35rem}.bo-page-heading h1{margin:.25rem 0 .35rem;font-family:Inter,"Segoe UI",-apple-system,BlinkMacSystemFont,sans-serif;font-size:clamp(1.65rem,3vw,2.2rem);font-weight:700;letter-spacing:-.02em}.bo-page-heading p,.bo-panel-title p{margin:0;color:var(--bo-muted);font-size:.9rem}.bo-eyebrow{font-size:.68rem;font-weight:800;letter-spacing:.13em;color:var(--bo-accent)}
 .bo-panel{background:var(--bo-paper);border:1px solid var(--bo-line);border-radius:14px;box-shadow:0 3px 12px #18243708}.bo-panel-title{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:1.15rem 1.2rem;border-bottom:1px solid var(--bo-line)}.bo-panel-title h2{display:flex;align-items:center;gap:.5rem;font-size:1rem;margin:0 0 .28rem}.bo-panel-title p{font-size:.79rem}.bo-soft-badge,.counter-order-mark{padding:.38rem .58rem;border-radius:99px;background:color-mix(in srgb,var(--bo-accent) 10%,transparent);color:var(--bo-accent-dark);font-size:.72rem;font-weight:750}.bo-tabs{display:flex;padding:.25rem;border:1px solid var(--bo-line);border-radius:11px;background:var(--bo-paper)}.bo-tabs button{display:flex;align-items:center;gap:.42rem;border:0;border-radius:8px;padding:.62rem .8rem;background:transparent;color:var(--bo-muted);font-weight:650;cursor:pointer}.bo-tabs button.active{background:var(--bo-ink);color:var(--bo-paper)}
@@ -104,3 +104,32 @@
   .counter-page .counter-submit { width: calc(100% - 1.6rem); min-height: 40px; margin: 0.45rem 0.8rem 0.2rem; }
   .counter-page .counter-footnote { margin: 0 0.8rem 0.5rem; }
 }
+
+/* ==========================================================================
+   Đồng bộ nhóm trang bo-* với hệ thiết kế admindash (20/10/2026):
+   khung phẳng chỉ viền mảnh, nút chính màu mực, tiêu đề cột thường (không in hoa), không hiệu ứng nhấc.
+   ========================================================================== */
+.bo-page-heading{margin-bottom:1rem}
+.bo-page-heading h1{margin:0 0 .25rem;font-size:1.4rem;font-weight:600;line-height:1.25;letter-spacing:-.02em}
+.bo-page-heading p{font-size:.85rem}
+.bo-panel{border-radius:12px;box-shadow:none}
+.bo-panel-title h2{font-size:.95rem;font-weight:600}
+.bo-tabs{border-radius:9px}
+.bo-tabs button{border-radius:7px;font-weight:550}
+.bo-primary-button{border-color:var(--adm-primary);background:var(--adm-primary)}
+.bo-primary-button:hover:not(:disabled){background:var(--adm-primary-hover);transform:none}
+.bo-secondary-button:hover:not(:disabled){border-color:var(--adm-text-sub);color:var(--adm-text-main)}
+.bo-danger-button{border-color:var(--adm-danger);background:var(--adm-danger)}
+.bo-quiet-button:hover{background:var(--adm-primary-subtle);color:var(--adm-text-main)}
+.bo-icon-button{color:var(--bo-muted)}
+.bo-icon-button:hover:not(:disabled){background:var(--adm-primary-subtle);color:var(--adm-text-main)}
+.bo-soft-badge,.counter-order-mark{border-radius:6px;background:var(--adm-accent-subtle);color:var(--adm-accent-hover);font-weight:600}
+.bo-status{border-radius:6px;background:var(--adm-success-subtle);color:var(--adm-success);font-weight:500;font-size:.72rem}
+.bo-table th{background:var(--adm-surface-2);font-size:.78rem;font-weight:500;letter-spacing:0;text-transform:none}
+.bo-modal-backdrop{background:rgba(38,33,30,.55);backdrop-filter:none}
+.counter-book img{box-shadow:0 0 0 1px var(--adm-border)}
+.counter-book-info b,.counter-total strong{color:var(--adm-text-main)}
+.counter-book-badge,.counter-line-badge{background:var(--adm-danger)}
+.history-arrow{color:var(--adm-text-sub)}
+.receipt-logo{background:var(--adm-text-main)}
+.receipt-heading strong,.receipt-grand-total strong{color:var(--adm-text-main)}

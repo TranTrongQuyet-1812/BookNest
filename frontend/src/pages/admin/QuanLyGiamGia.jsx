@@ -5,16 +5,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 import PhanTrang from '../../components/PhanTrang';
 import NhanGiamGia from '../../components/NhanGiamGia';
-import { 
-  Percent, 
-  Plus, 
-  Search, 
-  BookOpen, 
-  Tags, 
-  Play, 
-  Pause, 
-  Edit, 
-  Eye, 
+import {
+  Search,
+  Play,
+  Pause,
+  Edit,
+  Eye,
   X
 } from 'lucide-react';
 
@@ -385,57 +381,18 @@ export const QuanLyGiamGia = () => {
   const giaXemTruoc = tinhGiaSauGiamClient(sachXemTruoc.giaBan, phanTramGiam);
 
   return (
-    <div className="quan-ly-giam-gia-page" style={{ padding: '0 0.5rem 2rem' }}>
-      {/* Top Header & Tiêu đề */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '1rem',
-        marginBottom: '1.5rem'
-      }}>
+    <div className="quan-ly-giam-gia-page" style={{ paddingBottom: '2rem' }}>
+      {/* Tiêu đề trang và nút tạo chương trình */}
+      <div className="admindash-page-head">
         <div>
-          <h1 style={{
-            fontSize: '1.4rem',
-            fontWeight: 700,
-            color: 'var(--adm-text-title, #0F172A)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.6rem',
-            margin: 0
-          }}>
-            <Percent size={24} style={{ color: '#EF4444' }} />
-            Quản Lý Giảm Giá Sách
-          </h1>
-          <p style={{ margin: '0.3rem 0 0', fontSize: '0.86rem', color: '#64748B' }}>
-            Thiết lập mức giảm giá theo % cho từng cuốn sách hoặc toàn bộ thể loại.
+          <h1 className="admindash-page-title">Quản lý giảm giá sách</h1>
+          <p className="admindash-page-desc">
+            Thiết lập mức giảm theo % cho từng cuốn sách hoặc toàn bộ thể loại.
           </p>
         </div>
 
         {laQuanTri && (
-          <button
-            type="button"
-            onClick={moModalTao}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              backgroundColor: '#EF4444',
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '0.6rem 1.1rem',
-              fontWeight: 600,
-              fontSize: '0.88rem',
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(239, 68, 68, 0.35)',
-              transition: 'background-color 0.15s ease'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#DC2626'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#EF4444'}
-          >
-            <Plus size={18} />
+          <button type="button" onClick={moModalTao} className="btn btn-primary">
             Tạo chương trình mới
           </button>
         )}
@@ -446,7 +403,7 @@ export const QuanLyGiamGia = () => {
         backgroundColor: '#FFFFFF',
         borderRadius: '10px',
         padding: '1rem',
-        border: '1px solid #E2E8F0',
+        border: '1px solid var(--adm-border)',
         marginBottom: '1.25rem',
         display: 'flex',
         alignItems: 'center',
@@ -456,7 +413,7 @@ export const QuanLyGiamGia = () => {
       }}>
         <form onSubmit={handleTimKiemSubmit} style={{ display: 'flex', gap: '0.5rem', flex: '1 1 300px', maxWidth: '480px' }}>
           <div style={{ position: 'relative', flex: 1 }}>
-            <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+            <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--adm-text-sub)' }} />
             <input
               type="text"
               placeholder="Tìm theo tên chương trình..."
@@ -466,7 +423,7 @@ export const QuanLyGiamGia = () => {
                 width: '100%',
                 padding: '0.5rem 0.75rem 0.5rem 2.2rem',
                 borderRadius: '6px',
-                border: '1px solid #CBD5E1',
+                border: '1px solid var(--adm-border-strong)',
                 fontSize: '0.86rem',
                 outline: 'none'
               }}
@@ -478,7 +435,7 @@ export const QuanLyGiamGia = () => {
               padding: '0.5rem 0.9rem',
               borderRadius: '6px',
               border: 'none',
-              backgroundColor: '#1E293B',
+              backgroundColor: 'var(--adm-text-main)',
               color: '#FFFFFF',
               fontSize: '0.86rem',
               fontWeight: 600,
@@ -490,14 +447,14 @@ export const QuanLyGiamGia = () => {
         </form>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.84rem', color: '#64748B', fontWeight: 600 }}>Trạng thái:</span>
+          <span style={{ fontSize: '0.84rem', color: 'var(--adm-text-muted)', fontWeight: 600 }}>Trạng thái:</span>
           <select
             value={trangThaiDaLoc}
             onChange={handleDoiTrangThaiLoc}
             style={{
               padding: '0.5rem 0.75rem',
               borderRadius: '6px',
-              border: '1px solid #CBD5E1',
+              border: '1px solid var(--adm-border-strong)',
               fontSize: '0.86rem',
               backgroundColor: '#FFFFFF',
               cursor: 'pointer',
@@ -523,14 +480,13 @@ export const QuanLyGiamGia = () => {
       <div style={{
         backgroundColor: '#FFFFFF',
         borderRadius: '10px',
-        border: '1px solid #E2E8F0',
-        overflow: 'hidden',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
+        border: '1px solid var(--adm-border)',
+        overflow: 'hidden'
       }}>
         <div style={{ overflowX: 'auto' }}>
           <table className="bo-table" style={{ width: '100%', minWidth: '820px', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
-              <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', fontSize: '0.78rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              <tr style={{ backgroundColor: 'var(--adm-surface-2)', borderBottom: '1px solid var(--adm-border)', fontSize: '0.78rem', color: 'var(--adm-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 <th style={{ padding: '0.85rem 1rem' }}>Chương trình</th>
                 <th style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>Mức giảm</th>
                 <th style={{ padding: '0.85rem 1rem' }}>Thời gian hiệu lực</th>
@@ -542,14 +498,14 @@ export const QuanLyGiamGia = () => {
             <tbody>
               {dangTai ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: '2.5rem', textAlign: 'center', color: '#94A3B8', fontSize: '0.9rem' }}>
+                  <td colSpan={6} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--adm-text-sub)', fontSize: '0.9rem' }}>
                     Đang nạp dữ liệu chương trình giảm giá...
                   </td>
                 </tr>
               ) : danhSach.length === 0 ? (
                 <tr>
                   <td colSpan={6} style={{ padding: '3rem 1rem', textAlign: 'center' }}>
-                    <div style={{ color: '#94A3B8', fontSize: '0.92rem' }}>
+                    <div style={{ color: 'var(--adm-text-sub)', fontSize: '0.92rem' }}>
                       {tuKhoaDaLoc || trangThaiDaLoc ? 'Không tìm thấy chương trình giảm giá nào khớp bộ lọc' : 'Chưa có chương trình giảm giá nào được tạo'}
                     </div>
                   </td>
@@ -557,25 +513,25 @@ export const QuanLyGiamGia = () => {
               ) : (
                 danhSach.map((ct) => {
                   const badgeMap = {
-                    DANG_CHAY: { nhan: 'Đang chạy', bg: '#DCFCE7', color: '#166534', border: '#86EFAC' },
-                    SAP_DIEN_RA: { nhan: 'Sắp diễn ra', bg: '#DBEAFE', color: '#1E40AF', border: '#93C5FD' },
-                    DA_HET_HAN: { nhan: 'Đã hết hạn', bg: '#F1F5F9', color: '#475569', border: '#CBD5E1' },
-                    TAM_DUNG: { nhan: 'Tạm dừng', bg: '#FEF3C7', color: '#92400E', border: '#FCD34D' }
+                    DANG_CHAY: { nhan: 'Đang chạy', bg: 'var(--adm-success-subtle)', color: 'var(--adm-success)', border: 'var(--adm-success-subtle)' },
+                    SAP_DIEN_RA: { nhan: 'Sắp diễn ra', bg: 'var(--adm-info-subtle)', color: 'var(--adm-info)', border: 'var(--adm-info-subtle)' },
+                    DA_HET_HAN: { nhan: 'Đã hết hạn', bg: 'var(--adm-primary-subtle)', color: 'var(--adm-text-muted)', border: 'var(--adm-border-strong)' },
+                    TAM_DUNG: { nhan: 'Tạm dừng', bg: 'var(--adm-warning-subtle)', color: 'var(--adm-warning)', border: 'var(--adm-warning-subtle)' }
                   };
                   const tt = badgeMap[ct.trangThai] || badgeMap.TAM_DUNG;
 
                   return (
                     <tr 
                       key={ct.MaChuongTrinh}
-                      style={{ borderBottom: '1px solid #F1F5F9', transition: 'background-color 0.15s ease' }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
+                      style={{ borderBottom: '1px solid var(--adm-primary-subtle)', transition: 'background-color 0.15s ease' }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--adm-surface-2)'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
                       <td style={{ padding: '0.9rem 1rem' }}>
-                        <div style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.9rem' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--adm-text-main)', fontSize: '0.9rem' }}>
                           {ct.TenChuongTrinh}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '2px' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--adm-text-sub)', marginTop: '2px' }}>
                           Tạo bởi: {ct.nhanVienTao?.HoTen || 'Quản trị viên'}
                         </div>
                       </td>
@@ -583,34 +539,33 @@ export const QuanLyGiamGia = () => {
                       <td style={{ padding: '0.9rem 1rem', textAlign: 'center' }}>
                         <span style={{
                           display: 'inline-block',
-                          backgroundColor: '#FEE2E2',
-                          color: '#DC2626',
-                          fontWeight: 700,
+                          backgroundColor: 'var(--adm-accent-subtle)',
+                          color: 'var(--adm-accent-hover)',
+                          fontWeight: 600,
                           fontSize: '0.88rem',
                           padding: '3px 10px',
                           borderRadius: '6px',
-                          border: '1px solid #FECACA'
+                          border: '1px solid var(--adm-accent-subtle)'
                         }}>
                           -{ct.PhanTramGiam}%
                         </span>
                       </td>
 
-                      <td style={{ padding: '0.9rem 1rem', fontSize: '0.82rem', color: '#334155' }}>
+                      <td style={{ padding: '0.9rem 1rem', fontSize: '0.82rem', color: 'var(--adm-text-main)' }}>
                         <div>Từ: <span style={{ fontWeight: 600 }}>{dinhDangNgayGio(ct.NgayBatDau)}</span></div>
                         <div style={{ marginTop: '2px' }}>Đến: <span style={{ fontWeight: 600 }}>{dinhDangNgayGio(ct.NgayKetThuc)}</span></div>
                       </td>
 
-                      <td style={{ padding: '0.9rem 1rem', fontSize: '0.84rem', color: '#475569' }}>
+                      <td style={{ padding: '0.9rem 1rem', fontSize: '0.84rem', color: 'var(--adm-text-muted)' }}>
                         <span style={{
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '0.35rem',
-                          backgroundColor: '#F1F5F9',
+                          backgroundColor: 'var(--adm-primary-subtle)',
                           padding: '3px 8px',
                           borderRadius: '6px',
                           fontWeight: 500
                         }}>
-                          <Tags size={14} style={{ color: '#64748B' }} />
                           {ct.soLuongDoiTuong} đối tượng
                         </span>
                       </td>
@@ -641,9 +596,9 @@ export const QuanLyGiamGia = () => {
                                 style={{
                                   padding: '5px 8px',
                                   borderRadius: '6px',
-                                  border: '1px solid #CBD5E1',
+                                  border: '1px solid var(--adm-border-strong)',
                                   backgroundColor: '#FFFFFF',
-                                  color: '#334155',
+                                  color: 'var(--adm-text-main)',
                                   cursor: 'pointer',
                                   display: 'flex',
                                   alignItems: 'center'
@@ -659,9 +614,9 @@ export const QuanLyGiamGia = () => {
                                 style={{
                                   padding: '5px 8px',
                                   borderRadius: '6px',
-                                  border: `1px solid ${ct.DangHoatDong ? '#FED7AA' : '#BBF7D0'}`,
-                                  backgroundColor: ct.DangHoatDong ? '#FFF7ED' : '#F0FDF4',
-                                  color: ct.DangHoatDong ? '#EA580C' : '#16A34A',
+                                  border: `1px solid ${ct.DangHoatDong ? 'var(--adm-warning-subtle)' : 'var(--adm-success-subtle)'}`,
+                                  backgroundColor: ct.DangHoatDong ? 'var(--adm-warning-subtle)' : 'var(--adm-success-subtle)',
+                                  color: ct.DangHoatDong ? 'var(--adm-warning)' : 'var(--adm-success)',
                                   cursor: 'pointer',
                                   display: 'flex',
                                   alignItems: 'center'
@@ -678,9 +633,9 @@ export const QuanLyGiamGia = () => {
                               style={{
                                 padding: '5px 8px',
                                 borderRadius: '6px',
-                                border: '1px solid #CBD5E1',
+                                border: '1px solid var(--adm-border-strong)',
                                 backgroundColor: '#FFFFFF',
-                                color: '#334155',
+                                color: 'var(--adm-text-main)',
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center'
@@ -700,7 +655,7 @@ export const QuanLyGiamGia = () => {
         </div>
 
         {phanTrang && phanTrang.tongSoTrang > 1 && (
-          <div style={{ padding: '1rem', borderTop: '1px solid #E2E8F0' }}>
+          <div style={{ padding: '1rem', borderTop: '1px solid var(--adm-border)' }}>
             <PhanTrang
               trangHienTai={phanTrang.trangHienTai}
               tongSoTrang={phanTrang.tongSoTrang}
@@ -737,14 +692,14 @@ export const QuanLyGiamGia = () => {
             {/* Modal Header */}
             <div style={{
               padding: '1.1rem 1.4rem',
-              borderBottom: '1px solid #E2E8F0',
+              borderBottom: '1px solid var(--adm-border)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              backgroundColor: '#F8FAFC'
+              backgroundColor: 'var(--adm-surface-2)'
             }}>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#0F172A' }}>
-                {modalCheDo === 'tao' ? 'Tạo Chương Trình Giảm Giá Mới' : (modalCheDo === 'sua' ? 'Chỉnh Sửa Chương Trình Giảm Giá' : 'Chi Tiết Chương Trình')}
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--adm-text-main)' }}>
+                {modalCheDo === 'tao' ? 'Tạo chương trình giảm giá mới' : (modalCheDo === 'sua' ? 'Chỉnh sửa chương trình giảm giá' : 'Chi tiết chương trình')}
               </h3>
               <button
                 type="button"
@@ -752,7 +707,7 @@ export const QuanLyGiamGia = () => {
                 style={{
                   border: 'none',
                   backgroundColor: 'transparent',
-                  color: '#64748B',
+                  color: 'var(--adm-text-muted)',
                   cursor: 'pointer',
                   padding: '4px',
                   borderRadius: '6px'
@@ -773,21 +728,21 @@ export const QuanLyGiamGia = () => {
 
                 {/* Tên chương trình */}
                 <div style={{ marginBottom: '1.1rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
-                    Tên chương trình giảm giá <span style={{ color: '#EF4444' }}>*</span>
+                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--adm-text-main)', marginBottom: '0.35rem' }}>
+                    Tên chương trình giảm giá <span style={{ color: 'var(--adm-danger)' }}>*</span>
                   </label>
                   <input
                     type="text"
                     disabled={modalCheDo === 'xem'}
                     maxLength={150}
-                    placeholder="Ví dụ: Tri Ân Bạn Đọc Mùa Tựu Trường, Giảm Giá Sách Văn Học..."
+                    placeholder="Ví dụ: Tri ân bạn đọc mùa tựu trường, giảm giá sách văn học..."
                     value={tenChuongTrinh}
                     onChange={(e) => setTenChuongTrinh(e.target.value)}
                     style={{
                       width: '100%',
                       padding: '0.55rem 0.8rem',
                       borderRadius: '6px',
-                      border: '1px solid #CBD5E1',
+                      border: '1px solid var(--adm-border-strong)',
                       fontSize: '0.88rem',
                       outline: 'none'
                     }}
@@ -803,8 +758,8 @@ export const QuanLyGiamGia = () => {
                   alignItems: 'center'
                 }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
-                      Mức giảm giá (%): <span style={{ color: '#EF4444', fontWeight: 700 }}>{phanTramGiam}%</span> (Tối đa 60%)
+                    <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--adm-text-main)', marginBottom: '0.35rem' }}>
+                      Mức giảm giá (%): <span style={{ color: 'var(--adm-accent-hover)', fontWeight: 600 }}>{phanTramGiam}%</span> (Tối đa 60%)
                     </label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                       <input
@@ -830,7 +785,7 @@ export const QuanLyGiamGia = () => {
                           width: '64px',
                           padding: '0.4rem 0.5rem',
                           borderRadius: '6px',
-                          border: '1px solid #CBD5E1',
+                          border: '1px solid var(--adm-border-strong)',
                           textAlign: 'center',
                           fontSize: '0.88rem',
                           fontWeight: 600
@@ -840,13 +795,13 @@ export const QuanLyGiamGia = () => {
                   </div>
 
                   <div style={{
-                    backgroundColor: '#F8FAFC',
-                    border: '1px dashed #CBD5E1',
+                    backgroundColor: 'var(--adm-surface-2)',
+                    border: '1px dashed var(--adm-border-strong)',
                     borderRadius: '8px',
                     padding: '0.6rem',
                     textAlign: 'center'
                   }}>
-                    <div style={{ fontSize: '0.72rem', color: '#64748B', marginBottom: '4px' }}>Nhãn hiển thị</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--adm-text-muted)', marginBottom: '4px' }}>Nhãn hiển thị</div>
                     <NhanGiamGia phanTram={phanTramGiam} viTri="inline" kichThuoc="vua" />
                   </div>
                 </div>
@@ -859,8 +814,8 @@ export const QuanLyGiamGia = () => {
                   marginBottom: '1.25rem'
                 }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
-                      Ngày bắt đầu <span style={{ color: '#EF4444' }}>*</span>
+                    <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--adm-text-main)', marginBottom: '0.35rem' }}>
+                      Ngày bắt đầu <span style={{ color: 'var(--adm-danger)' }}>*</span>
                     </label>
                     <input
                       type="datetime-local"
@@ -871,7 +826,7 @@ export const QuanLyGiamGia = () => {
                         width: '100%',
                         padding: '0.5rem 0.75rem',
                         borderRadius: '6px',
-                        border: '1px solid #CBD5E1',
+                        border: '1px solid var(--adm-border-strong)',
                         fontSize: '0.85rem',
                         outline: 'none'
                       }}
@@ -879,8 +834,8 @@ export const QuanLyGiamGia = () => {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
-                      Kết thúc lúc <span style={{ color: '#EF4444' }}>*</span>
+                    <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--adm-text-main)', marginBottom: '0.35rem' }}>
+                      Kết thúc lúc <span style={{ color: 'var(--adm-danger)' }}>*</span>
                     </label>
                     <input
                       type="datetime-local"
@@ -891,7 +846,7 @@ export const QuanLyGiamGia = () => {
                         width: '100%',
                         padding: '0.5rem 0.75rem',
                         borderRadius: '6px',
-                        border: '1px solid #CBD5E1',
+                        border: '1px solid var(--adm-border-strong)',
                         fontSize: '0.85rem',
                         outline: 'none'
                       }}
@@ -901,8 +856,8 @@ export const QuanLyGiamGia = () => {
 
                 {/* Chọn phạm vi áp dụng */}
                 <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem' }}>
-                    Phạm vi áp dụng giảm giá <span style={{ color: '#EF4444' }}>*</span>
+                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--adm-text-main)', marginBottom: '0.5rem' }}>
+                    Phạm vi áp dụng giảm giá <span style={{ color: 'var(--adm-danger)' }}>*</span>
                   </label>
                   <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
                     <button
@@ -913,9 +868,9 @@ export const QuanLyGiamGia = () => {
                         flex: 1,
                         padding: '0.6rem 0.8rem',
                         borderRadius: '6px',
-                        border: `1.5px solid ${kieuApDung === 'sach' ? '#EF4444' : '#E2E8F0'}`,
-                        backgroundColor: kieuApDung === 'sach' ? '#FEF2F2' : '#FFFFFF',
-                        color: kieuApDung === 'sach' ? '#DC2626' : '#475569',
+                        border: `1.5px solid ${kieuApDung === 'sach' ? 'var(--adm-accent)' : 'var(--adm-border)'}`,
+                        backgroundColor: kieuApDung === 'sach' ? 'var(--adm-accent-subtle)' : '#FFFFFF',
+                        color: kieuApDung === 'sach' ? 'var(--adm-accent-hover)' : 'var(--adm-text-muted)',
                         fontWeight: 600,
                         fontSize: '0.85rem',
                         cursor: modalCheDo === 'xem' ? 'default' : 'pointer',
@@ -925,7 +880,6 @@ export const QuanLyGiamGia = () => {
                         gap: '0.4rem'
                       }}
                     >
-                      <BookOpen size={16} />
                       Từng cuốn sách cụ thể ({danhSachSachChon.length})
                     </button>
 
@@ -937,9 +891,9 @@ export const QuanLyGiamGia = () => {
                         flex: 1,
                         padding: '0.6rem 0.8rem',
                         borderRadius: '6px',
-                        border: `1.5px solid ${kieuApDung === 'danh_muc' ? '#EF4444' : '#E2E8F0'}`,
-                        backgroundColor: kieuApDung === 'danh_muc' ? '#FEF2F2' : '#FFFFFF',
-                        color: kieuApDung === 'danh_muc' ? '#DC2626' : '#475569',
+                        border: `1.5px solid ${kieuApDung === 'danh_muc' ? 'var(--adm-accent)' : 'var(--adm-border)'}`,
+                        backgroundColor: kieuApDung === 'danh_muc' ? 'var(--adm-accent-subtle)' : '#FFFFFF',
+                        color: kieuApDung === 'danh_muc' ? 'var(--adm-accent-hover)' : 'var(--adm-text-muted)',
                         fontWeight: 600,
                         fontSize: '0.85rem',
                         cursor: modalCheDo === 'xem' ? 'default' : 'pointer',
@@ -949,17 +903,16 @@ export const QuanLyGiamGia = () => {
                         gap: '0.4rem'
                       }}
                     >
-                      <Tags size={16} />
                       Theo thể loại / Danh mục ({danhSachMaDanhMuc.length})
                     </button>
                   </div>
 
                   {/* KHỐI 1: CHỌN SÁCH CỤ THỂ */}
                   {kieuApDung === 'sach' && (
-                    <div style={{ backgroundColor: '#F8FAFC', padding: '0.9rem', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                    <div style={{ backgroundColor: 'var(--adm-surface-2)', padding: '0.9rem', borderRadius: '8px', border: '1px solid var(--adm-border)' }}>
                       {modalCheDo !== 'xem' && (
                         <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
-                          <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+                          <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--adm-text-sub)' }} />
                           <input
                             type="text"
                             placeholder="Gõ tên cuốn sách cần giảm giá để chọn..."
@@ -969,14 +922,14 @@ export const QuanLyGiamGia = () => {
                               width: '100%',
                               padding: '0.5rem 0.75rem 0.5rem 2.1rem',
                               borderRadius: '6px',
-                              border: '1px solid #CBD5E1',
+                              border: '1px solid var(--adm-border-strong)',
                               fontSize: '0.85rem',
                               backgroundColor: '#FFFFFF',
                               outline: 'none'
                             }}
                           />
                           {dangTimSach && (
-                            <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', color: '#64748B' }}>
+                            <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', color: 'var(--adm-text-muted)' }}>
                               Đang tìm...
                             </span>
                           )}
@@ -989,7 +942,7 @@ export const QuanLyGiamGia = () => {
                               right: 0,
                               backgroundColor: '#FFFFFF',
                               borderRadius: '8px',
-                              border: '1px solid #CBD5E1',
+                              border: '1px solid var(--adm-border-strong)',
                               boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)',
                               maxHeight: '220px',
                               overflowY: 'auto',
@@ -1004,23 +957,23 @@ export const QuanLyGiamGia = () => {
                                     onClick={() => !daChon && themSachVaoChuongTrinh(s)}
                                     style={{
                                       padding: '0.55rem 0.8rem',
-                                      borderBottom: '1px solid #F1F5F9',
+                                      borderBottom: '1px solid var(--adm-primary-subtle)',
                                       display: 'flex',
                                       alignItems: 'center',
                                       justifyContent: 'space-between',
                                       cursor: daChon ? 'not-allowed' : 'pointer',
-                                      backgroundColor: daChon ? '#F8FAFC' : '#FFFFFF',
+                                      backgroundColor: daChon ? 'var(--adm-surface-2)' : '#FFFFFF',
                                       opacity: daChon ? 0.6 : 1
                                     }}
                                   >
                                     <div>
-                                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0F172A' }}>{s.TenSach}</div>
-                                      <div style={{ fontSize: '0.74rem', color: '#64748B' }}>Giá gốc: {dinhDangTien(s.GiaBan)} · Tồn: {s.SoLuongTon}</div>
+                                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--adm-text-main)' }}>{s.TenSach}</div>
+                                      <div style={{ fontSize: '0.74rem', color: 'var(--adm-text-muted)' }}>Giá gốc: {dinhDangTien(s.GiaBan)} · Tồn: {s.SoLuongTon}</div>
                                     </div>
                                     {daChon ? (
-                                      <span style={{ fontSize: '0.75rem', color: '#16A34A', fontWeight: 600 }}>Đã chọn</span>
+                                      <span style={{ fontSize: '0.75rem', color: 'var(--adm-success)', fontWeight: 600 }}>Đã chọn</span>
                                     ) : (
-                                      <button type="button" style={{ border: 'none', backgroundColor: '#EF4444', color: '#FFF', fontSize: '0.72rem', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer' }}>+ Chọn</button>
+                                      <button type="button" style={{ border: 'none', backgroundColor: 'var(--adm-primary)', color: '#FFF', fontSize: '0.72rem', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer' }}>+ Chọn</button>
                                     )}
                                   </div>
                                 );
@@ -1032,7 +985,7 @@ export const QuanLyGiamGia = () => {
 
                       {/* Danh sách sách đã chọn */}
                       {danhSachSachChon.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '1rem', color: '#94A3B8', fontSize: '0.82rem' }}>
+                        <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--adm-text-sub)', fontSize: '0.82rem' }}>
                           Chưa có cuốn sách nào được chọn trong chương trình này.
                         </div>
                       ) : (
@@ -1049,18 +1002,18 @@ export const QuanLyGiamGia = () => {
                                   backgroundColor: '#FFFFFF',
                                   padding: '0.45rem 0.75rem',
                                   borderRadius: '6px',
-                                  border: '1px solid #E2E8F0',
+                                  border: '1px solid var(--adm-border)',
                                   fontSize: '0.84rem'
                                 }}
                               >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', overflow: 'hidden' }}>
-                                  <div style={{ fontWeight: 600, color: '#0F172A', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                                  <div style={{ fontWeight: 600, color: 'var(--adm-text-main)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
                                     {s.tenSach}
                                   </div>
-                                  <div style={{ fontSize: '0.76rem', color: '#64748B' }}>
+                                  <div style={{ fontSize: '0.76rem', color: 'var(--adm-text-muted)' }}>
                                     <span style={{ textDecoration: 'line-through' }}>{dinhDangTien(s.giaBan)}</span>
                                     {' → '}
-                                    <span style={{ color: '#DC2626', fontWeight: 700 }}>{dinhDangTien(giaSau)}</span>
+                                    <span style={{ color: 'var(--adm-accent-hover)', fontWeight: 600 }}>{dinhDangTien(giaSau)}</span>
                                   </div>
                                 </div>
                                 {modalCheDo !== 'xem' && (
@@ -1071,7 +1024,7 @@ export const QuanLyGiamGia = () => {
                                     style={{
                                       border: 'none',
                                       backgroundColor: 'transparent',
-                                      color: '#94A3B8',
+                                      color: 'var(--adm-text-sub)',
                                       cursor: 'pointer',
                                       padding: '2px'
                                     }}
@@ -1090,10 +1043,10 @@ export const QuanLyGiamGia = () => {
                   {/* KHỐI 2: CHỌN THEO THỂ LOẠI */}
                   {kieuApDung === 'danh_muc' && (
                     <div style={{
-                      backgroundColor: '#F8FAFC',
+                      backgroundColor: 'var(--adm-surface-2)',
                       padding: '0.9rem',
                       borderRadius: '8px',
-                      border: '1px solid #E2E8F0',
+                      border: '1px solid var(--adm-border)',
                       maxHeight: '200px',
                       overflowY: 'auto'
                     }}>
@@ -1107,8 +1060,8 @@ export const QuanLyGiamGia = () => {
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '0.5rem',
-                                backgroundColor: daChon ? '#FEF2F2' : '#FFFFFF',
-                                border: `1px solid ${daChon ? '#FCA5A5' : '#CBD5E1'}`,
+                                backgroundColor: daChon ? 'var(--adm-accent-subtle)' : '#FFFFFF',
+                                border: `1px solid ${daChon ? 'var(--adm-accent-subtle)' : 'var(--adm-border-strong)'}`,
                                 padding: '0.45rem 0.65rem',
                                 borderRadius: '6px',
                                 fontSize: '0.84rem',
@@ -1121,7 +1074,7 @@ export const QuanLyGiamGia = () => {
                                 checked={daChon}
                                 onChange={() => toggleChonDanhMuc(dm.MaDanhMuc)}
                               />
-                              <span style={{ fontWeight: daChon ? 600 : 400, color: daChon ? '#DC2626' : '#1E293B' }}>
+                              <span style={{ fontWeight: daChon ? 600 : 400, color: daChon ? 'var(--adm-accent-hover)' : 'var(--adm-text-main)' }}>
                                 {dm.TenDanhMuc}
                               </span>
                             </label>
@@ -1134,15 +1087,15 @@ export const QuanLyGiamGia = () => {
 
                 {/* Khối Xem Trước Thẻ Sách Demo */}
                 <div style={{
-                  backgroundColor: '#FFF7ED',
-                  border: '1px solid #FED7AA',
+                  backgroundColor: 'var(--adm-warning-subtle)',
+                  border: '1px solid var(--adm-warning-subtle)',
                   borderRadius: '8px',
                   padding: '0.85rem',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '1rem'
                 }}>
-                  <div style={{ position: 'relative', width: '56px', height: '80px', borderRadius: '4px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#CBD5E1' }}>
+                  <div style={{ position: 'relative', width: '56px', height: '80px', borderRadius: '4px', overflow: 'hidden', flexShrink: 0, backgroundColor: 'var(--adm-border-strong)' }}>
                     <img 
                       src={sachXemTruoc.anhBia || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200'} 
                       alt="" 
@@ -1151,17 +1104,17 @@ export const QuanLyGiamGia = () => {
                     <NhanGiamGia phanTram={phanTramGiam} viTri="goc-anh" kichThuoc="nho" />
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.78rem', color: '#9A3412', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--adm-text-muted)', fontWeight: 500 }}>
                       Xem trước hiển thị ở Storefront:
                     </div>
-                    <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0F172A', marginTop: '2px' }}>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--adm-text-main)', marginTop: '2px' }}>
                       {sachXemTruoc.tenSach}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem', marginTop: '3px' }}>
-                      <span style={{ fontSize: '1rem', fontWeight: 700, color: '#DC2626' }}>
+                      <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--adm-accent-hover)' }}>
                         {dinhDangTien(giaXemTruoc)}
                       </span>
-                      <span style={{ fontSize: '0.82rem', color: '#94A3B8', textDecoration: 'line-through' }}>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--adm-text-sub)', textDecoration: 'line-through' }}>
                         {dinhDangTien(sachXemTruoc.giaBan)}
                       </span>
                     </div>
@@ -1172,12 +1125,12 @@ export const QuanLyGiamGia = () => {
               {/* Modal Footer */}
               <div style={{
                 padding: '0.9rem 1.4rem',
-                borderTop: '1px solid #E2E8F0',
+                borderTop: '1px solid var(--adm-border)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-end',
                 gap: '0.75rem',
-                backgroundColor: '#F8FAFC'
+                backgroundColor: 'var(--adm-surface-2)'
               }}>
                 <button
                   type="button"
@@ -1185,9 +1138,9 @@ export const QuanLyGiamGia = () => {
                   style={{
                     padding: '0.55rem 1rem',
                     borderRadius: '6px',
-                    border: '1px solid #CBD5E1',
+                    border: '1px solid var(--adm-border-strong)',
                     backgroundColor: '#FFFFFF',
-                    color: '#475569',
+                    color: 'var(--adm-text-muted)',
                     fontSize: '0.86rem',
                     fontWeight: 600,
                     cursor: 'pointer'
@@ -1204,7 +1157,7 @@ export const QuanLyGiamGia = () => {
                       padding: '0.55rem 1.25rem',
                       borderRadius: '6px',
                       border: 'none',
-                      backgroundColor: '#EF4444',
+                      backgroundColor: 'var(--adm-primary)',
                       color: '#FFFFFF',
                       fontSize: '0.86rem',
                       fontWeight: 600,
@@ -1212,8 +1165,7 @@ export const QuanLyGiamGia = () => {
                       opacity: dangLuu ? 0.7 : 1,
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '0.4rem',
-                      boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)'
+                      gap: '0.4rem'
                     }}
                   >
                     {dangLuu ? 'Đang lưu...' : (modalCheDo === 'tao' ? 'Tạo chương trình' : 'Cập nhật')}

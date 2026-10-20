@@ -1,13 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  MessageSquare, 
-  Star, 
-  Eye, 
-  EyeOff, 
-  Trash2, 
-  RefreshCw, 
-  Search, 
-  Filter, 
+import {
+  Star,
+  Trash2,
+  Search,
   BookOpen
 } from 'lucide-react';
 import api from '@booknest/shared/api';
@@ -122,13 +117,13 @@ export default function QuanLyDanhGia() {
 
   const renderSao = (soSao) => {
     return (
-      <div style={{ display: 'inline-flex', gap: '2px', color: '#F59E0B' }}>
+      <div style={{ display: 'inline-flex', gap: '2px', color: 'var(--adm-chart)' }}>
         {[1, 2, 3, 4, 5].map((sao) => (
           <Star
             key={sao}
             size={14}
-            fill={sao <= soSao ? '#F59E0B' : 'transparent'}
-            stroke="#F59E0B"
+            fill={sao <= soSao ? 'var(--adm-chart)' : 'transparent'}
+            stroke="var(--adm-chart)"
           />
         ))}
       </div>
@@ -140,12 +135,10 @@ export default function QuanLyDanhGia() {
       {/* Header */}
       <div className="bo-page-heading">
         <div>
-          <span className="bo-eyebrow">VẬN HÀNH & KIỂM DUYỆT</span>
-          <h1>Kiểm Duyệt Đánh Giá</h1>
+          <h1>Kiểm duyệt đánh giá</h1>
           <p>Quản lý nhận xét và đánh giá của khách hàng. Ẩn nội dung phản cảm/vi phạm hoặc xóa thư rác.</p>
         </div>
         <button className="bo-secondary-button" onClick={taiDanhSach} disabled={dangTai}>
-          <RefreshCw size={15} className={dangTai ? 'spin' : ''} />
           Làm mới
         </button>
       </div>
@@ -162,7 +155,7 @@ export default function QuanLyDanhGia() {
         <form onSubmit={handleTimKiem} style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
           {/* Ô tìm kiếm */}
           <div style={{ position: 'relative', flex: '1 1 240px' }}>
-            <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+            <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--adm-text-sub)' }} />
             <input
               type="text"
               placeholder="Tìm theo tên sách, khách hàng, nội dung..."
@@ -171,7 +164,7 @@ export default function QuanLyDanhGia() {
               style={{
                 width: '100%',
                 padding: '0.45rem 0.75rem 0.45rem 2.25rem',
-                border: '1px solid var(--adm-border, #CBD5E1)',
+                border: '1px solid var(--adm-border, var(--adm-border-strong))',
                 borderRadius: '6px',
                 fontSize: '0.875rem'
               }}
@@ -180,28 +173,28 @@ export default function QuanLyDanhGia() {
 
           {/* Lọc số sao */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ fontSize: '0.85rem', color: '#64748B' }}>Số sao:</span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--adm-text-muted)' }}>Số sao:</span>
             <select
               value={rating}
               onChange={(e) => { setRating(e.target.value); setPage(1); }}
-              style={{ padding: '0.45rem 0.65rem', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '0.875rem' }}
+              style={{ padding: '0.45rem 0.65rem', borderRadius: '6px', border: '1px solid var(--adm-border-strong)', fontSize: '0.875rem' }}
             >
               <option value="">Tất cả số sao</option>
-              <option value="5">5 sao ⭐⭐⭐⭐⭐</option>
-              <option value="4">4 sao ⭐⭐⭐⭐</option>
-              <option value="3">3 sao ⭐⭐⭐</option>
-              <option value="2">2 sao ⭐⭐</option>
-              <option value="1">1 sao ⭐</option>
+              <option value="5">5 sao</option>
+              <option value="4">4 sao</option>
+              <option value="3">3 sao</option>
+              <option value="2">2 sao</option>
+              <option value="1">1 sao</option>
             </select>
           </div>
 
           {/* Lọc trạng thái ẩn/hiện */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ fontSize: '0.85rem', color: '#64748B' }}>Trạng thái:</span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--adm-text-muted)' }}>Trạng thái:</span>
             <select
               value={daAn}
               onChange={(e) => { setDaAn(e.target.value); setPage(1); }}
-              style={{ padding: '0.45rem 0.65rem', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '0.875rem' }}
+              style={{ padding: '0.45rem 0.65rem', borderRadius: '6px', border: '1px solid var(--adm-border-strong)', fontSize: '0.875rem' }}
             >
               <option value="">Tất cả trạng thái</option>
               <option value="false">Đang hiển thị</option>
@@ -210,7 +203,7 @@ export default function QuanLyDanhGia() {
           </div>
 
           <button type="submit" className="bo-secondary-button">
-            <Filter size={14} /> Lọc
+            Lọc
           </button>
         </form>
       </section>
@@ -219,7 +212,7 @@ export default function QuanLyDanhGia() {
       <section className="bo-panel history-table-panel">
         <div className="bo-panel-title">
           <div>
-            <h2><MessageSquare size={18} /> Danh Sách Nhận Xét</h2>
+            <h2>Danh sách nhận xét</h2>
             <p>Tổng cộng {phanTrang.tongSoBanGhi} đánh giá · Trang {page}/{phanTrang.tongSoTrang || 1}</p>
           </div>
         </div>
@@ -232,10 +225,10 @@ export default function QuanLyDanhGia() {
               <thead>
                 <tr>
                   <th style={{ width: '220px' }}>Sách</th>
-                  <th style={{ width: '180px' }}>Khách Hàng</th>
-                  <th>Nhận Xét & Đánh Giá</th>
-                  <th style={{ width: '130px', textAlign: 'center' }}>Trạng Thái</th>
-                  <th style={{ width: '160px', textAlign: 'right' }}>Thao Tác</th>
+                  <th style={{ width: '180px' }}>Khách hàng</th>
+                  <th>Nhận xét & đánh giá</th>
+                  <th style={{ width: '130px', textAlign: 'center' }}>Trạng thái</th>
+                  <th style={{ width: '160px', textAlign: 'right' }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -255,10 +248,10 @@ export default function QuanLyDanhGia() {
                             <img
                               src={dg.sach.AnhBia}
                               alt={dg.sach.TenSach}
-                              style={{ width: '38px', height: '52px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #E2E8F0' }}
+                              style={{ width: '38px', height: '52px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--adm-border)' }}
                             />
                           ) : (
-                            <div style={{ width: '38px', height: '52px', background: '#F1F5F9', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
+                            <div style={{ width: '38px', height: '52px', background: 'var(--adm-primary-subtle)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--adm-text-sub)' }}>
                               <BookOpen size={16} />
                             </div>
                           )}
@@ -266,7 +259,7 @@ export default function QuanLyDanhGia() {
                             <div style={{ fontWeight: 600, fontSize: '0.875rem', lineHeight: 1.3 }}>
                               {dg.sach?.TenSach || `Sách #${dg.MaSach}`}
                             </div>
-                            <small style={{ color: '#64748B' }}>Mã: #{dg.MaSach}</small>
+                            <small style={{ color: 'var(--adm-text-muted)' }}>Mã: #{dg.MaSach}</small>
                           </div>
                         </div>
                       </td>
@@ -276,7 +269,7 @@ export default function QuanLyDanhGia() {
                         <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>
                           {dg.khachHang?.HoTen || 'Khách ẩn danh'}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)' }}>
                           {dg.khachHang?.Email || 'Chưa có email'}
                         </div>
                       </td>
@@ -285,12 +278,12 @@ export default function QuanLyDanhGia() {
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                           {renderSao(dg.SoSao)}
-                          <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--adm-text-sub)' }}>
                             {dg.NgayCapNhat ? new Date(dg.NgayCapNhat).toLocaleString('vi-VN') : ''}
                           </span>
                         </div>
-                        <div style={{ fontSize: '0.875rem', color: '#1E293B', whiteSpace: 'pre-wrap' }}>
-                          {dg.NoiDung || <em style={{ color: '#94A3B8' }}>(Không có nhận xét bằng chữ)</em>}
+                        <div style={{ fontSize: '0.875rem', color: 'var(--adm-text-main)', whiteSpace: 'pre-wrap' }}>
+                          {dg.NoiDung || <em style={{ color: 'var(--adm-text-sub)' }}>(Không có nhận xét bằng chữ)</em>}
                         </div>
                       </td>
 
@@ -303,12 +296,12 @@ export default function QuanLyDanhGia() {
                             gap: '0.25rem',
                             padding: '0.2rem 0.5rem',
                             borderRadius: '999px',
-                            background: '#FEE2E2',
-                            color: '#991B1B',
+                            background: 'var(--adm-danger-subtle)',
+                            color: 'var(--adm-danger)',
                             fontSize: '0.75rem',
                             fontWeight: 600
                           }}>
-                            <EyeOff size={12} /> Đã bị ẩn
+                            Đã bị ẩn
                           </span>
                         ) : (
                           <span style={{
@@ -317,12 +310,12 @@ export default function QuanLyDanhGia() {
                             gap: '0.25rem',
                             padding: '0.2rem 0.5rem',
                             borderRadius: '999px',
-                            background: '#DCFCE7',
-                            color: '#166534',
+                            background: 'var(--adm-success-subtle)',
+                            color: 'var(--adm-success)',
                             fontSize: '0.75rem',
                             fontWeight: 600
                           }}>
-                            <Eye size={12} /> Hiển thị
+                            Hiển thị
                           </span>
                         )}
                       </td>
@@ -334,23 +327,23 @@ export default function QuanLyDanhGia() {
                             <button
                               type="button"
                               className="bo-secondary-button"
-                              style={{ padding: '0.3rem 0.55rem', fontSize: '0.75rem', color: '#166534', borderColor: '#BBF7D0' }}
+                              style={{ padding: '0.3rem 0.55rem', fontSize: '0.75rem', color: 'var(--adm-success)', borderColor: 'var(--adm-success-subtle)' }}
                               title="Cho phép hiển thị lại trên Storefront"
                               disabled={dangXuLyId === dg.MaDanhGia}
                               onClick={() => xuLyDoiTrangThaiAn(dg.MaDanhGia, false)}
                             >
-                              <Eye size={13} /> Hiện
+                              Hiện
                             </button>
                           ) : (
                             <button
                               type="button"
                               className="bo-secondary-button"
-                              style={{ padding: '0.3rem 0.55rem', fontSize: '0.75rem', color: '#B45309', borderColor: '#FDE68A' }}
+                              style={{ padding: '0.3rem 0.55rem', fontSize: '0.75rem', color: 'var(--adm-warning)', borderColor: 'var(--adm-warning-subtle)' }}
                               title="Ẩn đánh giá khỏi trang Storefront"
                               disabled={dangXuLyId === dg.MaDanhGia}
                               onClick={() => handleMoAnDanhGia(dg)}
                             >
-                              <EyeOff size={13} /> Ẩn
+                              Ẩn
                             </button>
                           )}
 

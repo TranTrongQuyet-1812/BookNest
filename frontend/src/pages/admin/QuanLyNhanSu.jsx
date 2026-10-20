@@ -4,17 +4,12 @@ import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 import PhanTrang from '../../components/PhanTrang';
-import { 
-  UserPlus, 
-  Lock, 
-  Unlock, 
-  Search, 
-  Filter, 
+import {
+  Lock,
+  Unlock,
+  Search,
   X,
-  Edit3,
-  KeyRound,
-  Eye,
-  ShoppingBag
+  KeyRound
 } from 'lucide-react';
 
 export const QuanLyNhanSu = () => {
@@ -307,13 +302,13 @@ export const QuanLyNhanSu = () => {
   const layBadgeVaiTro = (vaiTro) => {
     switch (vaiTro) {
       case 'quan_tri':
-        return <span className="badge" style={{ backgroundColor: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE' }}>Quản trị viên</span>;
+        return <span className="badge" style={{ backgroundColor: 'var(--adm-info-subtle)', color: 'var(--adm-info)', border: '1px solid var(--adm-info-subtle)' }}>Quản trị viên</span>;
       case 'thu_kho':
-        return <span className="badge" style={{ backgroundColor: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0' }}>Thủ kho</span>;
+        return <span className="badge" style={{ backgroundColor: 'var(--adm-success-subtle)', color: 'var(--adm-success)', border: '1px solid var(--adm-success-subtle)' }}>Thủ kho</span>;
       case 'thu_thu':
-        return <span className="badge" style={{ backgroundColor: '#FFFBEB', color: '#B45309', border: '1px solid #FDE68A' }}>Thủ thư</span>;
+        return <span className="badge" style={{ backgroundColor: 'var(--adm-warning-subtle)', color: 'var(--adm-warning)', border: '1px solid var(--adm-warning-subtle)' }}>Thủ thư</span>;
       case 'khach_hang':
-        return <span className="badge" style={{ backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1' }}>Khách hàng</span>;
+        return <span className="badge" style={{ backgroundColor: 'var(--adm-primary-subtle)', color: 'var(--adm-text-muted)', border: '1px solid var(--adm-border-strong)' }}>Khách hàng</span>;
       default:
         return <span className="badge badge-role">{vaiTro}</span>;
     }
@@ -338,12 +333,12 @@ export const QuanLyNhanSu = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+      <div className="admindash-page-head">
         <div>
-          <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--adm-text-main)', letterSpacing: '-0.02em' }}>
-            {laKhach ? 'Tra Cứu & Quản Lý Khách Hàng' : 'Quản Lý Nhân Sự & Khách Hàng'}
+          <h1 className="admindash-page-title">
+            {laKhach ? 'Tra cứu & quản lý khách hàng' : 'Quản lý nhân sự & khách hàng'}
           </h1>
-          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+          <p className="admindash-page-desc">
             {laKhach 
               ? 'Tra cứu thông tin khách hàng, số điện thoại, địa chỉ và lịch sử đơn hàng gần nhất'
               : 'Cấp tài khoản nhân viên vận hành, điều chỉnh vai trò và kiểm soát quyền truy cập hệ thống'
@@ -353,7 +348,7 @@ export const QuanLyNhanSu = () => {
 
         {laQuanTri && !laKhach && (
           <button onClick={() => setModalMo(true)} className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
-            <UserPlus size={15} /> Tạo Tài Khoản Nhân Sự
+            Tạo tài khoản nhân sự
           </button>
         )}
       </div>
@@ -401,7 +396,7 @@ export const QuanLyNhanSu = () => {
 
           <div>
             <button type="submit" className="btn btn-outline w-full" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
-              <Filter size={15} /> Lọc Danh Sách
+              Lọc danh sách
             </button>
           </div>
         </form>
@@ -418,11 +413,11 @@ export const QuanLyNhanSu = () => {
             <thead>
               <tr>
                 <th style={{ width: '70px' }}>Mã</th>
-                <th>Họ Tên & Email</th>
-                <th style={{ width: '140px' }}>{laKhach ? 'Địa Chỉ Mặc Định' : 'Vai Trò'}</th>
-                <th style={{ width: '130px' }}>Số Điện Thoại</th>
-                <th style={{ width: '120px' }}>Trạng Thái</th>
-                <th style={{ textAlign: 'right', width: '220px' }}>Thao Tác</th>
+                <th>Họ tên & Email</th>
+                <th style={{ width: '140px' }}>{laKhach ? 'Địa chỉ mặc định' : 'Vai trò'}</th>
+                <th style={{ width: '130px' }}>Số điện thoại</th>
+                <th style={{ width: '120px' }}>Trạng thái</th>
+                <th style={{ textAlign: 'right', width: '220px' }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -474,7 +469,6 @@ export const QuanLyNhanSu = () => {
                               style={{ fontSize: '0.75rem', padding: '0.28rem 0.55rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
                               title="Xem chi tiết & đơn hàng gần đây"
                             >
-                              <Eye size={13} />
                               <span>Chi tiết</span>
                             </button>
 
@@ -485,7 +479,6 @@ export const QuanLyNhanSu = () => {
                               style={{ fontSize: '0.75rem', padding: '0.28rem 0.55rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
                               title="Sửa họ tên, SĐT, địa chỉ"
                             >
-                              <Edit3 size={13} />
                               <span>Sửa</span>
                             </button>
 
@@ -501,7 +494,7 @@ export const QuanLyNhanSu = () => {
                                   alignItems: 'center',
                                   gap: '0.25rem',
                                   color: dangHoatDong ? 'var(--adm-danger)' : 'var(--adm-success)',
-                                  borderColor: dangHoatDong ? '#FECACA' : '#A7F3D0'
+                                  borderColor: dangHoatDong ? 'var(--adm-danger-subtle)' : 'var(--adm-success-subtle)'
                                 }}
                                 title={dangHoatDong ? 'Khóa tài khoản' : 'Mở khóa'}
                               >
@@ -519,7 +512,6 @@ export const QuanLyNhanSu = () => {
                                 style={{ fontSize: '0.75rem', padding: '0.28rem 0.55rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
                                 title="Sửa họ tên, SĐT, vai trò"
                               >
-                                <Edit3 size={13} />
                                 <span>Sửa</span>
                               </button>
                             )}
@@ -553,7 +545,7 @@ export const QuanLyNhanSu = () => {
                                     alignItems: 'center',
                                     gap: '0.25rem',
                                     color: dangHoatDong ? 'var(--adm-danger)' : 'var(--adm-success)',
-                                    borderColor: dangHoatDong ? '#FECACA' : '#A7F3D0'
+                                    borderColor: dangHoatDong ? 'var(--adm-danger-subtle)' : 'var(--adm-success-subtle)'
                                   }}
                                   title={dangHoatDong ? 'Khóa tài khoản' : 'Mở khóa'}
                                 >
@@ -579,7 +571,7 @@ export const QuanLyNhanSu = () => {
           <div className="modal-content" style={{ maxWidth: '500px' }}>
             <div className="flex justify-between items-center mb-4">
               <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--adm-text-main)' }}>
-                Thêm Mới Nhân Sự Vận Hành
+                Thêm mới nhân sự vận hành
               </h3>
               <button onClick={() => setModalMo(false)} style={{ color: 'var(--adm-text-muted)' }}>
                 <X size={18} />
@@ -653,7 +645,7 @@ export const QuanLyNhanSu = () => {
                   Hủy
                 </button>
                 <button type="submit" disabled={dangTao} className="btn btn-primary">
-                  {dangTao ? 'Đang tạo...' : 'Tạo Tài Khoản'}
+                  {dangTao ? 'Đang tạo...' : 'Tạo tài khoản'}
                 </button>
               </div>
             </form>
@@ -667,7 +659,7 @@ export const QuanLyNhanSu = () => {
           <div className="modal-content" style={{ maxWidth: '500px' }}>
             <div className="flex justify-between items-center mb-4">
               <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--adm-text-main)' }}>
-                Sửa Thông Tin Nhân Viên #{nhanVienDangSua.MaNhanVien}
+                Sửa thông tin nhân viên #{nhanVienDangSua.MaNhanVien}
               </h3>
               <button onClick={() => setModalSuaNhanVienMo(false)} style={{ color: 'var(--adm-text-muted)' }}>
                 <X size={18} />
@@ -682,7 +674,7 @@ export const QuanLyNhanSu = () => {
                   disabled
                   className="form-input w-full"
                   value={nhanVienDangSua.Email}
-                  style={{ backgroundColor: 'var(--adm-sidebar-bg)', color: 'var(--adm-text-muted)', cursor: 'not-allowed' }}
+                  style={{ backgroundColor: 'var(--adm-surface-2)', color: 'var(--adm-text-muted)', cursor: 'not-allowed' }}
                 />
               </div>
 
@@ -734,7 +726,7 @@ export const QuanLyNhanSu = () => {
                   Hủy
                 </button>
                 <button type="submit" disabled={dangSuaNhanVien} className="btn btn-primary">
-                  {dangSuaNhanVien ? 'Đang lưu...' : 'Lưu Thay Đổi'}
+                  {dangSuaNhanVien ? 'Đang lưu...' : 'Lưu thay đổi'}
                 </button>
               </div>
             </form>
@@ -748,7 +740,7 @@ export const QuanLyNhanSu = () => {
           <div className="modal-content" style={{ maxWidth: '450px' }}>
             <div className="flex justify-between items-center mb-4">
               <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--adm-text-main)' }}>
-                Đặt Lại Mật Khẩu Nhân Viên
+                Đặt lại mật khẩu nhân viên
               </h3>
               <button onClick={() => setModalDoiMatKhauNhanVienMo(false)} style={{ color: 'var(--adm-text-muted)' }}>
                 <X size={18} />
@@ -777,7 +769,7 @@ export const QuanLyNhanSu = () => {
                   Hủy
                 </button>
                 <button type="submit" disabled={dangDoiMatKhauNhanVien} className="btn btn-primary">
-                  {dangDoiMatKhauNhanVien ? 'Đang cập nhật...' : 'Xác Nhận Đặt Lại'}
+                  {dangDoiMatKhauNhanVien ? 'Đang cập nhật...' : 'Xác nhận đặt lại'}
                 </button>
               </div>
             </form>
@@ -791,7 +783,7 @@ export const QuanLyNhanSu = () => {
           <div className="modal-content" style={{ maxWidth: '650px' }}>
             <div className="flex justify-between items-center mb-4 border-b pb-3" style={{ borderColor: 'var(--adm-border)' }}>
               <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--adm-text-main)' }}>
-                Chi Tiết Khách Hàng
+                Chi tiết khách hàng
               </h3>
               <button onClick={() => setModalChiTietKhachMo(false)} style={{ color: 'var(--adm-text-muted)' }}>
                 <X size={18} />
@@ -805,7 +797,7 @@ export const QuanLyNhanSu = () => {
             ) : khachHangChiTiet ? (
               <div>
                 {/* Thông tin định danh */}
-                <div className="grid grid-cols-2 gap-3 mb-4" style={{ backgroundColor: 'var(--adm-sidebar-bg)', padding: '0.85rem 1rem', borderRadius: '6px' }}>
+                <div className="grid grid-cols-2 gap-3 mb-4" style={{ backgroundColor: 'var(--adm-surface-2)', padding: '0.85rem 1rem', borderRadius: '6px' }}>
                   <div>
                     <span style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)', display: 'block' }}>Mã khách hàng</span>
                     <strong style={{ fontSize: '0.9rem', color: 'var(--adm-text-main)' }}>#{khachHangChiTiet.MaKhachHang}</strong>
@@ -836,9 +828,9 @@ export const QuanLyNhanSu = () => {
                   </div>
                 </div>
 
-                {/* 5 Đơn hàng gần nhất */}
+                {/* 5 đơn hàng gần nhất */}
                 <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--adm-text-main)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <ShoppingBag size={15} /> 5 Đơn Hàng Gần Nhất
+                  5 đơn hàng gần nhất
                 </h4>
 
                 {khachHangChiTiet.donHangGanDay && khachHangChiTiet.donHangGanDay.length > 0 ? (
@@ -889,7 +881,7 @@ export const QuanLyNhanSu = () => {
           <div className="modal-content" style={{ maxWidth: '500px' }}>
             <div className="flex justify-between items-center mb-4">
               <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--adm-text-main)' }}>
-                Sửa Thông Tin Khách Hàng #{khachHangDangSua.MaKhachHang}
+                Sửa thông tin khách hàng #{khachHangDangSua.MaKhachHang}
               </h3>
               <button onClick={() => setModalSuaKhachMo(false)} style={{ color: 'var(--adm-text-muted)' }}>
                 <X size={18} />
@@ -904,7 +896,7 @@ export const QuanLyNhanSu = () => {
                   disabled
                   className="form-input w-full"
                   value={khachHangDangSua.Email}
-                  style={{ backgroundColor: 'var(--adm-sidebar-bg)', color: 'var(--adm-text-muted)', cursor: 'not-allowed' }}
+                  style={{ backgroundColor: 'var(--adm-surface-2)', color: 'var(--adm-text-muted)', cursor: 'not-allowed' }}
                 />
               </div>
 
@@ -946,7 +938,7 @@ export const QuanLyNhanSu = () => {
                   Hủy
                 </button>
                 <button type="submit" disabled={dangSuaKhach} className="btn btn-primary">
-                  {dangSuaKhach ? 'Đang lưu...' : 'Lưu Thay Đổi'}
+                  {dangSuaKhach ? 'Đang lưu...' : 'Lưu thay đổi'}
                 </button>
               </div>
             </form>

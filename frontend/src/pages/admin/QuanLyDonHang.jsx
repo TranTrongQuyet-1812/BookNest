@@ -4,22 +4,8 @@ import api from '../../services/api';
 import { laySocket, thamGiaNhanVien, roiNhanVien } from '../../services/socket';
 import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 import PhanTrang from '../../components/PhanTrang';
-import { 
-  ClipboardList, 
-  Clock, 
-  CheckCircle, 
-  Truck, 
-  PackageCheck, 
-  XCircle, 
-  Filter, 
-  Ban,
-  Eye,
-  Calendar,
-  RotateCcw,
-  X,
-  History,
-  CreditCard,
-  ShoppingBag
+import {
+  X
 } from 'lucide-react';
 
 const NHAN_TRANG_THAI_DON_HANG = {
@@ -262,15 +248,15 @@ export const QuanLyDonHang = () => {
   const layBadgeTrangThai = (trangThai) => {
     switch (trangThai) {
       case 'CHO_DUYET':
-        return <span className="badge badge-pending"><Clock size={13} /> Chờ duyệt</span>;
+        return <span className="badge badge-pending">Chờ duyệt</span>;
       case 'DA_DUYET':
-        return <span className="badge badge-confirmed"><CheckCircle size={13} /> Đã duyệt</span>;
+        return <span className="badge badge-confirmed">Đã duyệt</span>;
       case 'DA_LAY_HANG':
-        return <span className="badge badge-shipping"><Truck size={13} /> Đã lấy hàng</span>;
+        return <span className="badge badge-shipping">Đã lấy hàng</span>;
       case 'DA_GIAO':
-        return <span className="badge badge-delivered"><PackageCheck size={13} /> Đã giao</span>;
+        return <span className="badge badge-delivered">Đã giao</span>;
       case 'DA_HUY':
-        return <span className="badge badge-cancelled"><XCircle size={13} /> Đã hủy</span>;
+        return <span className="badge badge-cancelled">Đã hủy</span>;
       default:
         return <span className="badge">{trangThai}</span>;
     }
@@ -280,13 +266,13 @@ export const QuanLyDonHang = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+      <div className="admindash-page-head">
         <div>
-          <h1 style={{ fontSize: '1.45rem', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
-            Quản Lý & Xử Lý Đơn Hàng
+          <h1 className="admindash-page-title">
+            Quản lý & xử lý đơn hàng
           </h1>
-          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
-            Luân chuyển trạng thái đơn hàng theo quy trình State Machine nghiêm ngặt
+          <p className="admindash-page-desc">
+            Duyệt đơn, xác nhận lấy hàng, hoàn tất giao hoặc hủy đơn theo đúng quy trình
           </p>
         </div>
       </div>
@@ -296,7 +282,6 @@ export const QuanLyDonHang = () => {
         <form key={`${tuNgayLoc}_${denNgayLoc}`} onSubmit={handleApDungLocNgay} className="flex items-center flex-wrap gap-3">
           {/* Lọc Trạng Thái */}
           <div className="flex items-center gap-2">
-            <Filter size={15} style={{ color: 'var(--adm-text-muted)' }} />
             <select
               className="form-input"
               style={{ width: '160px', padding: '0.4rem 0.65rem', fontSize: '0.825rem' }}
@@ -314,7 +299,6 @@ export const QuanLyDonHang = () => {
 
           {/* Lọc Từ Ngày */}
           <div className="flex items-center gap-2">
-            <Calendar size={15} style={{ color: 'var(--adm-text-muted)' }} />
             <span style={{ fontSize: '0.825rem', color: 'var(--adm-text-muted)' }}>Từ:</span>
             <input
               type="date"
@@ -338,7 +322,7 @@ export const QuanLyDonHang = () => {
           </div>
 
           <button type="submit" className="btn btn-primary btn-sm" style={{ padding: '0.42rem 0.85rem' }}>
-            Lọc Ngày
+            Lọc ngày
           </button>
 
           {coLocDangChay && (
@@ -348,7 +332,7 @@ export const QuanLyDonHang = () => {
               className="btn btn-outline btn-sm"
               style={{ padding: '0.42rem 0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
             >
-              <RotateCcw size={13} /> Đặt Lại
+              Đặt lại
             </button>
           )}
         </form>
@@ -367,7 +351,6 @@ export const QuanLyDonHang = () => {
         </div>
       ) : donHangList.length === 0 ? (
         <div className="card text-center py-12">
-          <ClipboardList size={40} style={{ margin: '0 auto 0.75rem', color: 'var(--adm-text-muted)' }} />
           <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--adm-text-main)' }}>Không tìm thấy đơn hàng nào</h3>
           {coLocDangChay && (
             <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem', marginTop: '0.35rem' }}>
@@ -380,12 +363,12 @@ export const QuanLyDonHang = () => {
           <table className="admindash-table">
             <thead>
               <tr>
-                <th style={{ width: '100px' }}>Mã Đơn</th>
-                <th>Thời Gian</th>
-                <th>Khách Hàng & Liên Hệ</th>
-                <th>Tổng Tiền</th>
-                <th>Trạng Thái</th>
-                <th style={{ textAlign: 'right' }}>Thao Tác</th>
+                <th style={{ width: '100px' }}>Mã đơn</th>
+                <th>Thời gian</th>
+                <th>Khách hàng & liên hệ</th>
+                <th>Tổng tiền</th>
+                <th>Trạng thái</th>
+                <th style={{ textAlign: 'right' }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -435,8 +418,8 @@ export const QuanLyDonHang = () => {
                     <td>
                       <div>
                         {trangThai === 'CHO_DUYET' && don.thanhToan?.PhuongThuc === 'CHUYEN_KHOAN_QR' && don.thanhToan?.TrangThai === 'DA_THANH_TOAN' ? (
-                          <span className="badge" style={{ backgroundColor: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0', fontWeight: 700 }}>
-                            <CheckCircle size={13} /> Đã thanh toán, chờ duyệt
+                          <span className="badge" style={{ backgroundColor: 'var(--adm-success-subtle)', color: 'var(--adm-success)', border: '1px solid var(--adm-success-subtle)', fontWeight: 700 }}>
+                            Đã thanh toán, chờ duyệt
                           </span>
                         ) : (
                           layBadgeTrangThai(trangThai)
@@ -446,15 +429,15 @@ export const QuanLyDonHang = () => {
                         <div style={{ marginTop: '4px', fontSize: '0.72rem' }}>
                           {don.thanhToan.PhuongThuc === 'CHUYEN_KHOAN_QR' ? (
                             don.thanhToan.TrangThai === 'DA_THANH_TOAN' ? (
-                              <span style={{ color: '#059669', fontWeight: 600 }}>✓ VietQR: Đã thanh toán</span>
+                              <span style={{ color: 'var(--adm-success)', fontWeight: 600 }}>VietQR: Đã thanh toán</span>
                             ) : don.thanhToan.TrangThai === 'CAN_HOAN_TIEN' ? (
-                              <span style={{ color: '#DC2626', fontWeight: 700 }}>⚠️ VietQR: Cần hoàn tiền</span>
+                              <span style={{ color: 'var(--adm-danger)', fontWeight: 700 }}>VietQR: Cần hoàn tiền</span>
                             ) : don.thanhToan.TrangThai === 'CHO_THANH_TOAN' ? (
-                              <span style={{ color: '#D97706', fontWeight: 600 }}>⏳ VietQR: Chờ thanh toán</span>
+                              <span style={{ color: 'var(--adm-warning)', fontWeight: 600 }}>⏳ VietQR: Chờ thanh toán</span>
                             ) : don.thanhToan.TrangThai === 'DA_HOAN_TIEN' ? (
-                              <span style={{ color: '#059669', fontWeight: 600 }}>✓ VietQR: Đã hoàn tiền</span>
+                              <span style={{ color: 'var(--adm-success)', fontWeight: 600 }}>VietQR: Đã hoàn tiền</span>
                             ) : don.thanhToan.TrangThai === 'DA_HUY' ? (
-                              <span style={{ color: 'var(--adm-text-muted)' }}>✕ VietQR: Đã hủy</span>
+                              <span style={{ color: 'var(--adm-text-muted)' }}>VietQR: Đã hủy</span>
                             ) : (
                               <span style={{ color: 'var(--adm-text-muted)' }}>VietQR: {don.thanhToan.TrangThai === 'THAT_BAI' ? 'Thất bại' : don.thanhToan.TrangThai === 'HET_HAN' ? 'Hết hạn' : don.thanhToan.TrangThai}</span>
                             )
@@ -480,7 +463,7 @@ export const QuanLyDonHang = () => {
                           style={{ padding: '0.3rem 0.55rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
                           title="Xem chi tiết đơn hàng và dòng thời gian lịch sử trạng thái"
                         >
-                          <Eye size={13} /> Chi tiết
+                          Chi tiết
                         </button>
 
                         {/* T55: Đơn tại quầy không có các nút duyệt, lấy hàng, giao hoặc hủy thủ công */}
@@ -492,7 +475,7 @@ export const QuanLyDonHang = () => {
                               padding: '3px 8px',
                               fontSize: '0.75rem',
                               color: 'var(--adm-text-muted)',
-                              backgroundColor: '#F3F4F6',
+                              backgroundColor: 'var(--adm-primary-subtle)',
                               borderRadius: '4px',
                               fontWeight: 500
                             }}
@@ -510,21 +493,21 @@ export const QuanLyDonHang = () => {
                                     alignItems: 'center',
                                     padding: '4px 8px',
                                     fontSize: '0.75rem',
-                                    color: '#D97706',
-                                    backgroundColor: '#FFFBEB',
-                                    border: '1px solid #FDE68A',
+                                    color: 'var(--adm-warning)',
+                                    backgroundColor: 'var(--adm-warning-subtle)',
+                                    border: '1px solid var(--adm-warning-subtle)',
                                     borderRadius: '4px',
                                     fontWeight: 600
                                   }}
                                 >
-                                  Chờ Quét QR
+                                  Chờ quét QR
                                 </span>
                               ) : (
                                 <button
                                   onClick={() => handleChuyenTrangThai(maDon, 'DA_DUYET', 'Duyệt đơn')}
                                   className="btn btn-primary btn-sm"
                                 >
-                                  Duyệt Đơn
+                                  Duyệt đơn
                                 </button>
                               )
                             )}
@@ -544,7 +527,7 @@ export const QuanLyDonHang = () => {
                                 className="btn btn-sm"
                                 style={{ backgroundColor: 'var(--adm-success)', color: '#FFF' }}
                               >
-                                Hoàn Tất Giao
+                                Hoàn tất giao
                               </button>
                             )}
 
@@ -553,10 +536,10 @@ export const QuanLyDonHang = () => {
                               <button
                                 onClick={() => handleHuyDon(maDon, don)}
                                 className="btn btn-outline btn-sm"
-                                style={{ color: 'var(--adm-danger)', borderColor: '#FECACA' }}
+                                style={{ color: 'var(--adm-danger)', borderColor: 'var(--adm-danger-subtle)' }}
                                 title="Hủy đơn hàng và hoàn kho"
                               >
-                                <Ban size={13} /> Hủy
+                                Hủy
                               </button>
                             )}
                           </>
@@ -581,7 +564,7 @@ export const QuanLyDonHang = () => {
               <div>
                 <div className="flex items-center gap-2">
                   <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--adm-text-main)' }}>
-                    Chi Tiết Đơn Hàng #{donDangXemId}
+                    Chi tiết đơn hàng #{donDangXemId}
                   </h3>
                   {chiTietDon && layBadgeTrangThai(chiTietDon.TrangThai)}
                 </div>
@@ -612,7 +595,7 @@ export const QuanLyDonHang = () => {
               <div className="space-y-4">
                 {/* Khối Thông Tin Giao Hàng & Thanh Toán */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3" style={{ fontSize: '0.85rem' }}>
-                  <div style={{ background: 'var(--adm-bg-surface, #F8FAFC)', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid var(--adm-border, #E2E8F0)' }}>
+                  <div style={{ background: 'var(--adm-bg-surface, var(--adm-surface-2))', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid var(--adm-border, var(--adm-border))' }}>
                     {chiTietDon.KenhBan === 'TAI_QUAY' ? (
                       <>
                         <div style={{ fontWeight: 700, marginBottom: '0.4rem', color: 'var(--adm-text-main)' }}>
@@ -629,7 +612,7 @@ export const QuanLyDonHang = () => {
                     ) : (
                       <>
                         <div style={{ fontWeight: 700, marginBottom: '0.4rem', color: 'var(--adm-text-main)' }}>
-                          📍 Người Nhận Hàng
+                          Người nhận hàng
                         </div>
                         <div><strong>Họ tên:</strong> {chiTietDon.TenNguoiNhan || '—'}</div>
                         <div><strong>Số điện thoại:</strong> {chiTietDon.SoDienThoaiNhan || '—'}</div>
@@ -643,9 +626,9 @@ export const QuanLyDonHang = () => {
                     )}
                   </div>
 
-                  <div style={{ background: 'var(--adm-bg-surface, #F8FAFC)', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid var(--adm-border, #E2E8F0)' }}>
+                  <div style={{ background: 'var(--adm-bg-surface, var(--adm-surface-2))', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid var(--adm-border, var(--adm-border))' }}>
                     <div style={{ fontWeight: 700, marginBottom: '0.4rem', color: 'var(--adm-text-main)' }} className="flex items-center gap-1.5">
-                      <CreditCard size={15} /> Thanh Toán
+                      Thanh toán
                     </div>
                     <div>
                       <strong>Hình thức:</strong>{' '}
@@ -658,11 +641,11 @@ export const QuanLyDonHang = () => {
                     <div>
                       <strong>Trạng thái tiền:</strong>{' '}
                       {chiTietDon.thanhToan?.TrangThai === 'DA_THANH_TOAN' ? (
-                        <span style={{ color: '#059669', fontWeight: 600 }}>✓ Đã thanh toán</span>
+                        <span style={{ color: 'var(--adm-success)', fontWeight: 600 }}>Đã thanh toán</span>
                       ) : chiTietDon.thanhToan?.TrangThai === 'CAN_HOAN_TIEN' ? (
-                        <span style={{ color: '#DC2626', fontWeight: 700 }}>⚠️ Cần hoàn tiền</span>
+                        <span style={{ color: 'var(--adm-danger)', fontWeight: 700 }}>Cần hoàn tiền</span>
                       ) : chiTietDon.thanhToan?.TrangThai === 'CHO_THANH_TOAN' ? (
-                        <span style={{ color: '#D97706', fontWeight: 600 }}>⏳ Chờ thanh toán</span>
+                        <span style={{ color: 'var(--adm-warning)', fontWeight: 600 }}>⏳ Chờ thanh toán</span>
                       ) : (
                         chiTietDon.thanhToan?.TrangThai || 'Chưa thanh toán'
                       )}
@@ -674,18 +657,18 @@ export const QuanLyDonHang = () => {
                 </div>
 
                 {/* Khối Danh Sách Sản Phẩm Trong Đơn */}
-                <div style={{ border: '1px solid var(--adm-border, #E2E8F0)', borderRadius: '8px', overflow: 'hidden' }}>
-                  <div style={{ background: 'var(--adm-bg-surface, #F8FAFC)', padding: '0.6rem 0.85rem', fontWeight: 700, fontSize: '0.85rem', color: 'var(--adm-text-main)' }} className="flex items-center gap-1.5">
-                    <ShoppingBag size={15} /> Danh Sách Sách Trong Đơn ({chiTietDon.chiTietDonHang?.length || 0} mục)
+                <div style={{ border: '1px solid var(--adm-border, var(--adm-border))', borderRadius: '8px', overflow: 'hidden' }}>
+                  <div style={{ background: 'var(--adm-bg-surface, var(--adm-surface-2))', padding: '0.6rem 0.85rem', fontWeight: 700, fontSize: '0.85rem', color: 'var(--adm-text-main)' }} className="flex items-center gap-1.5">
+                    Danh sách sách trong đơn ({chiTietDon.chiTietDonHang?.length || 0} mục)
                   </div>
                   {/* minWidth 0: bảng dùng chung có min-width 820px, rộng hơn hộp chi tiết nên cột Thành Tiền bị cắt */}
                   <table className="admindash-table" style={{ margin: 0, fontSize: '0.825rem', minWidth: 0 }}>
                     <thead>
                       <tr>
-                        <th>Tên Sách</th>
-                        <th style={{ textAlign: 'right' }}>Đơn Giá Lúc Mua</th>
-                        <th style={{ textAlign: 'center', width: '80px' }}>Số Lượng</th>
-                        <th style={{ textAlign: 'right' }}>Thành Tiền</th>
+                        <th>Tên sách</th>
+                        <th style={{ textAlign: 'right' }}>Đơn giá lúc mua</th>
+                        <th style={{ textAlign: 'center', width: '80px' }}>Số lượng</th>
+                        <th style={{ textAlign: 'right' }}>Thành tiền</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -719,9 +702,9 @@ export const QuanLyDonHang = () => {
                 </div>
 
                 {/* Khối Dòng Thời Gian Lịch Sử Trạng Thái (Timeline) */}
-                <div style={{ border: '1px solid var(--adm-border, #E2E8F0)', borderRadius: '8px', padding: '0.9rem 1.15rem' }}>
+                <div style={{ border: '1px solid var(--adm-border, var(--adm-border))', borderRadius: '8px', padding: '0.9rem 1.15rem' }}>
                   <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.75rem', color: 'var(--adm-text-main)' }} className="flex items-center gap-1.5">
-                    <History size={16} /> Dòng Thời Gian Lịch Sử Trạng Thái
+                    Dòng thời gian lịch sử trạng thái
                   </div>
 
                   {(!chiTietDon.lichSuTrangThai || chiTietDon.lichSuTrangThai.length === 0) ? (
@@ -738,7 +721,7 @@ export const QuanLyDonHang = () => {
                           top: '6px',
                           bottom: '6px',
                           width: '2px',
-                          background: 'var(--adm-border, #CBD5E1)'
+                          background: 'var(--adm-border, var(--adm-border-strong))'
                         }}
                       />
 
@@ -761,7 +744,7 @@ export const QuanLyDonHang = () => {
                                   width: '10px',
                                   height: '10px',
                                   borderRadius: '50%',
-                                  background: ls.TrangThaiMoi === 'DA_HUY' ? '#DC2626' : ls.TrangThaiMoi === 'DA_GIAO' ? '#059669' : 'var(--adm-primary, #6366F1)',
+                                  background: ls.TrangThaiMoi === 'DA_HUY' ? 'var(--adm-danger)' : ls.TrangThaiMoi === 'DA_GIAO' ? 'var(--adm-success)' : 'var(--adm-primary, var(--adm-info))',
                                   border: '2px solid #FFF'
                                 }}
                               />
@@ -770,7 +753,7 @@ export const QuanLyDonHang = () => {
                                 <div className="flex items-center justify-between flex-wrap gap-2">
                                   <div style={{ fontWeight: 600, color: 'var(--adm-text-main)' }}>
                                     {ls.TrangThaiCu ? (
-                                      <span>{layTenTrangThai(ls.TrangThaiCu)} → <strong style={{ color: ls.TrangThaiMoi === 'DA_HUY' ? '#DC2626' : 'inherit' }}>{layTenTrangThai(ls.TrangThaiMoi)}</strong></span>
+                                      <span>{layTenTrangThai(ls.TrangThaiCu)} → <strong style={{ color: ls.TrangThaiMoi === 'DA_HUY' ? 'var(--adm-danger)' : 'inherit' }}>{layTenTrangThai(ls.TrangThaiMoi)}</strong></span>
                                     ) : (
                                       <span>Khởi tạo đơn: <strong>{layTenTrangThai(ls.TrangThaiMoi)}</strong></span>
                                     )}
@@ -790,8 +773,8 @@ export const QuanLyDonHang = () => {
                                       marginTop: '0.35rem',
                                       padding: '0.4rem 0.65rem',
                                       borderRadius: '4px',
-                                      background: ls.TrangThaiMoi === 'DA_HUY' ? '#FEF2F2' : '#F1F5F9',
-                                      color: ls.TrangThaiMoi === 'DA_HUY' ? '#991B1B' : 'var(--adm-text-main)',
+                                      background: ls.TrangThaiMoi === 'DA_HUY' ? 'var(--adm-danger-subtle)' : 'var(--adm-primary-subtle)',
+                                      color: ls.TrangThaiMoi === 'DA_HUY' ? 'var(--adm-danger)' : 'var(--adm-text-main)',
                                       fontSize: '0.775rem'
                                     }}
                                   >

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Power, QrCode, RefreshCw, ShieldAlert } from 'lucide-react';
 import api from '@booknest/shared/api';
 import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
@@ -62,11 +61,10 @@ export default function CaiDatHeThong() {
     <div className="bo-page">
       <div className="bo-page-heading">
         <div>
-          <span className="bo-eyebrow">HỆ THỐNG</span>
           <h1>Cài đặt hệ thống</h1>
           <p>Công tắc khẩn cấp của cửa hàng. Mọi lần đổi đều được ghi vào Lịch sử thay đổi.</p>
         </div>
-        <button className="bo-secondary-button" onClick={taiDanhSach}><RefreshCw size={15} /> Làm mới</button>
+        <button className="bo-secondary-button" onClick={taiDanhSach}>Làm mới</button>
       </div>
 
       {loi && <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>{loi}</ThongBaoTaiCho>}
@@ -74,12 +72,11 @@ export default function CaiDatHeThong() {
       {dangTai ? <div className="bo-empty">Đang tải cài đặt…</div> : danhSach.map((congTac) => (
         <section key={congTac.khoa} className="bo-panel cai-dat-the">
           <div className="cai-dat-chinh">
-            <span className="history-icon"><QrCode size={18} /></span>
             <div>
               <h2>{congTac.ten}</h2>
               <span className={`cai-dat-nhan ${congTac.bat ? 'bat' : 'tat'}`}>{congTac.bat ? 'Đang BẬT' : 'Đang TẮT'}</span>
               {congTac.bat && !congTac.daDuDieuKien && (
-                <p className="cai-dat-canh-bao"><ShieldAlert size={14} /> Đã bật nhưng chưa đủ khóa payOS trong tệp .env của máy chủ, nên thực tế khách vẫn chưa dùng được QR.</p>
+                <p className="cai-dat-canh-bao">Đã bật nhưng chưa đủ khóa payOS trong tệp .env của máy chủ, nên thực tế khách vẫn chưa dùng được QR.</p>
               )}
               <ul>{(MO_TA_CONG_TAC[congTac.khoa] || []).map((dong) => <li key={dong}>{dong}</li>)}</ul>
               <small>
@@ -99,7 +96,7 @@ export default function CaiDatHeThong() {
             disabled={dangDoi}
             onClick={() => bamCongTac(congTac)}
           >
-            <span className="cai-dat-nut"><Power size={13} /></span>
+            <span className="cai-dat-nut" />
           </button>
 
           {khoaChoXacNhanTat === congTac.khoa && (

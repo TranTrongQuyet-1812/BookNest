@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
-import { 
-  Boxes, 
-  AlertTriangle, 
-  PlusCircle, 
-  History 
-} from 'lucide-react';
 import KhoiViecCanLam from './KhoiViecCanLam.jsx';
 
 const tenLoaiDieuChinh = {
@@ -132,12 +126,12 @@ export const NhapKho = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+      <div className="admindash-page-head">
         <div>
-          <h1 style={{ fontSize: '1.45rem', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
-            Nhập Kho & Quản Lý Tồn Kho
+          <h1 className="admindash-page-title">
+            Nhập kho & quản lý tồn kho
           </h1>
-          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+          <p className="admindash-page-desc">
             Lập phiếu nhập ấn phẩm, giám sát biến động tồn kho và cảnh báo thiếu hụt
           </p>
         </div>
@@ -153,16 +147,23 @@ export const NhapKho = () => {
       )}
 
       {baoCaoKho && (
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-5">
-          {[
-            ['Đầu sách đang bán', baoCaoKho.tongDauSach],
-            ['Tổng tồn kho', baoCaoKho.tongSoLuongTon],
-            ['Giá trị tồn kho', `${Number(baoCaoKho.giaTriTonKho).toLocaleString('vi-VN')} đ`],
-            ['Sắp hết hàng', baoCaoKho.soSachSapHet],
-            ['Đã hết hàng', baoCaoKho.soSachHetHang],
-            ['Không bán 90 ngày', baoCaoKho.soSachBanCham]
-          ].map(([nhan, giaTri]) => <div className="card" key={nhan} style={{ padding: '0.85rem 1rem' }}><small style={{ color: 'var(--adm-text-muted)' }}>{nhan}</small><strong style={{ display: 'block', marginTop: '.35rem', fontSize: '1.15rem' }}>{giaTri}</strong></div>)}
-        </div>
+        <section className="admindash-panel" style={{ marginBottom: '1rem' }} aria-label="Báo cáo tồn kho">
+          <div className="admindash-strip cols-3">
+            {[
+              ['Đầu sách đang bán', baoCaoKho.tongDauSach],
+              ['Tổng tồn kho', baoCaoKho.tongSoLuongTon],
+              ['Giá trị tồn kho', `${Number(baoCaoKho.giaTriTonKho).toLocaleString('vi-VN')} đ`],
+              ['Sắp hết hàng', baoCaoKho.soSachSapHet],
+              ['Đã hết hàng', baoCaoKho.soSachHetHang],
+              ['Không bán 90 ngày', baoCaoKho.soSachBanCham]
+            ].map(([nhan, giaTri]) => (
+              <div className="admindash-strip-item" key={nhan}>
+                <span className="admindash-strip-label">{nhan}</span>
+                <span className="admindash-strip-value">{giaTri}</span>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {baoCaoKho && <div className="card mb-6" style={{ padding: '1rem 1.25rem' }}>
@@ -176,9 +177,8 @@ export const NhapKho = () => {
       {sachSapHet.length > 0 && (
         <div className="card mb-6" style={{ borderLeft: '3px solid var(--adm-danger)', padding: '1rem 1.25rem' }}>
           <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle size={18} style={{ color: 'var(--adm-danger)' }} />
             <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--adm-danger)', margin: 0 }}>
-              Cảnh Báo: Có {phanTrangSapHet?.tongSoBanGhi ?? sachSapHet.length} tác phẩm chạm ngưỡng sắp hết hàng
+              Cảnh báo: có {phanTrangSapHet?.tongSoBanGhi ?? sachSapHet.length} tác phẩm chạm ngưỡng sắp hết hàng
             </h3>
           </div>
           <div className="flex flex-wrap gap-1.5 mt-2.5">
@@ -200,7 +200,7 @@ export const NhapKho = () => {
             })}
           </div>
           {phanTrangSapHet && phanTrangSapHet.tongSoBanGhi > 0 && (
-            <div className="flex items-center justify-between flex-wrap gap-2 mt-3 pt-2" style={{ borderTop: '1px solid var(--adm-card-border, #E5E7EB)' }}>
+            <div className="flex items-center justify-between flex-wrap gap-2 mt-3 pt-2" style={{ borderTop: '1px solid var(--adm-card-border, var(--adm-border))' }}>
               <small style={{ color: 'var(--adm-text-muted)', fontSize: '0.8rem' }}>
                 Hiển thị <strong>{(trangSapHet - 1) * (phanTrangSapHet.soBanGhiMoiTrang || 20) + 1}–{Math.min(trangSapHet * (phanTrangSapHet.soBanGhiMoiTrang || 20), phanTrangSapHet.tongSoBanGhi)}</strong> / <strong>{phanTrangSapHet.tongSoBanGhi}</strong> tác phẩm
               </small>
@@ -220,9 +220,8 @@ export const NhapKho = () => {
         {/* Form Tạo Phiếu Nhập Kho */}
         <div className="card" style={{ padding: '1.25rem' }}>
           <div className="flex items-center gap-2 mb-4">
-            <PlusCircle size={18} style={{ color: 'var(--adm-primary)' }} />
             <h3 style={{ fontSize: '1rem', fontWeight: 600, letterSpacing: '-0.01em', margin: 0 }}>
-              Lập Phiếu Nhập Kho
+              Lập phiếu nhập kho
             </h3>
           </div>
 
@@ -295,8 +294,7 @@ export const NhapKho = () => {
               disabled={dangNhapKho}
               className="btn btn-primary w-full mt-3"
             >
-              <Boxes size={16} />
-              {dangNhapKho ? 'Đang cập nhật kho...' : 'Xác Nhận Nhập Kho'}
+              {dangNhapKho ? 'Đang cập nhật kho...' : 'Xác nhận nhập kho'}
             </button>
           </form>
         </div>
@@ -304,9 +302,8 @@ export const NhapKho = () => {
         {/* Bảng Lịch Sử Nhập Kho */}
         <div className="card lg:col-span-2" style={{ padding: '1.25rem' }}>
           <div className="flex items-center gap-2 mb-4">
-            <History size={18} style={{ color: 'var(--adm-primary)' }} />
             <h3 style={{ fontSize: '1rem', fontWeight: 600, letterSpacing: '-0.01em', margin: 0 }}>
-              Lịch Sử Các Lần Nhập Kho Gần Đây
+              Lịch sử các lần nhập kho gần đây
             </h3>
           </div>
 
@@ -321,11 +318,11 @@ export const NhapKho = () => {
               <table className="admindash-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '85px' }}>Mã Phiếu</th>
-                    <th>Thời Gian</th>
-                    <th>Tác Phẩm</th>
+                    <th style={{ width: '85px' }}>Mã phiếu</th>
+                    <th>Thời gian</th>
+                    <th>Tác phẩm</th>
                     <th>SL Nhập</th>
-                    <th>Người Thực Hiện</th>
+                    <th>Người thực hiện</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -363,7 +360,7 @@ export const NhapKho = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         <div className="card" style={{ padding: '1.25rem' }}>
-          <div className="flex items-center gap-2 mb-4"><AlertTriangle size={18} style={{ color: 'var(--adm-warning)' }}/><h3 style={{ margin: 0, fontSize: '1rem' }}>Điều chỉnh tồn kho</h3></div>
+          <div className="flex items-center gap-2 mb-4"><h3 style={{ margin: 0, fontSize: '1rem' }}>Điều chỉnh tồn kho</h3></div>
           <form onSubmit={handleDieuChinhKho}>
             <div className="form-group"><label className="form-label">Sách đã chọn</label><div className="form-input" style={{ minHeight: 40 }}>{sachDangChon ? `#${sachDangChon.MaSach} · ${sachDangChon.TenSach}` : 'Chọn trong ô tìm sách bên trên'}</div></div>
             <div className="form-group"><label className="form-label">Số lượng thay đổi (+/-)</label><input className="form-input" type="number" step="1" required value={formDieuChinh.soLuongThayDoi} onChange={e => setFormDieuChinh({ ...formDieuChinh, soLuongThayDoi: e.target.value })}/><small style={{ color: 'var(--adm-text-muted)' }}>Tăng kho chỉ dành cho kiểm kê hoặc lý do khác.</small></div>
@@ -373,7 +370,7 @@ export const NhapKho = () => {
           </form>
         </div>
         <div className="card lg:col-span-2" style={{ padding: '1.25rem' }}>
-          <div className="flex items-center gap-2 mb-4"><History size={18} style={{ color: 'var(--adm-primary)' }}/><h3 style={{ margin: 0, fontSize: '1rem' }}>Lịch sử điều chỉnh gần đây</h3></div>
+          <div className="flex items-center gap-2 mb-4"><h3 style={{ margin: 0, fontSize: '1rem' }}>Lịch sử điều chỉnh gần đây</h3></div>
           <div className="admindash-table-wrap"><table className="admindash-table"><thead><tr><th>Ngày</th><th>Sách</th><th>Thay đổi</th><th>Tồn trước → sau</th><th>Loại · ghi chú · nhân viên</th></tr></thead><tbody>
             {lichSuDieuChinh.map(item => <tr key={item.MaDieuChinhKho}><td>{new Date(item.NgayDieuChinh).toLocaleDateString('vi-VN')}</td><td>{item.sach?.TenSach || `#${item.MaSach}`}</td><td style={{ color: item.SoLuongThayDoi > 0 ? 'var(--adm-success)' : 'var(--adm-danger)' }}>{item.SoLuongThayDoi > 0 ? '+' : ''}{item.SoLuongThayDoi}</td><td>{item.TonTruoc} → {item.TonSau}</td><td>{tenLoaiDieuChinh[item.LoaiDieuChinh] || item.LoaiDieuChinh}{item.GhiChu && <small style={{ display: 'block' }}>{item.GhiChu}</small>}<small style={{ display: 'block', color: 'var(--adm-text-muted)' }}>{item.nhanVienDieuChinh?.HoTen || 'Nhân viên'}</small></td></tr>)}
             {!lichSuDieuChinh.length && <tr><td colSpan="5">Chưa có lần điều chỉnh nào.</td></tr>}

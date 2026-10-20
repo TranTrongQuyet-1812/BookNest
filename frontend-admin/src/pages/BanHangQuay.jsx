@@ -1,19 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { 
-  Search, 
-  Plus, 
-  Minus, 
-  Trash2, 
-  ShoppingBag, 
-  ReceiptText, 
-  Printer, 
-  RotateCw, 
-  UserRound, 
-  ArrowLeft,
-  QrCode,
-  Banknote,
+import {
+  Search,
+  Plus,
+  Minus,
+  Trash2,
+  RotateCw,
   Copy,
-  Clock,
   X
 } from 'lucide-react';
 import QRCode from 'qrcode';
@@ -374,16 +366,15 @@ export default function BanHangQuay() {
     <div className="bo-page counter-page">
       <div className="bo-page-heading">
         <div>
-          <span className="bo-eyebrow">ĐIỂM BÁN BOOKNEST</span>
           <h1>Bán hàng tại quầy</h1>
           <p>Tìm sách, lên hóa đơn và cập nhật tồn kho trong một giao dịch.</p>
         </div>
         <div className="bo-tabs" role="tablist">
           <button className={tab === 'ban' ? 'active' : ''} onClick={() => setTab('ban')}>
-            <ShoppingBag size={16}/> Bán hàng
+            Bán hàng
           </button>
           <button className={tab === 'lich-su' ? 'active' : ''} onClick={() => setTab('lich-su')}>
-            <ReceiptText size={16}/> Lịch sử bán
+            Lịch sử bán
           </button>
         </div>
       </div>
@@ -463,7 +454,6 @@ export default function BanHangQuay() {
             <div className="counter-lines">
               {!gioHang.length ? (
                 <div className="bo-empty counter-empty">
-                  <ShoppingBag size={28}/>
                   <span>Chọn sách để bắt đầu hóa đơn</span>
                 </div>
               ) : gioHang.map(mon => {
@@ -518,7 +508,6 @@ export default function BanHangQuay() {
 
             {/* Thông tin khách hàng */}
             <div className="counter-customer-title">
-              <UserRound size={16}/>
               <span>Thông tin khách (không bắt buộc)</span>
             </div>
             <div className="counter-customer-fields">
@@ -543,7 +532,6 @@ export default function BanHangQuay() {
 
             {/* Lựa chọn phương thức thanh toán */}
             <div className="counter-customer-title">
-              <Banknote size={16}/>
               <span>Phương thức thanh toán</span>
             </div>
             <div className="counter-payment-select">
@@ -555,7 +543,6 @@ export default function BanHangQuay() {
                   checked={phuongThuc === 'TIEN_MAT'}
                   onChange={() => setPhuongThuc('TIEN_MAT')}
                 />
-                <Banknote size={16}/>
                 <span>Tiền mặt</span>
               </label>
 
@@ -571,7 +558,6 @@ export default function BanHangQuay() {
                   checked={phuongThuc === 'CHUYEN_KHOAN_QR'}
                   onChange={() => setPhuongThuc('CHUYEN_KHOAN_QR')}
                 />
-                <QrCode size={16}/>
                 <span>Chuyển khoản QR {!congTacQrBat && <small>(Tạm ngưng)</small>}</span>
               </label>
             </div>
@@ -605,7 +591,7 @@ export default function BanHangQuay() {
 
                 <div className="counter-change-row">
                   <span style={{ color: 'var(--bo-muted)' }}>Tiền thừa trả khách:</span>
-                  <strong style={{ color: tienKhachDuaSo > tongTien ? '#059669' : 'inherit', fontSize: '0.95rem' }}>
+                  <strong style={{ color: tienKhachDuaSo > tongTien ? 'var(--adm-success)' : 'inherit', fontSize: '0.95rem' }}>
                     {dinhDangTien(tienThua)}
                   </strong>
                 </div>
@@ -647,7 +633,7 @@ export default function BanHangQuay() {
               <p>Hiển thị các hóa đơn do tài khoản hiện tại lập.</p>
             </div>
             <button className="bo-secondary-button" onClick={() => setTab('ban')}>
-              <ArrowLeft size={15}/> Quay lại bán hàng
+              Quay lại bán hàng
             </button>
           </div>
           {dangTaiLichSu ? (
@@ -698,9 +684,9 @@ export default function BanHangQuay() {
                         <td>
                           <span className={`bo-status ${don.TrangThai === 'CHO_DUYET' ? 'cho-qr' : ''}`} style={
                             don.TrangThai === 'CHO_DUYET' 
-                              ? { backgroundColor: '#fef3c7', color: '#b45309' } 
+                              ? { backgroundColor: 'var(--adm-warning-subtle)', color: 'var(--adm-warning)' } 
                               : don.TrangThai === 'DA_HUY'
-                              ? { backgroundColor: '#fee2e2', color: '#b91c1c' }
+                              ? { backgroundColor: 'var(--adm-danger-subtle)', color: 'var(--adm-danger)' }
                               : {}
                           }>
                             {trangThaiHienThi}
@@ -714,7 +700,7 @@ export default function BanHangQuay() {
                           )}
                           {don.TrangThai === 'CHO_DUYET' && (
                             <button className="bo-primary-button" style={{ padding: '0.4rem 0.65rem' }} onClick={() => moLaiModalQR(don)}>
-                              <QrCode size={14}/> Xử lý QR
+                              Xử lý QR
                             </button>
                           )}
                         </td>
@@ -737,7 +723,7 @@ export default function BanHangQuay() {
                   flexWrap: 'wrap',
                   gap: '0.75rem',
                   padding: '0.85rem 1.1rem',
-                  borderTop: '1px solid var(--bo-line, #E5E7EB)'
+                  borderTop: '1px solid var(--bo-line, var(--adm-border))'
                 }}
               >
                 <div style={{ color: 'var(--bo-muted)', fontSize: '0.82rem' }}>
@@ -757,7 +743,7 @@ export default function BanHangQuay() {
                         padding: '0.25rem 0.5rem',
                         fontSize: '0.8rem',
                         borderRadius: '4px',
-                        border: '1px solid var(--bo-line, #E5E7EB)',
+                        border: '1px solid var(--bo-line, var(--adm-border))',
                         backgroundColor: '#FFFFFF',
                         color: 'inherit'
                       }}
@@ -802,7 +788,6 @@ export default function BanHangQuay() {
           <section className="bo-qr-modal" role="dialog" aria-modal="true" aria-label="Thanh toán chuyển khoản QR">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ textAlign: 'left' }}>
-                <span className="bo-eyebrow">VIETQR PAYOS</span>
                 <h2 style={{ margin: '0.1rem 0 0', fontSize: '1.15rem' }}>Quét mã thanh toán tại quầy</h2>
               </div>
               <button className="bo-quiet-button" onClick={() => setDonDangChoQR(null)} title="Đóng cửa sổ">
@@ -811,18 +796,17 @@ export default function BanHangQuay() {
             </div>
 
             <div className={`bo-qr-timer ${qrDaHetHan ? 'expired' : 'running'}`}>
-              <Clock size={15}/>
               <span>{qrDaHetHan ? 'Mã QR đã hết hạn thanh toán' : `Thời gian còn lại: ${chuoiDemNguoc}`}</span>
             </div>
 
             {/* Khung ảnh QR Code */}
             <div style={{ display: 'flex', justifyContent: 'center', margin: '0.5rem 0' }}>
               {qrDataUrl ? (
-                <div style={{ padding: '8px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', display: 'inline-block' }}>
+                <div style={{ padding: '8px', background: '#fff', border: '1px solid var(--adm-border)', borderRadius: '12px', display: 'inline-block' }}>
                   <img src={qrDataUrl} alt="Mã QR thanh toán" style={{ width: '220px', height: '220px', display: 'block' }}/>
                 </div>
               ) : (
-                <div style={{ width: '220px', height: '220px', display: 'grid', placeItems: 'center', background: '#f1f5f9', borderRadius: '12px' }}>
+                <div style={{ width: '220px', height: '220px', display: 'grid', placeItems: 'center', background: 'var(--adm-primary-subtle)', borderRadius: '12px' }}>
                   <RotateCw className="bo-spin" size={24}/>
                 </div>
               )}
@@ -831,7 +815,7 @@ export default function BanHangQuay() {
             <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--bo-accent-dark)' }}>
               {dinhDangTien(donDangChoQR.tongTien)}
             </div>
-            <p style={{ margin: '0.2rem 0 0.8rem', fontSize: '0.78rem', color: '#64748b' }}>
+            <p style={{ margin: '0.2rem 0 0.8rem', fontSize: '0.78rem', color: 'var(--adm-text-muted)' }}>
               Đơn hàng #{donDangChoQR.id} ({donDangChoQR.maTraCuu}) · Khách: {donDangChoQR.tenKhach}
             </p>
 
@@ -869,7 +853,7 @@ export default function BanHangQuay() {
                 onClick={handleChuyenThuTienMat}
                 disabled={dangChuyenTienMat}
               >
-                {dangChuyenTienMat ? <RotateCw className="bo-spin" size={16}/> : <Banknote size={16}/>}
+                {dangChuyenTienMat && <RotateCw className="bo-spin" size={16}/>}
                 Khách không quét được, thu tiền mặt
               </button>
 
@@ -878,7 +862,7 @@ export default function BanHangQuay() {
                 className="bo-secondary-button" 
                 onClick={handleHuyDonChoQR}
                 disabled={dangHuyDonQR}
-                style={{ color: '#dc2626' }}
+                style={{ color: 'var(--adm-danger)' }}
               >
                 {dangHuyDonQR ? <RotateCw className="bo-spin" size={16}/> : <X size={16}/>}
                 Hủy đơn quầy
@@ -902,7 +886,7 @@ export default function BanHangQuay() {
             <div className="receipt-actions no-print" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.45rem', marginBottom: '0.75rem' }}>
               <button className="bo-quiet-button" onClick={() => { setDonVuaBan(null); setThongTinTienMatVuaBan(null); }}>Đóng</button>
               <button className="bo-primary-button" onClick={() => window.print()}>
-                <Printer size={16}/> In hóa đơn
+                In hóa đơn
               </button>
             </div>
 

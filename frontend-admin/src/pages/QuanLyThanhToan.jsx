@@ -1,15 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  CreditCard, 
-  Search, 
-  Filter, 
-  RefreshCw, 
-  CheckCircle2, 
-  Clock, 
-  XCircle,
-  ShieldAlert,
-  FileCheck2,
-  Receipt
+import {
+  Search,
+  RefreshCw
 } from 'lucide-react';
 import api from '@booknest/shared/api';
 import { useAuth } from '@booknest/shared/auth';
@@ -108,11 +100,11 @@ export default function QuanLyThanhToan() {
             borderRadius: '4px',
             fontSize: '0.78rem',
             fontWeight: 700,
-            backgroundColor: '#FEF2F2',
-            color: '#DC2626',
-            border: '1px solid #FCA5A5'
+            backgroundColor: 'var(--adm-danger-subtle)',
+            color: 'var(--adm-danger)',
+            border: '1px solid var(--adm-danger-subtle)'
           }}>
-            <ShieldAlert size={12} /> Cần hoàn tiền
+            Cần hoàn tiền
           </span>
         );
       case 'DA_HOAN_TIEN':
@@ -125,11 +117,11 @@ export default function QuanLyThanhToan() {
             borderRadius: '4px',
             fontSize: '0.78rem',
             fontWeight: 700,
-            backgroundColor: '#EFF6FF',
-            color: '#1D4ED8',
-            border: '1px solid #BFDBFE'
+            backgroundColor: 'var(--adm-info-subtle)',
+            color: 'var(--adm-info)',
+            border: '1px solid var(--adm-info-subtle)'
           }}>
-            <FileCheck2 size={12} /> Đã hoàn tiền
+            Đã hoàn tiền
           </span>
         );
       case 'DA_THANH_TOAN':
@@ -142,11 +134,11 @@ export default function QuanLyThanhToan() {
             borderRadius: '4px',
             fontSize: '0.78rem',
             fontWeight: 700,
-            backgroundColor: '#ECFDF5',
-            color: '#059669',
-            border: '1px solid #A7F3D0'
+            backgroundColor: 'var(--adm-success-subtle)',
+            color: 'var(--adm-success)',
+            border: '1px solid var(--adm-success-subtle)'
           }}>
-            <CheckCircle2 size={12} /> Đã thanh toán
+            Đã thanh toán
           </span>
         );
       case 'CHO_THANH_TOAN':
@@ -159,11 +151,11 @@ export default function QuanLyThanhToan() {
             borderRadius: '4px',
             fontSize: '0.78rem',
             fontWeight: 600,
-            backgroundColor: '#FFFBEB',
-            color: '#D97706',
-            border: '1px solid #FDE68A'
+            backgroundColor: 'var(--adm-warning-subtle)',
+            color: 'var(--adm-warning)',
+            border: '1px solid var(--adm-warning-subtle)'
           }}>
-            <Clock size={12} /> Chờ thanh toán
+            Chờ thanh toán
           </span>
         );
       case 'HET_HAN':
@@ -176,11 +168,11 @@ export default function QuanLyThanhToan() {
             borderRadius: '4px',
             fontSize: '0.78rem',
             fontWeight: 600,
-            backgroundColor: '#F3F4F6',
-            color: '#6B7280',
-            border: '1px solid #E5E7EB'
+            backgroundColor: 'var(--adm-primary-subtle)',
+            color: 'var(--adm-text-muted)',
+            border: '1px solid var(--adm-border)'
           }}>
-            <XCircle size={12} /> Quá hạn
+            Quá hạn
           </span>
         );
       case 'DA_HUY':
@@ -193,11 +185,11 @@ export default function QuanLyThanhToan() {
             borderRadius: '4px',
             fontSize: '0.78rem',
             fontWeight: 600,
-            backgroundColor: '#F3F4F6',
-            color: '#6B7280',
-            border: '1px solid #E5E7EB'
+            backgroundColor: 'var(--adm-primary-subtle)',
+            color: 'var(--adm-text-muted)',
+            border: '1px solid var(--adm-border)'
           }}>
-            <XCircle size={12} /> Đã hủy
+            Đã hủy
           </span>
         );
       default:
@@ -217,24 +209,23 @@ export default function QuanLyThanhToan() {
   };
 
   const tabs = [
-    { key: '', label: 'Tất Cả', count: thongKe?.tongTatCa },
-    { key: 'CAN_HOAN_TIEN', label: 'Cần Hoàn Tiền', count: thongKe?.soLuongCanHoanTien, danger: true },
-    { key: 'DA_HOAN_TIEN', label: 'Đã Hoàn Tiền', count: thongKe?.soLuongDaHoanTien },
-    { key: 'DA_THANH_TOAN', label: 'Đã Thanh Toán', count: thongKe?.soLuongDaThanhToan },
-    { key: 'CHO_THANH_TOAN', label: 'Chờ Thanh Toán', count: thongKe?.soLuongChoThanhToan },
-    { key: 'HET_HAN', label: 'Hết Hạn / Đã Hủy', count: thongKe?.soLuongDaHuy }
+    { key: '', label: 'Tất cả', count: thongKe?.tongTatCa },
+    { key: 'CAN_HOAN_TIEN', label: 'Cần hoàn tiền', count: thongKe?.soLuongCanHoanTien, danger: true },
+    { key: 'DA_HOAN_TIEN', label: 'Đã hoàn tiền', count: thongKe?.soLuongDaHoanTien },
+    { key: 'DA_THANH_TOAN', label: 'Đã thanh toán', count: thongKe?.soLuongDaThanhToan },
+    { key: 'CHO_THANH_TOAN', label: 'Chờ thanh toán', count: thongKe?.soLuongChoThanhToan },
+    { key: 'HET_HAN', label: 'Hết hạn / đã hủy', count: thongKe?.soLuongDaHuy }
   ];
 
   return (
-    <div className="admindash-content" style={{ padding: '1.75rem', maxWidth: '1440px', margin: '0 auto' }}>
+    <div className="admindash-content">
       {/* Tiêu đề trang & Nút tải lại */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="admindash-page-head">
         <div>
-          <h1 style={{ fontSize: '1.45rem', fontWeight: 700, color: 'var(--adm-text-title)', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-            <CreditCard size={24} style={{ color: 'var(--adm-primary)' }} />
-            Quản Lý Thanh Toán & Đối Soát Hoàn Tiền
+          <h1 className="admindash-page-title">
+            Quản lý thanh toán & đối soát hoàn tiền
           </h1>
-          <p style={{ fontSize: '0.875rem', color: 'var(--adm-text-muted)', margin: '0.35rem 0 0' }}>
+          <p className="admindash-page-desc">
             Theo dõi dòng tiền thanh toán VietQR payOS / COD và thực hiện đối soát hoàn tiền cho các đơn bị hủy
           </p>
         </div>
@@ -305,7 +296,7 @@ export default function QuanLyThanhToan() {
                   fontWeight: 700,
                   padding: '1px 6px',
                   borderRadius: '10px',
-                  backgroundColor: coCanhBao ? '#DC2626' : laActive ? 'var(--adm-primary)' : 'var(--adm-card-border)',
+                  backgroundColor: coCanhBao ? 'var(--adm-danger)' : laActive ? 'var(--adm-primary)' : 'var(--adm-card-border)',
                   color: '#FFFFFF'
                 }}>
                   {tab.count}
@@ -362,7 +353,6 @@ export default function QuanLyThanhToan() {
         </form>
 
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <Filter size={15} style={{ color: 'var(--adm-text-muted)' }} />
           <select
             value={method}
             onChange={(e) => { setMethod(e.target.value); setPage(1); }}
@@ -388,20 +378,20 @@ export default function QuanLyThanhToan() {
         border: '1px solid var(--adm-card-border)',
         borderRadius: '8px',
         overflow: 'hidden',
-        boxShadow: 'var(--adm-card-shadow)'
+        boxShadow: 'none'
       }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', textAlign: 'left' }}>
             <thead>
               <tr style={{ backgroundColor: 'var(--adm-table-header-bg)', borderBottom: '1px solid var(--adm-card-border)', color: 'var(--adm-text-muted)' }}>
-                <th style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>Mã Đơn / Tra Cứu</th>
-                <th style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>Khách Hàng / Nhận Hàng</th>
-                <th style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>Số Tiền</th>
-                <th style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>Phương Thức</th>
-                <th style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>Trạng Thái</th>
-                <th style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>Mã GD / Tham Chiếu</th>
-                <th style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>Thời Gian</th>
-                <th style={{ padding: '0.75rem 1rem', fontWeight: 600, textAlign: 'right' }}>Hành Động</th>
+                <th style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>Mã đơn / tra cứu</th>
+                <th style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>Khách hàng / nhận hàng</th>
+                <th style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>Số tiền</th>
+                <th style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>Phương thức</th>
+                <th style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>Trạng thái</th>
+                <th style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>Mã GD / tham chiếu</th>
+                <th style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>Thời gian</th>
+                <th style={{ padding: '0.75rem 1rem', fontWeight: 600, textAlign: 'right' }}>Hành động</th>
               </tr>
             </thead>
             <tbody>
@@ -415,7 +405,6 @@ export default function QuanLyThanhToan() {
               ) : danhSach.length === 0 ? (
                 <tr>
                   <td colSpan={8} style={{ padding: '3rem', textAlign: 'center', color: 'var(--adm-text-muted)' }}>
-                    <Receipt size={36} style={{ margin: '0 auto 0.5rem', opacity: 0.5 }} />
                     <div style={{ fontWeight: 600 }}>Không tìm thấy khoản thanh toán nào phù hợp</div>
                   </td>
                 </tr>
@@ -454,7 +443,7 @@ export default function QuanLyThanhToan() {
 
                       {/* Số Tiền */}
                       <td style={{ padding: '0.85rem 1rem' }}>
-                        <div style={{ fontWeight: 700, color: laCanHoan ? '#DC2626' : 'var(--adm-text-title)' }}>
+                        <div style={{ fontWeight: 700, color: laCanHoan ? 'var(--adm-danger)' : 'var(--adm-text-title)' }}>
                           {dinhDangTien(item.SoTien)}
                         </div>
                       </td>
@@ -467,7 +456,7 @@ export default function QuanLyThanhToan() {
                           padding: '2px 8px',
                           borderRadius: '4px',
                           backgroundColor: item.PhuongThuc === 'CHUYEN_KHOAN_QR' ? 'rgba(59, 130, 246, 0.1)' : 'var(--adm-card-border)',
-                          color: item.PhuongThuc === 'CHUYEN_KHOAN_QR' ? '#2563EB' : 'var(--adm-text-body)'
+                          color: item.PhuongThuc === 'CHUYEN_KHOAN_QR' ? 'var(--adm-info)' : 'var(--adm-text-body)'
                         }}>
                           {item.PhuongThuc === 'CHUYEN_KHOAN_QR' ? 'VietQR payOS' : 'COD'}
                         </span>
@@ -494,7 +483,7 @@ export default function QuanLyThanhToan() {
                       <td style={{ padding: '0.85rem 1rem', fontSize: '0.78rem', color: 'var(--adm-text-muted)' }}>
                         <div>{item.NgayTao ? new Date(item.NgayTao).toLocaleString('vi-VN') : '---'}</div>
                         {item.NgayThanhToan && (
-                          <div style={{ color: '#059669', fontSize: '0.72rem' }}>
+                          <div style={{ color: 'var(--adm-success)', fontSize: '0.72rem' }}>
                             Trả: {new Date(item.NgayThanhToan).toLocaleTimeString('vi-VN')}
                           </div>
                         )}
@@ -518,7 +507,7 @@ export default function QuanLyThanhToan() {
                                 padding: '0.45rem 0.85rem',
                                 fontSize: '0.8rem',
                                 fontWeight: 700,
-                                backgroundColor: '#DC2626',
+                                backgroundColor: 'var(--adm-danger)',
                                 color: '#FFFFFF',
                                 border: 'none',
                                 borderRadius: '6px',
@@ -526,8 +515,7 @@ export default function QuanLyThanhToan() {
                                 boxShadow: '0 2px 4px rgba(220, 38, 38, 0.25)'
                               }}
                             >
-                              <FileCheck2 size={14} />
-                              Xác Nhận Đã Hoàn
+                              Xác nhận đã hoàn
                             </button>
                           ) : (
                             <span style={{
@@ -537,9 +525,9 @@ export default function QuanLyThanhToan() {
                               borderRadius: '4px',
                               fontSize: '0.75rem',
                               fontWeight: 600,
-                              backgroundColor: '#FEF2F2',
-                              color: '#DC2626',
-                              border: '1px dashed #FCA5A5'
+                              backgroundColor: 'var(--adm-danger-subtle)',
+                              color: 'var(--adm-danger)',
+                              border: '1px dashed var(--adm-danger-subtle)'
                             }}>
                               Chờ Admin hoàn
                             </span>
@@ -611,7 +599,7 @@ export default function QuanLyThanhToan() {
         <HopThoai
           mo={Boolean(khoanCanHoan)}
           onDong={() => setKhoanCanHoan(null)}
-          tieuDe="Xác Nhận Đã Hoàn Tiền Cho Khách Hàng"
+          tieuDe="Xác nhận đã hoàn tiền cho khách hàng"
           kichThuoc="md"
           chanClickNgoai
         >
@@ -622,7 +610,7 @@ export default function QuanLyThanhToan() {
           <form onSubmit={handleXacNhanHoanTien}>
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.4rem', color: 'var(--adm-text-title)' }}>
-                Mã Giao Dịch Chuyển Khoản Ngân Hàng (Tùy chọn)
+                Mã giao dịch chuyển khoản ngân hàng (tùy chọn)
               </label>
               <input
                 type="text"
@@ -645,7 +633,7 @@ export default function QuanLyThanhToan() {
 
             <div style={{ marginBottom: '1.5rem' }}>
               <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.4rem', color: 'var(--adm-text-title)' }}>
-                Ghi Chú Đối Soát Hoàn Tiền (Tùy chọn)
+                Ghi chú đối soát hoàn tiền (tùy chọn)
               </label>
               <textarea
                 rows={3}
@@ -681,7 +669,7 @@ export default function QuanLyThanhToan() {
                 className="bn-btn bn-btn-primary"
                 disabled={dangXuLyId !== null}
               >
-                {dangXuLyId !== null ? 'Đang lưu...' : 'Xác Nhận Hoàn Tiền'}
+                {dangXuLyId !== null ? 'Đang lưu...' : 'Xác nhận hoàn tiền'}
               </button>
             </div>
           </form>

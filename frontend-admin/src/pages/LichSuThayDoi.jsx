@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { History, RefreshCw, Trash2 } from 'lucide-react';
 import api from '@booknest/shared/api';
 import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 
@@ -170,17 +169,17 @@ export default function LichSuThayDoi() {
 
   return (
     <div className="bo-page">
-      <div className="bo-page-heading"><div><span className="bo-eyebrow">THEO DÕI NGHIỆP VỤ</span><h1>Lịch sử thay đổi</h1><p>Nhật ký sách và danh mục, gồm người thực hiện, thời điểm và giá trị trước/sau.</p></div><button className="bo-secondary-button" onClick={taiLichSu}><RefreshCw size={15}/> Làm mới</button></div>
+      <div className="bo-page-heading"><div><h1>Lịch sử thay đổi</h1><p>Nhật ký sách và danh mục, gồm người thực hiện, thời điểm và giá trị trước/sau.</p></div><button className="bo-secondary-button" onClick={taiLichSu}>Làm mới</button></div>
       {loi && <ThongBaoTaiCho loai="loi" onDong={() => setLoi('')}>{loi}</ThongBaoTaiCho>}
       <section className="bo-panel history-cleanup">
-        <div className="history-cleanup-copy"><span className="history-icon"><Trash2 size={18}/></span><div><strong>Dọn lịch sử cũ</strong><p>Dữ liệu trước mốc đã chọn sẽ bị xóa vĩnh viễn. Lịch sử đơn đã giao được giữ để bảo toàn báo cáo.</p></div></div>
+        <div className="history-cleanup-copy"><div><strong>Dọn lịch sử cũ</strong><p>Dữ liệu trước mốc đã chọn sẽ bị xóa vĩnh viễn. Lịch sử đơn đã giao được giữ để bảo toàn báo cáo.</p></div></div>
         <div className="history-cleanup-controls"><label>Từ trước ngày<input type="date" value={truocNgay} onChange={e => { setTruocNgay(e.target.value); setXemTruoc(null); }}/></label><button className="bo-secondary-button" onClick={kiemTraDonDep}>Xem trước</button></div>
         {xemTruoc && <div className="history-preview"><div><strong>Sẽ xóa vĩnh viễn {xemTruoc.soDongDuKien.toLocaleString('vi-VN')} dòng:</strong><small>Thay đổi: {xemTruoc.theoBang.LichSuThayDoi.toLocaleString('vi-VN')} · Nhập kho: {xemTruoc.theoBang.LichSuNhapKho.toLocaleString('vi-VN')} · Điều chỉnh kho: {xemTruoc.theoBang.LichSuDieuChinhKho.toLocaleString('vi-VN')} · Trạng thái đơn: {xemTruoc.theoBang.LichSuTrangThaiDonHang.toLocaleString('vi-VN')}</small></div><span>Giữ lại <strong>{xemTruoc.soDongDaGiaoGiuLai.toLocaleString('vi-VN')}</strong> dòng giao thành công.</span><button className="bo-danger-button" disabled={dangDon || !xemTruoc.soDongDuKien} onClick={xacNhanDonDep}>{dangDon ? 'Đang xóa…' : 'Xác nhận xóa vĩnh viễn'}</button></div>}
       </section>
       <section className="bo-panel history-table-panel">
         <div className="bo-panel-title">
           <div>
-            <h2><History size={18}/> Gần đây</h2>
+            <h2>Gần đây</h2>
             <p>{phanTrang?.tongSoBanGhi ? `Hiển thị ${(page - 1) * 30 + 1}–${Math.min(page * 30, phanTrang.tongSoBanGhi)} / ${phanTrang.tongSoBanGhi} mục` : `${danhSach.length} mục ở trang ${page}/${tongSoTrang}`}</p>
           </div>
           <div className="history-filter-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -197,10 +196,10 @@ export default function LichSuThayDoi() {
               style={{
                 padding: '0.4rem 0.75rem',
                 borderRadius: '6px',
-                border: '1px solid var(--bo-border, #E5E7EB)',
+                border: '1px solid var(--bo-border, var(--adm-border))',
                 backgroundColor: 'var(--bo-surface, #FFFFFF)',
                 fontSize: '0.85rem',
-                color: 'var(--bo-text, #1F2937)'
+                color: 'var(--bo-text, var(--adm-text-main))'
               }}
             >
               <option value="">Tất cả đối tượng</option>

@@ -1,16 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  ClipboardCheck, 
-  PackageCheck, 
-  Layers, 
-  RefreshCw, 
-  CheckSquare, 
-  Square, 
-  Printer, 
-  BookOpen, 
-  Clock, 
-  CheckCircle2,
-  FileText
+import {
+  RefreshCw,
+  CheckSquare,
+  Square,
+  BookOpen
 } from 'lucide-react';
 import api from '@booknest/shared/api';
 import { ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
@@ -71,15 +64,14 @@ export default function DonCanSoan() {
   const tongSoDauSach = duLieu.tongHopSachCanSoan.length;
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+    <div>
       {/* Tiêu đề & Công cụ */}
-      <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+      <div className="admindash-page-head">
         <div>
-          <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--adm-text-main)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <ClipboardCheck size={24} style={{ color: 'var(--adm-primary)' }} />
-            Đơn Cần Soạn (Pick List)
+          <h1 className="admindash-page-title">
+            Đơn cần soạn
           </h1>
-          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+          <p className="admindash-page-desc">
             Danh sách gom ấn phẩm từ kho theo các đơn hàng đã duyệt để chuẩn bị đóng gói
           </p>
         </div>
@@ -93,7 +85,7 @@ export default function DonCanSoan() {
             title="Tải lại danh sách mới nhất"
           >
             <RefreshCw size={15} className={dangTai ? 'animate-spin' : ''} />
-            Làm Mới
+            Làm mới
           </button>
 
           <button
@@ -102,8 +94,7 @@ export default function DonCanSoan() {
             className="btn btn-primary"
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}
           >
-            <Printer size={15} />
-            In Phiếu Soạn
+            In phiếu soạn
           </button>
         </div>
       </div>
@@ -114,29 +105,29 @@ export default function DonCanSoan() {
         </ThongBaoTaiCho>
       )}
 
-      {/* Thẻ Thống Kê Nhanh */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="card" style={{ padding: '1.15rem 1.25rem', borderLeft: '4px solid var(--adm-primary)' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--adm-text-muted)', fontWeight: 500 }}>Đơn Hàng Chờ Soạn</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--adm-text-main)', marginTop: '0.2rem' }}>
-            {duLieu.tongSoDonCanSoan} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--adm-text-muted)' }}>đơn</span>
+      {/* Chỉ số nhanh */}
+      <section className="admindash-panel" style={{ marginBottom: '1rem' }} aria-label="Chỉ số đơn cần soạn">
+        <div className="admindash-strip">
+          <div className="admindash-strip-item">
+            <span className="admindash-strip-label">Đơn hàng chờ soạn</span>
+            <span className="admindash-strip-value">
+              <span>{duLieu.tongSoDonCanSoan} <span className="admindash-strip-unit">đơn</span></span>
+            </span>
+          </div>
+          <div className="admindash-strip-item">
+            <span className="admindash-strip-label">Tổng số cuốn cần nhặt</span>
+            <span className="admindash-strip-value">
+              <span>{duLieu.tongSoCuonSachCanSoan} <span className="admindash-strip-unit">cuốn</span></span>
+            </span>
+          </div>
+          <div className="admindash-strip-item">
+            <span className="admindash-strip-label">Tiến độ nhặt hàng</span>
+            <span className="admindash-strip-value">
+              <span>{soSachDaNhat} / {tongSoDauSach} <span className="admindash-strip-unit">đầu sách</span></span>
+            </span>
           </div>
         </div>
-
-        <div className="card" style={{ padding: '1.15rem 1.25rem', borderLeft: '4px solid #10B981' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--adm-text-muted)', fontWeight: 500 }}>Tổng Số Cuốn Cần Nhặt</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--adm-text-main)', marginTop: '0.2rem' }}>
-            {duLieu.tongSoCuonSachCanSoan} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--adm-text-muted)' }}>cuốn</span>
-          </div>
-        </div>
-
-        <div className="card" style={{ padding: '1.15rem 1.25rem', borderLeft: '4px solid #F59E0B' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--adm-text-muted)', fontWeight: 500 }}>Tiến Độ Nhặt Hàng</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--adm-text-main)', marginTop: '0.2rem' }}>
-            {soSachDaNhat} / {tongSoDauSach} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--adm-text-muted)' }}>đầu sách</span>
-          </div>
-        </div>
-      </div>
+      </section>
 
       {/* Tabs Chuyển Đổi Chế Độ Xem */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid var(--adm-border)', paddingBottom: '0.5rem' }}>
@@ -156,8 +147,7 @@ export default function DonCanSoan() {
             color: cheDoXem === 'gom_sach' ? '#FFFFFF' : 'var(--adm-text-muted)'
           }}
         >
-          <Layers size={15} />
-          Tổng Hợp Theo Đầu Sách ({tongSoDauSach})
+          Tổng hợp theo đầu sách ({tongSoDauSach})
         </button>
 
         <button
@@ -176,8 +166,7 @@ export default function DonCanSoan() {
             color: cheDoXem === 'theo_don' ? '#FFFFFF' : 'var(--adm-text-muted)'
           }}
         >
-          <PackageCheck size={15} />
-          Theo Từng Đơn Hàng ({duLieu.tongSoDonCanSoan})
+          Theo từng đơn hàng ({duLieu.tongSoDonCanSoan})
         </button>
       </div>
 
@@ -188,7 +177,6 @@ export default function DonCanSoan() {
         </div>
       ) : duLieu.tongSoDonCanSoan === 0 ? (
         <div className="card" style={{ padding: '3rem 1.5rem', textAlign: 'center' }}>
-          <CheckCircle2 size={40} style={{ color: '#10B981', margin: '0 auto 0.75rem' }} />
           <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--adm-text-main)' }}>
             Không có đơn hàng nào cần soạn
           </h3>
@@ -204,9 +192,9 @@ export default function DonCanSoan() {
               <tr>
                 <th style={{ width: '50px', textAlign: 'center' }}>Xong</th>
                 <th style={{ width: '70px' }}>Mã</th>
-                <th>Ấn Phẩm Cần Nhặt</th>
-                <th style={{ width: '130px', textAlign: 'center' }}>Số Lượng Cần</th>
-                <th>Phân Bổ Vào Các Đơn</th>
+                <th>Ấn phẩm cần nhặt</th>
+                <th style={{ width: '130px', textAlign: 'center' }}>Số lượng cần</th>
+                <th>Phân bổ vào các đơn</th>
               </tr>
             </thead>
             <tbody>
@@ -224,7 +212,7 @@ export default function DonCanSoan() {
                       <button
                         type="button"
                         onClick={() => toggleNhatSach(s.maSach)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: daXong ? '#10B981' : 'var(--adm-text-muted)' }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: daXong ? 'var(--adm-success)' : 'var(--adm-text-muted)' }}
                         title={daXong ? 'Đánh dấu chưa nhặt' : 'Đánh dấu đã nhặt'}
                       >
                         {daXong ? <CheckSquare size={18} /> : <Square size={18} />}
@@ -242,7 +230,7 @@ export default function DonCanSoan() {
                             style={{ width: '36px', height: '48px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--adm-border)' }} 
                           />
                         ) : (
-                          <div style={{ width: '36px', height: '48px', backgroundColor: 'var(--adm-sidebar-bg)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--adm-text-muted)' }}>
+                          <div style={{ width: '36px', height: '48px', backgroundColor: 'var(--adm-surface-2)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--adm-text-muted)' }}>
                             <BookOpen size={16} />
                           </div>
                         )}
@@ -259,9 +247,9 @@ export default function DonCanSoan() {
                         style={{ 
                           fontSize: '1.05rem', 
                           fontWeight: 700, 
-                          color: daXong ? '#10B981' : 'var(--adm-primary)',
+                          color: daXong ? 'var(--adm-success)' : 'var(--adm-primary)',
                           padding: '0.2rem 0.6rem',
-                          backgroundColor: daXong ? '#ECFDF5' : '#EFF6FF',
+                          backgroundColor: daXong ? 'var(--adm-success-subtle)' : 'var(--adm-info-subtle)',
                           borderRadius: '6px',
                           display: 'inline-block'
                         }}
@@ -276,7 +264,7 @@ export default function DonCanSoan() {
                             key={idx}
                             style={{ 
                               fontSize: '0.75rem', 
-                              backgroundColor: 'var(--adm-sidebar-bg)', 
+                              backgroundColor: 'var(--adm-surface-2)', 
                               border: '1px solid var(--adm-border)', 
                               padding: '0.15rem 0.45rem', 
                               borderRadius: '4px',
@@ -313,14 +301,12 @@ export default function DonCanSoan() {
                 </div>
 
                 <div style={{ fontSize: '0.78rem', color: 'var(--adm-text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <Clock size={13} />
                   {new Date(don.NgayDat).toLocaleString('vi-VN')}
                 </div>
               </div>
 
               {don.GhiChu && (
-                <div style={{ fontSize: '0.78rem', backgroundColor: '#FFFBEB', color: '#B45309', padding: '0.4rem 0.65rem', borderRadius: '4px', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <FileText size={13} />
+                <div style={{ fontSize: '0.78rem', backgroundColor: 'var(--adm-warning-subtle)', color: 'var(--adm-warning)', padding: '0.4rem 0.65rem', borderRadius: '4px', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                   <strong>Ghi chú:</strong> {don.GhiChu}
                 </div>
               )}
@@ -335,7 +321,7 @@ export default function DonCanSoan() {
                       justifyContent: 'space-between', 
                       alignItems: 'center',
                       padding: '0.45rem 0.65rem',
-                      backgroundColor: 'var(--adm-sidebar-bg)',
+                      backgroundColor: 'var(--adm-surface-2)',
                       borderRadius: '6px',
                       fontSize: '0.85rem'
                     }}

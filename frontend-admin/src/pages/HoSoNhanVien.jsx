@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, KeyRound, Shield, CheckCircle2 } from 'lucide-react';
 import api from '@booknest/shared/api';
 import { useAuth } from '@booknest/shared/auth';
 import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
@@ -109,13 +108,13 @@ export default function HoSoNhanVien() {
   const layTenVaiTro = (code) => {
     switch (code) {
       case 'quan_tri':
-        return 'Quản Trị Viên';
+        return 'Quản trị viên';
       case 'thu_kho':
-        return 'Thủ Kho';
+        return 'Thủ kho';
       case 'thu_thu':
-        return 'Thủ Thư';
+        return 'Thủ thư';
       default:
-        return code || 'Nhân Viên';
+        return code || 'Nhân viên';
     }
   };
 
@@ -128,12 +127,12 @@ export default function HoSoNhanVien() {
   }
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '760px' }}>
       <div className="mb-6">
-        <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--adm-text-main)', letterSpacing: '-0.02em' }}>
-          Hồ Sơ Nhân Viên & Đổi Mật Khẩu
+        <h1 className="admindash-page-title">
+          Hồ sơ nhân viên & đổi mật khẩu
         </h1>
-        <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+        <p className="admindash-page-desc">
           Quản lý thông tin định danh và bảo mật tài khoản cá nhân trong Back-Office
         </p>
       </div>
@@ -142,9 +141,8 @@ export default function HoSoNhanVien() {
         {/* Khối Cập Nhật Thông Tin Hồ Sơ */}
         <div className="card" style={{ padding: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--adm-border)', paddingBottom: '0.75rem' }}>
-            <User size={18} style={{ color: 'var(--adm-primary)' }} />
             <h2 style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--adm-text-main)' }}>
-              Thông Tin Cá Nhân
+              Thông tin cá nhân
             </h2>
           </div>
 
@@ -162,7 +160,7 @@ export default function HoSoNhanVien() {
                 disabled
                 className="form-input w-full"
                 value={email}
-                style={{ backgroundColor: 'var(--adm-sidebar-bg)', color: 'var(--adm-text-muted)', cursor: 'not-allowed' }}
+                style={{ backgroundColor: 'var(--adm-surface-2)', color: 'var(--adm-text-muted)', cursor: 'not-allowed' }}
               />
               <span style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)' }}>Email tài khoản nội bộ không thể thay đổi</span>
             </div>
@@ -170,8 +168,7 @@ export default function HoSoNhanVien() {
             <div className="form-group mb-3">
               <label className="form-label">Vai trò nghiệp vụ</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span className="badge" style={{ backgroundColor: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE', padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}>
-                  <Shield size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                <span className="badge" style={{ backgroundColor: 'var(--adm-info-subtle)', color: 'var(--adm-info)', border: '1px solid var(--adm-info-subtle)', padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}>
                   {layTenVaiTro(vaiTro)}
                 </span>
               </div>
@@ -205,8 +202,7 @@ export default function HoSoNhanVien() {
               className="btn btn-primary w-full"
               style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem' }}
             >
-              <CheckCircle2 size={16} />
-              {dangLuuHoSo ? 'Đang lưu...' : 'Lưu Thay Đổi'}
+              {dangLuuHoSo ? 'Đang lưu...' : 'Lưu thay đổi'}
             </button>
           </form>
         </div>
@@ -214,9 +210,8 @@ export default function HoSoNhanVien() {
         {/* Khối Đổi Mật Khẩu */}
         <div className="card" style={{ padding: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--adm-border)', paddingBottom: '0.75rem' }}>
-            <KeyRound size={18} style={{ color: 'var(--adm-primary)' }} />
             <h2 style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--adm-text-main)' }}>
-              Đổi Mật Khẩu
+              Đổi mật khẩu
             </h2>
           </div>
 
@@ -269,8 +264,7 @@ export default function HoSoNhanVien() {
               className="btn btn-outline w-full"
               style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem' }}
             >
-              <Lock size={16} />
-              {dangDoiMatKhau ? 'Đang cập nhật...' : 'Cập Nhật Mật Khẩu'}
+              {dangDoiMatKhau ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'}
             </button>
           </form>
         </div>

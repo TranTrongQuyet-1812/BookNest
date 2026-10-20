@@ -5,14 +5,10 @@ import { useAuth } from '../../context/AuthContext';
 import { useThongBao, ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 import PhanTrang from '../../components/PhanTrang';
 import TaiAnhBia from '../../components/TaiAnhBia';
-import { 
-  Plus, 
-  Edit, 
-  Eye, 
-  EyeOff, 
-  X, 
+import {
+  Edit,
+  X,
   Search,
-  FolderKanban,
   Trash2
 } from 'lucide-react';
 
@@ -416,7 +412,7 @@ export const QuanLySach = () => {
       return;
     }
     const dongY = await xacNhan({
-      tieuDe: 'Xóa Thể Loại Sách',
+      tieuDe: 'Xóa thể loại sách',
       noiDung: `Bạn có chắc chắn muốn xóa thể loại "${dm.TenDanhMuc}"? Thao tác này sẽ xóa vĩnh viễn thể loại khỏi hệ thống nếu không còn sách gắn kèm.`,
       nhanXacNhan: 'Xóa thể loại',
       nguyHiem: true
@@ -441,12 +437,12 @@ export const QuanLySach = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+      <div className="admindash-page-head">
         <div>
-          <h1 style={{ fontSize: '1.45rem', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
-            {coQuyenSuaSach ? 'Quản Lý Sách & Thể Loại' : 'Tra Cứu Sách & Tồn Kho'}
+          <h1 className="admindash-page-title">
+            {coQuyenSuaSach ? 'Quản lý sách & thể loại' : 'Tra cứu sách & tồn kho'}
           </h1>
-          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+          <p className="admindash-page-desc">
             {coQuyenSuaSach
               ? 'Quản trị danh mục ấn phẩm, cập nhật giá bán và kiểm soát trạng thái kinh doanh'
               : 'Tra cứu danh mục sách, theo dõi tồn kho và thông tin tác phẩm (Chế độ chỉ đọc)'}
@@ -456,10 +452,10 @@ export const QuanLySach = () => {
         {coQuyenSuaSach && (
           <div className="flex gap-2">
             <button onClick={moModalQuanLyDanhMuc} className="btn btn-outline btn-sm">
-              <FolderKanban size={15} /> Quản Lý Thể Loại
+              Quản lý thể loại
             </button>
             <button onClick={moModalThemSach} className="btn btn-primary btn-sm">
-              <Plus size={15} /> Thêm Sách Mới
+              Thêm sách mới
             </button>
           </div>
         )}
@@ -498,12 +494,12 @@ export const QuanLySach = () => {
             <thead>
               <tr>
                 <th style={{ width: '70px' }}>Mã</th>
-                <th>Tác Phẩm & Tác Giả</th>
-                <th>Thể Loại</th>
-                <th>Giá Bán</th>
-                <th>Tồn Kho</th>
-                <th>Trạng Thái</th>
-                <th style={{ textAlign: 'right' }}>Thao Tác</th>
+                <th>Tác phẩm & tác giả</th>
+                <th>Thể loại</th>
+                <th>Giá bán</th>
+                <th>Tồn kho</th>
+                <th>Trạng thái</th>
+                <th style={{ textAlign: 'right' }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -583,7 +579,7 @@ export const QuanLySach = () => {
                                 }}
                                 title={`Thêm tập tiếp theo cho bộ "${sach.TenBo}"`}
                               >
-                                <Plus size={13} /> Thêm tập
+                                Thêm tập
                               </button>
                             )}
                             <button
@@ -591,15 +587,14 @@ export const QuanLySach = () => {
                               className="btn btn-outline btn-sm"
                               title="Chỉnh sửa thông tin"
                             >
-                              <Edit size={14} /> Sửa
+                              Sửa
                             </button>
                             <button
                               onClick={() => handleToggleAnSach(sach)}
                               className="btn btn-outline btn-sm"
-                              style={{ color: an ? 'var(--adm-success)' : 'var(--adm-danger)', borderColor: an ? '#A7F3D0' : '#FECACA' }}
+                              style={{ color: an ? 'var(--adm-success)' : 'var(--adm-danger)', borderColor: an ? 'var(--adm-success-subtle)' : 'var(--adm-danger-subtle)' }}
                               title={an ? 'Khôi phục hiển thị' : 'Ẩn sách khỏi khách hàng'}
                             >
-                              {an ? <Eye size={14} /> : <EyeOff size={14} />}
                               {an ? 'Hiện' : 'Ẩn'}
                             </button>
                           </>
@@ -609,7 +604,7 @@ export const QuanLySach = () => {
                             className="btn btn-outline btn-sm"
                             title="Xem chi tiết cuốn sách"
                           >
-                            <Eye size={14} /> Xem
+                            Xem
                           </button>
                         )}
                       </div>
@@ -631,8 +626,8 @@ export const QuanLySach = () => {
             <div className="flex justify-between items-center mb-4">
               <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--adm-text-main)' }}>
                 {coQuyenSuaSach
-                  ? (sachDangSua ? 'Chỉnh Sửa Sách' : 'Thêm Tác Phẩm Mới')
-                  : 'Chi Tiết Tác Phẩm (Chỉ Đọc)'}
+                  ? (sachDangSua ? 'Chỉnh sửa sách' : 'Thêm tác phẩm mới')
+                  : 'Chi tiết tác phẩm (chỉ đọc)'}
               </h3>
               <button onClick={() => setModalSachMo(false)} style={{ color: 'var(--adm-text-muted)' }}>
                 <X size={20} />
@@ -799,8 +794,8 @@ export const QuanLySach = () => {
                       {dangTaiAnh
                         ? 'Đang tải ảnh...'
                         : sachDangSua
-                          ? 'Lưu Cập Nhật'
-                          : 'Thêm Vào Kho'}
+                          ? 'Lưu cập nhật'
+                          : 'Thêm vào kho'}
                     </button>
                   </>
                 ) : (
@@ -821,7 +816,7 @@ export const QuanLySach = () => {
             <div className="flex justify-between items-center pb-3 mb-4 border-b">
               <div>
                 <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--adm-text-main)' }}>
-                  Quản Lý Thể Loại Sách
+                  Quản lý thể loại sách
                 </h3>
                 <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.8rem', marginTop: '0.2rem', marginBottom: 0 }}>
                   Thêm mới, đổi tên, cập nhật mô tả hoặc xóa các danh mục thể loại
@@ -837,7 +832,7 @@ export const QuanLySach = () => {
             </div>
 
             {/* Form Thêm Mới / Chỉnh Sửa */}
-            <div style={{ background: 'var(--adm-bg-surface, #F8FAFC)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--adm-border, #E2E8F0)', marginBottom: '1.25rem' }}>
+            <div style={{ background: 'var(--adm-bg-surface, var(--adm-surface-2))', padding: '1rem', borderRadius: '8px', border: '1px solid var(--adm-border, var(--adm-border))', marginBottom: '1.25rem' }}>
               <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.65rem', color: 'var(--adm-text-main)' }}>
                 {danhMucDangSua ? `Chỉnh sửa thể loại #${danhMucDangSua.MaDanhMuc}` : 'Thêm thể loại mới'}
               </div>
@@ -873,7 +868,7 @@ export const QuanLySach = () => {
                       className="btn btn-outline btn-sm"
                       style={{ fontSize: '0.8rem' }}
                     >
-                      Hủy Sửa
+                      Hủy sửa
                     </button>
                   )}
                   <button
@@ -882,7 +877,7 @@ export const QuanLySach = () => {
                     className="btn btn-primary btn-sm"
                     style={{ fontSize: '0.8rem' }}
                   >
-                    {danhMucDangSua ? 'Lưu Thay Đổi' : 'Tạo Thể Loại'}
+                    {danhMucDangSua ? 'Lưu thay đổi' : 'Tạo thể loại'}
                   </button>
                 </div>
               </form>
@@ -891,25 +886,25 @@ export const QuanLySach = () => {
             {/* Danh Sách Thể Loại Hiện Có */}
             <div>
               <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--adm-text-main)' }}>
-                Danh Sách Thể Loại ({danhMucList.length})
+                Danh sách thể loại ({danhMucList.length})
               </div>
               {danhMucList.length === 0 ? (
                 <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem' }}>Chưa có thể loại nào.</p>
               ) : (
-                <div style={{ border: '1px solid var(--adm-border, #E2E8F0)', borderRadius: '6px', overflow: 'hidden' }}>
+                <div style={{ border: '1px solid var(--adm-border, var(--adm-border))', borderRadius: '6px', overflow: 'hidden' }}>
                   <table className="admindash-table" style={{ margin: 0, fontSize: '0.825rem' }}>
                     <thead>
                       <tr>
                         <th style={{ width: '45px' }}>ID</th>
-                        <th>Tên Thể Loại</th>
-                        <th>Mô Tả</th>
-                        <th style={{ textAlign: 'center', width: '80px' }}>Số Sách</th>
-                        <th style={{ textAlign: 'right', width: '90px' }}>Thao Tác</th>
+                        <th>Tên thể loại</th>
+                        <th>Mô tả</th>
+                        <th style={{ textAlign: 'center', width: '80px' }}>Số sách</th>
+                        <th style={{ textAlign: 'right', width: '90px' }}>Thao tác</th>
                       </tr>
                     </thead>
                     <tbody>
                       {danhMucList.map((dm) => (
-                        <tr key={dm.MaDanhMuc} style={{ background: danhMucDangSua?.MaDanhMuc === dm.MaDanhMuc ? '#EFF6FF' : 'transparent' }}>
+                        <tr key={dm.MaDanhMuc} style={{ background: danhMucDangSua?.MaDanhMuc === dm.MaDanhMuc ? 'var(--adm-info-subtle)' : 'transparent' }}>
                           <td style={{ color: 'var(--adm-text-muted)' }} className="tabular-nums">#{dm.MaDanhMuc}</td>
                           <td style={{ fontWeight: 600, color: 'var(--adm-text-main)' }}>{dm.TenDanhMuc}</td>
                           <td style={{ color: 'var(--adm-text-muted)', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -933,7 +928,7 @@ export const QuanLySach = () => {
                                 type="button"
                                 onClick={() => handleXoaDanhMuc(dm)}
                                 className="btn btn-outline btn-sm"
-                                style={{ padding: '0.2rem 0.45rem', color: 'var(--adm-danger)', borderColor: '#FECACA' }}
+                                style={{ padding: '0.2rem 0.45rem', color: 'var(--adm-danger)', borderColor: 'var(--adm-danger-subtle)' }}
                                 title="Xóa thể loại (chặn nếu còn sách)"
                               >
                                 <Trash2 size={12} />
