@@ -1044,9 +1044,14 @@ async function adminHuyDon(maDonHang, lyDo, maNhanVien) {
   }
 }
 
-// Back-Office: Danh sách đơn hàng cần soạn (Pick list) cho thủ kho (T33)
+// Back-Office: Danh sách đơn hàng cần soạn (Pick list) cho thủ kho (T33, T56)
 // Đơn ở trạng thái DA_DUYET, CHỈ trả thông tin sách và số lượng, TUYỆT ĐỐI không trả thông tin cá nhân khách
-async function layDanhSachDonCanSoan() {
+// T56: Phân trang danh sách đơn hàng, nhưng tổng hợp số lượng cần soạn theo từng cuốn VẪN TÍNH TRÊN TOÀN BỘ ĐƠN DA_DUYET
+async function layDanhSachDonCanSoan({ page = 1, limit = 20 } = {}) {
+  const trang = Math.max(1, parseInt(page, 10) || 1);
+  const gioiHan = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+  const viTri = (trang - 1) * gioiHan;
+
   const cacDonHang = await DonHang.findAll({
     where: { TrangThai: 'DA_DUYET' },
     attributes: ['MaDonHang', 'MaTraCuu', 'NgayDat', 'TrangThai', 'KenhBan', 'GhiChu'],
@@ -1068,6 +1073,7 @@ async function layDanhSachDonCanSoan() {
   });
 
   // Gom tổng số lượng từng cuốn sách cần soạn để thủ kho lấy hàng một lượt từ giá kệ
+  // Lưu ý: Tính trên toàn bộ đơn DA_DUYET để thủ kho nhặt đủ hàng một lượt, không bị lệch do phân trang
   const banDoTongHop = {};
   cacDonHang.forEach(don => {
     (don.chiTietDonHang || []).forEach(ct => {
@@ -1092,11 +1098,21 @@ async function layDanhSachDonCanSoan() {
 
   const tongHopSachCanSoan = Object.values(banDoTongHop).sort((a, b) => b.tongSoLuongCanSoan - a.tongSoLuongCanSoan);
 
+  // Phân trang danh sách đơn hàng
+  const tongSoDonCanSoan = cacDonHang.length;
+  const danhSachDonHangPhanTrang = cacDonHang.slice(viTri, viTri + gioiHan);
+
   return {
-    tongSoDonCanSoan: cacDonHang.length,
+    tongSoDonCanSoan,
     tongSoCuonSachCanSoan: tongHopSachCanSoan.reduce((tong, s) => tong + s.tongSoLuongCanSoan, 0),
-    danhSachDonHang: cacDonHang,
-    tongHopSachCanSoan
+    danhSachDonHang: danhSachDonHangPhanTrang,
+    tongHopSachCanSoan,
+    phanTrang: {
+      tongSoBanGhi: tongSoDonCanSoan,
+      tongSoTrang: Math.ceil(tongSoDonCanSoan / gioiHan) || 1,
+      trangHienTai: trang,
+      soBanGhiMoiTrang: gioiHan
+    }
   };
 }
 

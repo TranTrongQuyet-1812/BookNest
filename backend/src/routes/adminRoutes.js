@@ -449,6 +449,11 @@ router.put(
   batLoiAsync(donHangController.xuLyAdminHuyDon)
 );
 
+const luatTruyVanPickList = Joi.object({
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(20)
+});
+
 /**
  * @swagger
  * /api/admin/pick-list:
@@ -469,6 +474,7 @@ router.get(
   '/pick-list',
   xacThucToken,
   phanQuyen('quan_tri', 'thu_kho', 'thu_thu'),
+  kiemTraDuLieu(luatTruyVanPickList, 'query'),
   batLoiAsync(donHangController.xuLyLayDanhSachDonCanSoan)
 );
 

@@ -145,7 +145,7 @@ async function xuLyAdminHuyDon(req, res) {
 
 // Back-Office: Danh sách đơn hàng cần soạn (Pick list)
 async function xuLyLayDanhSachDonCanSoan(req, res) {
-  const duLieu = await donHangService.layDanhSachDonCanSoan();
+  const duLieu = await donHangService.layDanhSachDonCanSoan(req.query);
   return phanHoiThanhCong(res, {
     duLieu,
     thongDiep: 'Lấy danh sách đơn cần soạn thành công'
