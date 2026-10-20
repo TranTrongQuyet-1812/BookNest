@@ -115,34 +115,37 @@ export const KhoiViecCanLam = ({ className = '' }) => {
         padding: '1.25rem 1.5rem',
         borderLeft: '4px solid var(--adm-primary, #2563EB)',
         backgroundColor: 'var(--adm-card-bg, #FFFFFF)',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
+        borderRadius: '12px',
+        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 14px -2px rgba(15, 23, 42, 0.03)'
       }}
     >
       {/* Tiêu đề & Nút làm mới */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
           <div style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '8px',
-            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+            width: '34px',
+            height: '34px',
+            borderRadius: '10px',
+            backgroundColor: '#EFF6FF',
             color: 'var(--adm-primary, #2563EB)',
+            border: '1px solid #DBEAFE',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            flexShrink: 0
           }}>
             <ClipboardCheck size={18} />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <h2 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--adm-text-main, #0F172A)' }}>
+              <h2 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--adm-text-main, #0F172A)', letterSpacing: '-0.02em' }}>
                 Việc Cần Làm
               </h2>
               {tongSoViec > 0 ? (
                 <span style={{
                   fontSize: '0.72rem',
                   fontWeight: 700,
-                  padding: '0.15rem 0.55rem',
+                  padding: '0.15rem 0.6rem',
                   borderRadius: '999px',
                   backgroundColor: '#FEF2F2',
                   color: '#DC2626',
@@ -154,7 +157,7 @@ export const KhoiViecCanLam = ({ className = '' }) => {
                 <span style={{
                   fontSize: '0.72rem',
                   fontWeight: 600,
-                  padding: '0.15rem 0.55rem',
+                  padding: '0.15rem 0.6rem',
                   borderRadius: '999px',
                   backgroundColor: '#F0FDF4',
                   color: '#16A34A',
@@ -175,13 +178,14 @@ export const KhoiViecCanLam = ({ className = '' }) => {
           onClick={handleLamMoi}
           disabled={dangTai}
           title="Làm mới số liệu việc cần làm"
-          className="btn btn-outline btn-sm"
+          className="btn btn-outline"
           style={{
             fontSize: '0.775rem',
-            padding: '0.35rem 0.65rem',
+            padding: '0.35rem 0.75rem',
+            borderRadius: '8px',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '0.35rem'
+            gap: '0.4rem'
           }}
         >
           <RotateCw size={13} className={dangTai ? 'animate-spin' : ''} />
@@ -219,20 +223,20 @@ export const KhoiViecCanLam = ({ className = '' }) => {
                   }
                 }}
                 style={{
-                  padding: '0.85rem 1rem',
-                  borderRadius: '8px',
+                  padding: '0.9rem 1.05rem',
+                  borderRadius: '10px',
                   backgroundColor: configMau.bg,
                   border: `1px solid ${configMau.border}`,
                   cursor: item.duongDan ? 'pointer' : 'default',
-                  transition: 'transform 0.12s ease, box-shadow 0.12s ease',
+                  transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: '0.5rem'
+                  gap: '0.65rem'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.08)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px -2px rgba(15, 23, 42, 0.08)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'none';
@@ -255,9 +259,11 @@ export const KhoiViecCanLam = ({ className = '' }) => {
                     </span>
                   </div>
                   <div style={{
-                    fontSize: '1.35rem',
+                    fontSize: '1.45rem',
                     fontWeight: 800,
                     lineHeight: 1,
+                    letterSpacing: '-0.02em',
+                    fontVariantNumeric: 'tabular-nums',
                     color: coViec ? configMau.text : 'var(--adm-text-muted, #64748B)'
                   }}>
                     {item.soLuong ?? 0}
@@ -267,9 +273,10 @@ export const KhoiViecCanLam = ({ className = '' }) => {
                 {item.duongDan && (
                   <div style={{
                     color: configMau.text,
-                    opacity: 0.8,
+                    opacity: 0.85,
                     display: 'flex',
-                    alignItems: 'center'
+                    alignItems: 'center',
+                    transition: 'transform 0.18s ease'
                   }}>
                     <ArrowRight size={16} />
                   </div>

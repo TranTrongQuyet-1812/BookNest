@@ -10,9 +10,68 @@ import {
   Filter,
   BarChart3,
   Layers,
-  RotateCcw
+  RotateCcw,
+  RefreshCw
 } from 'lucide-react';
 import KhoiViecCanLam from './KhoiViecCanLam.jsx';
+
+// Component Skeleton Shimmer Loading theo chuẩn Impeccable (Operate Mode)
+function DashboardSkeleton() {
+  return (
+    <div>
+      {/* 3 Metric Cards Shimmer */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-7">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="admindash-metric-card" style={{ minHeight: '142px' }}>
+            <div className="flex items-center justify-between">
+              <div className="admindash-skeleton" style={{ width: '120px', height: '14px' }} />
+              <div className="admindash-skeleton" style={{ width: '38px', height: '38px', borderRadius: '10px' }} />
+            </div>
+            <div className="admindash-skeleton my-3" style={{ width: '160px', height: '32px' }} />
+            <div className="admindash-skeleton" style={{ width: '190px', height: '12px' }} />
+          </div>
+        ))}
+      </div>
+
+      {/* 2 Khung Biểu Đồ Shimmer */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-7">
+        {[1, 2].map((i) => (
+          <div key={i} className="card" style={{ minHeight: '280px' }}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="admindash-skeleton" style={{ width: '220px', height: '18px' }} />
+              <div className="admindash-skeleton" style={{ width: '140px', height: '26px', borderRadius: '8px' }} />
+            </div>
+            <div className="flex flex-col gap-3.5">
+              {[1, 2, 3, 4, 5].map((j) => (
+                <div key={j} className="flex flex-col gap-1.5">
+                  <div className="flex justify-between">
+                    <div className="admindash-skeleton" style={{ width: '90px', height: '13px' }} />
+                    <div className="admindash-skeleton" style={{ width: '160px', height: '13px' }} />
+                  </div>
+                  <div className="admindash-skeleton" style={{ width: '100%', height: '7px', borderRadius: '999px' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 2 Khung Bảng & Tỷ lệ Shimmer */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {[1, 2].map((i) => (
+          <div key={i} className="card" style={{ minHeight: '260px' }}>
+            <div className="admindash-skeleton mb-4" style={{ width: '200px', height: '18px' }} />
+            <div className="flex flex-col gap-3">
+              {[1, 2, 3, 4].map((j) => (
+                <div key={j} className="admindash-skeleton" style={{ width: '100%', height: '38px' }} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export const DashboardThongKe = () => {
   const [tongQuan, setTongQuan] = useState({ tongDoanhThu: 0, soDonThanhCong: 0, tongSachDaBan: 0 });
@@ -87,6 +146,11 @@ export const DashboardThongKe = () => {
     setLanTai((n) => n + 1);
   };
 
+  const handleLamMoi = () => {
+    setDangTai(true);
+    setLanTai((n) => n + 1);
+  };
+
   const dinhDangTien = (soTien) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(soTien || 0);
   };
@@ -98,34 +162,65 @@ export const DashboardThongKe = () => {
 
   return (
     <div>
+      {/* Header trang chuẩn phong cách Impeccable Operate */}
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <div>
-          <h1 style={{ fontSize: '1.45rem', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
+          <div className="flex items-center gap-2 mb-1">
+            <span style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.12em', color: 'var(--adm-primary)', textTransform: 'uppercase' }}>
+              Trung Tâm Điều Hành
+            </span>
+            <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--adm-border-strong)' }} />
+            <span style={{ fontSize: '0.72rem', color: 'var(--adm-text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
+              Số liệu thời gian thực
+            </span>
+          </div>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.025em', margin: 0, color: 'var(--adm-text-main)' }}>
             Thống Kê Doanh Thu & Vận Hành
           </h1>
-          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
-            Tổng hợp dữ liệu kinh doanh đa kênh (Trực tuyến & Tại quầy), phân tích chuỗi thời gian và cơ cấu thể loại
+          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.84rem', marginTop: '0.2rem' }}>
+            Tổng hợp dữ liệu kinh doanh đa kênh (Trực tuyến & Quầy POS), phân tích chuỗi thời gian và cơ cấu thể loại
           </p>
         </div>
+
+        {/* Nút làm mới dữ liệu mượt mà */}
+        <button
+          type="button"
+          onClick={handleLamMoi}
+          disabled={dangTai}
+          title="Cập nhật lại số liệu mới nhất"
+          className="btn btn-outline"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            padding: '0.45rem 0.85rem',
+            fontSize: '0.825rem',
+            borderRadius: '8px'
+          }}
+        >
+          <RefreshCw size={14} className={dangTai ? 'animate-spin' : ''} />
+          <span>Làm mới</span>
+        </button>
       </div>
 
       {/* Khối Việc Cần Làm Theo Vai Trò (T40) */}
       <KhoiViecCanLam />
 
-      {/* Thanh Bộ Lọc Kênh Bán & Thời Gian */}
-      <div className="card mb-6" style={{ padding: '0.9rem 1.15rem' }}>
-        <form onSubmit={handleLocDuLieu} className="flex items-center flex-wrap gap-3">
+      {/* Thanh Bộ Lọc Kênh Bán & Thời Gian (Command Bar Filter) */}
+      <div className="card mb-6" style={{ padding: '0.9rem 1.25rem' }}>
+        <form onSubmit={handleLocDuLieu} className="flex items-center flex-wrap gap-3.5">
           {/* Lọc Kênh Bán (T31) */}
           <div className="flex items-center gap-2">
             <Filter size={15} style={{ color: 'var(--adm-text-muted)' }} />
-            <span style={{ fontSize: '0.825rem', color: 'var(--adm-text-muted)' }}>Kênh:</span>
+            <span style={{ fontSize: '0.825rem', color: 'var(--adm-text-muted)', fontWeight: 500 }}>Kênh:</span>
             <select
               className="form-input"
-              style={{ width: '160px', padding: '0.4rem 0.65rem', fontSize: '0.825rem' }}
+              style={{ width: '165px', padding: '0.4rem 0.65rem', fontSize: '0.825rem', borderRadius: '8px' }}
               value={kenhBan}
               onChange={(e) => setKenhBan(e.target.value)}
             >
-              <option value="">Tất cả kênh</option>
+              <option value="">Tất cả kênh bán</option>
               <option value="TRUC_TUYEN">Trực tuyến (Online)</option>
               <option value="TAI_QUAY">Tại quầy (POS)</option>
             </select>
@@ -134,28 +229,38 @@ export const DashboardThongKe = () => {
           {/* Lọc Khoảng Ngày */}
           <div className="flex items-center gap-2">
             <Calendar size={15} style={{ color: 'var(--adm-text-muted)' }} />
-            <span style={{ fontSize: '0.825rem', color: 'var(--adm-text-muted)' }}>Từ:</span>
+            <span style={{ fontSize: '0.825rem', color: 'var(--adm-text-muted)', fontWeight: 500 }}>Từ:</span>
             <input
               type="date"
               className="form-input"
-              style={{ padding: '0.4rem 0.6rem', fontSize: '0.825rem' }}
+              style={{ padding: '0.4rem 0.65rem', fontSize: '0.825rem', borderRadius: '8px' }}
               value={tuNgay}
               onChange={(e) => setTuNgay(e.target.value)}
             />
           </div>
 
           <div className="flex items-center gap-2">
-            <span style={{ fontSize: '0.825rem', color: 'var(--adm-text-muted)' }}>Đến:</span>
+            <span style={{ fontSize: '0.825rem', color: 'var(--adm-text-muted)', fontWeight: 500 }}>Đến:</span>
             <input
               type="date"
               className="form-input"
-              style={{ padding: '0.4rem 0.6rem', fontSize: '0.825rem' }}
+              style={{ padding: '0.4rem 0.65rem', fontSize: '0.825rem', borderRadius: '8px' }}
               value={denNgay}
               onChange={(e) => setDenNgay(e.target.value)}
             />
           </div>
 
-          <button type="submit" className="btn btn-primary btn-sm" style={{ padding: '0.42rem 0.85rem' }}>
+          <button 
+            type="submit" 
+            className="btn btn-primary" 
+            style={{ 
+              padding: '0.45rem 0.95rem', 
+              fontSize: '0.825rem', 
+              borderRadius: '8px',
+              fontWeight: 600,
+              boxShadow: '0 1px 2px rgba(37, 99, 235, 0.2)' 
+            }}
+          >
             Lọc Dữ Liệu
           </button>
 
@@ -163,8 +268,15 @@ export const DashboardThongKe = () => {
             <button
               type="button"
               onClick={handleDatLaiLoc}
-              className="btn btn-outline btn-sm"
-              style={{ padding: '0.42rem 0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+              className="btn btn-outline"
+              style={{ 
+                padding: '0.45rem 0.85rem', 
+                fontSize: '0.825rem', 
+                borderRadius: '8px', 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '0.35rem' 
+              }}
             >
               <RotateCcw size={13} /> Đặt Lại
             </button>
@@ -172,95 +284,83 @@ export const DashboardThongKe = () => {
         </form>
       </div>
 
+      {/* Hiển thị Skeleton Loading Shimmer khi đang nạp */}
       {dangTai ? (
-        <div className="flex justify-center py-12">
-          <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.875rem' }}>Đang tổng hợp dữ liệu thời gian thực...</p>
-        </div>
+        <DashboardSkeleton />
       ) : (
         <>
-          {/* Khối Thẻ Tổng Quan 3 Chỉ Số Chính - Minimalist Metric Cards */}
+          {/* Khối Thẻ Tổng Quan 3 Chỉ Số Chính - Metric Cards Chuẩn Impeccable */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-7">
             <div className="admindash-metric-card">
               <div className="admindash-metric-label">
                 <span>Tổng Doanh Thu</span>
-                <DollarSign size={18} style={{ color: 'var(--adm-primary)' }} />
+                <div className="admindash-icon-box primary">
+                  <DollarSign size={20} />
+                </div>
               </div>
               <div className="admindash-metric-value" style={{ color: 'var(--adm-primary)' }}>
                 {dinhDangTien(tongQuan.tongDoanhThu)}
               </div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)' }}>
-                {kenhBan === 'TRUC_TUYEN' ? 'Kênh trực tuyến giao thành công' : kenhBan === 'TAI_QUAY' ? 'Bán trực tiếp tại quầy thu ngân' : 'Tổng cả hai kênh trực tuyến & quầy'}
+              <span style={{ fontSize: '0.78rem', color: 'var(--adm-text-muted)' }}>
+                {kenhBan === 'TRUC_TUYEN' ? 'Kênh trực tuyến giao thành công' : kenhBan === 'TAI_QUAY' ? 'Bán trực tiếp tại quầy thu ngân' : 'Tổng hợp cả hai kênh trực tuyến & quầy'}
               </span>
             </div>
 
             <div className="admindash-metric-card">
               <div className="admindash-metric-label">
                 <span>Đơn Giao Thành Công</span>
-                <ShoppingBag size={18} style={{ color: 'var(--adm-success)' }} />
+                <div className="admindash-icon-box success">
+                  <ShoppingBag size={20} />
+                </div>
               </div>
               <div className="admindash-metric-value" style={{ color: 'var(--adm-success)' }}>
-                {tongQuan.soDonThanhCong} <span style={{ fontSize: '1rem', fontWeight: 500 }}>đơn</span>
+                {tongQuan.soDonThanhCong} <span style={{ fontSize: '1.05rem', fontWeight: 500, color: 'var(--adm-text-muted)' }}>đơn</span>
               </div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)' }}>
-                Hoàn tất chu trình luân chuyển đơn
+              <span style={{ fontSize: '0.78rem', color: 'var(--adm-text-muted)' }}>
+                Hoàn tất chu trình luân chuyển đơn hàng
               </span>
             </div>
 
             <div className="admindash-metric-card">
               <div className="admindash-metric-label">
                 <span>Sách Đã Bán Ra</span>
-                <BookOpen size={18} style={{ color: 'var(--adm-info)' }} />
+                <div className="admindash-icon-box info">
+                  <BookOpen size={20} />
+                </div>
               </div>
               <div className="admindash-metric-value" style={{ color: 'var(--adm-info)' }}>
-                {tongQuan.tongSachDaBan} <span style={{ fontSize: '1rem', fontWeight: 500 }}>cuốn</span>
+                {tongQuan.tongSachDaBan} <span style={{ fontSize: '1.05rem', fontWeight: 500, color: 'var(--adm-text-muted)' }}>cuốn</span>
               </div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--adm-text-muted)' }}>
                 Tổng ấn phẩm đã xuất kho thành công
               </span>
             </div>
           </div>
 
-          {/* Khối Phân Tích Nâng Cao (T39): Chuỗi Thời Gian & Cơ Cấu Danh Mục */}
+          {/* Khối Phân Tích Nâng Cao: Chuỗi Thời Gian & Cơ Cấu Danh Mục */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-7">
             {/* Chuỗi Thời Gian Doanh Thu (revenue-series) */}
-            <div className="card" style={{ padding: '1.25rem' }}>
+            <div className="card">
               <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
                 <div className="flex items-center gap-2">
                   <BarChart3 size={18} style={{ color: 'var(--adm-primary)' }} />
-                  <h3 style={{ fontSize: '1rem', fontWeight: 600, letterSpacing: '-0.01em', margin: 0, color: 'var(--adm-text-main)' }}>
+                  <h3 style={{ fontSize: '0.98rem', fontWeight: 600, letterSpacing: '-0.015em', margin: 0, color: 'var(--adm-text-main)' }}>
                     Biến Động Doanh Thu Theo Thời Gian
                   </h3>
                 </div>
-                {/* Nút chuyển đổi gom nhóm ngày / tháng */}
-                <div className="inline-flex rounded-md shadow-sm" role="group">
+                {/* Segmented Control chuyển đổi Ngày / Tháng */}
+                <div className="admindash-segmented" role="group">
                   <button
                     type="button"
                     onClick={() => setKieuGomNhom('day')}
-                    className="btn btn-sm"
-                    style={{
-                      padding: '0.2rem 0.55rem',
-                      fontSize: '0.75rem',
-                      borderRadius: '4px 0 0 4px',
-                      background: kieuGomNhom === 'day' ? 'var(--adm-primary)' : 'var(--adm-bg-surface, #F1F5F9)',
-                      color: kieuGomNhom === 'day' ? '#FFF' : 'var(--adm-text-muted)',
-                      border: '1px solid var(--adm-border, #CBD5E1)'
-                    }}
+                    className={`admindash-segmented-btn ${kieuGomNhom === 'day' ? 'active' : ''}`}
                   >
                     Theo Ngày
                   </button>
                   <button
                     type="button"
                     onClick={() => setKieuGomNhom('month')}
-                    className="btn btn-sm"
-                    style={{
-                      padding: '0.2rem 0.55rem',
-                      fontSize: '0.75rem',
-                      borderRadius: '0 4px 4px 0',
-                      background: kieuGomNhom === 'month' ? 'var(--adm-primary)' : 'var(--adm-bg-surface, #F1F5F9)',
-                      color: kieuGomNhom === 'month' ? '#FFF' : 'var(--adm-text-muted)',
-                      border: '1px solid var(--adm-border, #CBD5E1)',
-                      borderLeft: 'none'
-                    }}
+                    className={`admindash-segmented-btn ${kieuGomNhom === 'month' ? 'active' : ''}`}
                   >
                     Theo Tháng
                   </button>
@@ -268,32 +368,27 @@ export const DashboardThongKe = () => {
               </div>
 
               {chuoiDoanhThu.length === 0 ? (
-                <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem' }}>
+                <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--adm-text-muted)', fontSize: '0.85rem' }}>
                   Chưa có dữ liệu giao dịch trong khoảng thời gian này.
-                </p>
+                </div>
               ) : (
-                <div className="flex flex-col gap-2.5">
+                <div className="flex flex-col gap-2">
                   {chuoiDoanhThu.slice(-8).map((item) => {
                     const tyLeThanh = maxDoanhThuChuoi > 0 ? (item.tongDoanhThu / maxDoanhThuChuoi) * 100 : 0;
                     return (
-                      <div key={item.thoiGian} style={{ fontSize: '0.825rem' }}>
+                      <div key={item.thoiGian} className="admindash-chart-row" style={{ fontSize: '0.825rem' }}>
                         <div className="flex justify-between items-center mb-1">
-                          <span style={{ fontWeight: 600, color: 'var(--adm-text-main)' }}>
+                          <span style={{ fontWeight: 600, color: 'var(--adm-text-main)', letterSpacing: '-0.01em' }}>
                             {item.thoiGian}
                           </span>
                           <span style={{ color: 'var(--adm-text-muted)' }}>
                             <strong style={{ color: 'var(--adm-primary)' }}>{dinhDangTien(item.tongDoanhThu)}</strong> • {item.soDonThanhCong} đơn ({item.tongSachDaBan} cuốn)
                           </span>
                         </div>
-                        <div style={{ height: '6px', background: 'var(--adm-bg-surface, #F1F5F9)', borderRadius: '999px', overflow: 'hidden' }}>
+                        <div className="admindash-progress-track">
                           <div
-                            style={{
-                              height: '100%',
-                              width: `${tyLeThanh}%`,
-                              background: 'var(--adm-primary)',
-                              borderRadius: '999px',
-                              transition: 'width 0.4s ease'
-                            }}
+                            className="admindash-progress-bar primary"
+                            style={{ width: `${tyLeThanh}%` }}
                           />
                         </div>
                       </div>
@@ -304,39 +399,34 @@ export const DashboardThongKe = () => {
             </div>
 
             {/* Cơ Cấu Doanh Thu Theo Danh Mục (by-category) */}
-            <div className="card" style={{ padding: '1.25rem' }}>
+            <div className="card">
               <div className="flex items-center gap-2 mb-4">
                 <Layers size={18} style={{ color: 'var(--adm-primary)' }} />
-                <h3 style={{ fontSize: '1rem', fontWeight: 600, letterSpacing: '-0.01em', margin: 0, color: 'var(--adm-text-main)' }}>
+                <h3 style={{ fontSize: '0.98rem', fontWeight: 600, letterSpacing: '-0.015em', margin: 0, color: 'var(--adm-text-main)' }}>
                   Doanh Thu Theo Thể Loại Sách
                 </h3>
               </div>
 
               {doanhThuDanhMuc.length === 0 ? (
-                <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem' }}>
+                <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--adm-text-muted)', fontSize: '0.85rem' }}>
                   Chưa có dữ liệu doanh thu theo danh mục.
-                </p>
+                </div>
               ) : (
-                <div className="flex flex-col gap-2.5">
+                <div className="flex flex-col gap-2">
                   {doanhThuDanhMuc.slice(0, 6).map((dm) => (
-                    <div key={dm.maDanhMuc || dm.tenDanhMuc} style={{ fontSize: '0.825rem' }}>
+                    <div key={dm.maDanhMuc || dm.tenDanhMuc} className="admindash-chart-row" style={{ fontSize: '0.825rem' }}>
                       <div className="flex justify-between items-center mb-1">
-                        <span style={{ fontWeight: 600, color: 'var(--adm-text-main)' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--adm-text-main)', letterSpacing: '-0.01em' }}>
                           {dm.tenDanhMuc}
                         </span>
                         <span style={{ color: 'var(--adm-text-muted)' }}>
-                          <strong>{dinhDangTien(dm.doanhThu)}</strong> ({dm.tyLeDoanhThu}%) • {dm.daBan} cuốn
+                          <strong style={{ color: 'var(--adm-text-main)' }}>{dinhDangTien(dm.doanhThu)}</strong> ({dm.tyLeDoanhThu}%) • {dm.daBan} cuốn
                         </span>
                       </div>
-                      <div style={{ height: '6px', background: 'var(--adm-bg-surface, #F1F5F9)', borderRadius: '999px', overflow: 'hidden' }}>
+                      <div className="admindash-progress-track">
                         <div
-                          style={{
-                            height: '100%',
-                            width: `${dm.tyLeDoanhThu}%`,
-                            background: '#10B981',
-                            borderRadius: '999px',
-                            transition: 'width 0.4s ease'
-                          }}
+                          className="admindash-progress-bar success"
+                          style={{ width: `${dm.tyLeDoanhThu}%` }}
                         />
                       </div>
                     </div>
@@ -348,23 +438,24 @@ export const DashboardThongKe = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Top 5 Sách Bán Chạy Nhất */}
-            <div className="card" style={{ padding: '1.25rem' }}>
+            <div className="card">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp size={18} style={{ color: 'var(--adm-primary)' }} />
-                <h3 style={{ fontSize: '1rem', fontWeight: 600, letterSpacing: '-0.01em', margin: 0, color: 'var(--adm-text-main)' }}>
+                <h3 style={{ fontSize: '0.98rem', fontWeight: 600, letterSpacing: '-0.015em', margin: 0, color: 'var(--adm-text-main)' }}>
                   Top Tác Phẩm Bán Chạy Nhất
                 </h3>
               </div>
 
               {topSach.length === 0 ? (
-                <p style={{ color: 'var(--adm-text-muted)', fontSize: '0.85rem' }}>
+                <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--adm-text-muted)', fontSize: '0.85rem' }}>
                   Chưa có dữ liệu sách bán ra từ các đơn hoàn tất.
-                </p>
+                </div>
               ) : (
                 <div className="admindash-table-wrap" style={{ border: 'none', boxShadow: 'none' }}>
                   <table className="admindash-table">
                     <thead>
                       <tr>
+                        <th>#</th>
                         <th>Tác Phẩm</th>
                         <th>Đã Bán</th>
                         <th style={{ textAlign: 'right' }}>Doanh Thu</th>
@@ -373,9 +464,12 @@ export const DashboardThongKe = () => {
                     <tbody>
                       {topSach.map((s, idx) => (
                         <tr key={s.maSach || idx}>
+                          <td style={{ width: '36px', color: 'var(--adm-text-muted)', fontWeight: 600, fontSize: '0.8rem' }}>
+                            {idx + 1}
+                          </td>
                           <td>
                             <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--adm-text-main)' }}>{s.tenSach}</div>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--adm-text-muted)' }}>
+                            <span style={{ fontSize: '0.74rem', color: 'var(--adm-text-muted)' }}>
                               Thể loại: {s.tenDanhMuc}
                             </span>
                           </td>
@@ -394,15 +488,15 @@ export const DashboardThongKe = () => {
             </div>
 
             {/* Bảng Tỷ Lệ Các Trạng Thái Đơn Hàng */}
-            <div className="card" style={{ padding: '1.25rem' }}>
+            <div className="card">
               <div className="flex items-center gap-2 mb-4">
                 <PieChart size={18} style={{ color: 'var(--adm-primary)' }} />
-                <h3 style={{ fontSize: '1rem', fontWeight: 600, letterSpacing: '-0.01em', margin: 0, color: 'var(--adm-text-main)' }}>
+                <h3 style={{ fontSize: '0.98rem', fontWeight: 600, letterSpacing: '-0.015em', margin: 0, color: 'var(--adm-text-main)' }}>
                   Tỷ Lệ Trạng Thái Đơn (Tổng: {tongDonToanHeThong} đơn)
                 </h3>
               </div>
 
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2.5">
                 {tyLeDon.map((tl) => {
                   let mauSac = 'var(--adm-text-muted)';
                   let tenTiengViet = tl.trangThai;
@@ -413,25 +507,21 @@ export const DashboardThongKe = () => {
                   if (tl.trangThai === 'DA_HUY') { mauSac = 'var(--adm-danger)'; tenTiengViet = 'Đã hủy'; }
 
                   return (
-                    <div key={tl.trangThai} style={{ padding: '0.5rem 0' }}>
-                      <div className="flex justify-between items-center mb-1" style={{ fontSize: '0.875rem' }}>
-                        <span style={{ fontWeight: 500, color: 'var(--adm-text-main)' }}>{tenTiengViet}</span>
-                        <span style={{ color: 'var(--adm-text-muted)' }}>
+                    <div key={tl.trangThai} className="admindash-chart-row" style={{ padding: '0.45rem 0.65rem' }}>
+                      <div className="flex justify-between items-center mb-1" style={{ fontSize: '0.85rem' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--adm-text-main)' }}>{tenTiengViet}</span>
+                        <span style={{ color: 'var(--adm-text-muted)', fontSize: '0.8rem' }}>
                           <strong style={{ color: 'var(--adm-text-main)' }}>{tl.soLuong} đơn</strong> ({tl.tyLe}%)
                         </span>
                       </div>
-                      {/* Thanh biểu đồ tỷ lệ */}
-                      <div style={{
-                        height: '8px',
-                        backgroundColor: '#F1F5F9',
-                        borderRadius: '999px',
-                        overflow: 'hidden'
-                      }}>
+                      {/* Thanh biểu đồ tỷ lệ mượt mà */}
+                      <div className="admindash-progress-track">
                         <div style={{
                           height: '100%',
                           width: `${tl.tyLe}%`,
                           backgroundColor: mauSac,
-                          transition: 'width 0.4s ease'
+                          borderRadius: '999px',
+                          transition: 'width 0.6s cubic-bezier(0.16, 1, 0.3, 1)'
                         }} />
                       </div>
                     </div>

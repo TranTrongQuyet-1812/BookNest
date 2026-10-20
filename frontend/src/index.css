@@ -960,7 +960,7 @@ textarea::placeholder {
   border-right: 1px solid var(--adm-sidebar-border);
   display: flex;
   flex-direction: column;
-  justifyContent: space-between;
+  justify-content: space-between;
   position: sticky;
   top: 0;
   height: 100vh;
@@ -1035,56 +1035,187 @@ textarea::placeholder {
   background-color: var(--adm-card);
   display: flex;
   align-items: center;
-  justifyContent: space-between;
+  justify-content: space-between;
   padding: 0 1.75rem;
   position: sticky;
   top: 0;
   z-index: 20;
 }
 
-/* Card trong Admindash */
+/* Card trong Admindash theo chuẩn Impeccable: Layered Elevation & Hairline Border */
 .admindash-shell .card {
   background-color: var(--adm-card);
   border: 1px solid var(--adm-border);
-  border-radius: 10px;
-  padding: 1.25rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
+  padding: 1.35rem 1.45rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 14px -2px rgba(15, 23, 42, 0.03);
+  transition: box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease;
 }
 
-/* Metric Cards */
+.admindash-shell .card:hover {
+  border-color: rgba(203, 213, 225, 0.9);
+}
+
+/* Metric Cards chuẩn Impeccable Operate: Viền mảnh, Icon Container nổi bật, Hover nhấc nhẹ siêu mượt */
 .admindash-metric-card {
   background-color: var(--adm-card);
   border: 1px solid var(--adm-border);
-  border-radius: 10px;
-  padding: 1.25rem 1.4rem;
+  border-radius: 14px;
+  padding: 1.35rem 1.5rem;
   display: flex;
   flex-direction: column;
-  justifyContent: space-between;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  transition: border-color 0.15s ease;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.24s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
 }
 
 .admindash-metric-card:hover {
-  border-color: var(--adm-border-strong);
+  transform: translateY(-2px);
+  border-color: rgba(148, 163, 184, 0.5);
+  box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.03);
 }
 
 .admindash-metric-label {
-  font-size: 0.8rem;
-  font-weight: 500;
+  font-size: 0.825rem;
+  font-weight: 600;
   color: var(--adm-text-muted);
   display: flex;
   align-items: center;
-  justifyContent: space-between;
+  justify-content: space-between;
+  letter-spacing: -0.01em;
+}
+
+/* Khối biểu tượng pastel tròn/bo góc mềm trong thẻ metric */
+.admindash-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admindash-metric-card:hover .admindash-icon-box {
+  transform: scale(1.05);
+}
+
+.admindash-icon-box.primary {
+  background: #EFF6FF;
+  color: #2563EB;
+  border: 1px solid #DBEAFE;
+}
+
+.admindash-icon-box.success {
+  background: #ECFDF5;
+  color: #059669;
+  border: 1px solid #A7F3D0;
+}
+
+.admindash-icon-box.info {
+  background: #F0F9FF;
+  color: #0284C7;
+  border: 1px solid #BAE6FD;
+}
+
+.admindash-icon-box.warning {
+  background: #FFFBEB;
+  color: #D97706;
+  border: 1px solid #FDE68A;
 }
 
 .admindash-metric-value {
-  font-size: 1.65rem;
+  font-size: 1.85rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   color: var(--adm-text-main);
-  margin-top: 0.4rem;
-  margin-bottom: 0.2rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
   font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+/* Thanh điều khiển Segmented Control chuyển đổi Ngày / Tháng mượt mà */
+.admindash-segmented {
+  display: inline-flex;
+  padding: 3px;
+  background-color: #F1F5F9;
+  border-radius: 8px;
+  border: 1px solid #E2E8F0;
+  gap: 2px;
+}
+
+.admindash-segmented-btn {
+  border: none;
+  background: transparent;
+  color: var(--adm-text-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admindash-segmented-btn:hover:not(.active) {
+  color: var(--adm-text-main);
+}
+
+.admindash-segmented-btn.active {
+  background-color: #FFFFFF;
+  color: var(--adm-primary);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+/* Hàng biểu đồ chuỗi thời gian & danh mục có hiệu ứng hover highlight */
+.admindash-chart-row {
+  padding: 0.55rem 0.65rem;
+  margin: 0 -0.65rem;
+  border-radius: 8px;
+  transition: background-color 0.16s ease;
+}
+
+.admindash-chart-row:hover {
+  background-color: rgba(241, 245, 249, 0.75);
+}
+
+/* Thanh tiến trình Progress Bar gradient tinh xảo */
+.admindash-progress-track {
+  height: 7px;
+  background-color: #F1F5F9;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 0.35rem;
+}
+
+.admindash-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admindash-progress-bar.primary {
+  background: linear-gradient(90deg, #3B82F6 0%, #2563EB 100%);
+}
+
+.admindash-progress-bar.success {
+  background: linear-gradient(90deg, #34D399 0%, #059669 100%);
+}
+
+/* Skeleton Loading Shimmer cao cấp (Impeccable Loading) */
+@keyframes admindash-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.admindash-skeleton {
+  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background-size: 200% 100%;
+  animation: admindash-shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
 }
 
 /* Badges */
