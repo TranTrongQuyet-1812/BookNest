@@ -21,7 +21,8 @@ const CAU_DANH_NGON = [
  */
 // canRem(duongDanDich, duongDanNguon): có cần chạy rèm cho lần chuyển này không (trang đã sẵn sàng thì đổi tức thì).
 // chuanBiTrang(duongDanDich): Promise báo trang đích đã tải xong mã, rèm chỉ kéo lên khi trang đã sẵn sàng.
-export const PageLoader = ({ location: targetLocation, onCurtainCovered, canRem, chuanBiTrang }) => {
+// laChuyenHuong: lần đổi địa chỉ này là chuyển hướng tự động của hệ thống, App đã đổi trang ngay nên không chạy lại rèm.
+export const PageLoader = ({ location: targetLocation, onCurtainCovered, canRem, chuanBiTrang, laChuyenHuong }) => {
   const manCheRef = useRef(null);
   const noiDungRef = useRef(null);
   const thanhTienTrinhRef = useRef(null);
@@ -38,10 +39,12 @@ export const PageLoader = ({ location: targetLocation, onCurtainCovered, canRem,
 
   const canRemRef = useRef(canRem);
   const chuanBiTrangRef = useRef(chuanBiTrang);
+  const laChuyenHuongRef = useRef(laChuyenHuong);
   useEffect(() => {
     canRemRef.current = canRem;
     chuanBiTrangRef.current = chuanBiTrang;
-  }, [canRem, chuanBiTrang]);
+    laChuyenHuongRef.current = laChuyenHuong;
+  }, [canRem, chuanBiTrang, laChuyenHuong]);
 
   const currentPath = targetLocation ? `${targetLocation.pathname}${targetLocation.search}` : '/';
   const viTriCuRef = useRef(currentPath);
@@ -120,10 +123,18 @@ export const PageLoader = ({ location: targetLocation, onCurtainCovered, canRem,
     const duongDanNguon = viTriCuRef.current;
     viTriCuRef.current = currentPath;
 
+    // Chuyển hướng tự động (ví dụ chưa đăng nhập bị đẩy sang /login): không khởi động lại rèm, rèm đang chạy cứ chạy tiếp
+    if (laChuyenHuongRef.current) return;
+
     // Trang đích đã sẵn sàng thì không cần rèm: đổi trang tức thì (hiệu ứng mờ nhẹ do StorefrontLayout lo).
     // Không gọi baoRemDong nên các cảnh bên dưới (hero, sinh vật) biết rèm đang mở và vào cảnh ngay.
     if (canRemRef.current && !canRemRef.current(currentPath, duongDanNguon)) {
+      // Nếu rèm của lần bấm trước còn đang chạy thì dừng và trả rèm về trạng thái ẩn, tránh rèm kẹt phủ kín
       if (tlHienTaiRef.current) tlHienTaiRef.current.kill();
+      if (manCheRef.current) {
+        gsap.set(manCheRef.current, { yPercent: -100, visibility: "hidden", pointerEvents: "none" });
+      }
+      dangChuyenCanhRef.current = false;
       if (onCurtainCoveredRef.current) onCurtainCoveredRef.current();
       if (window.lenis) window.lenis.scrollTo(0, { immediate: true });
       window.scrollTo(0, 0);
@@ -219,10 +230,14 @@ export const PageLoader = ({ location: targetLocation, onCurtainCovered, canRem,
       }
     }, '>');
 
-    return () => {
-      tl.kill();
-    };
+    // Không kill timeline khi dọn effect: nếu địa chỉ đổi thêm giữa lúc rèm đang chạy (chuyển hướng tự động) thì rèm phải chạy tiếp,
+    // kill ở đây sẽ làm rèm kẹt phủ kín màn hình. Lần chạy mới tự kill timeline cũ ở đầu effect.
   }, [currentPath]); // CHỈ phụ thuộc vào currentPath, không phụ thuộc function callback!
+
+  // Gỡ PageLoader (đóng trang) thì dừng timeline đang chạy
+  useEffect(() => () => {
+    if (tlHienTaiRef.current) tlHienTaiRef.current.kill();
+  }, []);
 
   return (
     <div

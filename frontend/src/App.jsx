@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, matchPath } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigationType, matchPath } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThongBaoProvider } from '@booknest/shared/thongbao';
 import { ProtectedRoute } from './components/Guards';
@@ -128,6 +128,9 @@ function ChuyenSangBackOffice() {
 // Component điều phối tuyến đường kết hợp hiệu ứng chuyển trang đóng băng (Freeze Route) cho Storefront
 const AppContent = () => {
   const location = useLocation();
+  const loaiDieuHuong = useNavigationType();
+  // REPLACE là chuyển hướng tự động của hệ thống (ProtectedRoute, RoleGuard, sau khi đặt hàng), không phải người dùng bấm liên kết
+  const laChuyenHuong = loaiDieuHuong === 'REPLACE';
   const laKhuAdmin = location.pathname.startsWith('/admin');
   const [displayLocation, setDisplayLocation] = useState(location);
   const kichHoatLangNgheCrossTab = useCartStore((s) => s.kichHoatLangNgheCrossTab);
@@ -152,12 +155,13 @@ const AppContent = () => {
     setDisplayLocation(location);
   }, [location]);
 
-  // Nếu là khu vực Admindash hoặc chuyển hướng bảo vệ (redirect từ ProtectedRoute), lập tức đồng bộ route để tránh vòng lặp re-render
+  // Nếu là khu vực Admindash hoặc chuyển hướng tự động (redirect từ ProtectedRoute, RoleGuard), lập tức đồng bộ route để tránh vòng lặp re-render.
+  // Người dùng bấm liên kết (kể cả liên kết có kèm state.from hoặc tới /login) vẫn đi qua rèm: trang cũ ở yên tới khi rèm che kín mới đổi.
   React.useEffect(() => {
-    if (laKhuAdmin || location.state?.from || location.pathname === '/login' || location.pathname === '/unauthorized') {
+    if (laKhuAdmin || laChuyenHuong) {
       setDisplayLocation(location);
     }
-  }, [location, laKhuAdmin]);
+  }, [location, laKhuAdmin, laChuyenHuong]);
 
   return (
     <>
@@ -171,6 +175,7 @@ const AppContent = () => {
           onCurtainCovered={handleCurtainCovered} 
           canRem={canChayRem}
           chuanBiTrang={chuanBiTrang}
+          laChuyenHuong={laChuyenHuong}
         />
       )}
 
