@@ -19,7 +19,9 @@ const CAU_DANH_NGON = [
  * 2. Gọi onCurtainCovered để swap trang mới ngầm bên dưới rèm và reset scroll.
  * 3. Rèm trượt vút lên trên trời hé lộ trang mới mượt mà, triệt tiêu 100% chớp trang.
  */
-export const PageLoader = ({ location: targetLocation, onCurtainCovered }) => {
+// canRem(duongDanDich, duongDanNguon): có cần chạy rèm cho lần chuyển này không (trang đã sẵn sàng thì đổi tức thì).
+// chuanBiTrang(duongDanDich): Promise báo trang đích đã tải xong mã, rèm chỉ kéo lên khi trang đã sẵn sàng.
+export const PageLoader = ({ location: targetLocation, onCurtainCovered, canRem, chuanBiTrang }) => {
   const manCheRef = useRef(null);
   const noiDungRef = useRef(null);
   const thanhTienTrinhRef = useRef(null);
@@ -33,6 +35,13 @@ export const PageLoader = ({ location: targetLocation, onCurtainCovered }) => {
   useEffect(() => {
     onCurtainCoveredRef.current = onCurtainCovered;
   }, [onCurtainCovered]);
+
+  const canRemRef = useRef(canRem);
+  const chuanBiTrangRef = useRef(chuanBiTrang);
+  useEffect(() => {
+    canRemRef.current = canRem;
+    chuanBiTrangRef.current = chuanBiTrang;
+  }, [canRem, chuanBiTrang]);
 
   const currentPath = targetLocation ? `${targetLocation.pathname}${targetLocation.search}` : '/';
   const viTriCuRef = useRef(currentPath);
@@ -108,13 +117,28 @@ export const PageLoader = ({ location: targetLocation, onCurtainCovered }) => {
     if (!daKhoiTaoRef.current) return;
     if (viTriCuRef.current === currentPath) return;
 
+    const duongDanNguon = viTriCuRef.current;
     viTriCuRef.current = currentPath;
+
+    // Trang đích đã sẵn sàng thì không cần rèm: đổi trang tức thì (hiệu ứng mờ nhẹ do StorefrontLayout lo).
+    // Không gọi baoRemDong nên các cảnh bên dưới (hero, sinh vật) biết rèm đang mở và vào cảnh ngay.
+    if (canRemRef.current && !canRemRef.current(currentPath, duongDanNguon)) {
+      if (tlHienTaiRef.current) tlHienTaiRef.current.kill();
+      if (onCurtainCoveredRef.current) onCurtainCoveredRef.current();
+      if (window.lenis) window.lenis.scrollTo(0, { immediate: true });
+      window.scrollTo(0, 0);
+      return;
+    }
+
     dangChuyenCanhRef.current = true;
 
     const manChe = manCheRef.current;
     const noiDung = noiDungRef.current;
     const thanhTienTrinh = thanhTienTrinhRef.current;
     if (!manChe || !noiDung || !thanhTienTrinh) return;
+
+    // Bắt đầu tải mã trang đích song song với lúc rèm kéo lên, để lúc rèm hạ trang đã có sẵn
+    const trangSanSang = chuanBiTrangRef.current ? chuanBiTrangRef.current(currentPath) : Promise.resolve();
 
     // Cập nhật câu danh ngôn ngẫu nhiên trực tiếp vào DOM (không qua state để tránh re-render)
     if (quoteTextRef.current) {
@@ -143,7 +167,7 @@ export const PageLoader = ({ location: targetLocation, onCurtainCovered }) => {
     // BƯỚC 1: Rèm trượt nhanh và êm từ đáy lên che kín 100% màn hình
     tl.to(manChe, {
       yPercent: 0,
-      duration: 0.28,
+      duration: 0.22,
       ease: 'power3.inOut',
       onComplete: () => {
         // Rèm đã che kín 100% -> Kích hoạt hoán đổi trang mới ngầm bên dưới!
@@ -160,33 +184,40 @@ export const PageLoader = ({ location: targetLocation, onCurtainCovered }) => {
     .to(noiDung, {
       opacity: 1,
       y: 0,
-      duration: 0.24,
+      duration: 0.14,
       ease: 'power2.out'
     }, '-=0.04')
-    // BƯỚC 3: Thanh chỉ vàng lướt qua (giữ rèm đủ lâu để API backend nạp xong ngầm hoàn toàn)
+    // BƯỚC 3: Thanh chỉ vàng lướt qua
     .to(thanhTienTrinh, {
       scaleX: 1,
-      duration: 0.42,
+      duration: 0.22,
       ease: 'power2.inOut'
-    }, '-=0.08')
+    }, '-=0.1')
     // BƯỚC 4: Chữ mờ đi
     .to(noiDung, {
       opacity: 0,
-      y: -8,
-      duration: 0.2,
+      y: -6,
+      duration: 0.14,
       ease: 'power2.in'
+    })
+    // Giữ rèm cho tới khi mã trang đích tải xong (tối đa 4 giây), nhờ vậy rèm ngắn hơn mà không lộ trang trống
+    .call(() => {
+      tl.pause();
+      Promise.race([trangSanSang, new Promise((resolve) => setTimeout(resolve, 4000))])
+        .catch(() => {})
+        .finally(() => tl.resume());
     })
     // BƯỚC 5: Rèm trượt vút lên trên trời hé lộ trang mới đã có đầy đủ dữ liệu
     .to(manChe, {
       yPercent: -100,
-      duration: 0.6,
+      duration: 0.38,
       ease: 'power4.inOut',
       onStart: baoRemMo,
       onComplete: () => {
         dangChuyenCanhRef.current = false;
         gsap.set(manChe, { visibility: 'hidden', pointerEvents: 'none' });
       }
-    }, '-=0.06');
+    }, '>');
 
     return () => {
       tl.kill();

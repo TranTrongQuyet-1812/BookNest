@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, matchPath } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThongBaoProvider } from '@booknest/shared/thongbao';
 import { ProtectedRoute } from './components/Guards';
@@ -16,28 +16,91 @@ import useCartStore from './stores/cartStore';
 // Pages Storefront (TrangChu giữ static import để tải tức thì, các trang phụ dùng React.lazy)
 import TrangChu from './pages/TrangChu';
 
-const ChiTietSach = React.lazy(() => import('./pages/ChiTietSach'));
-const GioHang = React.lazy(() => import('./pages/GioHang'));
-const ThanhToan = React.lazy(() => import('./pages/ThanhToan'));
-const DonHangCuaToi = React.lazy(() => import('./pages/DonHangCuaToi'));
-const ChiTietDonHang = React.lazy(() => import('./pages/ChiTietDonHang'));
-const HoSo = React.lazy(() => import('./pages/HoSo'));
-const DangNhap = React.lazy(() => import('./pages/DangNhap'));
-const DangKy = React.lazy(() => import('./pages/DangKy'));
-const KhongCoQuyen = React.lazy(() => import('./pages/KhongCoQuyen'));
-const QuenMatKhau = React.lazy(() => import('./pages/QuenMatKhau'));
-const DieuKhoanDichVu = React.lazy(() => import('./pages/DieuKhoanDichVu'));
-const ChinhSachBaoMat = React.lazy(() => import('./pages/ChinhSachBaoMat'));
-const TrangKhongTimThay = React.lazy(() => import('./pages/TrangKhongTimThay'));
+// Tải trang theo yêu cầu nhưng cho phép tải trước: lúc rảnh app tải sẵn mã các trang, nên bấm vào là có ngay,
+// không phải ngồi chờ rèm (xem taiTruocTatCaTrang). Biến chọn cách dựng được khóa lúc gắn vào để trang đang mở
+// không bị dựng lại khi mã tải xong.
+function lazyTaiTruoc(loader) {
+  let thanhPhanDaTai = null;
+  const nap = () => loader().then((module) => {
+    thanhPhanDaTai = module.default;
+    return module;
+  });
+  const Lazy = React.lazy(nap);
+  const Boc = (props) => {
+    const [Chon] = React.useState(() => thanhPhanDaTai || Lazy);
+    return <Chon {...props} />;
+  };
+  Boc.taiTruoc = nap;
+  Boc.daTai = () => thanhPhanDaTai !== null;
+  return Boc;
+}
+
+const ChiTietSach = lazyTaiTruoc(() => import('./pages/ChiTietSach'));
+const GioHang = lazyTaiTruoc(() => import('./pages/GioHang'));
+const ThanhToan = lazyTaiTruoc(() => import('./pages/ThanhToan'));
+const DonHangCuaToi = lazyTaiTruoc(() => import('./pages/DonHangCuaToi'));
+const ChiTietDonHang = lazyTaiTruoc(() => import('./pages/ChiTietDonHang'));
+const HoSo = lazyTaiTruoc(() => import('./pages/HoSo'));
+const DangNhap = lazyTaiTruoc(() => import('./pages/DangNhap'));
+const DangKy = lazyTaiTruoc(() => import('./pages/DangKy'));
+const KhongCoQuyen = lazyTaiTruoc(() => import('./pages/KhongCoQuyen'));
+const QuenMatKhau = lazyTaiTruoc(() => import('./pages/QuenMatKhau'));
+const DieuKhoanDichVu = lazyTaiTruoc(() => import('./pages/DieuKhoanDichVu'));
+const ChinhSachBaoMat = lazyTaiTruoc(() => import('./pages/ChinhSachBaoMat'));
+const TrangKhongTimThay = lazyTaiTruoc(() => import('./pages/TrangKhongTimThay'));
+
+// Bảng đường dẫn -> trang, dùng để biết trang đích đã tải mã chưa và để tải trước
+const BANG_TRANG = [
+  ['/books/:id', ChiTietSach],
+  ['/login', DangNhap],
+  ['/register', DangKy],
+  ['/forgot-password', QuenMatKhau],
+  ['/unauthorized', KhongCoQuyen],
+  ['/cart', GioHang],
+  ['/checkout', ThanhToan],
+  ['/dieu-khoan', DieuKhoanDichVu],
+  ['/chinh-sach-bao-mat', ChinhSachBaoMat],
+  ['/orders', DonHangCuaToi],
+  ['/orders/:id', ChiTietDonHang],
+  ['/profile', HoSo]
+];
+
+const phanDuongDan = (duongDan) => duongDan.split('?')[0];
+const trangCuaDuongDan = (duongDan) => {
+  const thuc = phanDuongDan(duongDan);
+  const khop = BANG_TRANG.find(([mau]) => matchPath(mau, thuc));
+  return khop ? khop[1] : TrangKhongTimThay;
+};
+const laTrangChu = (duongDan) => ['/', '/books'].includes(phanDuongDan(duongDan));
+
+function taiTruocTatCaTrang() {
+  BANG_TRANG.forEach(([, trang]) => trang.taiTruoc().catch(() => {}));
+  TrangKhongTimThay.taiTruoc().catch(() => {});
+}
+
+// Có cần chạy rèm khi chuyển trang không:
+// - vào Trang chủ từ trang khác: có (cảnh vào cửa tiệm, hero và sinh vật chờ rèm mở);
+// - lọc/tìm trong Trang chủ: không;
+// - trang khác: chỉ khi mã trang chưa tải xong. Trang đã sẵn sàng thì đổi tức thì, kèm hiệu ứng mờ nhẹ.
+const canChayRem = (duongDanDich, duongDanNguon) => {
+  if (laTrangChu(duongDanDich)) return !laTrangChu(duongDanNguon);
+  return !trangCuaDuongDan(duongDanDich).daTai();
+};
+
+const chuanBiTrang = (duongDan) => (laTrangChu(duongDan) ? Promise.resolve() : trangCuaDuongDan(duongDan).taiTruoc());
 
 // Layout chung cho Storefront (có Navbar & Footer luôn hiển thị, Suspense chỉ bọc nội dung động)
 const StorefrontLayout = ({ children }) => {
+  // Trong Routes, useLocation trả về địa chỉ đang HIỂN THỊ (đã đóng băng), nên key này chỉ đổi lúc trang thật sự được thay
+  const { pathname } = useLocation();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', position: 'relative', zIndex: 1 }}>
       <Navbar />
       <main style={{ flex: 1 }}>
         <React.Suspense fallback={null}>
-          {children}
+          <div key={pathname} className="trang-hien-dan">
+            {children}
+          </div>
         </React.Suspense>
       </main>
       <Footer />
@@ -69,6 +132,13 @@ const AppContent = () => {
     };
   }, [kichHoatLangNgheCrossTab]);
 
+  // Sau khi vào web một lúc, tải sẵn mã mọi trang lúc trình duyệt rảnh để các lần bấm sau đổi trang tức thì
+  React.useEffect(() => {
+    const dat = window.requestIdleCallback || ((fn) => setTimeout(fn, 1));
+    const hen = setTimeout(() => dat(taiTruocTatCaTrang), 2500);
+    return () => clearTimeout(hen);
+  }, []);
+
   // Khi rèm đã che kín 100% màn hình, mới hoán đổi sang trang mới cho Storefront!
   const handleCurtainCovered = useCallback(() => {
     setDisplayLocation(location);
@@ -91,6 +161,8 @@ const AppContent = () => {
         <PageLoader 
           location={location} 
           onCurtainCovered={handleCurtainCovered} 
+          canRem={canChayRem}
+          chuanBiTrang={chuanBiTrang}
         />
       )}
 

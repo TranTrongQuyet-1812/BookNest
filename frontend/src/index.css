@@ -942,3 +942,16 @@ header,
   content-visibility: auto;
   contain-intrinsic-size: 190px 280px;
 }
+
+/* Trang mới hiện dần nhẹ khi đổi trang tức thì (không chạy rèm). Chỉ chạy lúc bắt đầu, không giữ trạng thái sau đó. */
+.trang-hien-dan {
+  animation: trang-hien-dan 0.2s ease-out backwards;
+}
+
+@keyframes trang-hien-dan {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trang-hien-dan { animation: none; }
+}
