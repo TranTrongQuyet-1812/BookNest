@@ -218,6 +218,7 @@ textarea::placeholder {
   .md\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 @media (min-width: 1024px) {
+  .lg\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .lg\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .lg\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
@@ -1075,6 +1076,142 @@ textarea::placeholder {
   transform: translateY(-2px);
   border-color: rgba(148, 163, 184, 0.5);
   box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.03);
+}
+
+/* Thẻ KPI chuẩn High-Taste SaaS (Typography-First, No generic pastel icons) */
+.admindash-kpi-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 1.35rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease;
+}
+
+.admindash-kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: #CBD5E1;
+  box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.07);
+}
+
+.admindash-kpi-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748B;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 0.45rem;
+}
+
+.admindash-kpi-val {
+  font-size: 2.15rem;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 0.45rem;
+}
+
+.admindash-kpi-sub {
+  font-size: 0.78rem;
+  color: #64748B;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Bộ lọc Preset Pill Buttons */
+.admindash-preset-pill {
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+
+.admindash-preset-pill:hover:not(.active) {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+  color: #0F172A;
+}
+
+.admindash-preset-pill.active {
+  background: #0F172A;
+  border-color: #0F172A;
+  color: #FFFFFF;
+}
+
+/* Tooltip nổi cho Biểu đồ Cột SVG */
+.admindash-chart-tooltip {
+  position: absolute;
+  background: #0F172A;
+  color: #FFFFFF;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  pointer-events: none;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35);
+  z-index: 50;
+  white-space: nowrap;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Thumbnail Bìa Sách trong Bảng Top Tác Phẩm */
+.admindash-book-thumb {
+  width: 36px;
+  height: 48px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid #E2E8F0;
+  background: #F1F5F9;
+  flex-shrink: 0;
+}
+
+/* Huy hiệu Thứ Hạng Top Sách Bán Chạy */
+.admindash-rank-pill {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.admindash-rank-pill.gold {
+  background: #FEF3C7;
+  color: #B45309;
+  border: 1px solid #FDE68A;
+}
+
+.admindash-rank-pill.silver {
+  background: #F1F5F9;
+  color: #475569;
+  border: 1px solid #CBD5E1;
+}
+
+.admindash-rank-pill.bronze {
+  background: #FFF7ED;
+  color: #C2410C;
+  border: 1px solid #FFEDD5;
+}
+
+.admindash-rank-pill.plain {
+  color: #94A3B8;
+  font-weight: 600;
 }
 
 .admindash-metric-label {

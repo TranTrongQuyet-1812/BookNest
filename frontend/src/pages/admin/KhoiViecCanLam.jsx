@@ -9,46 +9,15 @@ import {
   Package,
   Clock,
   Sparkles,
-  ShoppingBag,
-  CheckCircle2
+  ShoppingBag
 } from 'lucide-react';
 
-const mauSacStyle = {
-  warning: {
-    bg: '#FFFBEB',
-    border: '#FDE68A',
-    text: '#B45309',
-    badgeBg: '#FEF3C7',
-    icon: Clock
-  },
-  danger: {
-    bg: '#FEF2F2',
-    border: '#FECACA',
-    text: '#B91C1C',
-    badgeBg: '#FEE2E2',
-    icon: AlertCircle
-  },
-  primary: {
-    bg: '#EFF6FF',
-    border: '#BFDBFE',
-    text: '#1D4ED8',
-    badgeBg: '#DBEAFE',
-    icon: Package
-  },
-  success: {
-    bg: '#F0FDF4',
-    border: '#BBF7D0',
-    text: '#15803D',
-    badgeBg: '#DCFCE7',
-    icon: CheckCircle2
-  },
-  info: {
-    bg: '#F0F9FF',
-    border: '#BAE6FD',
-    text: '#0369A1',
-    badgeBg: '#E0F2FE',
-    icon: Sparkles
-  }
+const iconTheoLoai = {
+  warning: Clock,
+  danger: AlertCircle,
+  primary: Package,
+  success: ClipboardCheck,
+  info: Sparkles
 };
 
 export const KhoiViecCanLam = ({ className = '' }) => {
@@ -91,21 +60,21 @@ export const KhoiViecCanLam = ({ className = '' }) => {
 
   if (dangTai && !duLieuSummary) {
     return (
-      <div className={`card mb-6 ${className}`} style={{ padding: '1rem 1.25rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--adm-text-muted)', fontSize: '0.85rem' }}>
+      <div className={`card mb-6 ${className}`} style={{ padding: '1.25rem 1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', color: 'var(--adm-text-muted)', fontSize: '0.85rem' }}>
           <RotateCw size={15} className="animate-spin" />
-          <span>Đang kiểm tra đầu việc cần xử lý...</span>
+          <span>Đang đồng bộ danh mục nhiệm vụ vận hành...</span>
         </div>
       </div>
     );
   }
 
   if (loi && !duLieuSummary) {
-    return null; // Không chặn giao diện nếu lỗi mạng
+    return null;
   }
 
   const danhSach = duLieuSummary?.dieuHuongNhanh || [];
-  const thongDiep = duLieuSummary?.thongDiep || 'Danh sách công việc cần xử lý';
+  const thongDiep = duLieuSummary?.thongDiep || 'Danh sách công việc đang chờ giải quyết';
   const tongSoViec = danhSach.reduce((acc, cur) => acc + (cur.soLuong || 0), 0);
 
   return (
@@ -113,90 +82,80 @@ export const KhoiViecCanLam = ({ className = '' }) => {
       className={`card mb-6 ${className}`}
       style={{
         padding: '1.25rem 1.5rem',
-        borderLeft: '4px solid var(--adm-primary, #2563EB)',
-        backgroundColor: 'var(--adm-card-bg, #FFFFFF)',
+        backgroundColor: '#FFFFFF',
         borderRadius: '12px',
-        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 14px -2px rgba(15, 23, 42, 0.03)'
+        border: '1px solid var(--adm-border, #E2E8F0)',
+        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
       }}
     >
-      {/* Tiêu đề & Nút làm mới */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          <div style={{
-            width: '34px',
-            height: '34px',
-            borderRadius: '10px',
-            backgroundColor: '#EFF6FF',
-            color: 'var(--adm-primary, #2563EB)',
-            border: '1px solid #DBEAFE',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0
-          }}>
-            <ClipboardCheck size={18} />
+      {/* Header tinh gọn theo phong cách Operational Command */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.15rem' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+            <h2 style={{ fontSize: '0.98rem', fontWeight: 700, margin: 0, color: '#0F172A', letterSpacing: '-0.015em' }}>
+              Nhiệm Vụ Vận Hành Cần Xử Lý
+            </h2>
+            {tongSoViec > 0 ? (
+              <span style={{
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                padding: '0.15rem 0.55rem',
+                borderRadius: '6px',
+                backgroundColor: '#FEF2F2',
+                color: '#DC2626',
+                border: '1px solid #FECACA'
+              }}>
+                {tongSoViec} đầu việc tồn
+              </span>
+            ) : (
+              <span style={{
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                padding: '0.15rem 0.55rem',
+                borderRadius: '6px',
+                backgroundColor: '#F0FDF4',
+                color: '#16A34A',
+                border: '1px solid #BBF7D0'
+              }}>
+                Đã xử lý xong
+              </span>
+            )}
           </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <h2 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--adm-text-main, #0F172A)', letterSpacing: '-0.02em' }}>
-                Việc Cần Làm
-              </h2>
-              {tongSoViec > 0 ? (
-                <span style={{
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  padding: '0.15rem 0.6rem',
-                  borderRadius: '999px',
-                  backgroundColor: '#FEF2F2',
-                  color: '#DC2626',
-                  border: '1px solid #FECACA'
-                }}>
-                  {tongSoViec} đầu việc tồn
-                </span>
-              ) : (
-                <span style={{
-                  fontSize: '0.72rem',
-                  fontWeight: 600,
-                  padding: '0.15rem 0.6rem',
-                  borderRadius: '999px',
-                  backgroundColor: '#F0FDF4',
-                  color: '#16A34A',
-                  border: '1px solid #BBF7D0'
-                }}>
-                  Đã hoàn tất
-                </span>
-              )}
-            </div>
-            <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: 'var(--adm-text-muted, #64748B)' }}>
-              {thongDiep}
-            </p>
-          </div>
+          <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: '#64748B' }}>
+            {thongDiep}
+          </p>
         </div>
 
         <button
           type="button"
           onClick={handleLamMoi}
           disabled={dangTai}
-          title="Làm mới số liệu việc cần làm"
-          className="btn btn-outline"
+          title="Đồng bộ lại đầu việc"
           style={{
-            fontSize: '0.775rem',
-            padding: '0.35rem 0.75rem',
-            borderRadius: '8px',
+            background: 'transparent',
+            border: 'none',
+            color: '#64748B',
+            cursor: 'pointer',
+            padding: '4px 8px',
+            borderRadius: '6px',
+            fontSize: '0.75rem',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '0.4rem'
+            gap: '0.35rem',
+            transition: 'color 0.15s ease'
           }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#0F172A'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#64748B'}
         >
-          <RotateCw size={13} className={dangTai ? 'animate-spin' : ''} />
-          <span>Làm mới</span>
+          <RotateCw size={12} className={dangTai ? 'animate-spin' : ''} />
+          <span>Đồng bộ</span>
         </button>
       </div>
 
-      {/* Lưới các thẻ điều hướng việc cần làm */}
+      {/* Lưới 4 thẻ nhiệm vụ tinh xảo, nền trắng hairline, không ô màu thô */}
       {danhSach.length === 0 ? (
         <div style={{ padding: '0.75rem', color: 'var(--adm-text-muted)', fontSize: '0.85rem' }}>
-          Không có đầu việc nào cần xử lý.
+          Tất cả nhiệm vụ đã được xử lý xong.
         </div>
       ) : (
         <div style={{
@@ -205,8 +164,7 @@ export const KhoiViecCanLam = ({ className = '' }) => {
           gap: '0.85rem'
         }}>
           {danhSach.map((item, idx) => {
-            const configMau = mauSacStyle[item.mauSac] || mauSacStyle.primary;
-            const IconComponent = configMau.icon || ShoppingBag;
+            const IconComponent = iconTheoLoai[item.mauSac] || ShoppingBag;
             const coViec = Number(item.soLuong) > 0;
 
             return (
@@ -223,64 +181,83 @@ export const KhoiViecCanLam = ({ className = '' }) => {
                   }
                 }}
                 style={{
-                  padding: '0.9rem 1.05rem',
+                  padding: '1rem 1.15rem',
                   borderRadius: '10px',
-                  backgroundColor: configMau.bg,
-                  border: `1px solid ${configMau.border}`,
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E2E8F0',
                   cursor: item.duongDan ? 'pointer' : 'default',
-                  transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+                  transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, background-color 0.18s ease',
                   display: 'flex',
-                  alignItems: 'center',
+                  flexDirection: 'column',
                   justifyContent: 'space-between',
-                  gap: '0.65rem'
+                  gap: '0.75rem',
+                  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-2px)';
                   e.currentTarget.style.boxShadow = '0 6px 16px -2px rgba(15, 23, 42, 0.08)';
+                  e.currentTarget.style.borderColor = '#CBD5E1';
+                  e.currentTarget.style.backgroundColor = '#F8FAFC';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'none';
-                  e.currentTarget.style.boxShadow = 'none';
+                  e.currentTarget.style.boxShadow = '0 1px 2px rgba(15, 23, 42, 0.03)';
+                  e.currentTarget.style.borderColor = '#E2E8F0';
+                  e.currentTarget.style.backgroundColor = '#FFFFFF';
                 }}
               >
-                <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
                   <div style={{
-                    fontSize: '0.78rem',
+                    fontSize: '0.8rem',
                     fontWeight: 600,
-                    color: configMau.text,
+                    color: '#475569',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.35rem',
-                    marginBottom: '0.3rem'
+                    gap: '0.45rem'
                   }}>
-                    <IconComponent size={14} style={{ flexShrink: 0 }} />
+                    <IconComponent size={15} style={{ color: coViec ? (item.mauSac === 'danger' ? '#DC2626' : '#2563EB') : '#94A3B8', flexShrink: 0 }} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {item.tieuDe}
                     </span>
                   </div>
+
+                  {coViec && (
+                    <span style={{
+                      width: '7px',
+                      height: '7px',
+                      borderRadius: '50%',
+                      backgroundColor: item.mauSac === 'danger' ? '#EF4444' : '#3B82F6',
+                      flexShrink: 0
+                    }} />
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
                   <div style={{
-                    fontSize: '1.45rem',
+                    fontSize: '1.75rem',
                     fontWeight: 800,
                     lineHeight: 1,
-                    letterSpacing: '-0.02em',
+                    letterSpacing: '-0.03em',
                     fontVariantNumeric: 'tabular-nums',
-                    color: coViec ? configMau.text : 'var(--adm-text-muted, #64748B)'
+                    color: coViec ? '#0F172A' : '#94A3B8'
                   }}>
                     {item.soLuong ?? 0}
                   </div>
-                </div>
 
-                {item.duongDan && (
-                  <div style={{
-                    color: configMau.text,
-                    opacity: 0.85,
-                    display: 'flex',
-                    alignItems: 'center',
-                    transition: 'transform 0.18s ease'
-                  }}>
-                    <ArrowRight size={16} />
-                  </div>
-                )}
+                  {item.duongDan && (
+                    <div style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                      color: '#2563EB',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.2rem'
+                    }}>
+                      <span>Xử lý</span>
+                      <ArrowRight size={13} />
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
