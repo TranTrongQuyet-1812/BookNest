@@ -199,11 +199,20 @@ export const NhapKho = () => {
               );
             })}
           </div>
-          {phanTrangSapHet?.tongSoTrang > 1 && <div className="flex items-center justify-end gap-2 mt-3">
-            <button className="btn btn-outline" disabled={trangSapHet <= 1} onClick={() => setTrangSapHet(page => page - 1)}>Trước</button>
-            <small style={{ color: 'var(--adm-text-muted)' }}>Trang {trangSapHet}/{phanTrangSapHet.tongSoTrang}</small>
-            <button className="btn btn-outline" disabled={trangSapHet >= phanTrangSapHet.tongSoTrang} onClick={() => setTrangSapHet(page => page + 1)}>Sau</button>
-          </div>}
+          {phanTrangSapHet && phanTrangSapHet.tongSoBanGhi > 0 && (
+            <div className="flex items-center justify-between flex-wrap gap-2 mt-3 pt-2" style={{ borderTop: '1px solid var(--adm-card-border, #E5E7EB)' }}>
+              <small style={{ color: 'var(--adm-text-muted)', fontSize: '0.8rem' }}>
+                Hiển thị <strong>{(trangSapHet - 1) * (phanTrangSapHet.soBanGhiMoiTrang || 20) + 1}–{Math.min(trangSapHet * (phanTrangSapHet.soBanGhiMoiTrang || 20), phanTrangSapHet.tongSoBanGhi)}</strong> / <strong>{phanTrangSapHet.tongSoBanGhi}</strong> tác phẩm
+              </small>
+              {phanTrangSapHet.tongSoTrang > 1 && (
+                <div className="flex items-center gap-2">
+                  <button className="btn btn-outline btn-sm" disabled={trangSapHet <= 1} onClick={() => setTrangSapHet(page => page - 1)}>Trước</button>
+                  <small style={{ color: 'var(--adm-text-muted)' }}>Trang {trangSapHet}/{phanTrangSapHet.tongSoTrang}</small>
+                  <button className="btn btn-outline btn-sm" disabled={trangSapHet >= phanTrangSapHet.tongSoTrang} onClick={() => setTrangSapHet(page => page + 1)}>Sau</button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

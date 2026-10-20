@@ -110,6 +110,7 @@ export default function LichSuThayDoi() {
   const [danhSach, setDanhSach] = useState([]);
   const [page, setPage] = useState(1);
   const [tongSoTrang, setTongSoTrang] = useState(1);
+  const [phanTrang, setPhanTrang] = useState(null);
   const [loaiDoiTuong, setLoaiDoiTuong] = useState('');
   const [dangTai, setDangTai] = useState(true);
   const [loi, setLoi] = useState('');
@@ -125,6 +126,7 @@ export default function LichSuThayDoi() {
       const res = await api.get('/admin/change-history', { params });
       setDanhSach(res.data.data.danhSach || []);
       setTongSoTrang(res.data.data.phanTrang?.tongSoTrang || 1);
+      setPhanTrang(res.data.data.phanTrang || null);
       setLoi('');
     } catch (err) { setLoi(loiTuApi(err, 'Không tải được lịch sử.')); }
     finally { setDangTai(false); }
@@ -179,7 +181,7 @@ export default function LichSuThayDoi() {
         <div className="bo-panel-title">
           <div>
             <h2><History size={18}/> Gần đây</h2>
-            <p>{danhSach.length} mục ở trang {page}/{tongSoTrang}</p>
+            <p>{phanTrang?.tongSoBanGhi ? `Hiển thị ${(page - 1) * 30 + 1}–${Math.min(page * 30, phanTrang.tongSoBanGhi)} / ${phanTrang.tongSoBanGhi} mục` : `${danhSach.length} mục ở trang ${page}/${tongSoTrang}`}</p>
           </div>
           <div className="history-filter-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <label htmlFor="bo-filter-loai-doi-tuong" style={{ fontSize: '0.85rem', color: 'var(--bo-text-muted)' }}>
@@ -217,7 +219,11 @@ export default function LichSuThayDoi() {
           {danhSach.map(item => <tr key={item.MaLichSuThayDoi}><td>{new Date(item.NgayThayDoi).toLocaleString('vi-VN')}</td><td>{tenDoiTuong[item.LoaiDoiTuong] || item.LoaiDoiTuong} {item.LoaiDoiTuong !== 'CAU_HINH' && <small>#{item.MaDoiTuong}</small>}</td><td>{nguoiDungTruong[item.TruongDuLieu] || item.TruongDuLieu}</td><td><span className="history-old">{hienGiaTri(item, item.GiaTriCu)}</span><span className="history-arrow">→</span><strong>{hienGiaTri(item, item.GiaTriMoi)}</strong></td><td>{item.nhanVienThayDoi?.HoTen || 'Nhân viên không còn hoạt động'}</td></tr>)}
           {!danhSach.length && <tr><td colSpan="5" className="bo-empty">Chưa có thay đổi nào được ghi nhận.</td></tr>}
         </tbody></table></div>}
-        <div className="history-pagination"><button className="bo-secondary-button" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Trước</button><span>Trang {page} / {tongSoTrang}</span><button className="bo-secondary-button" disabled={page >= tongSoTrang} onClick={() => setPage(p => p + 1)}>Sau</button></div>
+        <div className="history-pagination">
+          <button className="bo-secondary-button" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Trước</button>
+          <span>{phanTrang?.tongSoBanGhi ? `Hiển thị ${(page - 1) * 30 + 1}–${Math.min(page * 30, phanTrang.tongSoBanGhi)} / ${phanTrang.tongSoBanGhi} · ` : ''}Trang {page} / {tongSoTrang}</span>
+          <button className="bo-secondary-button" disabled={page >= tongSoTrang} onClick={() => setPage(p => p + 1)}>Sau</button>
+        </div>
       </section>
     </div>
   );

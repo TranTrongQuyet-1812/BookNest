@@ -18,26 +18,32 @@ import { ThongBaoTaiCho, loiTuApi } from '@booknest/shared/thongbao';
 export default function DonCanSoan() {
 
   const [dangTai, setDangTai] = useState(true);
+  const [trang, setTrang] = useState(1);
+  const [gioiHan, setGioiHan] = useState(10);
   const [duLieu, setDuLieu] = useState({
     tongSoDonCanSoan: 0,
     tongSoCuonSachCanSoan: 0,
     danhSachDonHang: [],
-    tongHopSachCanSoan: []
+    tongHopSachCanSoan: [],
+    phanTrang: null
   });
   const [loi, setLoi] = useState('');
   const [cheDoXem, setCheDoXem] = useState('gom_sach'); // 'gom_sach' | 'theo_don'
   const [sachDaNhat, setSachDaNhat] = useState({}); // { [maSach]: true }
 
-  const napDuLieu = async () => {
+  const napDuLieu = async (trangMoi = trang, limitMoi = gioiHan) => {
     setDangTai(true);
     setLoi('');
     try {
-      const res = await api.get('/admin/pick-list');
+      const res = await api.get('/admin/pick-list', {
+        params: { page: trangMoi, limit: limitMoi }
+      });
       setDuLieu(res.data.data || {
         tongSoDonCanSoan: 0,
         tongSoCuonSachCanSoan: 0,
         danhSachDonHang: [],
-        tongHopSachCanSoan: []
+        tongHopSachCanSoan: [],
+        phanTrang: null
       });
     } catch (err) {
       setLoi(loiTuApi(err, 'Không thể tải danh sách đơn cần soạn'));
@@ -47,8 +53,8 @@ export default function DonCanSoan() {
   };
 
   useEffect(() => {
-    napDuLieu();
-  }, []);
+    napDuLieu(trang, gioiHan);
+  }, [trang, gioiHan]);
 
   const toggleNhatSach = (maSach) => {
     setSachDaNhat((prev) => ({
@@ -347,6 +353,74 @@ export default function DonCanSoan() {
               </div>
             </div>
           ))}
+
+          {/* Phân trang danh sách đơn cần soạn (T56) */}
+          {duLieu.phanTrang && (
+            <div 
+              className="card"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '0.75rem',
+                padding: '0.75rem 1.25rem',
+                marginTop: '0.5rem'
+              }}
+            >
+              <div style={{ fontSize: '0.85rem', color: 'var(--adm-text-muted)' }}>
+                Hiển thị <strong>{duLieu.danhSachDonHang.length > 0 ? (trang - 1) * gioiHan + 1 : 0}–{Math.min(trang * gioiHan, duLieu.tongSoDonCanSoan)}</strong> / <strong>{duLieu.tongSoDonCanSoan}</strong> đơn
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginRight: '0.5rem' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--adm-text-muted)' }}>Mỗi trang:</span>
+                  <select
+                    value={gioiHan}
+                    onChange={(e) => {
+                      setGioiHan(Number(e.target.value));
+                      setTrang(1);
+                    }}
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      fontSize: '0.8rem',
+                      borderRadius: '4px',
+                      border: '1px solid var(--adm-border)',
+                      backgroundColor: 'var(--adm-card-bg)',
+                      color: 'var(--adm-text-main)'
+                    }}
+                  >
+                    <option value={2}>2</option>
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                  </select>
+                </div>
+
+                <button
+                  className="btn btn-outline"
+                  disabled={trang <= 1 || dangTai}
+                  onClick={() => setTrang((p) => Math.max(1, p - 1))}
+                  style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+                >
+                  Trước
+                </button>
+
+                <span style={{ fontSize: '0.85rem', color: 'var(--adm-text-main)', fontWeight: 500 }}>
+                  Trang {trang} / {duLieu.phanTrang?.tongSoTrang || 1}
+                </span>
+
+                <button
+                  className="btn btn-outline"
+                  disabled={trang >= (duLieu.phanTrang?.tongSoTrang || 1) || dangTai}
+                  onClick={() => setTrang((p) => Math.min(duLieu.phanTrang?.tongSoTrang || 1, p + 1))}
+                  style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+                >
+                  Sau
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

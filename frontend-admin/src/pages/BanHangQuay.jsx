@@ -71,6 +71,9 @@ export default function BanHangQuay() {
   // Tab lịch sử bán
   const [lichSu, setLichSu] = useState([]);
   const [dangTaiLichSu, setDangTaiLichSu] = useState(false);
+  const [trangLichSu, setTrangLichSu] = useState(1);
+  const [gioiHanLichSu, setGioiHanLichSu] = useState(10);
+  const [phanTrangLichSu, setPhanTrangLichSu] = useState(null);
 
   // 1. Tải trạng thái công tắc QR từ cài đặt hệ thống
   useEffect(() => {
@@ -104,15 +107,18 @@ export default function BanHangQuay() {
     return () => clearTimeout(timer);
   }, [tuKhoa]);
 
-  // 3. Tải lịch sử đơn quầy
+  // 3. Tải lịch sử đơn quầy (T56: hỗ trợ phân trang)
   useEffect(() => {
     if (tab !== 'lich-su') return;
     setDangTaiLichSu(true);
-    api.get('/admin/counter-orders', { params: { page: 1, limit: 30 } })
-      .then(res => setLichSu(res.data.data.danhSach || []))
+    api.get('/admin/counter-orders', { params: { page: trangLichSu, limit: gioiHanLichSu } })
+      .then(res => {
+        setLichSu(res.data.data?.danhSach || []);
+        setPhanTrangLichSu(res.data.data?.phanTrang || null);
+      })
       .catch(err => setLoi(loiTuApi(err, 'Không tải được lịch sử bán hàng')))
       .finally(() => setDangTaiLichSu(false));
-  }, [tab, donVuaBan]);
+  }, [tab, donVuaBan, trangLichSu, gioiHanLichSu]);
 
   // 4. Sinh ảnh QR DataURL khi có đơn chờ thanh toán QR
   useEffect(() => {
@@ -720,6 +726,72 @@ export default function BanHangQuay() {
                 </tbody>
               </table>
             </div>
+
+            {/* Phân trang lịch sử đơn quầy (T56) */}
+            {phanTrangLichSu && phanTrangLichSu.tongSoBanGhi > 0 && (
+              <div 
+                className="history-pagination"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem',
+                  padding: '0.85rem 1.1rem',
+                  borderTop: '1px solid var(--bo-line, #E5E7EB)'
+                }}
+              >
+                <div style={{ color: 'var(--bo-muted)', fontSize: '0.82rem' }}>
+                  Hiển thị <strong>{(trangLichSu - 1) * gioiHanLichSu + 1}–{Math.min(trangLichSu * gioiHanLichSu, phanTrangLichSu.tongSoBanGhi)}</strong> / <strong>{phanTrangLichSu.tongSoBanGhi}</strong> hóa đơn
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginRight: '0.5rem' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--bo-muted)' }}>Mỗi trang:</span>
+                    <select
+                      value={gioiHanLichSu}
+                      onChange={(e) => {
+                        setGioiHanLichSu(Number(e.target.value));
+                        setTrangLichSu(1);
+                      }}
+                      style={{
+                        padding: '0.25rem 0.5rem',
+                        fontSize: '0.8rem',
+                        borderRadius: '4px',
+                        border: '1px solid var(--bo-line, #E5E7EB)',
+                        backgroundColor: '#FFFFFF',
+                        color: 'inherit'
+                      }}
+                    >
+                      <option value={2}>2</option>
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                    </select>
+                  </div>
+
+                  <button 
+                    className="bo-secondary-button" 
+                    disabled={trangLichSu <= 1 || dangTaiLichSu} 
+                    onClick={() => setTrangLichSu(p => Math.max(1, p - 1))}
+                  >
+                    Trước
+                  </button>
+
+                  <span style={{ fontSize: '0.82rem', color: 'var(--bo-text)' }}>
+                    Trang {trangLichSu} / {phanTrangLichSu.tongSoTrang || 1}
+                  </span>
+
+                  <button 
+                    className="bo-secondary-button" 
+                    disabled={trangLichSu >= (phanTrangLichSu.tongSoTrang || 1) || dangTaiLichSu} 
+                    onClick={() => setTrangLichSu(p => Math.min(phanTrangLichSu.tongSoTrang || 1, p + 1))}
+                  >
+                    Sau
+                  </button>
+                </div>
+              </div>
+            )}
           )}
         </section>
       )}
