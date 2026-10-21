@@ -16,10 +16,22 @@ async function timDonTheoMaTraCuu(chuoiMa, tuyChon = {}) {
   return DonHang.findOne({ where: { MaTraCuu: maTraCuu }, ...tuyChon });
 }
 
-// Khách đăng nhập chỉ được thao tác đơn của chính mình. Đơn khách vãng lai (MaKhachHang rỗng) không có chủ tài khoản,
-// quyền truy cập dựa vào việc biết mã tra cứu khó đoán
-function khongPhaiChuDon(user, donHang) {
-  return Boolean(user && user.role === 'khach_hang' && donHang.MaKhachHang && donHang.MaKhachHang !== user.id);
+// Đơn của khách có tài khoản: chỉ chủ đơn (đã đăng nhập) hoặc nhân viên được thao tác/xem thanh toán.
+// Đơn khách vãng lai và đơn bán quầy (MaKhachHang rỗng) không có chủ tài khoản, quyền truy cập dựa vào việc biết mã tra cứu khó đoán.
+function khongDuocThaoTacDon(user, donHang) {
+  if (!donHang.MaKhachHang) return false;
+  if (!user) return true;
+  if (user.aud === 'nhan_vien') return false;
+  return user.id !== donHang.MaKhachHang;
+}
+
+// Trả lỗi 401 (chưa đăng nhập) hoặc 403 (không phải chủ đơn) và báo đã phản hồi để hàm gọi dừng lại
+function chanNeuKhongDuocThaoTac(req, res, donHang) {
+  if (!khongDuocThaoTacDon(req.user, donHang)) return false;
+  phanHoiLoi(res, req.user
+    ? { thongDiep: 'Bạn không có quyền thao tác trên đơn hàng này (IDOR Guard)', maTrangThai: 403 }
+    : { thongDiep: 'Vui lòng đăng nhập để thao tác trên đơn hàng này', maTrangThai: 401 });
+  return true;
 }
 
 /**
@@ -57,12 +69,7 @@ async function taoQrThanhToan(req, res, next) {
       });
     }
 
-    if (khongPhaiChuDon(req.user, donHang)) {
-      return phanHoiLoi(res, {
-        thongDiep: 'Bạn không có quyền thao tác trên đơn hàng này (IDOR Guard)',
-        maTrangThai: 403
-      });
-    }
+    if (chanNeuKhongDuocThaoTac(req, res, donHang)) return;
 
     const danhSachMon = (donHang.chiTietDonHang || []).map(ct => ({
       tenSach: ct.sach?.TenSach || `Sách #${ct.MaSach}`,
@@ -89,9 +96,7 @@ async function doiSangCOD(req, res, next) {
     if (!donHang) {
       return phanHoiLoi(res, { thongDiep: 'Không tìm thấy thông tin đơn hàng', maTrangThai: 404 });
     }
-    if (khongPhaiChuDon(req.user, donHang)) {
-      return phanHoiLoi(res, { thongDiep: 'Bạn không có quyền thao tác trên đơn hàng này (IDOR Guard)', maTrangThai: 403 });
-    }
+    if (chanNeuKhongDuocThaoTac(req, res, donHang)) return;
 
     const ketQua = await hetHanThanhToanService.doiSangCOD(donHang);
     return phanHoiThanhCong(res, { duLieu: ketQua, thongDiep: 'Đã đổi sang thanh toán khi nhận hàng (COD)' });
@@ -128,6 +133,8 @@ async function layTrangThaiThanhToan(req, res, next) {
         maTrangThai: 404
       });
     }
+    if (chanNeuKhongDuocThaoTac(req, res, donHang)) return;
+
     const ketQua = await payosService.layThongTinThanhToanTheoDon(donHang);
     return phanHoiThanhCong(res, {
       duLieu: ketQua,

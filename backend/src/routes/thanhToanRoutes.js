@@ -4,8 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const thanhToanController = require('../controllers/thanhToanController');
-const jwt = require('jsonwebtoken');
-const cauHinh = require('../config/cauHinh');
+const { xacThucTuyChon } = require('../middlewares/xacThucToken');
 const { chanTaoLink } = require('../middlewares/kiemTraCongTacQR');
 const {
   gioiHanDoMaDon,
@@ -14,20 +13,8 @@ const {
   gioiHanWebhook
 } = require('../middlewares/gioiHanTanSuat');
 
-// Middleware xác thực tùy chọn (cho phép cả khách vãng lai và thành viên)
-function xacThucTuyChon(req, res, next) {
-  const chuoiHeader = req.headers.authorization;
-  if (chuoiHeader && chuoiHeader.startsWith('Bearer ')) {
-    const token = chuoiHeader.split(' ')[1];
-    try {
-      const duLieu = jwt.verify(token, cauHinh.jwt.biMat);
-      req.user = duLieu;
-    } catch (e) {
-      console.warn('[Xác Thực Tùy Chọn] Bỏ qua token không hợp lệ:', e.message);
-    }
-  }
-  next();
-}
+// Xác thực tùy chọn dùng chung (cho phép cả khách vãng lai và thành viên): token được đối chiếu với CSDL,
+// tài khoản bị khóa hoặc đã đổi mật khẩu thì coi như chưa đăng nhập. Trước đây route này tự giải mã token và tin thẳng nội dung.
 
 // Kiểm tra xem cổng thanh toán QR có đang khả dụng không
 router.get('/status-check', thanhToanController.kiemTraKhaDung);
@@ -44,6 +31,6 @@ router.post('/payos-webhook', gioiHanWebhook, thanhToanController.xuLyWebhook);
 router.post('/webhook', gioiHanWebhook, thanhToanController.xuLyWebhook);
 
 // Tra cứu thông tin và trạng thái thanh toán của một đơn hàng
-router.get('/order/:maTraCuu', gioiHanDoMaDon, gioiHanTraTrangThaiThanhToan, thanhToanController.layTrangThaiThanhToan);
+router.get('/order/:maTraCuu', gioiHanDoMaDon, gioiHanTraTrangThaiThanhToan, xacThucTuyChon, thanhToanController.layTrangThaiThanhToan);
 
 module.exports = router;
