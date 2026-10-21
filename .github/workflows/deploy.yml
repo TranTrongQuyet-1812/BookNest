@@ -17,6 +17,9 @@ jobs:
     runs-on: [self-hosted, linux, booknest]
     timeout-minutes: 20
     steps:
-      # Toàn bộ các bước (lấy mã, cài gói, lint, build, chép vào nginx, nạp lại backend) nằm trong deploy.sh trên máy chủ
+      - name: Lấy mã nguồn
+        uses: actions/checkout@v4
+
+      # Cài gói, lint, build hai giao diện, chép vào nginx và nạp lại backend nằm trong deploy.sh trên máy chủ
       - name: Chạy script triển khai
         run: bash /home/ubuntu/deploy.sh
