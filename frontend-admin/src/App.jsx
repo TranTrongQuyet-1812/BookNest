@@ -17,6 +17,9 @@ import QuanLyGiamGia from '../../frontend/src/pages/admin/QuanLyGiamGia.jsx';
 import HoSoNhanVien from './pages/HoSoNhanVien.jsx';
 import DonCanSoan from './pages/DonCanSoan.jsx';
 
+// Swagger UI khá nặng nên chỉ tải khi quản trị viên mở trang Tài liệu API
+const TaiLieuApi = React.lazy(() => import('./pages/TaiLieuApi.jsx'));
+
 function BaoVeNhanVien({ children, vaiTro }) {
   const { user, daDangNhap, loading } = useAuth();
   const location = useLocation();
@@ -60,6 +63,7 @@ export default function App() {
           <Route path="reviews" element={<BaoVeNhanVien vaiTro={['quan_tri', 'thu_thu']}><QuanLyDanhGia /></BaoVeNhanVien>} />
           <Route path="counter-sales" element={<BaoVeNhanVien vaiTro={['quan_tri', 'thu_thu']}><BanHangQuay /></BaoVeNhanVien>} />
           <Route path="change-history" element={<BaoVeNhanVien vaiTro={['quan_tri']}><LichSuThayDoi /></BaoVeNhanVien>} />
+          <Route path="api-docs" element={<BaoVeNhanVien vaiTro={['quan_tri']}><React.Suspense fallback={null}><TaiLieuApi /></React.Suspense></BaoVeNhanVien>} />
           <Route path="settings" element={<BaoVeNhanVien vaiTro={['quan_tri']}><CaiDatHeThong /></BaoVeNhanVien>} />
           <Route path="users" element={<BaoVeNhanVien vaiTro={['quan_tri', 'thu_thu']}><QuanLyNhanSu /></BaoVeNhanVien>} />
           <Route path="profile" element={<BaoVeNhanVien vaiTro={['quan_tri', 'thu_kho', 'thu_thu']}><HoSoNhanVien /></BaoVeNhanVien>} />

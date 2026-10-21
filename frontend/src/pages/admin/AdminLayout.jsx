@@ -18,7 +18,8 @@ import {
   Percent,
   ClipboardCheck,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  FileCode2
 } from 'lucide-react';
 
 // Một mục trên thanh bên: icon chỉ để nhận diện nhanh mục điều hướng, nhãn luôn hiện trừ khi thu gọn
@@ -123,6 +124,7 @@ export const AdminLayout = () => {
     if (p.includes('/admin/counter-sales')) return 'Bán hàng tại quầy';
     if (p.includes('/admin/change-history')) return 'Lịch sử thay đổi';
     if (p.includes('/admin/settings')) return 'Cài đặt hệ thống';
+    if (p.includes('/admin/api-docs')) return 'Tài liệu API (Swagger)';
     if (p.includes('/admin/users')) return 'Nhân sự và khách hàng';
     if (p.includes('/admin/profile')) return 'Hồ sơ và đổi mật khẩu';
     if (p.includes('/admin/pick-list')) return 'Đơn cần soạn';
@@ -208,6 +210,7 @@ export const AdminLayout = () => {
                 <MucDieuHuong to="/admin/users" nhan="Nhân sự và khách hàng" Icon={Users} />
                 <MucDieuHuong to="/admin/change-history" nhan="Lịch sử thay đổi" Icon={History} />
                 <MucDieuHuong to="/admin/settings" nhan="Cài đặt hệ thống" Icon={Settings} />
+                <MucDieuHuong to="/admin/api-docs" nhan="Tài liệu API (Swagger)" Icon={FileCode2} />
               </div>
             )}
           </nav>
