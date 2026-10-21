@@ -207,7 +207,8 @@ async function taoThanhToanQRTrongGiaoDich(donHang, danhSachMon, transaction) {
 // Tiền đã về nhưng khoản thanh toán không còn chờ (đã hết hạn hoặc bị hủy): giữ nguyên đơn đã hủy,
 // đánh dấu CAN_HOAN_TIEN để nhân viên hoàn tiền cho khách, tuyệt đối không bỏ sót khoản tiền này.
 // ĐẶC BIỆT: Nếu khoản đã là CAN_HOAN_TIEN hoặc DA_HOAN_TIEN thì không mở lại hoặc cập nhật đè (Idempotent).
-async function ghiNhanTienVeMuon(thanhToan, orderCode, noiDungTho) {
+async function ghiNhanTienVeMuon(thanhToan, orderCode, noiDungTho, tuyChon = {}) {
+  const { ketQuaNhatKy = 'DA_XU_LY', lyDo = 'Tiền về sau khi đơn đã hủy' } = tuyChon;
   if (['CAN_HOAN_TIEN', 'DA_HOAN_TIEN'].includes(thanhToan.TrangThai)) {
     await NhatKyWebhookPayos.create({
       MaGiaoDichPayos: orderCode,
@@ -226,7 +227,7 @@ async function ghiNhanTienVeMuon(thanhToan, orderCode, noiDungTho) {
     MaGiaoDichPayos: orderCode,
     NoiDungTho: noiDungTho,
     ChuKyHopLe: true,
-    KetQuaXuLy: 'DA_XU_LY'
+    KetQuaXuLy: ketQuaNhatKy
   });
   console.warn(`[payOS] Tiền về cho khoản thanh toán ${thanhToan.MaThanhToan} đã hết hạn hoặc bị hủy (mã GD ${orderCode}), cần hoàn tiền`);
   try {
@@ -237,7 +238,7 @@ async function ghiNhanTienVeMuon(thanhToan, orderCode, noiDungTho) {
       maDonHang: thanhToan.MaDonHang,
       maTraCuu: donHangLienKet?.MaTraCuu,
       soTien: thanhToan.SoTien,
-      lyDo: 'Tiền về sau khi đơn đã hủy',
+      lyDo,
       thoiGian: new Date().toISOString()
     };
     phatSuKien('thanhToan:canHoanTien', duLieuSocket, 'nhan_vien');
@@ -334,11 +335,11 @@ async function xuLyWebhookPayOS(webhookBody) {
   // 4. Đối soát số tiền
   const soTienDoiChieu = Math.round(Number(thanhToan.SoTien));
   if (soTienDoiChieu !== Number(amount)) {
-    await NhatKyWebhookPayos.create({
-      MaGiaoDichPayos: orderCode,
-      NoiDungTho: noiDungTho,
-      ChuKyHopLe: true,
-      KetQuaXuLy: 'SAI_SO_TIEN'
+    // Chữ ký hợp lệ nghĩa là tiền ĐÃ về nhưng sai số: không coi là đã trả đơn, đánh dấu cần hoàn tiền để nhân viên đối soát
+    // (trước đây chỉ ghi nhật ký nên khoản tiền này dễ bị bỏ sót)
+    await ghiNhanTienVeMuon(thanhToan, orderCode, noiDungTho, {
+      ketQuaNhatKy: 'SAI_SO_TIEN',
+      lyDo: `Số tiền chuyển (${amount}) không khớp đơn hàng (${soTienDoiChieu})`
     });
     throw new Error(`Số tiền thanh toán (${amount}) không khớp với đơn hàng (${soTienDoiChieu})`);
   }
