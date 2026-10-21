@@ -34,6 +34,8 @@ export const ThanhToan = () => {
   // Đơn QR đã đặt nhưng tạo mã thanh toán lỗi: { maTraCuu, lyDo }
   const [donLoiQr, setDonLoiQr] = useState(null);
   const [dangThuLaiQr, setDangThuLaiQr] = useState(false);
+  // Khách vãng lai đóng khung QR khi chưa trả tiền: đơn vẫn chờ thanh toán, không được báo "đặt hàng thành công"
+  const [donChoThanhToan, setDonChoThanhToan] = useState(null);
 
   // Phương thức thanh toán: COD hoặc CHUYEN_KHOAN_QR
   const [phuongThucThanhToan, setPhuongThucThanhToan] = useState('COD');
@@ -152,6 +154,7 @@ export const ThanhToan = () => {
     try {
       const resQr = await api.post(`/payments/create-qr/${maTraCuu}`);
       setDonLoiQr(null);
+      setDonChoThanhToan(null);
       setDuLieuQR(resQr.data.data);
       setHienModalQR(true);
     } catch (errQr) {
@@ -167,6 +170,13 @@ export const ThanhToan = () => {
     setDangThuLaiQr(false);
   };
 
+  // Khách vãng lai mở lại khung QR của đơn đang chờ (máy chủ trả lại đúng mã cũ nếu chưa hết hạn)
+  const handleMoLaiQr = async () => {
+    setDangThuLaiQr(true);
+    await taoQrChoDon(donChoThanhToan.MaTraCuu);
+    setDangThuLaiQr(false);
+  };
+
   // Đổi đơn đang chờ chuyển khoản sang COD (báo máy chủ đổi thật, không thì đơn vẫn chờ QR và bị hủy khi hết hạn)
   const doiSangCOD = async (maTraCuu) => {
     try {
@@ -177,6 +187,7 @@ export const ThanhToan = () => {
     }
     setHienModalQR(false);
     setDonLoiQr(null);
+    setDonChoThanhToan(null);
     tb.thanhCong(`Đơn hàng ${maTraCuu} của bạn đã chuyển sang hình thức thanh toán khi nhận hàng (COD)!`);
     if (daDangNhap) {
       chuyenToiDonHang(maTraCuu);
@@ -373,6 +384,48 @@ export const ThanhToan = () => {
               type="button"
               disabled={dangThuLaiQr}
               onClick={() => doiSangCOD(donLoiQr.maTraCuu)}
+              className="btn btn-outline"
+              style={{ padding: '0.7rem 1.5rem', borderRadius: '6px' }}
+            >
+              Đổi sang thanh toán khi nhận hàng
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Khách vãng lai đã đóng khung QR mà chưa trả tiền: đơn được giữ 15 phút rồi tự hủy, báo rõ để khách không tưởng đã xong
+  if (donChoThanhToan) {
+    return (
+      <div className="container py-16 text-center">
+        <div className="card" style={{ maxWidth: '560px', margin: '0 auto', padding: '2.5rem 2rem', borderRadius: '12px' }}>
+          <AlertCircle size={48} style={{ color: 'var(--warning, #d98a00)', marginBottom: '1rem' }} />
+          <h2 className="font-serif" style={{ fontSize: '1.45rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+            Đơn đã ghi nhận, chưa thanh toán
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.75rem', lineHeight: 1.6 }}>
+            Mã đơn của bạn là <strong>{donChoThanhToan.MaTraCuu}</strong>, hãy ghi lại. Đơn đang chờ chuyển khoản
+            {' '}({dinhDangTien(donChoThanhToan.TongTien)}).
+          </p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.75rem', lineHeight: 1.6 }}>
+            Hãy hoàn tất chuyển khoản trong 15 phút kể từ lúc đặt. Quá hạn mà chưa thanh toán, đơn sẽ tự hủy và sách được trả lại kho.
+            Bạn cũng có thể đổi sang thanh toán khi nhận hàng.
+          </p>
+          <div className="flex gap-3" style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              disabled={dangThuLaiQr}
+              onClick={handleMoLaiQr}
+              className="btn btn-primary"
+              style={{ padding: '0.7rem 1.5rem', borderRadius: '6px' }}
+            >
+              {dangThuLaiQr ? 'Đang mở mã...' : 'Mở lại mã QR'}
+            </button>
+            <button
+              type="button"
+              disabled={dangThuLaiQr}
+              onClick={() => doiSangCOD(donChoThanhToan.MaTraCuu)}
               className="btn btn-outline"
               style={{ padding: '0.7rem 1.5rem', borderRadius: '6px' }}
             >
@@ -960,7 +1013,8 @@ export const ThanhToan = () => {
             if (daDangNhap) {
               chuyenToiDonHang(duLieuQR.maTraCuu);
             } else if (donVangLaiTam) {
-              setDonVuaDat(donVangLaiTam);
+              // Chưa thanh toán: báo đúng tình trạng, không hiện "Đặt hàng thành công"
+              setDonChoThanhToan(donVangLaiTam);
             }
           }}
           onDongHetHan={() => {
