@@ -126,7 +126,7 @@ export default function BanHangQuay() {
       .catch(() => setQrDataUrl(''));
   }, [donDangChoQR]);
 
-  // 5. Đếm ngược thời gian chờ thanh toán QR (5 phút)
+  // 5. Đếm ngược thời gian chờ thanh toán QR (15 phút, lấy hạn từ server)
   useEffect(() => {
     if (!donDangChoQR) return;
     const tinhGiay = () => {
@@ -134,7 +134,7 @@ export default function BanHangQuay() {
         const diff = Math.floor((new Date(donDangChoQR.thongTinQR.ngayHetHan).getTime() - Date.now()) / 1000);
         return Math.max(0, diff);
       }
-      return 300;
+      return 15 * 60;
     };
     setGiayConLai(tinhGiay());
 
@@ -631,7 +631,7 @@ export default function BanHangQuay() {
               )}
             </button>
             <small className="counter-footnote">
-              {phuongThuc === 'TIEN_MAT' ? 'Xác nhận sẽ trừ kho và hoàn tất giao hàng ngay.' : 'Xác nhận sẽ giữ kho trong 5 phút và hiển thị mã QR.'}
+              {phuongThuc === 'TIEN_MAT' ? 'Xác nhận sẽ trừ kho và hoàn tất giao hàng ngay.' : 'Xác nhận sẽ giữ kho trong 15 phút và hiển thị mã QR.'}
             </small>
           </section>
         </div>
@@ -800,7 +800,7 @@ export default function BanHangQuay() {
         </section>
       )}
 
-      {/* Modal Chờ Quét QR (Đếm ngược 5 phút, tự chuyển hóa đơn khi tiền về, hủy, hoặc thu tiền mặt) */}
+      {/* Modal Chờ Quét QR (Đếm ngược 15 phút, tự chuyển hóa đơn khi tiền về, hủy, hoặc thu tiền mặt) */}
       {donDangChoQR && (
         <div className="bo-modal-backdrop" role="presentation">
           <section className="bo-qr-modal" role="dialog" aria-modal="true" aria-label="Thanh toán chuyển khoản QR">
