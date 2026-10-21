@@ -16,6 +16,7 @@ const cauHinhHeThongController = require('../controllers/cauHinhHeThongControlle
 const aiChatbotController = require('../controllers/aiChatbotController');
 const danhGiaController = require('../controllers/danhGiaController');
 const thanhToanController = require('../controllers/thanhToanController');
+const taiLieuApiController = require('../controllers/taiLieuApiController');
 
 const taoKiemTraMaSo = require('../middlewares/kiemTraMaSo');
 
@@ -23,6 +24,25 @@ const router = express.Router();
 
 // Mã trên đường dẫn phải là số nguyên dương hợp lệ, sai thì 400 thay vì 500
 router.param('id', taoKiemTraMaSo(''));
+
+// Đặc tả OpenAPI cho trang "Tài liệu API" trong khu quản trị: chỉ quản trị viên (bản công khai /api-docs tắt khi production)
+/**
+ * @swagger
+ * /api/admin/api-docs.json:
+ *   get:
+ *     summary: Lấy đặc tả OpenAPI cho trang Tài liệu API trong khu quản trị (Chỉ Quản trị viên)
+ *     tags: [Quản trị (Admin)]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Đặc tả OpenAPI 3.0 dạng JSON
+ *       401:
+ *         description: Chưa đăng nhập
+ *       403:
+ *         description: Chỉ dành cho Quản trị viên
+ */
+router.get('/api-docs.json', xacThucToken, phanQuyen('quan_tri'), taiLieuApiController.layDacTaApi);
 
 // ==========================================
 // 1. Quản lý sách phía Back-Office (T10)

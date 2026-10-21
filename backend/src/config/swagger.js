@@ -9,7 +9,7 @@ const swaggerDefinition = {
   info: {
     title: 'BookNest API Documentation',
     version: '1.0.0',
-    description: 'Hệ thống Quản lý và Bán Sách Trực Tuyến BookNest - Kiến trúc SERN Core (SQL Server 2022 Express, Express.js, React, Node.js). Hệ thống phân tách 2 không gian Storefront & Back-Office với phân quyền RBAC 4 vai trò cốt lõi (Customer, Librarian, Order Staff, Admin) cùng khách vãng lai (Guest).'
+    description: 'Hệ thống Quản lý và Bán Sách Trực Tuyến BookNest - Kiến trúc SERN Core (SQL Server 2022 Express, Express.js, React, Node.js). Hệ thống phân tách 2 không gian Storefront & Back-Office; nhân sự có 3 vai trò (quan_tri, thu_kho, thu_thu), cùng khách hàng (khach_hang) và khách vãng lai (Guest).'
   },
   servers: [
     {
