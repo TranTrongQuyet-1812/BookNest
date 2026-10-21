@@ -160,11 +160,27 @@ function tinhKhoangCachLevenshtein(chuoiA, chuoiB) {
   return bang[chuoiA.length][chuoiB.length];
 }
 
+// Hai từ cùng độ dài chỉ khác nhau ở một cặp chữ liền kề bị đảo chỗ (hao ↔ hoa)
+function laDaoChoHaiChuLienNhau(tuA, tuB) {
+  if (tuA.length !== tuB.length) return false;
+  const viTriKhac = [];
+  for (let i = 0; i < tuA.length && viTriKhac.length <= 2; i++) {
+    if (tuA[i] !== tuB[i]) viTriKhac.push(i);
+  }
+  return viTriKhac.length === 2
+    && viTriKhac[1] === viTriKhac[0] + 1
+    && tuA[viTriKhac[0]] === tuB[viTriKhac[1]]
+    && tuA[viTriKhac[1]] === tuB[viTriKhac[0]];
+}
+
 function tinhDiemTokenGanDung(tokenTim, tokenSach) {
   if (tokenTim === tokenSach) return 1;
   // Khớp kiểu "chứa nhau" chỉ khi CẢ HAI từ từ 3 ký tự trở lên; nếu không, từ 1 ký tự trong tên sách (Z, A, 1...)
   // sẽ khớp mọi từ khóa có chứa ký tự đó và gõ bừa cũng ra hàng trăm gợi ý.
   if (tokenTim.length >= 3 && tokenSach.length >= 3 && (tokenSach.includes(tokenTim) || tokenTim.includes(tokenSach))) return 0.82;
+
+  // Từ 3 ký tự sai một chữ rất dễ thành từ khác (bao, bán, ban) nên chỉ bù lỗi đảo chỗ hai chữ liền nhau
+  if (tokenTim.length === 3 && tokenSach.length === 3) return laDaoChoHaiChuLienNhau(tokenTim, tokenSach) ? 0.62 : 0;
 
   const soKyTuSaiToiDa = tokenTim.length >= 8 && tokenSach.length >= 8 ? 2 : tokenTim.length >= 4 && tokenSach.length >= 4 ? 1 : 0;
   if (tokenTim.length > 64 || Math.abs(tokenTim.length - tokenSach.length) > soKyTuSaiToiDa) return 0;
