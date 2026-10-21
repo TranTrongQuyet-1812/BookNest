@@ -8,6 +8,7 @@ const Joi = require('joi');
 const rateLimit = require('express-rate-limit');
 const xacThucController = require('../controllers/xacThucController');
 const batLoiAsync = require('../middlewares/batLoiAsync');
+const { gioiHanDangKy } = require('../middlewares/gioiHanTanSuat');
 const kiemTraDuLieu = require('../middlewares/kiemTraDuLieu');
 
 const routerKhach = express.Router();
@@ -113,7 +114,7 @@ const luatDangNhap = Joi.object({
  *       409:
  *         description: Email đã được sử dụng
  */
-routerKhach.post('/register', kiemTraDuLieu(luatDangKy), batLoiAsync(xacThucController.xuLyDangKy));
+routerKhach.post('/register', gioiHanDangKy, kiemTraDuLieu(luatDangKy), batLoiAsync(xacThucController.xuLyDangKy));
 
 /**
  * @swagger

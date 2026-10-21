@@ -87,8 +87,10 @@ app.use('/api/payos', thanhToanRoutes);
 app.use('/api/chat', aiChatbotRoutes);
 app.use('/api/ai', aiChatbotRoutes);
 
-// Tuyến đường tài liệu Swagger UI (T19)
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Tuyến đường tài liệu Swagger UI (T19): tắt khi chạy production để không công khai danh sách API (xem cauHinh.batApiDocs)
+if (cauHinh.batApiDocs) {
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+}
 
 // Middleware bắt route không tồn tại (404)
 app.use(xuLy404);

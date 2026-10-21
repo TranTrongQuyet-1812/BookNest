@@ -82,6 +82,13 @@ const gioiHanChatbot = taoGioiHan({
   thongDiep: 'Bạn gửi câu hỏi quá nhanh. Vui lòng đợi ít phút trước khi trò chuyện tiếp cùng BookNest AI.'
 });
 
+// Đăng ký tài khoản: chống tạo tài khoản rác hàng loạt (mỗi lần gọi là một dòng KhachHang thật trong CSDL)
+const gioiHanDangKy = taoGioiHan({
+  cuaSoPhut: 60,
+  toiDa: 10,
+  thongDiep: 'Bạn tạo tài khoản quá nhiều lần trong một giờ. Vui lòng thử lại sau.'
+});
+
 module.exports = {
   taoGioiHan,
   gioiHanChung,
@@ -90,5 +97,6 @@ module.exports = {
   gioiHanTaoQr,
   gioiHanTraTrangThaiThanhToan,
   gioiHanWebhook,
-  gioiHanChatbot
+  gioiHanChatbot,
+  gioiHanDangKy
 };
