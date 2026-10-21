@@ -1,0 +1,22 @@
+# Triển khai tự động lên máy chủ AWS khi có commit mới vào master.
+# Chạy trên self-hosted runner đặt ngay trong máy chủ, nên không cần mở cổng SSH.
+# Chỉ chạy khi push vào master (không chạy khi có pull request) để người ngoài không thể bắt máy chủ chạy lệnh của họ.
+name: Deploy BookNest
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-booknest
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, booknest]
+    timeout-minutes: 20
+    steps:
+      # Toàn bộ các bước (lấy mã, cài gói, lint, build, chép vào nginx, nạp lại backend) nằm trong deploy.sh trên máy chủ
+      - name: Chạy script triển khai
+        run: bash /home/ubuntu/deploy.sh
