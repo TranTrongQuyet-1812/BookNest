@@ -70,6 +70,12 @@ async function taoThanhToanQR(donHang, danhSachMon = [], options = {}) {
     return ketQua;
   } catch (loi) {
     if (!transactionNgoai && !transaction.finished) await transaction.rollback();
+    // Hủy đơn hết hạn phải chạy SAU khi đã nhả khóa dòng đơn: huyDonQrHetHan mở transaction riêng và sửa chính dòng đó,
+    // nếu chạy khi còn giữ khóa thì hai bên chờ nhau đến hết thời gian chờ
+    if (loi.banGhiHetHan && !transactionNgoai) {
+      await hetHanThanhToanService.huyDonQrHetHan(loi.banGhiHetHan);
+      throw LoiNghiepVu.xungDot(hetHanThanhToanService.THONG_DIEP_QR_HET_HAN);
+    }
     throw loi;
   }
 }
@@ -107,8 +113,10 @@ async function taoThanhToanQRTrongGiaoDich(donHang, danhSachMon, transaction) {
     throw LoiNghiepVu.xungDot(`Đơn hàng đang ở trạng thái ${nhanTrangThai}, không thể tạo mã thanh toán QR`);
   }
   if (banGhiThanhToan?.TrangThai === 'HET_HAN' || hetHanThanhToanService.laQrHetHan(banGhiThanhToan)) {
-    await hetHanThanhToanService.huyDonQrHetHan(banGhiThanhToan);
-    throw LoiNghiepVu.xungDot(hetHanThanhToanService.THONG_DIEP_QR_HET_HAN);
+    // Chưa hủy ở đây (đang giữ khóa dòng đơn), taoThanhToanQR sẽ hủy sau khi nhả khóa
+    const loiHetHan = LoiNghiepVu.xungDot(hetHanThanhToanService.THONG_DIEP_QR_HET_HAN);
+    loiHetHan.banGhiHetHan = banGhiThanhToan;
+    throw loiHetHan;
   }
 
   // Nếu đã có link còn chờ thanh toán và chưa hết hạn, tái sử dụng đúng mã QR cũ (khách mở lại QR)
