@@ -162,7 +162,9 @@ function tinhKhoangCachLevenshtein(chuoiA, chuoiB) {
 
 function tinhDiemTokenGanDung(tokenTim, tokenSach) {
   if (tokenTim === tokenSach) return 1;
-  if (tokenTim.length >= 3 && (tokenSach.includes(tokenTim) || tokenTim.includes(tokenSach))) return 0.82;
+  // Khớp kiểu "chứa nhau" chỉ khi CẢ HAI từ từ 3 ký tự trở lên; nếu không, từ 1 ký tự trong tên sách (Z, A, 1...)
+  // sẽ khớp mọi từ khóa có chứa ký tự đó và gõ bừa cũng ra hàng trăm gợi ý.
+  if (tokenTim.length >= 3 && tokenSach.length >= 3 && (tokenSach.includes(tokenTim) || tokenTim.includes(tokenSach))) return 0.82;
 
   const soKyTuSaiToiDa = tokenTim.length >= 8 && tokenSach.length >= 8 ? 2 : tokenTim.length >= 4 && tokenSach.length >= 4 ? 1 : 0;
   if (tokenTim.length > 64 || Math.abs(tokenTim.length - tokenSach.length) > soKyTuSaiToiDa) return 0;

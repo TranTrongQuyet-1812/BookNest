@@ -8,6 +8,8 @@ const {
   chuaTuKhoa,
   chuaTuKhoaBoKhoangTrang,
   chuaTuKhoaLinhHoat,
+  thoatKyTuLike,
+  BANG_MA_TIM_KIEM,
   locTuKhoaThucSu,
   chamDiemTimGanDung
 } = require('../utils/timKiem');
@@ -85,6 +87,15 @@ async function layDanhSachSach({
   }
 
   let sapXep = [['NgayTao', 'DESC']];
+  // Đang tìm kiếm mà không chọn kiểu sắp xếp khác: sách có nguyên cụm từ khóa trong tên/tác giả lên trước,
+  // các kết quả chỉ khớp từng từ rời (dễ nhiễu) xuống sau
+  if (search && search.trim() && (!sort || sort === 'newest')) {
+    const mauLike = sequelize.escape(`%${thoatKyTuLike(search.trim())}%`);
+    const khopNguyenCum = ['[Sach].[TenSach]', '[Sach].[TacGia]']
+      .map((cot) => `${cot} COLLATE ${BANG_MA_TIM_KIEM} LIKE ${mauLike}`)
+      .join(' OR ');
+    sapXep = [[sequelize.literal(`CASE WHEN ${khopNguyenCum} THEN 0 ELSE 1 END`), 'ASC'], ['NgayTao', 'DESC']];
+  }
   if (sort === 'price_asc') sapXep = [[sequelize.literal(bieuThucGiaSauGiam), 'ASC']];
   if (sort === 'price_desc') sapXep = [[sequelize.literal(bieuThucGiaSauGiam), 'DESC']];
   if (sort === 'discount_desc') {

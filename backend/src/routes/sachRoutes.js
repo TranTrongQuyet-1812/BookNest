@@ -22,7 +22,7 @@ router.param('id', taoKiemTraMaSo('sách'));
 const luatTruyVanSach = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(50).default(10),
-  search: Joi.string().trim().allow(''),
+  search: Joi.string().trim().max(100).allow('').messages({ 'string.max': 'Từ khóa tìm kiếm tối đa 100 ký tự' }),
   categoryId: Joi.number().integer().positive(),
   minPrice: Joi.number().min(0),
   maxPrice: Joi.number().min(0),
@@ -312,7 +312,7 @@ router.get(
 
 // Schema truy vấn gợi ý tác giả (AT13)
 const luatTruyVanTacGia = Joi.object({
-  search: Joi.string().trim().allow(''),
+  search: Joi.string().trim().max(100).allow('').messages({ 'string.max': 'Từ khóa tìm kiếm tối đa 100 ký tự' }),
   limit: Joi.number().integer().min(1).max(50).default(20)
 });
 
@@ -354,7 +354,7 @@ router.get(
 
 // Schema truy vấn gợi ý tên bộ sách (AT06)
 const luatTruyVanSeries = Joi.object({
-  search: Joi.string().trim().allow(''),
+  search: Joi.string().trim().max(100).allow('').messages({ 'string.max': 'Từ khóa tìm kiếm tối đa 100 ký tự' }),
   limit: Joi.number().integer().min(1).max(50).default(20)
 });
 
