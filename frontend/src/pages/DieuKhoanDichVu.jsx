@@ -1,263 +1,121 @@
-import React, { useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { 
-  BookOpen, 
-  Truck, 
-  RotateCcw, 
-  CreditCard, 
-  CheckCircle2, 
-  ArrowLeft,
-  GraduationCap
+import React from 'react';
+import { Link } from 'react-router-dom';
+import {
+  BookOpen,
+  Truck,
+  CreditCard,
+  CheckCircle2,
+  GraduationCap,
+  Scale,
+  Library
 } from 'lucide-react';
+import {
+  ThanhDieuHuongPhapLy,
+  TieuDeTrangPhapLy,
+  KhungDuAnHocTap,
+  KhungLienHePhapLy,
+  MucPhapLy,
+  DoanVan,
+  DanhSachGach,
+  KhungTrangPhapLy,
+  NoiDungPhapLy
+} from '../components/phapLy';
+import { useCuonToiMucNeo } from '../components/phapLyDungChung';
+
+const maDonStyle = { backgroundColor: 'var(--bg-surface)', padding: '0.1rem 0.35rem', borderRadius: '4px' };
 
 export const DieuKhoanDichVu = () => {
-  const location = useLocation();
-
-  useEffect(() => {
-    // Cuộn lên đầu trang hoặc tới anchor khi vào trang
-    if (location.hash) {
-      const el = document.getElementById(location.hash.replace('#', ''));
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
-        return;
-      }
-    }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [location]);
+  useCuonToiMucNeo();
 
   return (
-    <div className="container py-10" style={{ maxWidth: '840px', margin: '0 auto' }}>
-      {/* Nút quay lại */}
-      <div className="mb-6">
-        <Link 
-          to="/"
-          className="inline-flex items-center gap-2 hover:underline"
-          style={{ 
-            color: 'var(--text-muted)', 
-            fontSize: '0.875rem',
-            textUnderlineOffset: '3px'
-          }}
-        >
-          <ArrowLeft size={16} /> Quay về Trang chủ
-        </Link>
-      </div>
+    <KhungTrangPhapLy>
+      <ThanhDieuHuongPhapLy dangMo="/dieu-khoan" />
 
-      {/* Thanh chuyển đổi nhanh giữa 2 trang chính sách */}
-      <div 
-        style={{
-          display: 'flex',
-          gap: '0.5rem',
-          padding: '0.35rem',
-          backgroundColor: 'var(--bg-surface)',
-          borderRadius: '12px',
-          border: '1px solid var(--border)',
-          marginBottom: '2.5rem'
-        }}
-      >
-        <Link
-          to="/dieu-khoan"
-          style={{
-            flex: 1,
-            textAlign: 'center',
-            padding: '0.65rem 1rem',
-            borderRadius: '9px',
-            fontSize: '0.9rem',
-            fontWeight: 600,
-            backgroundColor: 'var(--bg-card)',
-            color: 'var(--text-main)',
-            boxShadow: 'var(--shadow-sm)',
-            textDecoration: 'none'
-          }}
-        >
-          Điều Khoản Dịch Vụ
-        </Link>
-        <Link
-          to="/chinh-sach-bao-mat"
-          style={{
-            flex: 1,
-            textAlign: 'center',
-            padding: '0.65rem 1rem',
-            borderRadius: '9px',
-            fontSize: '0.9rem',
-            fontWeight: 500,
-            color: 'var(--text-muted)',
-            textDecoration: 'none',
-            transition: 'color 0.2s'
-          }}
-          className="hover:text-main"
-        >
-          Chính Sách Bảo Mật
-        </Link>
-      </div>
+      <TieuDeTrangPhapLy
+        tieuDe="Điều Khoản Sử Dụng"
+        moTa="Quy tắc sử dụng website BookNest, một đề tài học tập: bạn được làm gì, hệ thống vận hành ra sao và giới hạn trách nhiệm ở đâu."
+      />
 
-      {/* Header trang nhã */}
-      <header className="mb-10 text-center">
-        <h1 
-          className="font-serif mb-3" 
-          style={{ 
-            fontSize: '2.25rem', 
-            fontWeight: 700, 
-            color: 'var(--text-main)',
-            letterSpacing: '-0.02em',
-            lineHeight: 1.25
-          }}
-        >
-          Điều Khoản Dịch Vụ
-        </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: 1.7, maxWidth: '620px', margin: '0 auto' }}>
-          Quy tắc mua bán, giao nhận và cam kết vận hành minh bạch giữa Tiệm sách BookNest và Bạn đọc thân quý.
-        </p>
-        <div style={{ fontSize: '0.8rem', color: 'var(--text-sub)', marginTop: '0.75rem' }}>
-          Phiên bản công bố: Tháng 10/2026 • Áp dụng trên toàn hệ thống BookNest
-        </div>
-      </header>
+      <KhungDuAnHocTap style={{ marginBottom: '2.5rem' }} />
 
-      {/* Khung Thông báo Đồ án sinh viên & Bản quyền (Disclaimer) */}
-      <div 
-        style={{
-          backgroundColor: 'var(--bg-surface)',
-          border: '1px solid var(--border)',
-          borderRadius: '14px',
-          padding: '1.5rem 1.75rem',
-          marginBottom: '2.5rem'
-        }}
-      >
-        <div className="flex items-start gap-3">
-          <GraduationCap size={22} style={{ color: 'var(--price)', flexShrink: 0, marginTop: '2px' }} />
-          <div>
-            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
-              Tuyên Bố Mục Đích Đồ Án & Phi Thương Mại
-            </h2>
-            <p style={{ fontSize: '0.875rem', lineHeight: '1.7', color: 'var(--text-muted)', margin: 0 }}>
-              Website <strong>BookNest</strong> là đề tài đồ án môn học chuyên ngành Công nghệ phần mềm do sinh viên <strong>Trần Trọng Quyết</strong> (Trường Đại Học Lạc Hồng) phát triển. Nền tảng được triển khai lên môi trường mạng nhằm mục đích nghiên cứu, học tập và kiểm thử kỹ thuật. 
-              Toàn bộ tên tác phẩm, hình ảnh bìa sách và thông tin xuất bản thuộc bản quyền của các Tác giả và Nhà xuất bản tương ứng; BookNest không sở hữu bản quyền các ấn phẩm này và không nhằm mục đích thương mại hóa trái phép.
-            </p>
-          </div>
-        </div>
-      </div>
+      <NoiDungPhapLy>
+        <MucPhapLy id="muc-dich" bieuTuong={GraduationCap} tieuDe="1. Mục Đích & Phạm Vi">
+          <DoanVan>
+            Website <strong>BookNest</strong> là đề tài đồ án môn học Công nghệ phần mềm do sinh viên <strong>Trần Trọng Quyết</strong> (Trường Đại Học Lạc Hồng) phát triển, được đưa lên mạng để nghiên cứu, học tập và kiểm thử kỹ thuật.
+          </DoanVan>
+          <DanhSachGach>
+            <li>BookNest <strong>không phải cửa hàng thật</strong>: không có tư cách pháp nhân, không đăng ký kinh doanh và không có kho sách. Sách và giá hiển thị là dữ liệu mẫu.</li>
+            <li>Đơn hàng được tạo trên website chỉ để minh họa quy trình mua bán và <strong>sẽ không được giao</strong>.</li>
+            <li>Bằng việc sử dụng website, bạn xác nhận đã đọc và hiểu các điều khoản này. Nếu không đồng ý, vui lòng ngừng sử dụng.</li>
+          </DanhSachGach>
+        </MucPhapLy>
 
-      {/* Nội dung các điều khoản chi tiết */}
-      <article className="space-y-8" style={{ color: 'var(--text-main)', fontSize: '0.95rem', lineHeight: 1.8 }}>
-        
-        {/* Mục 1 */}
-        <section id="tai-khoan">
-          <h2 
-            className="font-serif flex items-center gap-2 mb-3"
-            style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-main)' }}
-          >
-            <CheckCircle2 size={20} style={{ color: 'var(--accent)' }} />
-            1. Tài Khoản & Quyền Lợi Bạn Đọc
-          </h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-            BookNest chào đón bạn đọc mua sắm dưới cả hai hình thức: <strong>Khách vãng lai (Guest)</strong> và <strong>Thành viên có tài khoản</strong>.
-          </p>
-          <ul style={{ listStyle: 'disc', paddingLeft: '1.5rem', color: 'var(--text-muted)' }} className="space-y-2">
-            <li>Bạn đọc có trách nhiệm tự bảo mật thông tin đăng nhập của mình và không chia sẻ mật khẩu cho người khác.</li>
-            <li>Nghiêm cấm các hành vi: sử dụng bot spam đặt đơn ảo, tấn công từ chối dịch vụ (DDoS), hoặc cố ý dò quét mã đơn hàng của người khác. Hệ thống có cơ chế giới hạn tần suất (Rate Limit) và sẽ tự động chặn các địa chỉ IP có dấu hiệu bất thường.</li>
-          </ul>
-        </section>
+        <MucPhapLy id="tai-khoan" bieuTuong={CheckCircle2} tieuDe="2. Tài Khoản & Hành Vi Bị Cấm">
+          <DoanVan>
+            Bạn có thể dùng website dưới hình thức <strong>khách vãng lai</strong> hoặc <strong>thành viên có tài khoản</strong>.
+          </DoanVan>
+          <DanhSachGach>
+            <li>Bạn tự bảo mật thông tin đăng nhập và không chia sẻ mật khẩu cho người khác.</li>
+            <li>Không dùng bot để tạo đơn ảo hàng loạt, tấn công từ chối dịch vụ, dò quét mã đơn hàng của người khác hoặc cố truy cập trái phép vào hệ thống. Hệ thống giới hạn tần suất truy cập và có thể chặn địa chỉ IP có dấu hiệu bất thường.</li>
+            <li>Không đăng nội dung vi phạm pháp luật, xúc phạm người khác hoặc chứa thông tin cá nhân của người thứ ba trong phần đánh giá sách. Nội dung như vậy có thể bị gỡ mà không cần báo trước.</li>
+          </DanhSachGach>
+        </MucPhapLy>
 
-        {/* Mục 2 */}
-        <section id="dat-huy-don">
-          <h2 
-            className="font-serif flex items-center gap-2 mb-3"
-            style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-main)' }}
-          >
-            <BookOpen size={20} style={{ color: 'var(--accent)' }} />
-            2. Quy Trình Đặt Hàng & Hủy Đơn
-          </h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-            Khi bạn hoàn tất thao tác bấm nút <em>"Xác nhận đặt hàng"</em>:
-          </p>
-          <ul style={{ listStyle: 'disc', paddingLeft: '1.5rem', color: 'var(--text-muted)' }} className="space-y-2">
-            <li>Đơn hàng sẽ được ghi nhận vào hệ thống với mã tra cứu ngẫu nhiên (ví dụ: <code style={{ backgroundColor: 'var(--bg-surface)', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>BN-XXXXXX</code>) và chuyển sang trạng thái <strong>Chờ duyệt</strong>.</li>
-            <li><strong>Quyền tự hủy đơn:</strong> Khi đơn hàng còn ở trạng thái <em>Chờ duyệt</em>, bạn hoàn toàn có thể tự bấm nút hủy đơn trực tiếp trong trang chi tiết đơn hàng mà không cần chờ duyệt.</li>
-            <li>Khi đơn hàng đã chuyển sang trạng thái <em>Đã duyệt</em> hoặc <em>Đã lấy hàng</em>, nếu có nhu cầu thay đổi, bạn vui lòng liên hệ trực tiếp với tiệm để được hỗ trợ điều phối.</li>
-          </ul>
-        </section>
+        <MucPhapLy id="dat-huy-don" bieuTuong={BookOpen} tieuDe="3. Quy Trình Đặt Hàng & Hủy Đơn (Mô Phỏng)">
+          <DoanVan>Khi bạn bấm <em>"Xác nhận đặt hàng"</em>:</DoanVan>
+          <DanhSachGach>
+            <li>Đơn được ghi nhận với mã tra cứu ngẫu nhiên (ví dụ <code style={maDonStyle}>BN-XXXXXX</code>) và ở trạng thái <strong>Chờ duyệt</strong>.</li>
+            <li>Khi đơn còn <em>Chờ duyệt</em>, bạn tự hủy được ngay trong trang chi tiết đơn.</li>
+            <li>Khi đơn đã <em>Đã duyệt</em> hoặc <em>Đã lấy hàng</em>, nếu cần thay đổi hãy liên hệ người phụ trách qua email ở cuối trang.</li>
+            <li>Đơn chọn chuyển khoản QR mà chưa thanh toán sẽ tự hủy sau 15 phút và sách được trả lại kho (xem <Link to="/chinh-sach-hoan-tien" style={{ color: 'var(--price)' }}>Đổi trả & hoàn tiền</Link>).</li>
+          </DanhSachGach>
+        </MucPhapLy>
 
-        {/* Mục 3 */}
-        <section id="van-chuyen">
-          <h2 
-            className="font-serif flex items-center gap-2 mb-3"
-            style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-main)' }}
-          >
-            <Truck size={20} style={{ color: 'var(--accent)' }} />
-            3. Chính Sách Giao Nhận & Đồng Kiểm
-          </h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-            Nhằm mang lại trải nghiệm nhẹ nhàng nhất cho bạn đọc, BookNest áp dụng chính sách vận chuyển sau:
-          </p>
-          <ul style={{ listStyle: 'disc', paddingLeft: '1.5rem', color: 'var(--text-muted)' }} className="space-y-2">
-            <li><strong>Miễn phí vận chuyển toàn quốc (Freeship 100%):</strong> Áp dụng cho mọi đơn hàng thử nghiệm tại tất cả các tỉnh thành trên cả nước.</li>
-            <li><strong>Thời gian giao hàng dự kiến:</strong> Từ 1–2 ngày làm việc đối với khu vực nội thành, và từ 3–5 ngày làm việc đối với các tỉnh/thành khác.</li>
-            <li><strong>Đóng gói cẩn trọng:</strong> Mỗi cuốn sách đều được bọc màng bóng khí chống sốc và chèn góc để giữ trọn vẹn mép bìa và gáy sách.</li>
-            <li><strong>Quyền đồng kiểm:</strong> Bạn đọc có quyền mở gói hàng kiểm tra ngoại quan (đúng tựa sách, đủ số lượng, sách không rách nát) cùng nhân viên bưu tá trước khi nhận hàng.</li>
-          </ul>
-        </section>
+        <MucPhapLy id="van-chuyen" bieuTuong={Truck} tieuDe="4. Giao Nhận (Quy Trình Mẫu)">
+          <DoanVan>
+            Đây là quy trình được thiết kế cho hệ thống. Vì BookNest là dự án học tập nên <strong>không có việc giao sách thật</strong>.
+          </DoanVan>
+          <DanhSachGach>
+            <li><strong>Phí vận chuyển:</strong> hệ thống thiết kế miễn phí vận chuyển cho mọi đơn.</li>
+            <li><strong>Thời gian giao dự kiến trong thiết kế:</strong> 1–2 ngày làm việc nội thành, 3–5 ngày làm việc các tỉnh thành khác.</li>
+            <li><strong>Kiểm hàng khi nhận:</strong> thiết kế cho phép khách mở gói kiểm tra ngoại quan cùng nhân viên giao hàng trước khi nhận.</li>
+          </DanhSachGach>
+        </MucPhapLy>
 
-        {/* Mục 4 */}
-        <section id="doi-tra">
-          <h2 
-            className="font-serif flex items-center gap-2 mb-3"
-            style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-main)' }}
-          >
-            <RotateCcw size={20} style={{ color: 'var(--accent)' }} />
-            4. Chính Sách Đổi Trả & Hoàn Tiền
-          </h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-            BookNest cam kết đồng hành cùng bạn đọc nếu ấn bản đến tay bạn có bất kỳ tì vết nào:
-          </p>
-          <ul style={{ listStyle: 'disc', paddingLeft: '1.5rem', color: 'var(--text-muted)' }} className="space-y-2">
-            <li><strong>Thời hạn hỗ trợ:</strong> Trong vòng <strong>7 ngày</strong> kể từ ngày bạn nhận sách thành công.</li>
-            <li><strong>Các trường hợp được đổi mới:</strong> Sách bị lỗi in ấn từ nhà xuất bản (thiếu trang, lặp trang, ngược chữ, mờ mực); sách bị gãy gáy hoặc rách nát do vận chuyển; hoặc tiệm đóng gói nhầm tựa sách.</li>
-            <li><strong>Hình thức xử lý:</strong> Tiệm sẽ gửi đổi ngay cuốn sách mới nguyên vẹn (tiệm chịu 100% chi phí vận chuyển 2 chiều) hoặc hoàn tiền 100% nếu tựa sách đó tạm thời hết hàng trong kho.</li>
-          </ul>
-        </section>
-
-        {/* Mục 5 */}
-        <section id="thanh-toan">
-          <h2 
-            className="font-serif flex items-center gap-2 mb-3"
-            style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-main)' }}
-          >
-            <CreditCard size={20} style={{ color: 'var(--accent)' }} />
-            5. Phương Thức Thanh Toán & Cam Kết Hoàn Tiền
-          </h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-            Hệ thống hỗ trợ 2 phương thức thanh toán an toàn:
-          </p>
-          <ul style={{ listStyle: 'disc', paddingLeft: '1.5rem', color: 'var(--text-muted)' }} className="space-y-2">
-            <li><strong>Thanh toán khi nhận hàng (COD):</strong> Bạn kiểm tra sách và thanh toán tiền mặt trực tiếp cho nhân viên giao hàng.</li>
-            <li><strong>Chuyển khoản VietQR tức thì (payOS):</strong> Quét mã QR qua ứng dụng ngân hàng, hệ thống tự động xác nhận trong vài giây với thời hạn hiệu lực 10 phút.</li>
+        <MucPhapLy id="thanh-toan" bieuTuong={CreditCard} tieuDe="5. Thanh Toán">
+          <DoanVan>Hệ thống có hai phương thức:</DoanVan>
+          <DanhSachGach>
+            <li><strong>Thanh toán khi nhận hàng (COD):</strong> không thu tiền trước. Vì không có giao hàng thật nên bạn sẽ không phải trả khoản nào.</li>
             <li>
-              <strong>Quy trình hoàn tiền PayOS:</strong> Hệ thống thanh toán VietQR payOS là luồng chuyển khoản một chiều an toàn. Trong trường hợp bạn đọc chuyển tiền thử nghiệm, có nhu cầu hủy đơn sau khi chuyển khoản thành công, hoặc chuyển khoản khi đơn đã quá hạn hủy, hệ thống sẽ tự động ghi nhận trạng thái <strong>Cần hoàn tiền</strong>. Đội ngũ nhân viên BookNest sẽ chủ động liên hệ trực tiếp với bạn đọc để đối soát thông tin và chuyển khoản hoàn trả 100% số tiền về tài khoản ngân hàng.
+              <strong>Chuyển khoản VietQR qua payOS:</strong> mã QR có hiệu lực 15 phút. Đây là luồng chuyển tiền thật qua ngân hàng,
+              {' '}<strong>vui lòng không chuyển tiền</strong> vì đơn sẽ không được giao. Nếu đã chuyển, xem cách xử lý và hoàn tiền tại{' '}
+              <Link to="/chinh-sach-hoan-tien" style={{ color: 'var(--price)' }}>trang Đổi trả & hoàn tiền</Link>.
             </li>
-          </ul>
-        </section>
+          </DanhSachGach>
+        </MucPhapLy>
 
-        {/* Mục 6 */}
-        <section id="lien-he" style={{
-          backgroundColor: 'var(--bg-surface)',
-          padding: '1.5rem',
-          borderRadius: '12px',
-          border: '1px solid var(--border)',
-          marginTop: '2rem'
-        }}>
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
-            Kênh Tiếp Nhận Hỗ Trợ
-          </h3>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-            Mọi thắc mắc, yêu cầu hỗ trợ đơn hàng hoặc đề nghị hoàn tiền thử nghiệm, xin vui lòng liên hệ:
-          </p>
-          <div style={{ fontSize: '0.875rem', color: 'var(--text-main)' }} className="space-y-1">
-            <div><strong>Tác giả đề tài:</strong> Trần Trọng Quyết (Sinh viên Trường Đại Học Lạc Hồng)</div>
-            <div><strong>Email tiếp nhận:</strong> <span style={{ color: 'var(--price)', fontWeight: 600 }}>tiemsach@booknest.lhutech.click</span></div>
-            <div><strong>Phạm vi:</strong> Đồ án tốt nghiệp / Môn học Công nghệ phần mềm</div>
-          </div>
-        </section>
-      </article>
-    </div>
+        <MucPhapLy id="so-huu-tri-tue" bieuTuong={Library} tieuDe="6. Sở Hữu Trí Tuệ & Nguồn Dữ Liệu">
+          <DoanVan>
+            Tên sách, tên tác giả, mô tả và ảnh bìa thuộc quyền của tác giả và nhà xuất bản tương ứng. BookNest không sở hữu các nội dung này.
+            Dữ liệu được lấy từ đâu và cách yêu cầu gỡ nội dung được nêu tại{' '}
+            <Link to="/nguon-du-lieu" style={{ color: 'var(--price)' }}>trang Nguồn dữ liệu & bản quyền</Link>.
+          </DoanVan>
+        </MucPhapLy>
+
+        <MucPhapLy id="gioi-han-trach-nhiem" bieuTuong={Scale} tieuDe="7. Giới Hạn Trách Nhiệm & Luật Áp Dụng">
+          <DanhSachGach>
+            <li>Website được cung cấp <strong>"nguyên trạng"</strong>, có thể gián đoạn, thay đổi hoặc bị xóa toàn bộ dữ liệu bất cứ lúc nào, đặc biệt sau đợt báo cáo đồ án.</li>
+            <li>Người phụ trách không chịu trách nhiệm cho thiệt hại phát sinh từ việc bạn đặt hàng, chuyển tiền hoặc nhập thông tin cá nhân vào một website học tập. Riêng khoản tiền chuyển nhầm, người phụ trách sẽ hoàn lại như mô tả tại trang đổi trả và hoàn tiền.</li>
+            <li>Điều khoản có thể thay đổi; phiên bản mới có hiệu lực khi đăng tại trang này. Điều khoản được hiểu theo pháp luật Việt Nam.</li>
+          </DanhSachGach>
+        </MucPhapLy>
+
+        <KhungLienHePhapLy
+          tieuDe="Kênh Tiếp Nhận Hỗ Trợ"
+          moTa="Mọi thắc mắc về đơn hàng, chuyển khoản nhầm hoặc điều khoản, xin liên hệ:"
+        />
+      </NoiDungPhapLy>
+    </KhungTrangPhapLy>
   );
 };
 

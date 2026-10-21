@@ -10,6 +10,7 @@ import PaperBackgroundCanvas from './components/canvas/PaperBackgroundCanvas';
 // Components Chung
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ThanhThongBaoDemo from './components/ThanhThongBaoDemo';
 import ChatbotWidget from './components/ChatbotWidget';
 import useCartStore from './stores/cartStore';
 
@@ -47,6 +48,8 @@ const KhongCoQuyen = lazyTaiTruoc(() => import('./pages/KhongCoQuyen'));
 const QuenMatKhau = lazyTaiTruoc(() => import('./pages/QuenMatKhau'));
 const DieuKhoanDichVu = lazyTaiTruoc(() => import('./pages/DieuKhoanDichVu'));
 const ChinhSachBaoMat = lazyTaiTruoc(() => import('./pages/ChinhSachBaoMat'));
+const ChinhSachHoanTien = lazyTaiTruoc(() => import('./pages/ChinhSachHoanTien'));
+const NguonDuLieu = lazyTaiTruoc(() => import('./pages/NguonDuLieu'));
 const TrangKhongTimThay = lazyTaiTruoc(() => import('./pages/TrangKhongTimThay'));
 
 // Bảng đường dẫn -> trang, dùng để biết trang đích đã tải mã chưa và để tải trước
@@ -60,6 +63,8 @@ const BANG_TRANG = [
   ['/checkout', ThanhToan],
   ['/dieu-khoan', DieuKhoanDichVu],
   ['/chinh-sach-bao-mat', ChinhSachBaoMat],
+  ['/chinh-sach-hoan-tien', ChinhSachHoanTien],
+  ['/nguon-du-lieu', NguonDuLieu],
   ['/orders', DonHangCuaToi],
   ['/orders/:id', ChiTietDonHang],
   ['/profile', HoSo]
@@ -103,6 +108,7 @@ const StorefrontLayout = ({ children }) => {
   const { pathname } = useLocation();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', position: 'relative', zIndex: 1 }}>
+      <ThanhThongBaoDemo />
       <Navbar />
       <main style={{ flex: 1 }}>
         <React.Suspense fallback={null}>
@@ -197,6 +203,8 @@ const AppContent = () => {
         {/* Các Tuyến Đường Chính Sách & Pháp Lý */}
         <Route path="/dieu-khoan" element={<StorefrontLayout><DieuKhoanDichVu /></StorefrontLayout>} />
         <Route path="/chinh-sach-bao-mat" element={<StorefrontLayout><ChinhSachBaoMat /></StorefrontLayout>} />
+        <Route path="/chinh-sach-hoan-tien" element={<StorefrontLayout><ChinhSachHoanTien /></StorefrontLayout>} />
+        <Route path="/nguon-du-lieu" element={<StorefrontLayout><NguonDuLieu /></StorefrontLayout>} />
         <Route path="/chinh-sach" element={<Navigate to="/dieu-khoan" replace />} />
 
         {/* Các Route Yêu Cầu Đăng Nhập */}

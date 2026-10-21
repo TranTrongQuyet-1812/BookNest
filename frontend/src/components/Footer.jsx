@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import LogoBookNest from './LogoBookNest';
 import api from '../services/api';
+import { KhungDuAnHocTap } from './phapLy';
 
 export const Footer = () => {
   const [danhMucList, setDanhMucList] = useState([]);
@@ -123,23 +124,28 @@ export const Footer = () => {
               gap: '0.55rem' 
             }}>
               <li>
-                <Link to="/dieu-khoan#van-chuyen" style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }} className="hover:underline">
-                  Giao nhận & Freeship 100%
-                </Link>
-              </li>
-              <li>
-                <Link to="/dieu-khoan#doi-tra" style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }} className="hover:underline">
-                  Đổi trả trong 7 ngày
-                </Link>
-              </li>
-              <li>
                 <Link to="/dieu-khoan" style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }} className="hover:underline">
-                  Điều khoản dịch vụ
+                  Điều khoản sử dụng
                 </Link>
               </li>
               <li>
                 <Link to="/chinh-sach-bao-mat" style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }} className="hover:underline">
-                  Chính sách bảo mật
+                  Bảo mật & Cookie
+                </Link>
+              </li>
+              <li>
+                <Link to="/chinh-sach-hoan-tien" style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }} className="hover:underline">
+                  Đổi trả & Hoàn tiền
+                </Link>
+              </li>
+              <li>
+                <Link to="/nguon-du-lieu" style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }} className="hover:underline">
+                  Nguồn dữ liệu & Bản quyền
+                </Link>
+              </li>
+              <li>
+                <Link to="/chinh-sach-bao-mat#xoa-du-lieu" style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }} className="hover:underline">
+                  Yêu cầu xóa dữ liệu
                 </Link>
               </li>
             </ul>
@@ -167,6 +173,9 @@ export const Footer = () => {
         </div>
 
         {/* Dòng bản quyền & Lời kết mộc mạc */}
+        {/* Cảnh báo dự án học tập: nổi bật, đặt ngay trên dòng bản quyền */}
+        <KhungDuAnHocTap style={{ marginBottom: '1.5rem' }} />
+
         <div style={{
           borderTop: '1px solid var(--border)',
           paddingTop: '1.5rem',
@@ -183,11 +192,19 @@ export const Footer = () => {
             <span>© 2026 BookNest. Giữ gìn tình yêu với từng trang sách.</span>
             <span style={{ color: 'var(--border)' }}>•</span>
             <Link to="/dieu-khoan" style={{ color: 'var(--text-muted)', textDecoration: 'none' }} className="hover:underline">
-              Điều khoản dịch vụ
+              Điều khoản
             </Link>
             <span style={{ color: 'var(--border)' }}>•</span>
             <Link to="/chinh-sach-bao-mat" style={{ color: 'var(--text-muted)', textDecoration: 'none' }} className="hover:underline">
-              Chính sách bảo mật
+              Bảo mật & Cookie
+            </Link>
+            <span style={{ color: 'var(--border)' }}>•</span>
+            <Link to="/chinh-sach-hoan-tien" style={{ color: 'var(--text-muted)', textDecoration: 'none' }} className="hover:underline">
+              Đổi trả & Hoàn tiền
+            </Link>
+            <span style={{ color: 'var(--border)' }}>•</span>
+            <Link to="/nguon-du-lieu" style={{ color: 'var(--text-muted)', textDecoration: 'none' }} className="hover:underline">
+              Nguồn dữ liệu
             </Link>
           </div>
           <div style={{ color: 'var(--text-sub)' }}>
