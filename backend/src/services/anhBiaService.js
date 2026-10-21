@@ -14,6 +14,19 @@ const cauHinh = require('../config/cauHinh');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 const Sach = require('../models/Sach');
 
+// Ghi nhớ ai vừa tải ảnh nào (trong RAM, 1 giờ) để lệnh xóa ảnh "vừa tải" chỉ xóa được ảnh do chính người đó tải,
+// không xóa nhầm ảnh nhân viên khác vừa tải lên mà chưa kịp lưu sách. Khởi động lại máy chủ thì quên: ảnh thừa chỉ tốn chỗ, không hại.
+const ANH_VUA_TAI = new Map();
+const THOI_GIAN_NHO_ANH_VUA_TAI = 60 * 60 * 1000;
+
+function ghiNhoNguoiTaiAnh(url, maNhanVien) {
+  const bayGio = Date.now();
+  for (const [duongDan, thongTin] of ANH_VUA_TAI) {
+    if (thongTin.hetHan <= bayGio) ANH_VUA_TAI.delete(duongDan);
+  }
+  ANH_VUA_TAI.set(url, { maNhanVien, hetHan: bayGio + THOI_GIAN_NHO_ANH_VUA_TAI });
+}
+
 /**
  * Nén ảnh đầu vào sang chuẩn WebP kích thước tối đa 800x1200 và chất lượng 80
  * @param {Buffer} buffer Dữ liệu nhị phân của file ảnh
@@ -49,9 +62,10 @@ const nenAnhSangWebP = async (buffer) => {
 /**
  * Tải ảnh bìa lên Cloudinary (AT04)
  * @param {Buffer} bufferRaw Dữ liệu ảnh thô từ client
+ * @param {number} [maNhanVien] Nhân viên tải ảnh (để chỉ họ được xóa ảnh vừa tải)
  * @returns {Promise<{ url: string, publicId: string }>}
  */
-const taiAnhBiaLen = async (bufferRaw) => {
+const taiAnhBiaLen = async (bufferRaw, maNhanVien) => {
   const { tenDamMay, khoa, matKhau, daCauHinh } = cauHinh.cloudinary;
 
   if (!daCauHinh) {
@@ -102,8 +116,10 @@ const taiAnhBiaLen = async (bufferRaw) => {
     }
 
     const duLieu = await res.json();
+    const urlAnh = duLieu.secure_url || duLieu.url;
+    if (maNhanVien !== undefined) ghiNhoNguoiTaiAnh(urlAnh, maNhanVien);
     return {
-      url: duLieu.secure_url || duLieu.url,
+      url: urlAnh,
       publicId: duLieu.public_id || publicId
     };
   } catch (err) {
@@ -225,8 +241,14 @@ const xoaAnhCu = async (urlAnhCu) => {
  * Xóa ảnh vừa tải lên khi việc lưu sách gặp lỗi để tránh ảnh mồ côi (AT05, AT07)
  * @param {string} url 
  */
-const xoaAnhVuaTai = async (url) => {
-  return await xoaAnhTrenCloudinary(url);
+const xoaAnhVuaTai = async (url, maNhanVien) => {
+  if (maNhanVien !== undefined) {
+    const thongTin = ANH_VUA_TAI.get(url);
+    if (!thongTin || thongTin.hetHan <= Date.now() || thongTin.maNhanVien !== maNhanVien) return false;
+  }
+  const daXoa = await xoaAnhTrenCloudinary(url);
+  if (daXoa) ANH_VUA_TAI.delete(url);
+  return daXoa;
 };
 
 module.exports = {

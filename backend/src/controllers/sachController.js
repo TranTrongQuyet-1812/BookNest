@@ -131,7 +131,7 @@ async function xuLyTaiAnhBia(req, res) {
   if (!req.body || !Buffer.isBuffer(req.body) || req.body.length === 0) {
     throw LoiNghiepVu.yeuCauKhongHopLe('Vui lòng chọn file ảnh để tải lên');
   }
-  const ketQua = await anhBiaService.taiAnhBiaLen(req.body);
+  const ketQua = await anhBiaService.taiAnhBiaLen(req.body, req.user.id);
   return phanHoiThanhCong(res, {
     duLieu: ketQua,
     thongDiep: 'Tải ảnh bìa thành công',
@@ -145,7 +145,7 @@ async function xuLyXoaAnhBia(req, res) {
   if (!url) {
     throw LoiNghiepVu.yeuCauKhongHopLe('Vui lòng cung cấp đường dẫn ảnh cần xóa');
   }
-  await anhBiaService.xoaAnhVuaTai(url);
+  await anhBiaService.xoaAnhVuaTai(url, req.user.id);
   return phanHoiThanhCong(res, {
     thongDiep: 'Xóa ảnh bìa thành công'
   });
