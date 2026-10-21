@@ -22,6 +22,47 @@ async function timTaiKhoan(duLieuGiaiMa) {
   return Bang.findByPk(duLieuGiaiMa.id);
 }
 
+/**
+ * Xác minh một chuỗi token với CSDL và trả về thông tin người dùng (id, email, fullName, role, aud).
+ * Ném LoiNghiepVu nếu token sai/hết hạn, tài khoản không còn, bị khóa, hoặc mật khẩu đã đổi sau khi cấp token.
+ * Dùng chung cho middleware HTTP và việc vào phòng Socket.IO, để kết nối realtime cũng bị thu hồi khi khóa tài khoản
+ * hoặc đổi mật khẩu (trước đây phòng socket chỉ kiểm chữ ký token nên token cũ còn dùng được tới khi hết hạn).
+ */
+async function xacMinhToken(token) {
+  let duLieuGiaiMa;
+
+  try {
+    duLieuGiaiMa = jwt.verify(token, cauHinh.jwt.biMat);
+  } catch (loiJwt) {
+    if (loiJwt.name === 'TokenExpiredError') {
+      throw LoiNghiepVu.chuaXacThuc('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại');
+    }
+    throw LoiNghiepVu.chuaXacThuc('Mã xác thực không hợp lệ hoặc đã bị chỉnh sửa');
+  }
+
+  // Truy vấn CSDL để lấy thông tin mới nhất và kiểm tra trạng thái hoạt động
+  const taiKhoan = await timTaiKhoan(duLieuGiaiMa);
+  if (!taiKhoan) {
+    throw LoiNghiepVu.chuaXacThuc('Tài khoản liên kết với token này không tồn tại hoặc phiên đăng nhập cũ không còn hợp lệ');
+  }
+
+  if (!taiKhoan.DangHoatDong) {
+    throw LoiNghiepVu.camTruyCap('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên');
+  }
+
+  // Bảo mật phiên & vô hiệu hóa token cũ: Bắt buộc token phải mang claim pwh chuẩn HMAC-SHA256 khớp với mật khẩu hiện tại trong CSDL
+  if (taiKhoan.MatKhauHash) {
+    const { tinhMaPhienMatKhau } = require('../services/xacThucService');
+    const pwhHmac = tinhMaPhienMatKhau(taiKhoan.MatKhauHash);
+    if (!duLieuGiaiMa.pwh || duLieuGiaiMa.pwh !== pwhHmac) {
+      throw LoiNghiepVu.chuaXacThuc('Phiên đăng nhập cũ không còn hiệu lực hoặc mật khẩu đã được thay đổi. Vui lòng đăng nhập lại.');
+    }
+  }
+
+  // Thông tin lấy từ CSDL (không tin vai trò lưu cứng trong token cũ)
+  return thongTinTaiKhoan(duLieuGiaiMa.aud, taiKhoan);
+}
+
 async function xacThucToken(req, res, next) {
   try {
     const chuoiHeader = req.headers.authorization;
@@ -30,38 +71,7 @@ async function xacThucToken(req, res, next) {
     }
 
     const token = chuoiHeader.split(' ')[1];
-    let duLieuGiaiMa;
-
-    try {
-      duLieuGiaiMa = jwt.verify(token, cauHinh.jwt.biMat);
-    } catch (loiJwt) {
-      if (loiJwt.name === 'TokenExpiredError') {
-        throw LoiNghiepVu.chuaXacThuc('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại');
-      }
-      throw LoiNghiepVu.chuaXacThuc('Mã xác thực không hợp lệ hoặc đã bị chỉnh sửa');
-    }
-
-    // Truy vấn CSDL để lấy thông tin mới nhất và kiểm tra trạng thái hoạt động
-    const taiKhoan = await timTaiKhoan(duLieuGiaiMa);
-    if (!taiKhoan) {
-      throw LoiNghiepVu.chuaXacThuc('Tài khoản liên kết với token này không tồn tại hoặc phiên đăng nhập cũ không còn hợp lệ');
-    }
-
-    if (!taiKhoan.DangHoatDong) {
-      throw LoiNghiepVu.camTruyCap('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên');
-    }
-
-    // Bảo mật phiên & vô hiệu hóa token cũ: Bắt buộc token phải mang claim pwh chuẩn HMAC-SHA256 khớp với mật khẩu hiện tại trong CSDL
-    if (taiKhoan.MatKhauHash) {
-      const { tinhMaPhienMatKhau } = require('../services/xacThucService');
-      const pwhHmac = tinhMaPhienMatKhau(taiKhoan.MatKhauHash);
-      if (!duLieuGiaiMa.pwh || duLieuGiaiMa.pwh !== pwhHmac) {
-        throw LoiNghiepVu.chuaXacThuc('Phiên đăng nhập cũ không còn hiệu lực hoặc mật khẩu đã được thay đổi. Vui lòng đăng nhập lại.');
-      }
-    }
-
-    // Gắn thông tin từ CSDL vào request (không tin vai trò lưu cứng trong token cũ)
-    req.user = thongTinTaiKhoan(duLieuGiaiMa.aud, taiKhoan);
+    req.user = await xacMinhToken(token);
 
     return next();
   } catch (loi) {
@@ -69,42 +79,22 @@ async function xacThucToken(req, res, next) {
   }
 }
 
-// Middleware xác thực tùy chọn: Nếu có token thì giải mã và nạp req.user, nếu không có vẫn cho qua
+// Middleware xác thực tùy chọn: Nếu có token hợp lệ thì nạp req.user, không có hoặc không hợp lệ vẫn cho qua (như khách vãng lai)
 async function xacThucTuyChon(req, res, next) {
-  try {
-    const chuoiHeader = req.headers.authorization;
-    if (!chuoiHeader || !chuoiHeader.startsWith('Bearer ')) {
-      return next();
-    }
-
-    const token = chuoiHeader.split(' ')[1];
-    let duLieuGiaiMa;
-
-    try {
-      duLieuGiaiMa = jwt.verify(token, cauHinh.jwt.biMat);
-    } catch (loiJwt) {
-      console.warn('[JWT Tùy Chọn] Bỏ qua lỗi giải mã token:', loiJwt.message);
-      return next();
-    }
-
-    const taiKhoan = await timTaiKhoan(duLieuGiaiMa);
-    if (taiKhoan && taiKhoan.DangHoatDong) {
-      if (taiKhoan.MatKhauHash) {
-        const { tinhMaPhienMatKhau } = require('../services/xacThucService');
-        const pwhHmac = tinhMaPhienMatKhau(taiKhoan.MatKhauHash);
-        if (!duLieuGiaiMa.pwh || duLieuGiaiMa.pwh !== pwhHmac) {
-          return next();
-        }
-      }
-      req.user = thongTinTaiKhoan(duLieuGiaiMa.aud, taiKhoan);
-    }
-
-    return next();
-  } catch (loi) {
-    console.warn('[Xác Thực Tùy Chọn] Lỗi kiểm tra tài khoản tùy chọn:', loi.message);
+  const chuoiHeader = req.headers.authorization;
+  if (!chuoiHeader || !chuoiHeader.startsWith('Bearer ')) {
     return next();
   }
+
+  try {
+    req.user = await xacMinhToken(chuoiHeader.split(' ')[1]);
+  } catch (loi) {
+    console.warn('[Xác Thực Tùy Chọn] Bỏ qua token không dùng được:', loi.message);
+  }
+
+  return next();
 }
 
 xacThucToken.xacThucTuyChon = xacThucTuyChon;
+xacThucToken.xacMinhToken = xacMinhToken;
 module.exports = xacThucToken;

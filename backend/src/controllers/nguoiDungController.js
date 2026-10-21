@@ -86,7 +86,8 @@ async function xuLyAdminCapNhatNhanVien(req, res) {
 async function xuLyAdminDatLaiMatKhauNhanVien(req, res) {
   const ketQua = await nguoiDungService.adminDatLaiMatKhauNhanVien(
     req.params.id,
-    req.body.matKhauMoi
+    req.body.matKhauMoi,
+    req.user.id
   );
   return phanHoiThanhCong(res, {
     duLieu: ketQua,

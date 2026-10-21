@@ -6,8 +6,21 @@ const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const cauHinh = require('../config/cauHinh');
 const { chuanHoaMaTraCuu } = require('../utils/maTraCuu');
+const { xacMinhToken } = require('../middlewares/xacThucToken');
 
 let io = null;
+
+// Client gửi token dạng chuỗi hoặc { token }
+function layToken(duLieuXacThuc) {
+  return typeof duLieuXacThuc === 'string' ? duLieuXacThuc : duLieuXacThuc?.token;
+}
+
+// Khóa nhận diện tài khoản gắn vào socket để thu hồi kết nối khi cần
+function khoaTaiKhoan(aud, ma) {
+  return `${aud}:${ma}`;
+}
+
+const VAI_TRO_NHAN_SU = ['quan_tri', 'thu_kho', 'thu_thu'];
 
 /**
  * Khởi tạo Socket.IO server gắn vào cùng HTTP server của Express
@@ -60,15 +73,15 @@ function khoiTaoSocket(httpServer) {
       if (ma) socket.leave(`don_hang:${ma}`);
     });
 
-    // Khách hàng tham gia phòng cá nhân (Bắt buộc xác thực JWT Token: aud === 'khach_hang')
-    socket.on('tham_gia_khach_hang', (duLieuXacThuc) => {
+    // Khách hàng tham gia phòng cá nhân: token phải còn hiệu lực với CSDL (tài khoản còn hoạt động, mật khẩu chưa đổi)
+    socket.on('tham_gia_khach_hang', async (duLieuXacThuc) => {
       try {
-        const token = typeof duLieuXacThuc === 'string' ? duLieuXacThuc : duLieuXacThuc?.token;
+        const token = layToken(duLieuXacThuc);
         if (!token) return;
-        const biMat = cauHinh.jwt?.biMat || cauHinh.jwtBiMat;
-        const giaiMa = jwt.verify(token, biMat);
-        if (giaiMa.aud === 'khach_hang' && giaiMa.id) {
-          socket.join(`khach_hang:${giaiMa.id}`);
+        const nguoiDung = await xacMinhToken(token);
+        if (nguoiDung.aud === 'khach_hang') {
+          socket.data.taiKhoan = khoaTaiKhoan(nguoiDung.aud, nguoiDung.id);
+          socket.join(`khach_hang:${nguoiDung.id}`);
         }
       } catch (err) {
         console.warn('[Socket] Bỏ qua lỗi token phòng khách:', err.message);
@@ -77,7 +90,7 @@ function khoiTaoSocket(httpServer) {
 
     socket.on('roi_khach_hang', (duLieuXacThuc) => {
       try {
-        const token = typeof duLieuXacThuc === 'string' ? duLieuXacThuc : duLieuXacThuc?.token;
+        const token = layToken(duLieuXacThuc);
         if (!token) return;
         const biMat = cauHinh.jwt?.biMat || cauHinh.jwtBiMat;
         const giaiMa = jwt.verify(token, biMat);
@@ -87,41 +100,34 @@ function khoiTaoSocket(httpServer) {
       }
     });
 
-    // Nhân viên tham gia phòng quản trị (Bắt buộc xác thực JWT Token: aud === 'nhan_vien')
-    socket.on('tham_gia_nhan_vien', (duLieuXacThuc) => {
-      try {
-        const token = typeof duLieuXacThuc === 'string'
-          ? duLieuXacThuc
-          : duLieuXacThuc?.token;
+    // Nhân viên tham gia phòng quản trị: vai trò lấy từ CSDL (không tin claim trong token), tài khoản bị khóa hay đã đổi mật khẩu thì bị từ chối
+    socket.on('tham_gia_nhan_vien', async (duLieuXacThuc) => {
+      const baoLoi = (thongDiep) => {
+        socket.emit('loi_xac_thuc', { thongDiep });
+        socket.emit('loi_auth_socket', { thongDiep });
+      };
 
-        if (!token) {
-          socket.emit('loi_xac_thuc', { thongDiep: 'Thiếu mã xác thực (token) nhân viên' });
-          socket.emit('loi_auth_socket', { thongDiep: 'Thiếu mã xác thực (token) nhân viên' });
+      const token = layToken(duLieuXacThuc);
+      if (!token) {
+        baoLoi('Thiếu mã xác thực (token) nhân viên');
+        return;
+      }
+
+      try {
+        const nguoiDung = await xacMinhToken(token);
+        if (nguoiDung.aud !== 'nhan_vien' || !VAI_TRO_NHAN_SU.includes(nguoiDung.role)) {
+          baoLoi('Quyền truy cập phòng quản trị bị từ chối');
           return;
         }
 
-        const biMat = cauHinh.jwt?.biMat || cauHinh.jwtBiMat;
-        const giaiMa = jwt.verify(token, biMat);
-        // Kiểm tra claim aud và vai trò hợp lệ của nhân sự BookNest
-        if (giaiMa.aud === 'nhan_vien' && ['quan_tri', 'thu_kho', 'thu_thu'].includes(giaiMa.role)) {
-          socket.join('nhan_vien');
-          socket.emit('tham_gia_nhan_vien_thanh_cong', {
-            role: giaiMa.role,
-            hoTen: giaiMa.fullName || giaiMa.hoTen || giaiMa.tenNhanVien || 'Nhân viên BookNest'
-          });
-          socket.emit('da_tham_gia_nhan_vien', {
-            thanhCong: true,
-            vaiTro: giaiMa.role,
-            hoTen: giaiMa.fullName || giaiMa.hoTen || giaiMa.tenNhanVien || 'Nhân viên BookNest'
-          });
-        } else {
-          socket.emit('loi_xac_thuc', { thongDiep: 'Quyền truy cập phòng quản trị bị từ chối' });
-          socket.emit('loi_auth_socket', { thongDiep: 'Quyền truy cập phòng quản trị bị từ chối' });
-        }
+        socket.data.taiKhoan = khoaTaiKhoan(nguoiDung.aud, nguoiDung.id);
+        socket.join('nhan_vien');
+        const hoTen = nguoiDung.fullName || 'Nhân viên BookNest';
+        socket.emit('tham_gia_nhan_vien_thanh_cong', { role: nguoiDung.role, hoTen });
+        socket.emit('da_tham_gia_nhan_vien', { thanhCong: true, vaiTro: nguoiDung.role, hoTen });
       } catch (err) {
         console.warn('[Socket] Lỗi xác thực token nhân viên:', err.message);
-        socket.emit('loi_xac_thuc', { thongDiep: 'Mã xác thực nhân viên không hợp lệ hoặc đã hết hạn' });
-        socket.emit('loi_auth_socket', { thongDiep: 'Mã xác thực nhân viên không hợp lệ hoặc đã hết hạn' });
+        baoLoi('Mã xác thực nhân viên không hợp lệ hoặc đã hết hạn');
       }
     });
 
@@ -136,6 +142,21 @@ function khoiTaoSocket(httpServer) {
   });
 
   return io;
+}
+
+/**
+ * Ngắt mọi kết nối socket của một tài khoản (khi khóa tài khoản, đổi vai trò, đặt lại mật khẩu) để không nhận thêm sự kiện.
+ * Client sẽ tự kết nối lại và thử vào phòng bằng token cũ, nhưng bước xác minh với CSDL sẽ từ chối.
+ */
+async function thuHoiKetNoiTaiKhoan(aud, ma) {
+  if (!io) return;
+  try {
+    const khoa = khoaTaiKhoan(aud, ma);
+    const cacSocket = await io.fetchSockets();
+    cacSocket.filter((sk) => sk.data.taiKhoan === khoa).forEach((sk) => sk.disconnect(true));
+  } catch (err) {
+    console.warn('[Socket] Không thu hồi được kết nối của tài khoản:', err.message);
+  }
 }
 
 /**
@@ -203,6 +224,7 @@ function phatDonHetHan({ maDonHang, maTraCuu }) {
 
 module.exports = {
   khoiTaoSocket,
+  thuHoiKetNoiTaiKhoan,
   layIo,
   phatSuKien,
   phatThanhToanThanhCong,

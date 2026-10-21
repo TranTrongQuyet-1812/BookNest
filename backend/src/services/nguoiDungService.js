@@ -11,6 +11,7 @@ const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 const { chuaTuKhoa } = require('../utils/timKiem');
 const { AUD_KHACH_HANG, AUD_NHAN_VIEN } = require('../utils/taiKhoan');
 const { ghiNhanThayDoi } = require('./lichSuThayDoiService');
+const { thuHoiKetNoiTaiKhoan } = require('../realtime/socket');
 
 // Vai trò quản trị viên được phép tạo qua giao diện (không tạo quan_tri để tránh nhân bản quyền cao nhất)
 const VAI_TRO_TAO_DUOC = ['thu_kho', 'thu_thu'];
@@ -209,18 +210,41 @@ async function adminCapNhatNhanVien(maNhanVien, { hoTen, soDienThoai, vaiTro }, 
     throw error;
   }
 
+  // Đổi vai trò: ngắt kết nối realtime cũ, client vào lại phòng sẽ được xác minh theo vai trò mới
+  if (thayDoi.VaiTro) await thuHoiKetNoiTaiKhoan(AUD_NHAN_VIEN, maNhanVien);
+
   return layThongTinHoSo(AUD_NHAN_VIEN, maNhanVien);
 }
 
-// Back-Office: Đặt lại mật khẩu nhân viên (băm bcrypt, không ghi mật khẩu vào lịch sử)
-async function adminDatLaiMatKhauNhanVien(maNhanVien, matKhauMoi) {
+// Back-Office: Đặt lại mật khẩu nhân viên (băm bcrypt). Nhật ký chỉ ghi "ai đặt lại cho ai", tuyệt đối không ghi mật khẩu.
+async function adminDatLaiMatKhauNhanVien(maNhanVien, matKhauMoi, maQuanTri) {
   const nhanVien = await NhanVien.findByPk(maNhanVien);
   if (!nhanVien) {
     throw LoiNghiepVu.khongTimThay('Không tìm thấy nhân viên yêu cầu');
   }
 
-  nhanVien.MatKhauHash = await bcrypt.hash(matKhauMoi, 10);
-  await nhanVien.save();
+  const matKhauHash = await bcrypt.hash(matKhauMoi, 10);
+  const t = await sequelize.transaction();
+  try {
+    nhanVien.MatKhauHash = matKhauHash;
+    await nhanVien.save({ transaction: t });
+
+    await ghiNhanThayDoi({
+      loaiDoiTuong: 'NHAN_VIEN',
+      maDoiTuong: maNhanVien,
+      maNhanVien: maQuanTri,
+      thayDoi: { MatKhau: { cu: '(không lưu)', moi: '(đã đặt lại)' } },
+      transaction: t
+    });
+
+    await t.commit();
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
+
+  // Token cũ của người này đã vô hiệu (mã phiên mật khẩu đổi), ngắt luôn kết nối realtime đang mở
+  await thuHoiKetNoiTaiKhoan(AUD_NHAN_VIEN, maNhanVien);
 
   return { thanhCong: true, thongDiep: 'Đặt lại mật khẩu thành công' };
 }
@@ -267,6 +291,9 @@ async function adminCapNhatTrangThaiNhanVien(maNhanVien, dangHoatDong, maQuanTri
     await t.rollback();
     throw error;
   }
+
+  // Bị khóa thì ngắt luôn kết nối realtime đang mở, không để nhận thêm sự kiện tới khi token hết hạn
+  if (dangHoatDong === false) await thuHoiKetNoiTaiKhoan(AUD_NHAN_VIEN, maNhanVien);
 
   return layThongTinHoSo(AUD_NHAN_VIEN, maNhanVien);
 }
@@ -380,6 +407,8 @@ async function adminCapNhatTrangThaiKhachHang(maKhachHang, dangHoatDong, maNhanV
     await t.rollback();
     throw error;
   }
+
+  if (dangHoatDong === false) await thuHoiKetNoiTaiKhoan(AUD_KHACH_HANG, maKhachHang);
 
   return layThongTinHoSo(AUD_KHACH_HANG, maKhachHang);
 }
