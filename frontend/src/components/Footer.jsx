@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import LogoBookNest from './LogoBookNest';
 import api from '../services/api';
-import { KhungDuAnHocTap } from './phapLy';
 
 export const Footer = () => {
   const [danhMucList, setDanhMucList] = useState([]);
@@ -173,9 +172,6 @@ export const Footer = () => {
         </div>
 
         {/* Dòng bản quyền & Lời kết mộc mạc */}
-        {/* Cảnh báo dự án học tập: nổi bật, đặt ngay trên dòng bản quyền */}
-        <KhungDuAnHocTap style={{ marginBottom: '1.5rem' }} />
-
         <div style={{
           borderTop: '1px solid var(--border)',
           paddingTop: '1.5rem',

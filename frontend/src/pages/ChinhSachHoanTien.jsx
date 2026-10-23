@@ -9,7 +9,6 @@ import {
 import {
   ThanhDieuHuongPhapLy,
   TieuDeTrangPhapLy,
-  KhungDuAnHocTap,
   KhungLienHePhapLy,
   MucPhapLy,
   DoanVan,
@@ -30,8 +29,6 @@ export const ChinhSachHoanTien = () => {
         tieuDe="Đổi Trả & Hoàn Tiền"
         moTa="Quy định về đổi trả, hạn thanh toán chuyển khoản và cách nhận lại tiền nếu bạn lỡ chuyển khoản."
       />
-
-      <KhungDuAnHocTap style={{ marginBottom: '2.5rem' }} />
 
       <NoiDungPhapLy>
         <MucPhapLy id="luu-y-quan-trong" bieuTuong={TriangleAlert} tieuDe="1. Đọc Trước Khi Chuyển Tiền">

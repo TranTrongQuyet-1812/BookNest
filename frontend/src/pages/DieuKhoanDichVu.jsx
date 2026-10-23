@@ -12,7 +12,6 @@ import {
 import {
   ThanhDieuHuongPhapLy,
   TieuDeTrangPhapLy,
-  KhungDuAnHocTap,
   KhungLienHePhapLy,
   MucPhapLy,
   DoanVan,
@@ -35,8 +34,6 @@ export const DieuKhoanDichVu = () => {
         tieuDe="Điều Khoản Sử Dụng"
         moTa="Quy tắc sử dụng website BookNest, một đề tài học tập: bạn được làm gì, hệ thống vận hành ra sao và giới hạn trách nhiệm ở đâu."
       />
-
-      <KhungDuAnHocTap style={{ marginBottom: '2.5rem' }} />
 
       <NoiDungPhapLy>
         <MucPhapLy id="muc-dich" bieuTuong={GraduationCap} tieuDe="1. Mục Đích & Phạm Vi">

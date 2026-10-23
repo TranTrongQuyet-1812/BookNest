@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { TRANG_PHAP_LY, EMAIL_HO_TRO } from './phapLyDungChung';
-import { ArrowLeft, GraduationCap, TriangleAlert } from 'lucide-react';
+import { ArrowLeft, GraduationCap } from 'lucide-react';
 
 // Các thành phần dùng chung cho nhóm trang pháp lý (điều khoản, bảo mật, đổi trả, nguồn dữ liệu)
 
@@ -73,34 +73,6 @@ export const TieuDeTrangPhapLy = ({ tieuDe, moTa }) => (
       Phiên bản công bố: Tháng 10/2026 • Dự án học tập, phi thương mại
     </div>
   </header>
-);
-
-// Khung cảnh báo nổi bật: dự án sinh viên, không bán hàng thật, đừng chuyển tiền thật
-export const KhungDuAnHocTap = ({ style }) => (
-  <div
-    role="note"
-    style={{
-      backgroundColor: 'var(--bg-surface)',
-      border: '2px solid var(--price)',
-      borderRadius: '14px',
-      padding: '1.25rem 1.5rem',
-      ...style
-    }}
-  >
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-      <TriangleAlert size={22} style={{ color: 'var(--price)', flexShrink: 0, marginTop: '2px' }} />
-      <div>
-        <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
-          Đây là dự án sinh viên phục vụ học tập, phi thương mại
-        </h2>
-        <p style={{ fontSize: '0.875rem', lineHeight: 1.7, color: 'var(--text-muted)', margin: 0 }}>
-          BookNest <strong>không bán hàng thật</strong>. Sách và giá chỉ là dữ liệu mẫu, đơn hàng sẽ <strong>không được giao</strong>.
-          Vui lòng <strong>không đặt hàng và không chuyển tiền thật</strong>. Nếu lỡ chuyển tiền, hãy liên hệ{' '}
-          <a href={`mailto:${EMAIL_HO_TRO}`} style={{ color: 'var(--price)', fontWeight: 600 }}>{EMAIL_HO_TRO}</a>.
-        </p>
-      </div>
-    </div>
-  </div>
 );
 
 // Khung giới thiệu người phụ trách (cuối trang)

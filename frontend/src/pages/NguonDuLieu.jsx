@@ -9,7 +9,6 @@ import {
 import {
   ThanhDieuHuongPhapLy,
   TieuDeTrangPhapLy,
-  KhungDuAnHocTap,
   KhungLienHePhapLy,
   MucPhapLy,
   DoanVan,
@@ -32,8 +31,6 @@ export const NguonDuLieu = () => {
         tieuDe="Nguồn Dữ Liệu & Bản Quyền"
         moTa="Thông tin về sách trên website lấy từ đâu, dùng vào việc gì và cách chủ sở hữu yêu cầu gỡ nội dung."
       />
-
-      <KhungDuAnHocTap style={{ marginBottom: '2.5rem' }} />
 
       <NoiDungPhapLy>
         <MucPhapLy id="nguon" bieuTuong={Database} tieuDe="1. Dữ Liệu Sách Lấy Từ Đâu">

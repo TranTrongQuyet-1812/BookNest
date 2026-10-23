@@ -11,7 +11,6 @@ import {
 import {
   ThanhDieuHuongPhapLy,
   TieuDeTrangPhapLy,
-  KhungDuAnHocTap,
   KhungLienHePhapLy,
   MucPhapLy,
   DoanVan,
@@ -42,8 +41,6 @@ export const ChinhSachBaoMat = () => {
         tieuDe="Chính Sách Bảo Mật & Cookie"
         moTa="Chúng tôi thu thập gì, dùng để làm gì, chia sẻ với ai và bạn yêu cầu xóa dữ liệu của mình như thế nào, theo tinh thần Nghị định 13/2023/NĐ-CP."
       />
-
-      <KhungDuAnHocTap style={{ marginBottom: '2.5rem' }} />
 
       <NoiDungPhapLy>
         <MucPhapLy id="thu-thap-du-lieu" bieuTuong={FileCheck} tieuDe="1. Dữ Liệu Chúng Tôi Thu Thập">

@@ -342,19 +342,6 @@ export const KhungThanhToanVietQR = ({
           ) : (
             /* Màn hình Quét QR và Thông tin Chuyển khoản */
             <div>
-              <div style={{
-                padding: '0.65rem 1rem',
-                marginBottom: '0.75rem',
-                borderRadius: '8px',
-                border: '1px solid var(--price)',
-                backgroundColor: 'var(--bg-surface)',
-                fontSize: '0.8rem',
-                lineHeight: 1.6,
-                color: 'var(--text-main)'
-              }}>
-                <strong>Dự án học tập, không bán hàng thật.</strong> Sách sẽ không được giao, xin đừng chuyển tiền thật.
-                Nếu đã chuyển, liên hệ để được hoàn lại (xem mục Đổi trả & Hoàn tiền ở chân trang).
-              </div>
               {/* Thanh thông báo đếm ngược & trạng thái realtime */}
               <div style={{
                 display: 'flex',

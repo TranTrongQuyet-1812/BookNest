@@ -16,7 +16,6 @@ import {
   QrCode
 } from 'lucide-react';
 import { KhungThanhToanVietQR } from '../components/KhungThanhToanVietQR';
-import { KhungDuAnHocTap } from '../components/phapLy';
 import { useThongBao, loiTuApi, ThongBaoTaiCho } from '@booknest/shared/thongbao';
 
 export const ThanhToan = () => {
@@ -724,9 +723,6 @@ export const ThanhToan = () => {
                   </label>
                 </div>
               )}
-
-              {/* Cảnh báo: dự án học tập, đừng chuyển tiền thật */}
-              <KhungDuAnHocTap style={{ marginTop: '1.75rem' }} />
 
               {/* Lựa chọn Phương thức Thanh toán */}
               <div style={{ marginTop: '1.25rem' }}>

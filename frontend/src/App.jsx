@@ -10,7 +10,6 @@ import PaperBackgroundCanvas from './components/canvas/PaperBackgroundCanvas';
 // Components Chung
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import ThanhThongBaoDemo from './components/ThanhThongBaoDemo';
 import ChatbotWidget from './components/ChatbotWidget';
 import useCartStore from './stores/cartStore';
 
@@ -108,7 +107,6 @@ const StorefrontLayout = ({ children }) => {
   const { pathname } = useLocation();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', position: 'relative', zIndex: 1 }}>
-      <ThanhThongBaoDemo />
       <Navbar />
       <main style={{ flex: 1 }}>
         <React.Suspense fallback={null}>
