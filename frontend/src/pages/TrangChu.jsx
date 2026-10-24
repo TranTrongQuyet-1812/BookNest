@@ -397,7 +397,7 @@ export const TrangChu = () => {
                 marginBottom: '1rem',
                 fontStyle: 'italic'
               }}>
-                "Tổ ấm của những trang sách, chốn bình yên của tâm hồn."
+                "Thế giới sách & điểm hẹn tri thức, chốn bình yên của tâm hồn."
               </p>
 
               <p className="hero-text" style={{

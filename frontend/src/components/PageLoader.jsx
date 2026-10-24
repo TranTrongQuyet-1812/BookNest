@@ -5,7 +5,7 @@ import { baoRemMo, baoRemDong } from '../utils/nhipMoTrang';
 
 // Các câu danh ngôn ngắn ngẫu nhiên xuất hiện khi chuyển trang
 const CAU_DANH_NGON = [
-  'Tổ ấm của những trang sách, chốn bình yên của tâm hồn.',
+  'Thế giới sách & điểm hẹn tri thức, chốn bình yên của tâm hồn.',
   'Mở một trang sách, là mở ra một chân trời mới.',
   'Hương thơm trang giấy và sự tĩnh lặng dịu êm.',
   'Mỗi cuốn sách là một người bạn kiên nhẫn đợi ta.',

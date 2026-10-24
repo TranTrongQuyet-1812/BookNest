@@ -22,7 +22,7 @@ export const TrangKhongTimThay = () => {
           Trang Sách Bị Thất Lạc (404)
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.975rem', lineHeight: 1.6, marginBottom: '2rem' }}>
-          Có vẻ như trang sách bạn đang tìm kiếm không tồn tại, đã bị gỡ bỏ hoặc đã được chuyển đến một ngăn kệ khác trong tổ ấm BookNest.
+          Có vẻ như trang sách bạn đang tìm kiếm không tồn tại, đã bị gỡ bỏ hoặc đã được chuyển đến một ngăn kệ khác tại BookNest.
         </p>
 
         <div className="flex justify-center gap-3">

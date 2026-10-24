@@ -215,7 +215,7 @@ export const Navbar = () => {
               gap: '0.65rem',
               textDecoration: 'none'
             }} 
-            title="BookNest - Tổ ấm của những trang sách"
+            title="BookNest - Thế Giới Sách & Điểm Hẹn Tri Thức"
           >
             <LogoBookNest height={38} />
             <span className="font-fleur navbar-brand-text" style={{
