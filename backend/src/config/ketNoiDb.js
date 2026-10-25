@@ -12,7 +12,7 @@ Sequelize.postgres.DECIMAL.parse = (giaTri) => parseFloat(giaTri);
 const tuyChonChung = {
   dialect: 'postgres',
   // Heroku Postgres dùng chứng chỉ do Heroku ký nên không xác minh được chuỗi chứng chỉ; vẫn mã hóa đường truyền
-  dialectOptions: cauHinh.csdl.url || cauHinh.csdl.dungSsl
+  dialectOptions: cauHinh.csdl.dungSsl
     ? { ssl: { require: true, rejectUnauthorized: false } }
     : {},
   // Tắt in câu lệnh SQL thô để tránh tràn màn hình và bảo mật thông tin

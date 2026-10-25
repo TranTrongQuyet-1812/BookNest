@@ -37,8 +37,8 @@ const cauHinh = {
     tenCsdl: process.env.DB_NAME || 'booknest',
     nguoiDung: process.env.DB_USER,
     matKhau: process.env.DB_PASSWORD || '',
-    // Heroku Postgres bắt buộc SSL; DB_SSL=true bật SSL khi nối từ ngoài vào
-    dungSsl: process.env.DB_SSL === 'true'
+    // Mặc định bật SSL khi dùng DATABASE_URL (Heroku, Supabase đều bắt buộc); đặt DB_SSL=false để tắt, DB_SSL=true để bật khi nối bằng DB_*
+    dungSsl: process.env.DB_SSL ? process.env.DB_SSL === 'true' : Boolean(process.env.DATABASE_URL)
   },
   jwt: {
     biMat: process.env.JWT_SECRET,
