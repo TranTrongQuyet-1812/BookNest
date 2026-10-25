@@ -15,7 +15,7 @@ function xuLyLoi(loi, req, res, _next) {
     });
   }
 
-  // 2. Lỗi trùng lặp dữ liệu UNIQUE từ Sequelize / SQL Server
+  // 2. Lỗi trùng lặp dữ liệu UNIQUE từ Sequelize / PostgreSQL
   if (loi.name === 'SequelizeUniqueConstraintError') {
     return phanHoiLoi(res, {
       thongDiep: 'Dữ liệu đã tồn tại trên hệ thống, vui lòng kiểm tra lại thông tin',
@@ -23,7 +23,7 @@ function xuLyLoi(loi, req, res, _next) {
     });
   }
 
-  // 3. Lỗi ràng buộc khóa ngoại FOREIGN KEY từ Sequelize / SQL Server
+  // 3. Lỗi ràng buộc khóa ngoại FOREIGN KEY từ Sequelize / PostgreSQL
   if (loi.name === 'SequelizeForeignKeyConstraintError') {
     return phanHoiLoi(res, {
       thongDiep: 'Thao tác không thể thực hiện do dữ liệu liên kết không tồn tại hoặc đang được sử dụng',
@@ -31,9 +31,9 @@ function xuLyLoi(loi, req, res, _next) {
     });
   }
 
-  // 4. Vi phạm ràng buộc CHECK (mã SQL Server 547) là do dữ liệu người dùng gửi nên trả 400.
+  // 4. Vi phạm ràng buộc CHECK (mã PostgreSQL 23514, trước đây SQL Server là 547) là do dữ liệu người dùng gửi nên trả 400.
   // Mọi lỗi SQL khác (thiếu cột/bảng, sai cú pháp...) là lỗi máy chủ: để rơi xuống nhánh 5 để ghi log và trả 500
-  if (loi.name === 'SequelizeDatabaseError' && (loi.original?.number ?? loi.parent?.number) === 547) {
+  if (loi.name === 'SequelizeDatabaseError' && (loi.original?.code ?? loi.parent?.code) === '23514') {
     return phanHoiLoi(res, {
       thongDiep: 'Dữ liệu gửi lên không đúng định dạng hoặc vi phạm quy định của hệ thống. Vui lòng kiểm tra lại',
       maTrangThai: 400

@@ -1,18 +1,24 @@
 /**
  * Tầng Service xử lý thống kê doanh thu và báo cáo phân tích cho Admin (T18, T31, T39).
- * Toàn bộ tính toán được gom nhóm trực tiếp tại SQL Server để tối ưu hiệu năng.
+ * Toàn bộ tính toán được gom nhóm trực tiếp tại PostgreSQL để tối ưu hiệu năng.
  * Hỗ trợ phân tích theo kênh bán (TRUC_TUYEN / TAI_QUAY), chuỗi thời gian và danh mục.
+ * Tên bảng, cột và bí danh trong SQL thô đặt trong ngoặc kép (PostgreSQL tự hạ chữ thường nếu không có ngoặc kép).
  */
 const { sequelize, DonHang, Sach, KhachHang, DanhGia } = require('../models');
 const { Op } = require('sequelize');
 
+// Đổi một cột TIMESTAMPTZ (thời điểm tuyệt đối) sang giờ treo tường Việt Nam (UTC+7) để lọc và gom nhóm theo ngày
+function gioVietNam(cot) {
+  return `(${cot} AT TIME ZONE 'Asia/Ho_Chi_Minh')`;
+}
+
 // Hàm bổ trợ xử lý điều kiện ngày và kênh bán cho câu lệnh SQL theo chuẩn múi giờ Việt Nam (UTC+7)
-function xayDungDieuKienLoc({ tuNgay, denNgay, kenhBan, cotNgay = 'ls.NgayHoanThanh', aliasDonHang = 'dh' }) {
+function xayDungDieuKienLoc({ tuNgay, denNgay, kenhBan, cotNgay = 'ls."NgayHoanThanh"', aliasDonHang = 'dh' }) {
   let dieuKienSql = '';
   const replacements = {};
 
   if (tuNgay) {
-    dieuKienSql += ` AND DATEADD(hour, 7, ${cotNgay}) >= :tuNgay`;
+    dieuKienSql += ` AND ${gioVietNam(cotNgay)} >= CAST(:tuNgay AS TIMESTAMP)`;
     if (/^\d{4}-\d{2}-\d{2}$/.test(tuNgay)) {
       replacements.tuNgay = `${tuNgay} 00:00:00`;
     } else {
@@ -20,7 +26,7 @@ function xayDungDieuKienLoc({ tuNgay, denNgay, kenhBan, cotNgay = 'ls.NgayHoanTh
     }
   }
   if (denNgay) {
-    dieuKienSql += ` AND DATEADD(hour, 7, ${cotNgay}) <= :denNgay`;
+    dieuKienSql += ` AND ${gioVietNam(cotNgay)} <= CAST(:denNgay AS TIMESTAMP)`;
     if (/^\d{4}-\d{2}-\d{2}$/.test(denNgay)) {
       replacements.denNgay = `${denNgay} 23:59:59.999`;
     } else {
@@ -28,7 +34,7 @@ function xayDungDieuKienLoc({ tuNgay, denNgay, kenhBan, cotNgay = 'ls.NgayHoanTh
     }
   }
   if (kenhBan) {
-    dieuKienSql += ` AND ${aliasDonHang}.KenhBan = :kenhBan`;
+    dieuKienSql += ` AND ${aliasDonHang}."KenhBan" = :kenhBan`;
     replacements.kenhBan = kenhBan;
   }
 
@@ -40,23 +46,23 @@ async function layTongQuanDoanhThu({ tuNgay, denNgay, kenhBan } = {}) {
   const { dieuKienSql, replacements } = xayDungDieuKienLoc({ tuNgay, denNgay, kenhBan });
 
   const cauTruyVan = `
-    SELECT 
-      COALESCE(SUM(dh.TongTien), 0) AS tongDoanhThu,
-      COUNT(DISTINCT dh.MaDonHang) AS soDonThanhCong,
-      COALESCE(SUM(ct.TongSach), 0) AS tongSachDaBan
-    FROM DonHang dh
+    SELECT
+      COALESCE(SUM(dh."TongTien"), 0) AS "tongDoanhThu",
+      COUNT(DISTINCT dh."MaDonHang") AS "soDonThanhCong",
+      COALESCE(SUM(ct."TongSach"), 0) AS "tongSachDaBan"
+    FROM "DonHang" dh
     INNER JOIN (
-      SELECT MaDonHang, MAX(NgayThayDoi) AS NgayHoanThanh
-      FROM LichSuTrangThaiDonHang
-      WHERE TrangThaiMoi = 'DA_GIAO'
-      GROUP BY MaDonHang
-    ) ls ON dh.MaDonHang = ls.MaDonHang
+      SELECT "MaDonHang", MAX("NgayThayDoi") AS "NgayHoanThanh"
+      FROM "LichSuTrangThaiDonHang"
+      WHERE "TrangThaiMoi" = 'DA_GIAO'
+      GROUP BY "MaDonHang"
+    ) ls ON dh."MaDonHang" = ls."MaDonHang"
     LEFT JOIN (
-      SELECT MaDonHang, SUM(SoLuong) AS TongSach
-      FROM ChiTietDonHang
-      GROUP BY MaDonHang
-    ) ct ON dh.MaDonHang = ct.MaDonHang
-    WHERE dh.TrangThai = 'DA_GIAO' ${dieuKienSql}
+      SELECT "MaDonHang", SUM("SoLuong") AS "TongSach"
+      FROM "ChiTietDonHang"
+      GROUP BY "MaDonHang"
+    ) ct ON dh."MaDonHang" = ct."MaDonHang"
+    WHERE dh."TrangThai" = 'DA_GIAO' ${dieuKienSql}
   `;
 
   const [ketQua] = await sequelize.query(cauTruyVan, {
@@ -79,25 +85,25 @@ async function layTopSachBanChay({ limit = 10, kenhBan } = {}) {
   const replacements = { gioiHan };
 
   if (kenhBan) {
-    dieuKienKenh = ' AND dh.KenhBan = :kenhBan';
+    dieuKienKenh = ' AND dh."KenhBan" = :kenhBan';
     replacements.kenhBan = kenhBan;
   }
 
   const cauTruyVan = `
-    SELECT 
-      s.MaSach AS maSach,
-      s.TenSach AS tenSach,
-      s.AnhBia AS anhBia,
-      dm.TenDanhMuc AS tenDanhMuc,
-      COALESCE(SUM(ct.SoLuong), 0) AS daBan,
-      COALESCE(SUM(ct.SoLuong * ct.DonGia), 0) AS doanhThu
-    FROM ChiTietDonHang ct
-    INNER JOIN DonHang dh ON ct.MaDonHang = dh.MaDonHang AND dh.TrangThai = 'DA_GIAO' ${dieuKienKenh}
-    INNER JOIN Sach s ON ct.MaSach = s.MaSach
-    LEFT JOIN DanhMuc dm ON s.MaDanhMuc = dm.MaDanhMuc
-    GROUP BY s.MaSach, s.TenSach, s.AnhBia, dm.TenDanhMuc
-    ORDER BY daBan DESC
-    OFFSET 0 ROWS FETCH NEXT :gioiHan ROWS ONLY
+    SELECT
+      s."MaSach" AS "maSach",
+      s."TenSach" AS "tenSach",
+      s."AnhBia" AS "anhBia",
+      dm."TenDanhMuc" AS "tenDanhMuc",
+      COALESCE(SUM(ct."SoLuong"), 0) AS "daBan",
+      COALESCE(SUM(ct."SoLuong" * ct."DonGia"), 0) AS "doanhThu"
+    FROM "ChiTietDonHang" ct
+    INNER JOIN "DonHang" dh ON ct."MaDonHang" = dh."MaDonHang" AND dh."TrangThai" = 'DA_GIAO' ${dieuKienKenh}
+    INNER JOIN "Sach" s ON ct."MaSach" = s."MaSach"
+    LEFT JOIN "DanhMuc" dm ON s."MaDanhMuc" = dm."MaDanhMuc"
+    GROUP BY s."MaSach", s."TenSach", s."AnhBia", dm."TenDanhMuc"
+    ORDER BY "daBan" DESC
+    LIMIT :gioiHan
   `;
 
   const danhSach = await sequelize.query(cauTruyVan, {
@@ -121,18 +127,18 @@ async function layTyLeDonHang({ kenhBan } = {}) {
   const replacements = {};
 
   if (kenhBan) {
-    dieuKienKenh = ' WHERE KenhBan = :kenhBan';
+    dieuKienKenh = ' WHERE "KenhBan" = :kenhBan';
     replacements.kenhBan = kenhBan;
   } else {
     // T55: Khi xem Tất cả, loại trừ đơn quầy đang tạm giữ chờ QR khỏi tỷ lệ đơn hàng chung
-    dieuKienKenh = " WHERE NOT (KenhBan = 'TAI_QUAY' AND TrangThai = 'CHO_DUYET')";
+    dieuKienKenh = ` WHERE NOT ("KenhBan" = 'TAI_QUAY' AND "TrangThai" = 'CHO_DUYET')`;
   }
 
   const cauTruyVan = `
-    SELECT TrangThai AS trangThai, COUNT(*) AS soLuong
-    FROM DonHang
+    SELECT "TrangThai" AS "trangThai", COUNT(*) AS "soLuong"
+    FROM "DonHang"
     ${dieuKienKenh}
-    GROUP BY TrangThai
+    GROUP BY "TrangThai"
   `;
 
   const cacTrangThai = await sequelize.query(cauTruyVan, {
@@ -174,30 +180,31 @@ async function layTyLeDonHang({ kenhBan } = {}) {
 // 4. Thống kê chuỗi thời gian doanh thu (T39: revenue-series theo day hoặc month)
 async function layDoanhThuTheoChuoi({ tuNgay, denNgay, kenhBan, group = 'day' } = {}) {
   const { dieuKienSql, replacements } = xayDungDieuKienLoc({ tuNgay, denNgay, kenhBan });
-  const dinhDang = group === 'month' ? 'yyyy-MM' : 'yyyy-MM-dd';
+  // Mẫu định dạng của to_char (PostgreSQL), thay cho FORMAT của SQL Server
+  const dinhDang = group === 'month' ? 'YYYY-MM' : 'YYYY-MM-DD';
   replacements.dinhDangThoiGian = dinhDang;
 
   const cauTruyVan = `
-    SELECT 
-      FORMAT(DATEADD(hour, 7, ls.NgayHoanThanh), :dinhDangThoiGian) AS thoiGian,
-      COALESCE(SUM(dh.TongTien), 0) AS tongDoanhThu,
-      COUNT(DISTINCT dh.MaDonHang) AS soDonThanhCong,
-      COALESCE(SUM(ct.TongSach), 0) AS tongSachDaBan
-    FROM DonHang dh
+    SELECT
+      to_char(${gioVietNam('ls."NgayHoanThanh"')}, :dinhDangThoiGian) AS "thoiGian",
+      COALESCE(SUM(dh."TongTien"), 0) AS "tongDoanhThu",
+      COUNT(DISTINCT dh."MaDonHang") AS "soDonThanhCong",
+      COALESCE(SUM(ct."TongSach"), 0) AS "tongSachDaBan"
+    FROM "DonHang" dh
     INNER JOIN (
-      SELECT MaDonHang, MAX(NgayThayDoi) AS NgayHoanThanh
-      FROM LichSuTrangThaiDonHang
-      WHERE TrangThaiMoi = 'DA_GIAO'
-      GROUP BY MaDonHang
-    ) ls ON dh.MaDonHang = ls.MaDonHang
+      SELECT "MaDonHang", MAX("NgayThayDoi") AS "NgayHoanThanh"
+      FROM "LichSuTrangThaiDonHang"
+      WHERE "TrangThaiMoi" = 'DA_GIAO'
+      GROUP BY "MaDonHang"
+    ) ls ON dh."MaDonHang" = ls."MaDonHang"
     LEFT JOIN (
-      SELECT MaDonHang, SUM(SoLuong) AS TongSach
-      FROM ChiTietDonHang
-      GROUP BY MaDonHang
-    ) ct ON dh.MaDonHang = ct.MaDonHang
-    WHERE dh.TrangThai = 'DA_GIAO' ${dieuKienSql}
-    GROUP BY FORMAT(DATEADD(hour, 7, ls.NgayHoanThanh), :dinhDangThoiGian)
-    ORDER BY thoiGian ASC
+      SELECT "MaDonHang", SUM("SoLuong") AS "TongSach"
+      FROM "ChiTietDonHang"
+      GROUP BY "MaDonHang"
+    ) ct ON dh."MaDonHang" = ct."MaDonHang"
+    WHERE dh."TrangThai" = 'DA_GIAO' ${dieuKienSql}
+    GROUP BY 1
+    ORDER BY "thoiGian" ASC
   `;
 
   const danhSach = await sequelize.query(cauTruyVan, {
@@ -218,24 +225,24 @@ async function layDoanhThuTheoDanhMuc({ tuNgay, denNgay, kenhBan } = {}) {
   const { dieuKienSql, replacements } = xayDungDieuKienLoc({ tuNgay, denNgay, kenhBan });
 
   const cauTruyVan = `
-    SELECT 
-      dm.MaDanhMuc AS maDanhMuc,
-      COALESCE(dm.TenDanhMuc, N'Chưa phân loại') AS tenDanhMuc,
-      COALESCE(SUM(ct.SoLuong), 0) AS daBan,
-      COALESCE(SUM(ct.SoLuong * ct.DonGia), 0) AS doanhThu
-    FROM ChiTietDonHang ct
-    INNER JOIN DonHang dh ON ct.MaDonHang = dh.MaDonHang AND dh.TrangThai = 'DA_GIAO'
+    SELECT
+      dm."MaDanhMuc" AS "maDanhMuc",
+      COALESCE(dm."TenDanhMuc", 'Chưa phân loại') AS "tenDanhMuc",
+      COALESCE(SUM(ct."SoLuong"), 0) AS "daBan",
+      COALESCE(SUM(ct."SoLuong" * ct."DonGia"), 0) AS "doanhThu"
+    FROM "ChiTietDonHang" ct
+    INNER JOIN "DonHang" dh ON ct."MaDonHang" = dh."MaDonHang" AND dh."TrangThai" = 'DA_GIAO'
     INNER JOIN (
-      SELECT MaDonHang, MAX(NgayThayDoi) AS NgayHoanThanh
-      FROM LichSuTrangThaiDonHang
-      WHERE TrangThaiMoi = 'DA_GIAO'
-      GROUP BY MaDonHang
-    ) ls ON dh.MaDonHang = ls.MaDonHang
-    INNER JOIN Sach s ON ct.MaSach = s.MaSach
-    LEFT JOIN DanhMuc dm ON s.MaDanhMuc = dm.MaDanhMuc
+      SELECT "MaDonHang", MAX("NgayThayDoi") AS "NgayHoanThanh"
+      FROM "LichSuTrangThaiDonHang"
+      WHERE "TrangThaiMoi" = 'DA_GIAO'
+      GROUP BY "MaDonHang"
+    ) ls ON dh."MaDonHang" = ls."MaDonHang"
+    INNER JOIN "Sach" s ON ct."MaSach" = s."MaSach"
+    LEFT JOIN "DanhMuc" dm ON s."MaDanhMuc" = dm."MaDanhMuc"
     WHERE 1=1 ${dieuKienSql}
-    GROUP BY dm.MaDanhMuc, dm.TenDanhMuc
-    ORDER BY doanhThu DESC
+    GROUP BY dm."MaDanhMuc", dm."TenDanhMuc"
+    ORDER BY "doanhThu" DESC
   `;
 
   const danhSach = await sequelize.query(cauTruyVan, {
@@ -339,12 +346,12 @@ async function layTongHopCongViecTheoVaiTro(maNhanVien, vaiTro) {
     Sach.count({ where: { SoLuongTon: { [Op.lte]: sequelize.col('NguongCanhBao') }, DaAn: false } }),
     DanhGia.count({ where: { NgayTao: { [Op.gte]: bayNgayTruoc } } }),
     sequelize.query(`
-      SELECT COUNT(DISTINCT ls.MaDonHang) AS soDonHoanTat
-      FROM LichSuTrangThaiDonHang ls
-      INNER JOIN DonHang dh ON ls.MaDonHang = dh.MaDonHang
-      WHERE ls.TrangThaiMoi = 'DA_GIAO'
-        AND dh.TrangThai = 'DA_GIAO'
-        AND ls.NgayThayDoi >= :dauNgay
+      SELECT COUNT(DISTINCT ls."MaDonHang") AS "soDonHoanTat"
+      FROM "LichSuTrangThaiDonHang" ls
+      INNER JOIN "DonHang" dh ON ls."MaDonHang" = dh."MaDonHang"
+      WHERE ls."TrangThaiMoi" = 'DA_GIAO'
+        AND dh."TrangThai" = 'DA_GIAO'
+        AND ls."NgayThayDoi" >= :dauNgay
     `, {
       replacements: { dauNgay: dauNgayHomNay },
       type: sequelize.QueryTypes.SELECT

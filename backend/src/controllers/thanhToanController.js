@@ -13,7 +13,7 @@ const { chuanHoaMaTraCuu } = require('../utils/maTraCuu');
 async function timDonTheoMaTraCuu(chuoiMa, tuyChon = {}) {
   const maTraCuu = chuanHoaMaTraCuu(chuoiMa);
   if (!maTraCuu) return null;
-  return DonHang.findOne({ where: { MaTraCuu: maTraCuu }, ...tuyChon });
+  return DonHang.findOne({ where: { MaTraCuu: String(maTraCuu).toUpperCase() }, ...tuyChon });
 }
 
 // Đơn của khách có tài khoản: chỉ chủ đơn (đã đăng nhập) hoặc nhân viên được thao tác/xem thanh toán.
@@ -165,8 +165,8 @@ async function layDanhSachThanhToanAdmin(req, res) {
     const tuKhoa = search.trim();
     const { Op } = require('sequelize');
     const dieuKienOr = [
-      { '$donHang.MaTraCuu$': { [Op.like]: `%${tuKhoa}%` } },
-      { MaThamChieuNganHang: { [Op.like]: `%${tuKhoa}%` } }
+      { '$donHang.MaTraCuu$': { [Op.iLike]: `%${tuKhoa}%` } },
+      { MaThamChieuNganHang: { [Op.iLike]: `%${tuKhoa}%` } }
     ];
     if (!isNaN(tuKhoa)) {
       dieuKienOr.push(
@@ -195,7 +195,7 @@ async function layDanhSachThanhToanAdmin(req, res) {
       }
     ],
     order: [
-      [sequelize.literal("CASE WHEN [ThanhToan].[TrangThai] = 'CAN_HOAN_TIEN' THEN 0 ELSE 1 END"), 'ASC'],
+      [sequelize.literal(`CASE WHEN "ThanhToan"."TrangThai" = 'CAN_HOAN_TIEN' THEN 0 ELSE 1 END`), 'ASC'],
       ['NgayCapNhat', 'DESC']
     ],
     limit: gioiHan,
@@ -204,15 +204,16 @@ async function layDanhSachThanhToanAdmin(req, res) {
   });
 
   // Thống kê nhanh số lượng theo trạng thái
+  // Ép COUNT về INTEGER vì driver pg trả bigint dưới dạng chuỗi, mà giao diện cần số
   const [thongKeTrangThai] = await sequelize.query(`
     SELECT
-      COUNT(CASE WHEN TrangThai = 'CAN_HOAN_TIEN' THEN 1 END) AS soLuongCanHoanTien,
-      COUNT(CASE WHEN TrangThai = 'DA_HOAN_TIEN' THEN 1 END) AS soLuongDaHoanTien,
-      COUNT(CASE WHEN TrangThai = 'DA_THANH_TOAN' THEN 1 END) AS soLuongDaThanhToan,
-      COUNT(CASE WHEN TrangThai = 'CHO_THANH_TOAN' THEN 1 END) AS soLuongChoThanhToan,
-      COUNT(CASE WHEN TrangThai IN ('HET_HAN', 'DA_HUY') THEN 1 END) AS soLuongDaHuy,
-      COUNT(*) AS tongTatCa
-    FROM ThanhToan
+      CAST(COUNT(CASE WHEN "TrangThai" = 'CAN_HOAN_TIEN' THEN 1 END) AS INTEGER) AS "soLuongCanHoanTien",
+      CAST(COUNT(CASE WHEN "TrangThai" = 'DA_HOAN_TIEN' THEN 1 END) AS INTEGER) AS "soLuongDaHoanTien",
+      CAST(COUNT(CASE WHEN "TrangThai" = 'DA_THANH_TOAN' THEN 1 END) AS INTEGER) AS "soLuongDaThanhToan",
+      CAST(COUNT(CASE WHEN "TrangThai" = 'CHO_THANH_TOAN' THEN 1 END) AS INTEGER) AS "soLuongChoThanhToan",
+      CAST(COUNT(CASE WHEN "TrangThai" IN ('HET_HAN', 'DA_HUY') THEN 1 END) AS INTEGER) AS "soLuongDaHuy",
+      CAST(COUNT(*) AS INTEGER) AS "tongTatCa"
+    FROM "ThanhToan"
   `, { type: sequelize.QueryTypes.SELECT });
 
   return phanHoiThanhCong(res, {

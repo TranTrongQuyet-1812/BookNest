@@ -239,7 +239,7 @@ async function timSachMoDiem(chuoiTimKiem, { limit = 5, whereThem = {}, includeD
     where: {
       DaAn: false,
       ...whereThem,
-      [Op.or]: tokens.map(t => chuaTuKhoa('[Sach].[TenSach]', t))
+      [Op.or]: tokens.map(t => chuaTuKhoa('"Sach"."TenSach"', t))
     },
     include: includeOptions,
     attributes: ['MaSach', 'TenSach', 'TacGia', 'GiaBan', 'SoLuongTon', 'AnhBia', 'MoTa']
@@ -317,7 +317,7 @@ async function xuLyXacNhanDaiTu(chuoiTim, sachHienTai, dieuKien) {
   if (tokensTuKhoa.length > 0 || !sachHienTai) return null;
 
   const sach = await Sach.findOne({
-    where: [dieuKien, chuaTuKhoaLinhHoat('[Sach].[TenSach]', sachHienTai)],
+    where: [dieuKien, chuaTuKhoaLinhHoat('"Sach"."TenSach"', sachHienTai)],
     include: [{ model: DanhMuc, as: 'danhMuc', attributes: ['MaDanhMuc', 'TenDanhMuc'] }]
   });
   if (!sach) return null;
@@ -364,8 +364,8 @@ async function timSachTheoTenHoacTacGia(tuKhoa, dieuKien) {
     where: {
       ...dieuKien,
       [Op.or]: [
-        chuaTuKhoaLinhHoat('[Sach].[TenSach]', tuKhoaTrim),
-        chuaTuKhoaLinhHoat('[Sach].[TacGia]', tuKhoaTrim)
+        chuaTuKhoaLinhHoat('"Sach"."TenSach"', tuKhoaTrim),
+        chuaTuKhoaLinhHoat('"Sach"."TacGia"', tuKhoaTrim)
       ]
     },
     include: includeDanhMuc,
@@ -537,7 +537,7 @@ async function thucThiKiemTraTonKho({ ma_sach, ten_sach }, tinNhanGoc = '') {
       sach = await Sach.findOne({
         where: [
           { DaAn: false },
-          chuaTuKhoaLinhHoat('[Sach].[TenSach]', ten_sach.trim())
+          chuaTuKhoaLinhHoat('"Sach"."TenSach"', ten_sach.trim())
         ],
         include: [{ model: DanhMuc, as: 'danhMuc', attributes: ['TenDanhMuc'] }]
       });
@@ -621,7 +621,7 @@ async function thucThiSoanThanhToan({ danh_sach_sach, ten_nguoi_nhan, so_dien_th
         sach = await Sach.findOne({
           where: [
             { DaAn: false },
-            chuaTuKhoaLinhHoat('[Sach].[TenSach]', sachHienTai)
+            chuaTuKhoaLinhHoat('"Sach"."TenSach"', sachHienTai)
           ]
         });
         if (sach) laKhopChinhXac = true;
@@ -630,7 +630,7 @@ async function thucThiSoanThanhToan({ danh_sach_sach, ten_nguoi_nhan, so_dien_th
         sach = await Sach.findOne({
           where: [
             { DaAn: false },
-            chuaTuKhoaLinhHoat('[Sach].[TenSach]', tenSachItem)
+            chuaTuKhoaLinhHoat('"Sach"."TenSach"', tenSachItem)
           ]
         });
         if (sach) {
@@ -767,7 +767,7 @@ async function thucThiThemVaoGioHang({ ma_sach, ten_sach, so_luong = 1 }, tinNha
       sach = await Sach.findOne({
         where: [
           { DaAn: false },
-          chuaTuKhoaLinhHoat('[Sach].[TenSach]', sachHienTai)
+          chuaTuKhoaLinhHoat('"Sach"."TenSach"', sachHienTai)
         ]
       });
     }
@@ -775,7 +775,7 @@ async function thucThiThemVaoGioHang({ ma_sach, ten_sach, so_luong = 1 }, tinNha
       sach = await Sach.findOne({
         where: [
           { DaAn: false },
-          chuaTuKhoaLinhHoat('[Sach].[TenSach]', tenSachTim)
+          chuaTuKhoaLinhHoat('"Sach"."TenSach"', tenSachTim)
         ]
       });
     }
@@ -1177,9 +1177,9 @@ function trichXuatToolCallTuNoiDung(noiDung) {
 async function tinhTongTokenHomNay() {
   try {
     const [ketQua] = await sequelize.query(`
-      SELECT ISNULL(SUM(SoToken), 0) AS tongToken, COUNT(MaNhatKy) AS soLuot
-      FROM dbo.NhatKyChatbot
-      WHERE CAST(NgayGhi AS DATE) = CAST(SYSDATETIME() AS DATE)
+      SELECT COALESCE(SUM("SoToken"), 0) AS "tongToken", COUNT("MaNhatKy") AS "soLuot"
+      FROM "NhatKyChatbot"
+      WHERE "NgayGhi" >= date_trunc('day', now() AT TIME ZONE 'Asia/Ho_Chi_Minh') AT TIME ZONE 'Asia/Ho_Chi_Minh'
     `, { type: sequelize.QueryTypes.SELECT });
     return {
       tongToken: ketQua ? parseInt(ketQua.tongToken, 10) : 0,

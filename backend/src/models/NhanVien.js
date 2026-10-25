@@ -18,7 +18,7 @@ const NhanVien = sequelize.define('NhanVien', {
     allowNull: false
   },
   Email: {
-    type: DataTypes.STRING(255),
+    type: DataTypes.CITEXT,
     allowNull: false,
     unique: true
   },

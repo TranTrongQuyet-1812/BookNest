@@ -1,7 +1,7 @@
 /**
  * Tầng Service quản lý sách, tìm kiếm tiếng Việt không dấu, phân trang, CRUD và nhập kho.
  */
-const { Op, TableHints } = require('sequelize');
+const { Op, Transaction } = require('sequelize');
 const { sequelize, Sach, DanhMuc, LichSuNhapKho, LichSuDieuChinhKho, NhanVien } = require('../models');
 const LoiNghiepVu = require('../middlewares/loiNghiepVu');
 const {
@@ -9,7 +9,6 @@ const {
   chuaTuKhoaBoKhoangTrang,
   chuaTuKhoaLinhHoat,
   thoatKyTuLike,
-  BANG_MA_TIM_KIEM,
   locTuKhoaThucSu,
   chamDiemTimGanDung
 } = require('../utils/timKiem');
@@ -17,23 +16,29 @@ const { ghiNhanThayDoi } = require('./lichSuThayDoiService');
 const anhBiaService = require('./anhBiaService');
 const { tinhGiaSauGiam } = require('../utils/giaBan');
 
-// Biểu thức SQL tính phần trăm giảm giá cao nhất đang có hiệu lực (GG04 - Sử dụng GETUTCDATE() đồng bộ UTC)
+// Biểu thức SQL tính phần trăm giảm giá cao nhất đang có hiệu lực (GG04). Cột kiểu TIMESTAMPTZ nên so với now() là đủ,
+// không cần đổi múi giờ. Tên bảng và cột đặt trong ngoặc kép vì PostgreSQL tự hạ chữ thường tên không có ngoặc kép.
 const bieuThucPhanTramGiam = `(
-  SELECT MAX(ct.PhanTramGiam)
-  FROM ChuongTrinhGiamGia ct
-  INNER JOIN ChuongTrinhGiamGiaDoiTuong dt ON ct.MaChuongTrinh = dt.MaChuongTrinh
-  WHERE ct.DangHoatDong = 1 
-    AND ct.NgayBatDau <= GETUTCDATE() 
-    AND ct.NgayKetThuc >= GETUTCDATE()
-    AND (dt.MaSach = Sach.MaSach OR dt.MaDanhMuc = Sach.MaDanhMuc)
+  SELECT MAX(ct."PhanTramGiam")
+  FROM "ChuongTrinhGiamGia" ct
+  INNER JOIN "ChuongTrinhGiamGiaDoiTuong" dt ON ct."MaChuongTrinh" = dt."MaChuongTrinh"
+  WHERE ct."DangHoatDong" = TRUE
+    AND ct."NgayBatDau" <= now()
+    AND ct."NgayKetThuc" >= now()
+    AND (dt."MaSach" = "Sach"."MaSach" OR dt."MaDanhMuc" = "Sach"."MaDanhMuc")
 )`;
 
-// Biểu thức SQL tính giá sau giảm làm tròn xuống hàng trăm đồng (GG04)
-const bieuThucGiaSauGiam = `CASE 
+// Biểu thức SQL tính giá sau giảm làm tròn xuống hàng trăm đồng (GG04); TRUNC giữ đúng cách cắt phần lẻ của bản SQL Server
+const bieuThucGiaSauGiam = `CASE
   WHEN ${bieuThucPhanTramGiam} IS NOT NULL
-  THEN FLOOR(CAST(Sach.GiaBan AS BIGINT) * (100 - ${bieuThucPhanTramGiam}) / 10000.0) * 100
-  ELSE Sach.GiaBan
+  THEN FLOOR(CAST(TRUNC("Sach"."GiaBan") AS BIGINT) * (100 - ${bieuThucPhanTramGiam}) / 10000.0) * 100
+  ELSE "Sach"."GiaBan"
 END`;
+
+// Số sao trung bình (làm tròn 1 chữ số) và số lượt đánh giá chưa bị ẩn. Ép về số thật vì driver pg
+// trả NUMERIC và COUNT dưới dạng chuỗi, mà giao diện cần số.
+const bieuThucSoSaoTrungBinh = `(SELECT CAST(ROUND(AVG("DanhGia"."SoSao"), 1) AS DOUBLE PRECISION) FROM "DanhGia" WHERE "DanhGia"."MaSach" = "Sach"."MaSach" AND "DanhGia"."DaAn" = FALSE)`;
+const bieuThucSoLuotDanhGia = `(SELECT CAST(COUNT(*) AS INTEGER) FROM "DanhGia" WHERE "DanhGia"."MaSach" = "Sach"."MaSach" AND "DanhGia"."DaAn" = FALSE)`;
 
 // Lấy danh sách sách công khai (tìm kiếm, lọc giá, lọc danh mục, phân trang)
 async function layDanhSachSach({
@@ -58,16 +63,16 @@ async function layDanhSachSach({
   if (search && search.trim().length > 0) {
     const tuKhoa = search.trim();
     const tuKhoaTachCamelCase = tuKhoa.replace(/([a-z])([A-Z])/g, '$1 $2');
-    const cotGhepTenVaTacGia = "COALESCE([Sach].[TenSach], N'') + N' ' + COALESCE([Sach].[TacGia], N'')";
+    const cotGhepTenVaTacGia = `COALESCE("Sach"."TenSach", '') || ' ' || COALESCE("Sach"."TacGia", '')`;
 
     dieuKien[Op.or] = [
-      chuaTuKhoa('[Sach].[TenSach]', tuKhoa),
-      chuaTuKhoa('[Sach].[TacGia]', tuKhoa),
-      chuaTuKhoaLinhHoat('[Sach].[TenSach]', tuKhoaTachCamelCase),
-      chuaTuKhoaLinhHoat('[Sach].[TacGia]', tuKhoaTachCamelCase),
+      chuaTuKhoa('"Sach"."TenSach"', tuKhoa),
+      chuaTuKhoa('"Sach"."TacGia"', tuKhoa),
+      chuaTuKhoaLinhHoat('"Sach"."TenSach"', tuKhoaTachCamelCase),
+      chuaTuKhoaLinhHoat('"Sach"."TacGia"', tuKhoaTachCamelCase),
       chuaTuKhoaLinhHoat(cotGhepTenVaTacGia, tuKhoaTachCamelCase),
-      chuaTuKhoaBoKhoangTrang('[Sach].[TenSach]', tuKhoa),
-      chuaTuKhoaBoKhoangTrang('[Sach].[TacGia]', tuKhoa)
+      chuaTuKhoaBoKhoangTrang('"Sach"."TenSach"', tuKhoa),
+      chuaTuKhoaBoKhoangTrang('"Sach"."TacGia"', tuKhoa)
     ];
   }
 
@@ -91,8 +96,8 @@ async function layDanhSachSach({
   // các kết quả chỉ khớp từng từ rời (dễ nhiễu) xuống sau
   if (search && search.trim() && (!sort || sort === 'newest')) {
     const mauLike = sequelize.escape(`%${thoatKyTuLike(search.trim())}%`);
-    const khopNguyenCum = ['[Sach].[TenSach]', '[Sach].[TacGia]']
-      .map((cot) => `${cot} COLLATE ${BANG_MA_TIM_KIEM} LIKE ${mauLike}`)
+    const khopNguyenCum = ['"Sach"."TenSach"', '"Sach"."TacGia"']
+      .map((cot) => `bo_dau(${cot}) LIKE bo_dau(${mauLike})`)
       .join(' OR ');
     sapXep = [[sequelize.literal(`CASE WHEN ${khopNguyenCum} THEN 0 ELSE 1 END`), 'ASC'], ['NgayTao', 'DESC']];
   }
@@ -115,18 +120,8 @@ async function layDanhSachSach({
     include: [{ model: DanhMuc, as: 'danhMuc', attributes: ['MaDanhMuc', 'TenDanhMuc'] }],
     attributes: {
       include: [
-        [
-          sequelize.literal(
-            '(SELECT ROUND(AVG(CAST(SoSao AS FLOAT)), 1) FROM DanhGia WHERE DanhGia.MaSach = Sach.MaSach AND DanhGia.DaAn = 0)'
-          ),
-          'soSaoTrungBinh'
-        ],
-        [
-          sequelize.literal(
-            '(SELECT COUNT(*) FROM DanhGia WHERE DanhGia.MaSach = Sach.MaSach AND DanhGia.DaAn = 0)'
-          ),
-          'soLuotDanhGia'
-        ],
+        [sequelize.literal(bieuThucSoSaoTrungBinh), 'soSaoTrungBinh'],
+        [sequelize.literal(bieuThucSoLuotDanhGia), 'soLuotDanhGia'],
         [sequelize.literal(bieuThucPhanTramGiam), 'PhanTramGiam'],
         [sequelize.literal(bieuThucGiaSauGiam), 'GiaSauGiam']
       ]
@@ -204,18 +199,8 @@ async function layChiTietSach(maSach, laAdmin = false) {
     include: [{ model: DanhMuc, as: 'danhMuc', attributes: ['MaDanhMuc', 'TenDanhMuc'] }],
     attributes: {
       include: [
-        [
-          sequelize.literal(
-            '(SELECT ROUND(AVG(CAST(SoSao AS FLOAT)), 1) FROM DanhGia WHERE DanhGia.MaSach = Sach.MaSach AND DanhGia.DaAn = 0)'
-          ),
-          'soSaoTrungBinh'
-        ],
-        [
-          sequelize.literal(
-            '(SELECT COUNT(*) FROM DanhGia WHERE DanhGia.MaSach = Sach.MaSach AND DanhGia.DaAn = 0)'
-          ),
-          'soLuotDanhGia'
-        ],
+        [sequelize.literal(bieuThucSoSaoTrungBinh), 'soSaoTrungBinh'],
+        [sequelize.literal(bieuThucSoLuotDanhGia), 'soLuotDanhGia'],
         [sequelize.literal(bieuThucPhanTramGiam), 'PhanTramGiam'],
         [sequelize.literal(bieuThucGiaSauGiam), 'GiaSauGiam']
       ]
@@ -256,11 +241,12 @@ async function chuanHoaTacGia(ten, transaction) {
 
   // Tra cứu tác giả có sẵn trong DB trùng khi so sánh không phân biệt hoa thường và dấu
   const danhSachTrung = await sequelize.query(`
-    SELECT TOP 1 TacGia, COUNT(*) AS SoLuong, MIN(MaSach) AS MaDauTien
-    FROM Sach
-    WHERE TacGia COLLATE Latin1_General_CI_AI = :tenGoc COLLATE Latin1_General_CI_AI
-    GROUP BY TacGia COLLATE Latin1_General_BIN2, TacGia
-    ORDER BY SoLuong DESC, MaDauTien ASC;
+    SELECT "TacGia", COUNT(*) AS "SoLuong", MIN("MaSach") AS "MaDauTien"
+    FROM "Sach"
+    WHERE bo_dau("TacGia") = bo_dau(:tenGoc)
+    GROUP BY "TacGia"
+    ORDER BY "SoLuong" DESC, "MaDauTien" ASC
+    LIMIT 1;
   `, {
     replacements: { tenGoc: tenDaCat },
     type: sequelize.QueryTypes.SELECT,
@@ -290,32 +276,33 @@ async function layDanhSachTacGiaGoiY({ search = '', limit = 20 } = {}) {
   const tuKhoa = (search || '').trim();
 
   const danhSach = await sequelize.query(`
-    WITH ThongKeTacGia AS (
-      SELECT 
-        TacGia,
-        COUNT(*) AS SoLuong,
-        MIN(MaSach) AS MaDauTien
-      FROM Sach
-      WHERE TacGia IS NOT NULL 
-        AND LTRIM(RTRIM(TacGia)) <> ''
-        AND TacGia COLLATE Latin1_General_CI_AI <> N'Dang cap nhat'
-        ${tuKhoa ? "AND TacGia COLLATE Latin1_General_CI_AI LIKE N'%' + :search + N'%'" : ""}
-      GROUP BY TacGia COLLATE Latin1_General_BIN2, TacGia
+    WITH "ThongKeTacGia" AS (
+      SELECT
+        "TacGia",
+        COUNT(*) AS "SoLuong",
+        MIN("MaSach") AS "MaDauTien"
+      FROM "Sach"
+      WHERE "TacGia" IS NOT NULL
+        AND TRIM("TacGia") <> ''
+        AND bo_dau("TacGia") <> 'dang cap nhat'
+        ${tuKhoa ? `AND bo_dau("TacGia") LIKE '%' || bo_dau(:search) || '%'` : ''}
+      GROUP BY "TacGia"
     ),
-    XepHang AS (
-      SELECT 
-        TacGia,
-        SoLuong,
+    "XepHang" AS (
+      SELECT
+        "TacGia",
+        "SoLuong",
         ROW_NUMBER() OVER (
-          PARTITION BY TacGia COLLATE Latin1_General_CI_AI 
-          ORDER BY SoLuong DESC, MaDauTien ASC
-        ) AS ThuTu
-      FROM ThongKeTacGia
+          PARTITION BY bo_dau("TacGia")
+          ORDER BY "SoLuong" DESC, "MaDauTien" ASC
+        ) AS "ThuTu"
+      FROM "ThongKeTacGia"
     )
-    SELECT TOP (:limit) TacGia, SoLuong
-    FROM XepHang
-    WHERE ThuTu = 1
-    ORDER BY SoLuong DESC, TacGia ASC;
+    SELECT "TacGia", "SoLuong"
+    FROM "XepHang"
+    WHERE "ThuTu" = 1
+    ORDER BY "SoLuong" DESC, "TacGia" ASC
+    LIMIT :limit;
   `, {
     replacements: { search: tuKhoa, limit: soLuong },
     type: sequelize.QueryTypes.SELECT
@@ -399,7 +386,7 @@ async function taoSach(duLieu, maNhanVienTao) {
 async function capNhatSach(maSach, duLieu, maNhanVien) {
   const t = await sequelize.transaction();
   try {
-    const sach = await Sach.findByPk(maSach, { transaction: t, tableHint: TableHints.UPDLOCK });
+    const sach = await Sach.findByPk(maSach, { transaction: t, lock: Transaction.LOCK.UPDATE });
     if (!sach) throw LoiNghiepVu.khongTimThay('Không tìm thấy cuốn sách này');
     if (duLieu.maDanhMuc && duLieu.maDanhMuc !== sach.MaDanhMuc) {
       const danhMuc = await DanhMuc.findByPk(duLieu.maDanhMuc, { transaction: t });
@@ -585,30 +572,31 @@ async function layDanhSachSapHetHang({ page = 1, limit = 20 } = {}) {
 // Báo cáo tổng quan kho không trả về thông tin cá nhân khách hàng.
 async function layBaoCaoKho() {
   const [ketQua] = await sequelize.query(`
-    SELECT COUNT(*) AS tongDauSach,
-      COALESCE(SUM(SoLuongTon), 0) AS tongSoLuongTon,
-      COALESCE(SUM(SoLuongTon * GiaBan), 0) AS giaTriTonKho,
-      SUM(CASE WHEN SoLuongTon <= NguongCanhBao THEN 1 ELSE 0 END) AS soSachSapHet,
-      SUM(CASE WHEN SoLuongTon = 0 THEN 1 ELSE 0 END) AS soSachHetHang
-    FROM Sach WHERE DaAn = 0
+    SELECT COUNT(*) AS "tongDauSach",
+      COALESCE(SUM("SoLuongTon"), 0) AS "tongSoLuongTon",
+      COALESCE(SUM("SoLuongTon" * "GiaBan"), 0) AS "giaTriTonKho",
+      SUM(CASE WHEN "SoLuongTon" <= "NguongCanhBao" THEN 1 ELSE 0 END) AS "soSachSapHet",
+      SUM(CASE WHEN "SoLuongTon" = 0 THEN 1 ELSE 0 END) AS "soSachHetHang"
+    FROM "Sach" WHERE "DaAn" = FALSE
   `, { type: sequelize.QueryTypes.SELECT });
+  // LEFT JOIN LATERAL thay cho OUTER APPLY của SQL Server: với mỗi cuốn sách, tính số đơn đã giao trong 90 ngày và ngày bán gần nhất
   const sachBanCham = await sequelize.query(`
-    SELECT s.MaSach AS maSach, s.TenSach AS tenSach, s.SoLuongTon AS soLuongTon,
-      s.GiaBan AS giaBan, s.SoLuongTon * s.GiaBan AS giaTriTon,
-      ban.ngayBanGanNhat,
-      COUNT(*) OVER() AS soSachBanCham
-    FROM Sach s
-    OUTER APPLY (
+    SELECT s."MaSach" AS "maSach", s."TenSach" AS "tenSach", s."SoLuongTon" AS "soLuongTon",
+      s."GiaBan" AS "giaBan", s."SoLuongTon" * s."GiaBan" AS "giaTriTon",
+      ban."ngayBanGanNhat",
+      COUNT(*) OVER() AS "soSachBanCham"
+    FROM "Sach" s
+    LEFT JOIN LATERAL (
       SELECT
-        COUNT(DISTINCT CASE WHEN ls.NgayThayDoi >= DATEADD(DAY, -90, SYSDATETIME()) THEN dh.MaDonHang END) AS soDon90Ngay,
-        MAX(ls.NgayThayDoi) AS ngayBanGanNhat
-      FROM ChiTietDonHang ct
-      INNER JOIN DonHang dh ON dh.MaDonHang = ct.MaDonHang AND dh.TrangThai = 'DA_GIAO'
-      INNER JOIN LichSuTrangThaiDonHang ls ON ls.MaDonHang = dh.MaDonHang AND ls.TrangThaiMoi = 'DA_GIAO'
-      WHERE ct.MaSach = s.MaSach
-    ) ban
-    WHERE s.DaAn = 0 AND s.SoLuongTon > 0 AND ban.soDon90Ngay = 0
-    ORDER BY giaTriTon DESC, s.TenSach ASC
+        COUNT(DISTINCT CASE WHEN ls."NgayThayDoi" >= now() - INTERVAL '90 days' THEN dh."MaDonHang" END) AS "soDon90Ngay",
+        MAX(ls."NgayThayDoi") AS "ngayBanGanNhat"
+      FROM "ChiTietDonHang" ct
+      INNER JOIN "DonHang" dh ON dh."MaDonHang" = ct."MaDonHang" AND dh."TrangThai" = 'DA_GIAO'
+      INNER JOIN "LichSuTrangThaiDonHang" ls ON ls."MaDonHang" = dh."MaDonHang" AND ls."TrangThaiMoi" = 'DA_GIAO'
+      WHERE ct."MaSach" = s."MaSach"
+    ) ban ON TRUE
+    WHERE s."DaAn" = FALSE AND s."SoLuongTon" > 0 AND ban."soDon90Ngay" = 0
+    ORDER BY "giaTriTon" DESC, s."TenSach" ASC
   `, { type: sequelize.QueryTypes.SELECT });
   return {
     tongDauSach: Number(ketQua.tongDauSach || 0),
@@ -643,7 +631,7 @@ async function layLichSuDieuChinhKho({ page = 1, limit = 20 } = {}) {
   return { danhSach: rows, phanTrang: { tongSoBanGhi: count, tongSoTrang: Math.ceil(count / gioiHan), trangHienTai: trang, soBanGhiMoiTrang: gioiHan } };
 }
 
-// Điều chỉnh tồn kho có lý do; UPDLOCK giữ số tồn trước/sau nhất quán.
+// Điều chỉnh tồn kho có lý do; khóa dòng FOR UPDATE giữ số tồn trước/sau nhất quán.
 async function dieuChinhTonKho(maSach, duLieu, maNhanVien) {
   const { soLuongThayDoi, loaiDieuChinh, ghiChu } = duLieu;
   if (!Number.isInteger(soLuongThayDoi) || soLuongThayDoi === 0) {
@@ -661,7 +649,7 @@ async function dieuChinhTonKho(maSach, duLieu, maNhanVien) {
 
   const t = await sequelize.transaction();
   try {
-    const sach = await Sach.findByPk(maSach, { transaction: t, tableHint: TableHints.UPDLOCK });
+    const sach = await Sach.findByPk(maSach, { transaction: t, lock: Transaction.LOCK.UPDATE });
     if (!sach) throw LoiNghiepVu.khongTimThay('Không tìm thấy cuốn sách này');
     if (sach.DaAn) throw LoiNghiepVu.yeuCauKhongHopLe('Không thể điều chỉnh sách đã ẩn');
     const tonTruoc = sach.SoLuongTon;
@@ -669,7 +657,7 @@ async function dieuChinhTonKho(maSach, duLieu, maNhanVien) {
     if (soLuongThayDoi < 0) dieuKien.SoLuongTon = { [Op.gte]: Math.abs(soLuongThayDoi) };
     const phepTinh = soLuongThayDoi > 0 ? '+' : '-';
     const [soDongCapNhat] = await Sach.update({
-      SoLuongTon: sequelize.literal(`[SoLuongTon] ${phepTinh} ${Math.abs(soLuongThayDoi)}`)
+      SoLuongTon: sequelize.literal(`"SoLuongTon" ${phepTinh} ${Math.abs(soLuongThayDoi)}`)
     }, { where: dieuKien, transaction: t });
     if (soDongCapNhat === 0) throw LoiNghiepVu.xungDot(`Không thể giảm kho, hiện chỉ còn ${tonTruoc} cuốn`);
     const tonSau = tonTruoc + soLuongThayDoi;
@@ -691,12 +679,13 @@ async function layDanhSachTenBoGoiY({ search = '', limit = 20 } = {}) {
   const tuKhoa = (search || '').trim();
 
   const ketQua = await sequelize.query(`
-    SELECT DISTINCT TOP (:limit) TenBo
-    FROM Sach
-    WHERE TenBo IS NOT NULL 
-      AND LTRIM(RTRIM(TenBo)) <> ''
-      ${tuKhoa ? "AND TenBo COLLATE Latin1_General_CI_AI LIKE N'%' + :search + N'%'" : ""}
-    ORDER BY TenBo ASC;
+    SELECT DISTINCT "TenBo"
+    FROM "Sach"
+    WHERE "TenBo" IS NOT NULL
+      AND TRIM("TenBo") <> ''
+      ${tuKhoa ? `AND bo_dau("TenBo") LIKE '%' || bo_dau(:search) || '%'` : ''}
+    ORDER BY "TenBo" ASC
+    LIMIT :limit;
   `, {
     replacements: { search: tuKhoa, limit: soLuong },
     type: sequelize.QueryTypes.SELECT

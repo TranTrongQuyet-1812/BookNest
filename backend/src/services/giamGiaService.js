@@ -141,7 +141,7 @@ async function layDanhSachChuongTrinh({ page = 1, limit = 10, search, trangThai 
 
   const dieuKien = {};
   if (search && search.trim()) {
-    dieuKien.TenChuongTrinh = { [Op.like]: `%${search.trim()}%` };
+    dieuKien.TenChuongTrinh = { [Op.iLike]: `%${search.trim()}%` };
   }
 
   const now = new Date();

@@ -228,7 +228,7 @@ async function xacMinhOtpQuenMatKhau(email, maOtp) {
 
   // Tăng số lần thử nguyên tử bằng câu lệnh UPDATE có điều kiện SoLanThu < 5 và DaDung = 0 chống race condition
   const [soDongCapNhat] = await OtpQuenMatKhau.update(
-    { SoLanThu: sequelize.literal('SoLanThu + 1') },
+    { SoLanThu: sequelize.literal('"SoLanThu" + 1') },
     {
       where: {
         MaOtp: banGhi.MaOtp,

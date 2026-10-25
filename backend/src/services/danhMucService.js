@@ -12,7 +12,7 @@ async function layDanhSachDanhMuc() {
       include: [
         [
           sequelize.literal(
-            '(SELECT COUNT(*) FROM Sach WHERE Sach.MaDanhMuc = DanhMuc.MaDanhMuc AND Sach.DaAn = 0)'
+            '(SELECT CAST(COUNT(*) AS INTEGER) FROM "Sach" WHERE "Sach"."MaDanhMuc" = "DanhMuc"."MaDanhMuc" AND "Sach"."DaAn" = FALSE)'
           ),
           'soLuongSach'
         ]

@@ -92,7 +92,7 @@ async function layDanhSachTaiKhoan(Bang, dieuKienThem, { page = 1, limit = 10, s
   if (search && search.trim().length > 0) {
     const tuKhoa = search.trim();
     dieuKien[Op.or] = [
-      chuaTuKhoa(`[${Bang.name}].[HoTen]`, tuKhoa),
+      chuaTuKhoa(`"${Bang.name}"."HoTen"`, tuKhoa),
       { Email: { [Op.like]: `%${tuKhoa}%` } }
     ];
   }

@@ -35,9 +35,10 @@ async function layDanhSachDanhGia(maSach, { page = 1, limit = 10 }) {
     ]
   });
 
-  // Tính số sao trung bình của sách bằng câu truy vấn vô hướng chuẩn SQL Server (Chỉ tính đánh giá chưa ẩn)
+  // Tính số sao trung bình của sách bằng câu truy vấn vô hướng (Chỉ tính đánh giá chưa ẩn).
+  // PostgreSQL chỉ làm tròn được kiểu NUMERIC (AVG của SMALLINT đã là NUMERIC), sau đó ép về số thực cho JavaScript.
   const [thongKe] = await sequelize.query(
-    'SELECT ROUND(AVG(CAST(SoSao AS FLOAT)), 1) AS saoTrungBinh, COUNT(MaDanhGia) AS soLuotDanhGia FROM DanhGia WHERE MaSach = :maSach AND DaAn = 0',
+    'SELECT CAST(ROUND(AVG("SoSao"), 1) AS DOUBLE PRECISION) AS "saoTrungBinh", CAST(COUNT("MaDanhGia") AS INTEGER) AS "soLuotDanhGia" FROM "DanhGia" WHERE "MaSach" = :maSach AND "DaAn" = FALSE',
     { replacements: { maSach }, type: sequelize.QueryTypes.SELECT }
   );
 
@@ -163,9 +164,9 @@ async function layDanhSachDanhGiaAdmin({ page = 1, limit = 10, search = '', rati
   const tuKhoa = String(search || '').trim();
   if (tuKhoa) {
     dieuKienWhere[Op.or] = [
-      { NoiDung: { [Op.like]: `%${tuKhoa}%` } },
-      { '$sach.TenSach$': { [Op.like]: `%${tuKhoa}%` } },
-      { '$khachHang.HoTen$': { [Op.like]: `%${tuKhoa}%` } }
+      { NoiDung: { [Op.iLike]: `%${tuKhoa}%` } },
+      { '$sach.TenSach$': { [Op.iLike]: `%${tuKhoa}%` } },
+      { '$khachHang.HoTen$': { [Op.iLike]: `%${tuKhoa}%` } }
     ];
   }
 

@@ -11,7 +11,7 @@ const cauHinhHeThongService = require('./cauHinhHeThongService');
 const hetHanThanhToanService = require('./hetHanThanhToanService');
 const donHangService = require('./donHangService');
 const emailService = require('./emailService');
-const { Op, TableHints } = require('sequelize');
+const { Op, Transaction } = require('sequelize');
 const {
   sequelize,
   DonHang,
@@ -61,7 +61,7 @@ async function taoThanhToanQR(donHang, danhSachMon = [], options = {}) {
     // Khóa dòng đơn để hai yêu cầu QR cùng lúc không cùng thấy trạng thái "chưa có thanh toán".
     const donHangKhoa = await DonHang.findByPk(donHang.MaDonHang, {
       transaction,
-      tableHint: TableHints.UPDLOCK
+      lock: Transaction.LOCK.UPDATE
     });
     if (!donHangKhoa) throw LoiNghiepVu.khongTimThay('Không tìm thấy đơn hàng cần tạo thanh toán');
 

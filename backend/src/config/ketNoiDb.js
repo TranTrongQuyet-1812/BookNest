@@ -5,6 +5,10 @@
 const { Sequelize } = require('sequelize');
 const cauHinh = require('./cauHinh');
 
+// Driver pg trả NUMERIC (DECIMAL) dưới dạng chuỗi. Giá tiền của dự án là số VND (12 chữ số, 2 lẻ, rất xa giới hạn
+// chính xác của số thực) nên đọc thẳng ra số, giống hành vi của bản SQL Server; nếu không, giao diện nhận "85000.00".
+Sequelize.postgres.DECIMAL.parse = (giaTri) => parseFloat(giaTri);
+
 const tuyChonChung = {
   dialect: 'postgres',
   // Heroku Postgres dùng chứng chỉ do Heroku ký nên không xác minh được chuỗi chứng chỉ; vẫn mã hóa đường truyền

@@ -11,7 +11,7 @@ const { chuanHoaMaTraCuu } = require('../utils/maTraCuu');
 async function kiemTraChuDon(req, res, next) {
   try {
     const maTraCuu = chuanHoaMaTraCuu(req.params.id);
-    const donHang = maTraCuu ? await DonHang.findOne({ where: { MaTraCuu: maTraCuu } }) : null;
+    const donHang = maTraCuu ? await DonHang.findOne({ where: { MaTraCuu: String(maTraCuu).toUpperCase() } }) : null;
     if (!donHang) {
       throw LoiNghiepVu.khongTimThay('Không tìm thấy đơn hàng yêu cầu');
     }

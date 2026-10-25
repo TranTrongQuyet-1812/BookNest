@@ -15,7 +15,7 @@ const ChuongTrinhGiamGia = sequelize.define('ChuongTrinhGiamGia', {
     allowNull: false
   },
   PhanTramGiam: {
-    type: DataTypes.TINYINT,
+    type: DataTypes.SMALLINT,
     allowNull: false,
     validate: {
       min: 1,

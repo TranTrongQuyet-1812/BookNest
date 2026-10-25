@@ -18,7 +18,7 @@ const KhachHang = sequelize.define('KhachHang', {
     allowNull: false
   },
   Email: {
-    type: DataTypes.STRING(255),
+    type: DataTypes.CITEXT,
     allowNull: false,
     unique: true
   },

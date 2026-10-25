@@ -2,7 +2,7 @@
  * Tầng Service quản lý vòng đời đơn hàng, trừ kho có điều kiện (chống bán âm),
  * hoàn kho khi hủy, máy trạng thái chuyển đổi và dòng thời gian lịch sử đơn hàng.
  */
-const { Op, TableHints } = require('sequelize');
+const { Op, Transaction } = require('sequelize');
 const {
   sequelize,
   DonHang,
@@ -178,13 +178,13 @@ async function datHang(maKhachHang, thongTinGiaoHang) {
   const t = await sequelize.transaction();
 
   try {
-    // Đọc giỏ hàng BÊN TRONG transaction có khóa dòng TableHints.UPDLOCK
-    // Trên SQL Server, lock: t.LOCK.UPDATE bị bỏ qua; TableHints.UPDLOCK sinh WITH (UPDLOCK) thật sự.
+    // Đọc giỏ hàng BÊN TRONG transaction có khóa dòng FOR UPDATE (chỉ khóa các dòng GioHang, không khóa bảng Sach nối kèm)
+    // PostgreSQL không cho FOR UPDATE ở phía nullable của LEFT JOIN, nên phải chỉ rõ "of: GioHang".
     // Nếu khách hàng bấm đúp, request thứ hai sẽ bị khóa chờ request thứ nhất commit và thấy giỏ hàng đã trống.
     const cacMonTrongGio = await GioHang.findAll({
       where: { MaKhachHang: maKhachHang },
       include: [{ model: Sach, as: 'sach' }],
-      tableHint: TableHints.UPDLOCK,
+      lock: { level: Transaction.LOCK.UPDATE, of: GioHang },
       transaction: t
     });
 

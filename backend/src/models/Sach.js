@@ -52,7 +52,7 @@ const Sach = sequelize.define('Sach', {
     allowNull: true
   },
   TenBo: {
-    type: DataTypes.STRING(255),
+    type: DataTypes.CITEXT,
     allowNull: true
   },
   MaDanhMuc: {

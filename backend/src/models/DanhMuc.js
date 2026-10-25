@@ -13,7 +13,7 @@ const DanhMuc = sequelize.define('DanhMuc', {
     allowNull: false
   },
   TenDanhMuc: {
-    type: DataTypes.STRING(100),
+    type: DataTypes.CITEXT,
     allowNull: false,
     unique: true
   },

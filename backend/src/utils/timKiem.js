@@ -2,16 +2,16 @@
  * Hàm hỗ trợ tìm kiếm tiếng Việt không phân biệt hoa thường và không phân biệt dấu.
  * Hỗ trợ bóc tách từ khóa đa từ (Tokenized / Fuzzy Matching) cho BookNest.
  */
-const { Op, where, literal } = require('sequelize');
+const { Op, where, literal, fn } = require('sequelize');
 
-// Cột chữ của dự án dùng Vietnamese_CI_AI: bỏ qua dấu thanh nhưng vẫn coi ă â ê ô ơ ư đ là chữ riêng,
-// nên gõ "so do" không ra "Số Đỏ". Ép so sánh bằng Latin1_General_CI_AI để gõ không dấu vẫn tìm được.
-const BANG_MA_TIM_KIEM = 'Latin1_General_CI_AI';
+// PostgreSQL không có collation bỏ dấu như SQL Server (Latin1_General_CI_AI), nên tìm không dấu bằng hàm bo_dau()
+// (unaccent + lower + xử lý đ, tạo ở database/postgres/02_tim_kiem_khong_dau.sql). Bọc cả cột lẫn từ khóa
+// trong bo_dau() để gõ "so do" vẫn tìm ra "Số Đỏ".
 
-// Thoát các ký tự đặc biệt của LIKE (% _ [) để người dùng gõ chúng vẫn được hiểu là chữ thường
+// Thoát các ký tự đặc biệt của LIKE (% _ \) bằng dấu gạch ngược để người dùng gõ chúng vẫn được hiểu là chữ thường
 function thoatKyTuLike(tuKhoa) {
   if (!tuKhoa) return '';
-  return String(tuKhoa).replace(/[%_[]/g, '[$&]');
+  return String(tuKhoa).replace(/[%_\\]/g, '\\$&');
 }
 
 // Làm sạch từ khóa: lược bỏ từ đệm tìm kiếm tiếng Việt thông dụng ở đầu câu (ví dụ "sách", "cuốn", "sản phẩm")
@@ -34,24 +34,24 @@ function tachTuKhoa(tuKhoa) {
 }
 
 /**
- * Điều kiện "cột chứa từ khóa" cơ bản (Latin1_General_CI_AI không phân biệt dấu).
- * Giữ nguyên bản để tương thích tuyệt đối với các module chuẩn và unit test T20.
+ * Điều kiện "cột chứa từ khóa" cơ bản (bo_dau không phân biệt hoa thường và dấu).
+ * Tên cột truyền vào phải đặt trong ngoặc kép, ví dụ '"Sach"."TenSach"'.
  */
 function chuaTuKhoa(tenCot, tuKhoa) {
-  return where(literal(`${tenCot} COLLATE ${BANG_MA_TIM_KIEM}`), {
-    [Op.like]: `%${thoatKyTuLike(tuKhoa)}%`
+  return where(fn('bo_dau', literal(tenCot)), {
+    [Op.like]: fn('bo_dau', `%${thoatKyTuLike(tuKhoa)}%`)
   });
 }
 
 /** So khớp khi người dùng vô tình bỏ khoảng trắng hoặc dấu phân cách trong tên. */
 function chuaTuKhoaBoKhoangTrang(tenCot, tuKhoa) {
-  const bieuThuc = `REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(${tenCot}, N' ', N''), N'-', N''), N'_', N''), N'.', N''), N',', N'')`;
+  const bieuThuc = `REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(${tenCot}, ' ', ''), '-', ''), '_', ''), '.', ''), ',', '')`;
   const tuKhoaGon = String(tuKhoa || '').replace(/[\s\-_. ,]+/g, '');
 
   if (!tuKhoaGon) return chuaTuKhoa(tenCot, tuKhoa);
 
-  return where(literal(`${bieuThuc} COLLATE ${BANG_MA_TIM_KIEM}`), {
-    [Op.like]: `%${thoatKyTuLike(tuKhoaGon)}%`
+  return where(fn('bo_dau', literal(bieuThuc)), {
+    [Op.like]: fn('bo_dau', `%${thoatKyTuLike(tuKhoaGon)}%`)
   });
 }
 
@@ -221,7 +221,6 @@ module.exports = {
   locTuKhoaThucSu,
   tinhDiemTrungKhop,
   chamDiemTimGanDung,
-  boDauTiengViet,
-  BANG_MA_TIM_KIEM
+  boDauTiengViet
 };
 
