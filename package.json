@@ -6,8 +6,13 @@
     "frontend-admin",
     "packages/shared"
   ],
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "lint": "npm --prefix frontend run lint",
-    "lint:all": "node frontend/node_modules/oxlint/bin/oxlint frontend/src frontend-admin/src packages/shared"
+    "lint:all": "node frontend/node_modules/oxlint/bin/oxlint frontend/src frontend-admin/src packages/shared",
+    "start": "node backend/src/server.js",
+    "heroku-postbuild": "npm --prefix backend ci --omit=dev && npm run build --workspace frontend && npm run build --workspace booknest-backoffice"
   }
 }

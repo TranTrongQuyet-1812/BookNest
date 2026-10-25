@@ -2,6 +2,7 @@
  * Quản lý và kiểm tra tính hợp lệ của các biến môi trường cấu hình hệ thống.
  */
 require('dotenv').config();
+const path = require('path');
 
 const cacBienBatBuoc = [
   'PORT',
@@ -50,6 +51,14 @@ const cauHinh = {
   // Tài liệu Swagger (/api-docs) liệt kê toàn bộ API nên mặc định chỉ bật khi không phải môi trường production.
   // Đặt BAT_API_DOCS=true/false để ép bật/tắt.
   batApiDocs: process.env.BAT_API_DOCS ? process.env.BAT_API_DOCS === 'true' : process.env.NODE_ENV !== 'production',
+  // Phục vụ hai giao diện đã build từ chính backend (Heroku chỉ có một app, không có nginx); mặc định tắt vì máy dev dùng Vite
+  giaoDien: {
+    bat: process.env.PHUC_VU_GIAO_DIEN === 'true',
+    // Các tên miền thuộc khu quản trị (phân tách bằng dấu phẩy); mọi tên miền khác là trang khách
+    hostQuanTri: (process.env.BACKOFFICE_HOSTS || '').split(',').map(host => host.trim()).filter(Boolean),
+    thuMucKhach: path.resolve(__dirname, '..', '..', '..', 'frontend', 'dist'),
+    thuMucQuanTri: path.resolve(__dirname, '..', '..', '..', 'frontend-admin', 'dist')
+  },
   // Số lớp reverse proxy đứng trước server (0 nếu chạy trực tiếp), dùng để rate limit nhận đúng IP
   soLopProxy: parseInt(process.env.TRUST_PROXY, 10) || 0,
   // Cổng thanh toán VietQR payOS

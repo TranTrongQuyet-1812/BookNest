@@ -24,6 +24,7 @@ const giamGiaRoutes = require('./routes/giamGiaRoutes');
 const { gioiHanChung } = require('./middlewares/gioiHanTanSuat');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
+const { taoPhucVuGiaoDien } = require('./middlewares/phucVuGiaoDien');
 
 const app = express();
 
@@ -39,6 +40,12 @@ app.use(
     crossOriginEmbedderPolicy: false
   })
 );
+
+// Phục vụ hai giao diện đã build theo tên miền (chỉ bật khi PHUC_VU_GIAO_DIEN=true, ví dụ trên Heroku); đặt trước các route
+// để trang chủ (/) trả giao diện thay vì JSON kiểm tra sức khỏe. /api và /socket.io luôn đi tiếp vào API.
+if (cauHinh.giaoDien.bat) {
+  app.use(taoPhucVuGiaoDien(cauHinh.giaoDien));
+}
 
 // Middleware giải mã JSON body và form urlencoded để xử lý dữ liệu gửi lên
 app.use(express.json());
