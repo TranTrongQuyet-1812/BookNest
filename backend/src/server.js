@@ -11,7 +11,7 @@ const { batDauQuetHetHan } = require('./services/hetHanThanhToanService');
 
 async function khoiDongMayChu() {
   try {
-    // 1. Thử kết nối cơ sở dữ liệu Microsoft SQL Server trước
+    // 1. Thử kết nối cơ sở dữ liệu PostgreSQL trước
     await kiemTraKetNoiDb();
 
     // 2. Tạo HTTP Server bọc Express Application

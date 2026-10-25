@@ -1,5 +1,5 @@
 /**
- * Kiểm tra tham số đường dẫn là mã số nguyên dương (khớp kiểu INT của SQL Server).
+ * Kiểm tra tham số đường dẫn là mã số nguyên dương (khớp kiểu INT của PostgreSQL).
  * Dùng với router.param('id', taoKiemTraMaSo('sách')): chuỗi lạ như "abc" hay số quá lớn trả 400 ngay,
  * không để lọt xuống truy vấn rồi nổ lỗi chuyển kiểu của CSDL thành 500.
  */
