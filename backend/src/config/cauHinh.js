@@ -5,16 +5,21 @@ require('dotenv').config();
 
 const cacBienBatBuoc = [
   'PORT',
+  'JWT_SECRET'
+];
+
+// Kết nối PostgreSQL: Heroku cấp một chuỗi DATABASE_URL; máy dev dùng 5 biến DB_* riêng lẻ.
+const cacBienCsdl = [
   'DB_HOST',
   'DB_PORT',
   'DB_NAME',
   'DB_USER',
-  'DB_PASSWORD',
-  'JWT_SECRET'
+  'DB_PASSWORD'
 ];
 
 function kiemTraBienBatBuoc() {
-  const cacBienThieu = cacBienBatBuoc.filter(tenBien => !process.env[tenBien]);
+  const cacBienCanCo = process.env.DATABASE_URL ? cacBienBatBuoc : [...cacBienBatBuoc, ...cacBienCsdl];
+  const cacBienThieu = cacBienCanCo.filter(tenBien => !process.env[tenBien]);
   if (cacBienThieu.length > 0) {
     throw new Error(`[Lỗi Cấu Hình] Thiếu các biến môi trường bắt buộc: ${cacBienThieu.join(', ')}`);
   }
@@ -25,11 +30,15 @@ kiemTraBienBatBuoc();
 const cauHinh = {
   cong: parseInt(process.env.PORT, 10) || 5000,
   csdl: {
+    // Nếu có DATABASE_URL (Heroku) thì dùng chuỗi này thay cho 5 biến DB_* bên dưới
+    url: process.env.DATABASE_URL || '',
     mayChu: process.env.DB_HOST || 'localhost',
-    cong: parseInt(process.env.DB_PORT, 10) || 1433,
-    tenCsdl: process.env.DB_NAME || 'BookNestDB',
+    cong: parseInt(process.env.DB_PORT, 10) || 5432,
+    tenCsdl: process.env.DB_NAME || 'booknest',
     nguoiDung: process.env.DB_USER,
-    matKhau: process.env.DB_PASSWORD || ''
+    matKhau: process.env.DB_PASSWORD || '',
+    // Heroku Postgres bắt buộc SSL; DB_SSL=true bật SSL khi nối từ ngoài vào
+    dungSsl: process.env.DB_SSL === 'true'
   },
   jwt: {
     biMat: process.env.JWT_SECRET,
